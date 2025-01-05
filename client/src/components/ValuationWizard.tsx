@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2, Circle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
 import { MethodSelectionStep } from "./wizard-steps/MethodSelectionStep";
@@ -19,6 +19,7 @@ type WizardStep = {
   id: number;
   title: string;
   description: string;
+  icon: React.ReactNode;
 };
 
 const STEPS: WizardStep[] = [
@@ -26,28 +27,32 @@ const STEPS: WizardStep[] = [
     id: 1,
     title: "Business Information",
     description: "Tell us about your business type and stage",
+    icon: <Circle className="w-4 h-4" />,
   },
   {
     id: 2,
     title: "Valuation Method",
     description: "Review and select the recommended valuation approach",
+    icon: <Circle className="w-4 h-4" />,
   },
   {
     id: 3,
     title: "Financial Details",
     description: "Provide basic financial information",
+    icon: <Circle className="w-4 h-4" />,
   },
   {
     id: 4,
     title: "Review",
     description: "Review and confirm your information",
+    icon: <Circle className="w-4 h-4" />,
   },
 ];
 
 export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
-  
+
   const updateFormData = (data: Partial<ValuationFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
   };
@@ -77,8 +82,53 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
             Step {currentStep} of {STEPS.length}
           </Badge>
         </div>
-        <Progress value={progress} className="h-2" />
+
+        {/* Progress Tracker */}
+        <div className="mb-8">
+          <Progress value={progress} className="h-2 mb-4" />
+          <div className="grid grid-cols-4 gap-4">
+            {STEPS.map((step) => (
+              <motion.div
+                key={step.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: step.id * 0.1 }}
+                className={`flex flex-col items-center text-center ${
+                  step.id === currentStep
+                    ? "text-primary"
+                    : step.id < currentStep
+                    ? "text-muted-foreground"
+                    : "text-muted"
+                }`}
+              >
+                <motion.div
+                  initial={false}
+                  animate={step.id <= currentStep ? "active" : "inactive"}
+                  variants={{
+                    active: {
+                      scale: 1.2,
+                      transition: { duration: 0.3 },
+                    },
+                    inactive: {
+                      scale: 1,
+                      transition: { duration: 0.3 },
+                    },
+                  }}
+                  className="mb-2"
+                >
+                  {step.id < currentStep ? (
+                    <CheckCircle2 className="w-6 h-6 text-primary" />
+                  ) : (
+                    step.icon
+                  )}
+                </motion.div>
+                <span className="text-xs font-medium">{step.title}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </CardHeader>
+
       <CardContent>
         <AnimatePresence mode="wait">
           <motion.div
