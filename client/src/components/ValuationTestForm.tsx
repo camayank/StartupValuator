@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { industries, currencies, businessStages } from "@/lib/validations";
+import { sectors, currencies, businessStages } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,7 +23,8 @@ const defaultValues: ValuationFormData = {
   currency: "USD",
   growthRate: 35,
   margins: 25,
-  industry: "software_system", // This matches our enum exactly
+  sector: "technology",
+  industry: "software_system",
   stage: "revenue_growing",
   intellectualProperty: "registered",
   teamExperience: 8,
@@ -41,9 +42,12 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Ensure industry value is valid before submission
-      if (!(formData.industry in industries)) {
-        throw new Error("Invalid industry selected");
+      // Ensure sector and industry values are valid before submission
+      if (!(formData.sector in sectors)) {
+        throw new Error("Invalid sector selected");
+      }
+      if (!(formData.industry in sectors[formData.sector as keyof typeof sectors].subsectors)) {
+        throw new Error("Invalid industry selected for the chosen sector");
       }
       onSubmit(formData);
     } catch (error) {
@@ -56,7 +60,14 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
   };
 
   const handleChange = (field: keyof ValuationFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      // If changing sector, reset industry to the first option in that sector
+      if (field === 'sector') {
+        const firstIndustry = Object.keys(sectors[value as keyof typeof sectors].subsectors)[0];
+        return { ...prev, [field]: value, industry: firstIndustry };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   return (
@@ -114,6 +125,25 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium">Sector</label>
+              <Select
+                value={formData.sector}
+                onValueChange={(value) => handleChange('sector', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sector" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(sectors).map(([key, { name }]) => (
+                    <SelectItem key={key} value={key}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium">Industry</label>
               <Select
                 value={formData.industry}
@@ -122,8 +152,8 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
                 <SelectTrigger>
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[300px] overflow-y-auto">
-                  {Object.entries(industries).map(([key, name]) => (
+                <SelectContent>
+                  {Object.entries(sectors[formData.sector as keyof typeof sectors].subsectors).map(([key, name]) => (
                     <SelectItem key={key} value={key}>
                       {name}
                     </SelectItem>

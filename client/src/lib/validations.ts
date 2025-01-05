@@ -33,73 +33,107 @@ export const businessStages = {
   liquidation: "Liquidation",
 } as const;
 
-// Comprehensive industry classifications based on Damodaran's database
-export const industries = {
-  // Technology
-  software_system: "Software (System & Application)",
-  software_internet: "Software (Internet)",
-  semiconductors: "Semiconductors",
-  computer_hardware: "Computer Hardware",
-  computer_services: "Computer Services",
-  telecom_equipment: "Telecommunications Equipment",
-  telecom_services: "Telecommunications Services",
-
-  // E-commerce & Digital
-  ecommerce_retail: "E-Commerce & Digital Retail",
-  digital_content: "Digital Content & Streaming",
-  digital_payments: "Digital Payment Services",
-  digital_platform: "Digital Platforms & Marketplaces",
-
-  // Enterprise Software
-  enterprise_software: "Enterprise Software",
-  cloud_services: "Cloud Services & Infrastructure",
-  cybersecurity: "Cybersecurity",
-  data_analytics: "Data Analytics & AI",
-
-  // Consumer
-  consumer_discretionary: "Consumer Discretionary",
-  consumer_staples: "Consumer Staples",
-  retail_general: "Retail (General)",
-  retail_special: "Retail (Specialty)",
-
-  // Healthcare & Biotech
-  healthcare_services: "Healthcare Services",
-  medical_equipment: "Medical Equipment",
-  biotechnology: "Biotechnology",
-  pharmaceuticals: "Pharmaceuticals",
-
-  // Financial Services
-  banking: "Banking",
-  insurance: "Insurance",
-  asset_management: "Asset Management",
-  fintech: "Financial Technology",
-
-  // Industrial & Manufacturing
-  industrial_general: "Industrial (General)",
-  aerospace_defense: "Aerospace & Defense",
-  automotive: "Automotive",
-  chemicals: "Chemicals",
-
-  // Energy & Resources
-  renewable_energy: "Renewable Energy",
-  oil_gas: "Oil & Gas",
-  mining: "Mining & Minerals",
-  utilities: "Utilities",
-
-  // Others
-  real_estate: "Real Estate",
-  transportation: "Transportation & Logistics",
-  media_entertainment: "Media & Entertainment",
-  education: "Education Services",
-  professional_services: "Professional Services",
-  agriculture: "Agriculture & Food",
+// Reorganized industry classifications with sector-subsector structure
+export const sectors = {
+  technology: {
+    name: "Technology",
+    subsectors: {
+      software_system: "Software (System & Application)",
+      software_internet: "Software (Internet)",
+      semiconductors: "Semiconductors",
+      computer_hardware: "Computer Hardware",
+      computer_services: "Computer Services",
+      telecom_equipment: "Telecommunications Equipment",
+      telecom_services: "Telecommunications Services",
+    }
+  },
+  digital: {
+    name: "Digital & E-commerce",
+    subsectors: {
+      ecommerce_retail: "E-Commerce & Digital Retail",
+      digital_content: "Digital Content & Streaming",
+      digital_payments: "Digital Payment Services",
+      digital_platform: "Digital Platforms & Marketplaces",
+    }
+  },
+  enterprise: {
+    name: "Enterprise Solutions",
+    subsectors: {
+      enterprise_software: "Enterprise Software",
+      cloud_services: "Cloud Services & Infrastructure",
+      cybersecurity: "Cybersecurity",
+      data_analytics: "Data Analytics & AI",
+    }
+  },
+  consumer: {
+    name: "Consumer",
+    subsectors: {
+      consumer_discretionary: "Consumer Discretionary",
+      consumer_staples: "Consumer Staples",
+      retail_general: "Retail (General)",
+      retail_special: "Retail (Specialty)",
+    }
+  },
+  healthcare: {
+    name: "Healthcare & Life Sciences",
+    subsectors: {
+      healthcare_services: "Healthcare Services",
+      medical_equipment: "Medical Equipment",
+      biotechnology: "Biotechnology",
+      pharmaceuticals: "Pharmaceuticals",
+    }
+  },
+  financial: {
+    name: "Financial Services",
+    subsectors: {
+      banking: "Banking",
+      insurance: "Insurance",
+      asset_management: "Asset Management",
+      fintech: "Financial Technology",
+    }
+  },
+  industrial: {
+    name: "Industrial & Manufacturing",
+    subsectors: {
+      industrial_general: "Industrial (General)",
+      aerospace_defense: "Aerospace & Defense",
+      automotive: "Automotive",
+      chemicals: "Chemicals",
+    }
+  },
+  energy: {
+    name: "Energy & Resources",
+    subsectors: {
+      renewable_energy: "Renewable Energy",
+      oil_gas: "Oil & Gas",
+      mining: "Mining & Minerals",
+      utilities: "Utilities",
+    }
+  },
+  others: {
+    name: "Other Sectors",
+    subsectors: {
+      real_estate: "Real Estate",
+      transportation: "Transportation & Logistics",
+      media_entertainment: "Media & Entertainment",
+      education: "Education Services",
+      professional_services: "Professional Services",
+      agriculture: "Agriculture & Food",
+    }
+  }
 } as const;
+
+// Create a flat map of all industries for backward compatibility
+export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
+  return { ...acc, ...sector.subsectors };
+}, {} as Record<string, string>);
 
 export const valuationFormSchema = z.object({
   revenue: z.number().min(0, "Revenue must be positive"),
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
   margins: z.number().min(-100).max(100, "Margins must be between -100 and 100"),
+  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
 
