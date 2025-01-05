@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/validations";
 import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { motion } from 'framer-motion';
+import { useToast } from "@/hooks/use-toast";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -14,45 +15,52 @@ interface ReviewStepProps {
 }
 
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
-  // Simplified validation logic to be more strict
-  const isValidData = (data: Partial<ValuationFormData>): boolean => {
-    // Required field checks
+  const { toast } = useToast();
+
+  // Strict validation logic for all required fields
+  const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
     const requiredFields = {
       businessName: typeof data.businessName === 'string' && data.businessName.trim().length > 0,
-      valuationPurpose: typeof data.valuationPurpose === 'string' && data.valuationPurpose.length > 0,
+      valuationPurpose: typeof data.valuationPurpose === 'string' && Object.keys(valuationPurposes).includes(data.valuationPurpose),
       revenue: typeof data.revenue === 'number' && data.revenue >= 0,
       currency: typeof data.currency === 'string' && data.currency.length > 0,
-      growthRate: typeof data.growthRate === 'number',
-      margins: typeof data.margins === 'number',
-      sector: typeof data.sector === 'string' && data.sector.length > 0,
+      growthRate: typeof data.growthRate === 'number' && data.growthRate >= -100 && data.growthRate <= 1000,
+      margins: typeof data.margins === 'number' && data.margins >= -100 && data.margins <= 100,
+      sector: typeof data.sector === 'string' && Object.keys(sectors).includes(data.sector),
       industry: typeof data.industry === 'string' && data.industry.length > 0,
-      stage: typeof data.stage === 'string' && data.stage.length > 0,
-      region: typeof data.region === 'string' && data.region.length > 0
+      stage: typeof data.stage === 'string' && Object.keys(businessStages).includes(data.stage),
+      region: typeof data.region === 'string' && Object.keys(regions).includes(data.region)
     };
 
-    console.log('Validation results:', requiredFields);
-    return Object.values(requiredFields).every(Boolean);
+    const valid = Object.entries(requiredFields).every(([key, value]) => value);
+
+    if (!valid) {
+      const missingFields = Object.entries(requiredFields)
+        .filter(([_, value]) => !value)
+        .map(([key]) => key);
+
+      console.log('Missing or invalid fields:', missingFields);
+      toast({
+        title: "Missing Required Fields",
+        description: `Please fill in all required fields: ${missingFields.join(', ')}`,
+        variant: "destructive",
+      });
+    }
+
+    return valid;
   };
 
   const handleSubmit = () => {
-    const isValid = isValidData(data);
-    console.log('Submit attempted. Form valid:', isValid, 'Form data:', data);
-
-    if (!isValid) {
-      console.log('Form validation failed');
+    if (!isValidData(data)) {
       return;
     }
-
-    // Only submit if we have all required data
-    onSubmit(data as ValuationFormData);
+    onSubmit(data);
   };
 
   const selectedSector = data.sector ? sectors[data.sector] : null;
   const selectedIndustry = selectedSector?.subsectors[data.industry as keyof typeof selectedSector['subsectors']];
   const selectedStage = data.stage ? businessStages[data.stage] : null;
   const selectedRegion = data.region ? regions[data.region] : null;
-
-  const canGenerate = isValidData(data);
 
   return (
     <div className="space-y-6">
@@ -138,7 +146,6 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!canGenerate}
             className="px-8 font-medium flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
