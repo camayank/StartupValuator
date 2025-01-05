@@ -7,6 +7,7 @@ import { predictStartupPotential } from "./lib/potentialPredictor";
 import { generateEcosystemNetwork } from "./lib/ecosystemNetwork";
 import { analyzePitchDeck } from "./lib/pitchDeckAnalyzer";
 import { setupCache } from "./lib/cache";
+import { generateChatResponse } from "./lib/chatbot";
 import { db } from "@db";
 import { founderProfiles, users } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -105,6 +106,27 @@ export function registerRoutes(app: Express): Server {
 
       res.status(500).json({ 
         message: error instanceof Error ? error.message : 'Failed to calculate valuation'
+      });
+    }
+  });
+
+  // Chatbot endpoint for financial advice
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, context } = req.body;
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({
+          message: 'Invalid request. Message is required and must be a string.',
+        });
+      }
+
+      const response = await generateChatResponse(message, context);
+      res.json(response);
+    } catch (error) {
+      console.error('Chat generation failed:', error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to generate chat response'
       });
     }
   });
