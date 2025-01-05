@@ -120,7 +120,7 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
                 onValueChange={(value) => handleChange('industry', value)}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px] overflow-y-auto">
                   {Object.entries(industries).map(([key, name]) => (
