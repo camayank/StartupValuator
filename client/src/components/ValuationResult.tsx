@@ -1,12 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { ValuationData } from "@/lib/validations";
+import { generateReport } from "@/lib/api";
 
 interface ValuationResultProps {
   data: ValuationData | null;
 }
 
 export function ValuationResult({ data }: ValuationResultProps) {
+  const { toast } = useToast();
+
+  const handleGenerateReport = async () => {
+    if (!data) return;
+
+    try {
+      const response = await generateReport(data);
+      // Create a blob from the PDF data and open in new tab
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!data) {
     return (
       <Card>
@@ -69,6 +93,15 @@ export function ValuationResult({ data }: ValuationResultProps) {
             ))}
           </div>
         </div>
+
+        <Button 
+          className="w-full" 
+          onClick={handleGenerateReport}
+          variant="outline"
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Generate Professional Report
+        </Button>
       </CardContent>
     </Card>
   );

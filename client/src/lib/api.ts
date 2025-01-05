@@ -15,3 +15,19 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
 
   return response.json();
 }
+
+export async function generateReport(data: ValuationData): Promise<ArrayBuffer> {
+  const response = await fetch("/api/report", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to generate report");
+  }
+
+  return response.arrayBuffer();
+}

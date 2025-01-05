@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { calculateValuation } from "./lib/valuation";
+import { generatePdfReport } from "./lib/report";
 import { setupCache } from "./lib/cache";
 
 export function registerRoutes(app: Express): Server {
@@ -11,7 +12,7 @@ export function registerRoutes(app: Express): Server {
 
     // Generate cache key
     const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}`;
-    
+
     // Check cache
     const cachedResult = cache.get(cacheKey);
     if (cachedResult) {
@@ -29,10 +30,23 @@ export function registerRoutes(app: Express): Server {
 
       // Cache the result
       cache.set(cacheKey, result);
-      
+
       res.json(result);
     } catch (error) {
       res.status(400).json({ message: (error as Error).message });
+    }
+  });
+
+  app.post("/api/report", async (req, res) => {
+    try {
+      const data = req.body;
+      const pdfBuffer = await generatePdfReport(data);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="valuation-report.pdf"');
+      res.send(pdfBuffer);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
