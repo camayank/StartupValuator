@@ -2,7 +2,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { formatCurrency } from "@/lib/validations";
-import { sectors, businessStages } from "@/lib/validations";
+import { sectors, businessStages, regions } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 
 interface ReviewStepProps {
@@ -28,6 +28,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       'sector',
       'industry',
       'stage',
+      'region',
       'teamExperience',
       'customerBase',
       'intellectualProperty',
@@ -42,6 +43,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   const selectedSector = sectors[data.sector as keyof typeof sectors];
   const selectedIndustry = selectedSector?.subsectors[data.industry as keyof typeof selectedSector['subsectors']];
   const selectedStage = businessStages[data.stage as keyof typeof businessStages];
+  const selectedRegion = regions[data.region as keyof typeof regions];
 
   // Helper function to format qualitative data
   const formatQualitativeValue = (value: string | undefined) => {
@@ -74,6 +76,16 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <div>
             <p className="text-sm text-muted-foreground">Business Stage</p>
             <p className="font-medium">{selectedStage || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Region</p>
+            <p className="font-medium">{selectedRegion?.name || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Compliance Standards</p>
+            <p className="font-medium">
+              {selectedRegion?.standards.join(", ") || "Not provided"}
+            </p>
           </div>
         </div>
 

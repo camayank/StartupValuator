@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
-import { sectors, businessStages } from "@/lib/validations";
+import { sectors, businessStages, regions } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 
@@ -39,6 +39,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
       sector: data.sector || "",
       industry: data.industry || "",
       stage: data.stage || "",
+      region: data.region || "",
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
       intellectualProperty: data.intellectualProperty || "none",
@@ -50,7 +51,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
 
   const handleSectorChange = (value: string) => {
     setSelectedSector(value);
-    // Auto-select first industry in the sector
     const firstIndustry = Object.keys(sectors[value as keyof typeof sectors].subsectors)[0];
     form.setValue("sector", value);
     form.setValue("industry", firstIndustry);
@@ -68,6 +68,11 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   const handleStageChange = (value: string) => {
     form.setValue("stage", value);
     onUpdate({ stage: value as keyof typeof businessStages });
+  };
+
+  const handleRegionChange = (value: string) => {
+    form.setValue("region", value);
+    onUpdate({ region: value as keyof typeof regions });
   };
 
   const handleSubmit = (values: Partial<ValuationFormData>) => {
@@ -88,7 +93,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-4">
-            {/* Basic Business Information */}
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -167,9 +171,35 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Primary Region of Operation</FormLabel>
+                    <FormDescription>
+                      This helps us apply region-specific valuation standards and benchmarks
+                    </FormDescription>
+                    <Select
+                      value={field.value}
+                      onValueChange={handleRegionChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select primary region" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(regions).map(([key, { name }]) => (
+                          <SelectItem key={key} value={key}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {/* Additional Business Details */}
             <div className="space-y-4">
               <FormField
                 control={form.control}
@@ -225,8 +255,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Intellectual Property Status</FormLabel>
-                    <Select 
-                      value={field.value} 
+                    <Select
+                      value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
                         onUpdate({ intellectualProperty: value as ValuationFormData['intellectualProperty'] });
@@ -251,8 +281,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Competitive Differentiation</FormLabel>
-                    <Select 
-                      value={field.value} 
+                    <Select
+                      value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
                         onUpdate({ competitiveDifferentiation: value as ValuationFormData['competitiveDifferentiation'] });
@@ -277,8 +307,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Regulatory Compliance Status</FormLabel>
-                    <Select 
-                      value={field.value} 
+                    <Select
+                      value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
                         onUpdate({ regulatoryCompliance: value as ValuationFormData['regulatoryCompliance'] });
@@ -303,8 +333,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Business Scalability</FormLabel>
-                    <Select 
-                      value={field.value} 
+                    <Select
+                      value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
                         onUpdate({ scalability: value as ValuationFormData['scalability'] });

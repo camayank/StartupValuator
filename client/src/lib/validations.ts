@@ -8,6 +8,40 @@ export const currencies = {
   INR: { symbol: "₹", name: "Indian Rupee" },
 } as const;
 
+// Add regions with their compliance standards
+export const regions = {
+  us: {
+    name: "United States",
+    standards: ["409A", "ASC 820"],
+    riskFreeRate: 0.0368, // Current 10-year Treasury yield
+    marketRiskPremium: 0.0575,
+  },
+  eu: {
+    name: "European Union",
+    standards: ["IPEV", "IVS"],
+    riskFreeRate: 0.0245,
+    marketRiskPremium: 0.0550,
+  },
+  uk: {
+    name: "United Kingdom",
+    standards: ["BVCA", "IVS"],
+    riskFreeRate: 0.0415,
+    marketRiskPremium: 0.0525,
+  },
+  india: {
+    name: "India",
+    standards: ["IBBI", "IVS"],
+    riskFreeRate: 0.0725,
+    marketRiskPremium: 0.0650,
+  },
+  global: {
+    name: "Global",
+    standards: ["IVS"],
+    riskFreeRate: 0.0350,
+    marketRiskPremium: 0.0600,
+  },
+} as const;
+
 // Enhanced business stages with integrated market validation
 export const businessStages = {
   // Pre-revenue stages
@@ -136,8 +170,9 @@ export const valuationFormSchema = z.object({
   sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
+  region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
 
-  // New qualitative inputs
+  // Qualitative inputs
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(20).optional(),
   customerBase: z.number().min(0).optional(),
