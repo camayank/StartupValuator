@@ -4,6 +4,7 @@ import { Info, FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/validations";
 import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
+import { motion } from 'framer-motion';
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -116,22 +117,28 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           </div>
         </div>
 
-        <div className="flex justify-between mt-6">
+        <motion.div
+          className="flex justify-between items-center mt-8 pt-4 border-t"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
           <Button
             variant="outline"
             onClick={onBack}
+            className="px-6"
           >
             Back
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!canGenerate}
-            className="flex items-center gap-2"
+            className="px-8 font-medium flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
-            Generate Valuation Report
+            Generate Report
           </Button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
