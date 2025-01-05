@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Info } from "lucide-react";
+import { Info, FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/validations";
 import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
@@ -31,11 +31,9 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       'industry',
       'stage',
       'region',
-      'teamExperience',
-      'customerBase',
       'intellectualProperty',
+      'teamExperience',
       'competitiveDifferentiation',
-      'regulatoryCompliance',
       'scalability'
     ];
 
@@ -179,7 +177,9 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <Button
             onClick={handleSubmit}
             disabled={!isValidData(data)}
+            className="flex items-center gap-2"
           >
+            <FileText className="w-4 h-4" />
             Generate Valuation Report
           </Button>
         </div>
