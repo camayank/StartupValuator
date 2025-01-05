@@ -107,6 +107,7 @@ function calculateDCF(params: ValuationFormData, region: 'IBBI' | 'USA_409A' = '
 
   let presentValue = 0;
   let currentRevenue = revenue;
+  let lastFreeCashFlow = 0;
 
   // Calculate present value of projected cash flows
   for (let year = 1; year <= projectionYears; year++) {
@@ -114,10 +115,11 @@ function calculateDCF(params: ValuationFormData, region: 'IBBI' | 'USA_409A' = '
     const freeCashFlow = projectedRevenue * (margins / 100) * 0.7; // Assuming 70% of operating profit converts to FCF
     presentValue += freeCashFlow / Math.pow(1 + costOfEquity, year);
     currentRevenue = projectedRevenue;
+    lastFreeCashFlow = freeCashFlow; // Track the last calculated free cash flow
   }
 
-  // Terminal value calculation
-  const terminalValue = (freeCashFlow * (1 + terminalGrowthRate)) / 
+  // Terminal value calculation using the last calculated free cash flow
+  const terminalValue = (lastFreeCashFlow * (1 + terminalGrowthRate)) / 
     (costOfEquity - terminalGrowthRate);
   const presentTerminalValue = terminalValue / Math.pow(1 + costOfEquity, projectionYears);
 
