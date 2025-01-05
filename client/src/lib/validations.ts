@@ -14,6 +14,7 @@ export interface ValuationData {
   valuation: number;
   multiplier: number;
   methodology: string;
+  stage: string;
   details: {
     baseValuation: number;
     adjustments: Record<string, number>;

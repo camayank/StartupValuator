@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ValuationData } from "@/lib/validations";
 import { generateReport } from "@/lib/api";
 import { RiskAssessment } from "./RiskAssessment";
+import { FundingTimeline } from "./FundingTimeline";
 
 interface ValuationResultProps {
   data: ValuationData | null;
@@ -106,6 +107,11 @@ export function ValuationResult({ data }: ValuationResultProps) {
           </Button>
         </CardContent>
       </Card>
+
+      <FundingTimeline 
+        currentStage={data.stage}
+        currentValuation={data.valuation}
+      />
 
       {data.riskAssessment && (
         <RiskAssessment data={data.riskAssessment} />
