@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { calculateValuation } from "./lib/valuation";
 import { generatePdfReport } from "./lib/report";
+import { assessStartupRisk } from "./lib/riskAssessment";
 import { setupCache } from "./lib/cache";
 
 export function registerRoutes(app: Express): Server {
@@ -20,13 +21,27 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const result = calculateValuation({
-        revenue,
-        growthRate,
-        margins,
-        industry,
-        stage,
-      });
+      const [valuationResult, riskAssessment] = await Promise.all([
+        calculateValuation({
+          revenue,
+          growthRate,
+          margins,
+          industry,
+          stage,
+        }),
+        assessStartupRisk({
+          revenue,
+          growthRate,
+          margins,
+          industry,
+          stage,
+        }),
+      ]);
+
+      const result = {
+        ...valuationResult,
+        riskAssessment,
+      };
 
       // Cache the result
       cache.set(cacheKey, result);

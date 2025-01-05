@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ValuationData } from "@/lib/validations";
 import { generateReport } from "@/lib/api";
+import { RiskAssessment } from "./RiskAssessment";
 
 interface ValuationResultProps {
   data: ValuationData | null;
@@ -56,53 +57,59 @@ export function ValuationResult({ data }: ValuationResultProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Valuation Result</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <h3 className="text-2xl font-bold text-primary">
-            {formatCurrency(data.valuation)}
-          </h3>
-          <p className="text-sm text-muted-foreground">Estimated Valuation</p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Revenue Multiple</span>
-            <span className="font-medium">{data.multiplier.toFixed(1)}x</span>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Valuation Result</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h3 className="text-2xl font-bold text-primary">
+              {formatCurrency(data.valuation)}
+            </h3>
+            <p className="text-sm text-muted-foreground">Estimated Valuation</p>
           </div>
-          <Progress value={Math.min((data.multiplier / 20) * 100, 100)} />
-        </div>
 
-        <div className="space-y-4">
-          <h4 className="font-medium">Valuation Breakdown</h4>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Base Valuation</span>
-              <span>{formatCurrency(data.details.baseValuation)}</span>
+              <span>Revenue Multiple</span>
+              <span className="font-medium">{data.multiplier.toFixed(1)}x</span>
             </div>
-            {Object.entries(data.details.adjustments).map(([key, value]) => (
-              <div key={key} className="flex justify-between text-sm">
-                <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                <span className={value > 0 ? 'text-green-600' : 'text-red-600'}>
-                  {value > 0 ? '+' : ''}{formatCurrency(value)}
-                </span>
-              </div>
-            ))}
+            <Progress value={Math.min((data.multiplier / 20) * 100, 100)} />
           </div>
-        </div>
 
-        <Button 
-          className="w-full" 
-          onClick={handleGenerateReport}
-          variant="outline"
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          Generate Professional Report
-        </Button>
-      </CardContent>
-    </Card>
+          <div className="space-y-4">
+            <h4 className="font-medium">Valuation Breakdown</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Base Valuation</span>
+                <span>{formatCurrency(data.details.baseValuation)}</span>
+              </div>
+              {Object.entries(data.details.adjustments).map(([key, value]) => (
+                <div key={key} className="flex justify-between text-sm">
+                  <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                  <span className={value > 0 ? 'text-green-600' : 'text-red-600'}>
+                    {value > 0 ? '+' : ''}{formatCurrency(value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button 
+            className="w-full" 
+            onClick={handleGenerateReport}
+            variant="outline"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Generate Professional Report
+          </Button>
+        </CardContent>
+      </Card>
+
+      {data.riskAssessment && (
+        <RiskAssessment data={data.riskAssessment} />
+      )}
+    </div>
   );
 }

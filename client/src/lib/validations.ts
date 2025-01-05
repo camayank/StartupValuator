@@ -18,4 +18,15 @@ export interface ValuationData {
     baseValuation: number;
     adjustments: Record<string, number>;
   };
+  riskAssessment?: {
+    overallRisk: string;
+    riskScore: number;
+    categories: {
+      market: string;
+      financial: string;
+      operational: string;
+      competitive: string;
+    };
+    recommendations: string[];
+  };
 }
