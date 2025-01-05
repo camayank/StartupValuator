@@ -23,7 +23,7 @@ const defaultValues: ValuationFormData = {
   currency: "USD",
   growthRate: 35,
   margins: 25,
-  industry: "software_system",
+  industry: "software_system", // This matches our enum exactly
   stage: "revenue_growing",
   intellectualProperty: "registered",
   teamExperience: 8,
@@ -41,6 +41,10 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Ensure industry value is valid before submission
+      if (!(formData.industry in industries)) {
+        throw new Error("Invalid industry selected");
+      }
       onSubmit(formData);
     } catch (error) {
       toast({
