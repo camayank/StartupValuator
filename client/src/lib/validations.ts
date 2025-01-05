@@ -8,31 +8,109 @@ export const currencies = {
   INR: { symbol: "₹", name: "Indian Rupee" },
 } as const;
 
+// Enhanced business stages with integrated market validation
 export const businessStages = {
-  ideation: "Ideation Stage",
-  validation: "Validation Stage",
-  growth: "Growth Stage",
-  scaling: "Scaling Stage",
-  exit: "Exit/Going Concern",
+  // Pre-revenue stages
+  ideation_unvalidated: "Ideation Stage (Concept Only)",
+  ideation_validated: "Ideation Stage (Validated Concept)",
+  mvp_development: "MVP Development",
+  mvp_early_traction: "MVP with Early Traction",
+
+  // Early revenue stages
+  revenue_early: "Early Revenue Stage",
+  revenue_growing: "Growing Revenue Stage",
+  revenue_scaling: "Scaling Revenue Stage",
+
+  // Established stages
+  established_local: "Established (Local Market)",
+  established_regional: "Established (Regional)",
+  established_international: "Established (International)",
+
+  // Special situations
+  pre_ipo: "Pre-IPO Stage",
+  acquisition_target: "Acquisition Target",
+  restructuring: "Restructuring",
   liquidation: "Liquidation",
+} as const;
+
+// Comprehensive industry classifications based on Damodaran's database
+export const industries = {
+  // Technology
+  software_system: "Software (System & Application)",
+  software_internet: "Software (Internet)",
+  semiconductors: "Semiconductors",
+  computer_hardware: "Computer Hardware",
+  computer_services: "Computer Services",
+  telecom_equipment: "Telecommunications Equipment",
+  telecom_services: "Telecommunications Services",
+
+  // E-commerce & Digital
+  ecommerce_retail: "E-Commerce & Digital Retail",
+  digital_content: "Digital Content & Streaming",
+  digital_payments: "Digital Payment Services",
+  digital_platform: "Digital Platforms & Marketplaces",
+
+  // Enterprise Software
+  enterprise_software: "Enterprise Software",
+  cloud_services: "Cloud Services & Infrastructure",
+  cybersecurity: "Cybersecurity",
+  data_analytics: "Data Analytics & AI",
+
+  // Consumer
+  consumer_discretionary: "Consumer Discretionary",
+  consumer_staples: "Consumer Staples",
+  retail_general: "Retail (General)",
+  retail_special: "Retail (Specialty)",
+
+  // Healthcare & Biotech
+  healthcare_services: "Healthcare Services",
+  medical_equipment: "Medical Equipment",
+  biotechnology: "Biotechnology",
+  pharmaceuticals: "Pharmaceuticals",
+
+  // Financial Services
+  banking: "Banking",
+  insurance: "Insurance",
+  asset_management: "Asset Management",
+  fintech: "Financial Technology",
+
+  // Industrial & Manufacturing
+  industrial_general: "Industrial (General)",
+  aerospace_defense: "Aerospace & Defense",
+  automotive: "Automotive",
+  chemicals: "Chemicals",
+
+  // Energy & Resources
+  renewable_energy: "Renewable Energy",
+  oil_gas: "Oil & Gas",
+  mining: "Mining & Minerals",
+  utilities: "Utilities",
+
+  // Others
+  real_estate: "Real Estate",
+  transportation: "Transportation & Logistics",
+  media_entertainment: "Media & Entertainment",
+  education: "Education Services",
+  professional_services: "Professional Services",
+  agriculture: "Agriculture & Food",
 } as const;
 
 export const valuationFormSchema = z.object({
   revenue: z.number().min(0, "Revenue must be positive"),
-  currency: z.enum(Object.keys(currencies) as (keyof typeof currencies)[]),
+  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
   margins: z.number().min(-100).max(100, "Margins must be between -100 and 100"),
-  industry: z.enum(["tech", "ecommerce", "saas", "marketplace"]),
-  stage: z.enum(Object.keys(businessStages) as (keyof typeof businessStages)[]),
-  // Qualitative inputs
+  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
+  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
+
+  // Additional qualitative inputs
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(10).optional(),
-  marketValidation: z.enum(["none", "early", "proven"]).optional(),
   customerBase: z.number().min(0).optional(),
   competitiveDifferentiation: z.enum(["low", "medium", "high"]).optional(),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
   scalability: z.enum(["limited", "moderate", "high"]).optional(),
-  assetValue: z.number().min(0).optional(), // For liquidation/going concern
+  assetValue: z.number().min(0).optional(),
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
@@ -41,71 +119,78 @@ export interface ValuationData extends ValuationFormData {
   valuation: number;
   multiplier: number;
   methodology: string;
+  confidenceScore: number;
   details: {
     baseValuation: number;
-    adjustments: Record<string, number>;
-    qualitativeFactors: {
-      factor: string;
-      impact: number;
-      description: string;
-    }[];
+    methods: {
+      dcf: {
+        value: number;
+        stages: Array<{
+          year: number;
+          revenue: number;
+          fcf: number;
+          presentValue: number;
+        }>;
+      };
+      comparables: {
+        value: number;
+        analysis: Array<{
+          metric: string;
+          multiple: number;
+          value: number;
+        }>;
+      };
+    };
+    scenarios: {
+      worst: {
+        value: number;
+        assumptions: {
+          growthRate: number;
+          margins: number;
+        };
+      };
+      base: {
+        value: number;
+        assumptions: {
+          growthRate: number;
+          margins: number;
+        };
+      };
+      best: {
+        value: number;
+        assumptions: {
+          growthRate: number;
+          margins: number;
+        };
+      };
+    };
+    assumptions: {
+      wacc: number;
+      growthRate: number;
+      beta: number;
+      riskFreeRate: number;
+      marketRiskPremium: number;
+      operatingMargin: number;
+    };
   };
-  stageAnalysis: {
-    appropriateness: number;
-    recommendations: string[];
-    nextStageRequirements: string[];
+  compliance: {
+    region: string;
+    standards: string[];
+    requirements: string[];
+  };
+  industryBenchmarks: {
+    peerComparison: {
+      revenue_multiple: number;
+      operating_margin: number;
+      growth_rate: number;
+    };
   };
   currencyConversion: {
     rates: Record<keyof typeof currencies, number>;
     baseRate: number;
     baseCurrency: keyof typeof currencies;
   };
-  riskAssessment?: {
-    overallRisk: string;
-    riskScore: number;
-    categories: {
-      market: string;
-      financial: string;
-      operational: string;
-      competitive: string;
-    };
-    recommendations: string[];
-  };
-  potentialPrediction?: {
-    score: number;
-    growth_potential: string;
-    success_probability: number;
-    strengths: string[];
-    areas_of_improvement: string[];
-    market_opportunities: string[];
-    five_year_projection: {
-      revenue_multiplier: number;
-      market_share_potential: string;
-      team_size_projection: string;
-    };
-  };
-  ecosystemNetwork?: {
-    nodes: Array<{
-      name: string;
-      x: number;
-      y: number;
-      size: number;
-      category: string;
-      connections: string[];
-    }>;
-    industry: string;
-    stage: string;
-  };
 }
-
-export const stageMultipliers = {
-  ideation: { min: 0.5, max: 2 },
-  validation: { min: 1, max: 3 },
-  growth: { min: 2, max: 5 },
-  scaling: { min: 4, max: 8 },
-  exit: { min: 3, max: 10 },
-  liquidation: { min: 0.1, max: 0.5 },
-} as const;
 
 export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
   return new Intl.NumberFormat('en-US', {

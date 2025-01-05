@@ -1,5 +1,5 @@
 import type { ValuationFormData } from "../../client/src/lib/validations";
-import { stageMultipliers, currencies } from "../../client/src/lib/validations";
+import { industries, businessStages } from "../../client/src/lib/validations";
 
 interface CurrencyRates {
   USD: number;
@@ -20,6 +20,51 @@ const EXCHANGE_RATES: CurrencyRates = {
 
 // Comprehensive industry database based on Damodaran's research
 const INDUSTRY_METRICS = {
+  // Technology Sector
+  software_system: {
+    base: 15,
+    growth: 1.8,
+    beta: 1.3,
+    reinvestmentRate: 0.30,
+    operatingMargin: 0.25,
+    sustainableGrowth: 0.18,
+    rdExpenseRatio: 0.18,
+    customerAcquisitionCost: 0.35,
+    churnRate: 0.15,
+  },
+  software_internet: {
+    base: 16,
+    growth: 2.0,
+    beta: 1.4,
+    reinvestmentRate: 0.32,
+    operatingMargin: 0.23,
+    sustainableGrowth: 0.20,
+    rdExpenseRatio: 0.20,
+    customerAcquisitionCost: 0.40,
+    churnRate: 0.18,
+  },
+  semiconductors: {
+    base: 12,
+    growth: 1.4,
+    beta: 1.5,
+    reinvestmentRate: 0.35,
+    operatingMargin: 0.20,
+    sustainableGrowth: 0.15,
+    rdExpenseRatio: 0.22,
+    inventoryTurnover: 4.5,
+  },
+  ecommerce_retail: {
+    base: 8,
+    growth: 1.2,
+    beta: 1.1,
+    reinvestmentRate: 0.20,
+    operatingMargin: 0.18,
+    sustainableGrowth: 0.12,
+    workingCapitalTurnover: 8.5,
+    marketingEfficiency: 0.25,
+    customerLifetimeValue: 2.8,
+    inventoryTurnover: 6.5,
+  },
   tech: {
     base: 12,
     growth: 1.5,
@@ -139,6 +184,35 @@ function inferRegionAndStandards(currency: string, revenue: number) {
   }
 }
 
+// Update the stage-based logic to handle the new detailed stages
+function getStageMultiplier(stage: keyof typeof businessStages): number {
+  const stageMultipliers = {
+    // Pre-revenue stages
+    ideation_unvalidated: 0.4,
+    ideation_validated: 0.6,
+    mvp_development: 0.7,
+    mvp_early_traction: 0.9,
+
+    // Early revenue stages
+    revenue_early: 1.1,
+    revenue_growing: 1.3,
+    revenue_scaling: 1.5,
+
+    // Established stages
+    established_local: 1.4,
+    established_regional: 1.6,
+    established_international: 1.8,
+
+    // Special situations
+    pre_ipo: 2.0,
+    acquisition_target: 1.7,
+    restructuring: 0.8,
+    liquidation: 0.3,
+  };
+
+  return stageMultipliers[stage] || 1.0;
+}
+
 function calculateWACC(params: ValuationFormData): number {
   const { industry, currency, revenue } = params;
   const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
@@ -157,35 +231,28 @@ function calculateWACC(params: ValuationFormData): number {
   return costOfEquity + stageAdjustment + sizeAdjustment;
 }
 
+// The rest of the valuation logic remains similar, but we'll update the growth rate inference
 function inferGrowthRate(params: ValuationFormData): number {
   const { industry, stage, growthRate, revenue } = params;
   const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
 
-  // Use provided growth rate if available, with intelligent capping
   if (growthRate) {
+    const stageMultiplier = getStageMultiplier(stage as keyof typeof businessStages);
     const maxGrowth = industryData.sustainableGrowth * (
-      revenue < 1000000 ? 3 : // Startups can grow faster
-      revenue < 10000000 ? 2 : // Growth stage companies
-      1.5 // Mature companies
+      stage.includes('ideation') || stage.includes('mvp') ? 3 :
+      stage.includes('revenue_early') || stage.includes('revenue_growing') ? 2 :
+      1.5
     );
     return Math.min(growthRate / 100, maxGrowth);
   }
 
-  // AI-driven growth rate inference based on multiple factors
-  const stageMultiplier = {
-    ideation: 0.5,
-    validation: 0.8,
-    growth: 1.2,
-    scaling: 1.5,
-    exit: 1.0,
-    liquidation: 0.3,
-  }[stage] || 1.0;
-
-  const sizeBasedAdjustment = revenue < 1000000 ? 0.2 :
+  const baseGrowth = industryData.sustainableGrowth;
+  const stageMultiplier = getStageMultiplier(stage as keyof typeof businessStages);
+  const sizeAdjustment = revenue < 1000000 ? 0.2 :
     revenue < 10000000 ? 0.1 :
     revenue < 100000000 ? 0 : -0.1;
 
-  return (industryData.sustainableGrowth * stageMultiplier) + sizeBasedAdjustment;
+  return (baseGrowth * stageMultiplier) + sizeAdjustment;
 }
 
 function calculateDCF(params: ValuationFormData): {
@@ -255,20 +322,13 @@ function calculateComparables(params: ValuationFormData): {
 
   // Calculate multiple adjustments
   const baseMultiple = industryData.base;
-  const growthAdjustment = growthRate > industryData.sustainableGrowth * 100 ? 0.3 : 
+  const growthAdjustment = growthRate > industryData.sustainableGrowth * 100 ? 0.3 :
     growthRate > industryData.sustainableGrowth * 50 ? 0.15 : 0;
   const marginAdjustment = margins > industryData.operatingMargin * 100 ? 0.25 :
     margins > industryData.operatingMargin * 50 ? 0.1 : 0;
 
   // Stage-based adjustments
-  const stageMultiplier = {
-    ideation: 0.7,
-    validation: 0.9,
-    growth: 1.1,
-    scaling: 1.3,
-    exit: 1.2,
-    liquidation: 0.5,
-  }[stage] || 1.0;
+  const stageMultiplier = getStageMultiplier(stage as keyof typeof businessStages);
 
   // Calculate different valuation multiples
   const revenueMultiple = baseMultiple * (1 + growthAdjustment + marginAdjustment) * stageMultiplier;
