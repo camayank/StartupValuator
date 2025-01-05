@@ -38,6 +38,7 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 import { ExportButton } from "./ExportButton";
+import { FinancialTooltip } from "@/components/ui/financial-tooltip";
 
 interface ValuationResultProps {
   data: ValuationFormData | null;
@@ -129,21 +130,27 @@ export function ValuationResult({ data }: ValuationResultProps) {
             className="grid md:grid-cols-3 gap-6"
           >
             <div className="space-y-2">
-              <h3 className="text-3xl font-bold text-primary">
-                {formatCurrency(data.valuation || 0)}
-              </h3>
+              <FinancialTooltip term="valuation" showExample>
+                <h3 className="text-3xl font-bold text-primary">
+                  {formatCurrency(data.valuation || 0)}
+                </h3>
+              </FinancialTooltip>
               <p className="text-sm text-muted-foreground">Enterprise Value</p>
             </div>
             <div className="space-y-2">
-              <h3 className="text-3xl font-bold text-primary">
-                {data.multiplier?.toFixed(1)}x
-              </h3>
+              <FinancialTooltip term="multiplier" showExample>
+                <h3 className="text-3xl font-bold text-primary">
+                  {data.multiplier?.toFixed(1)}x
+                </h3>
+              </FinancialTooltip>
               <p className="text-sm text-muted-foreground">Revenue Multiple</p>
             </div>
             <div className="space-y-2">
-              <h3 className="text-3xl font-bold text-primary">
-                {data.growthRate}%
-              </h3>
+              <FinancialTooltip term="growthRate" showExample>
+                <h3 className="text-3xl font-bold text-primary">
+                  {data.growthRate}%
+                </h3>
+              </FinancialTooltip>
               <p className="text-sm text-muted-foreground">Growth Rate</p>
             </div>
           </motion.div>
@@ -168,8 +175,16 @@ export function ValuationResult({ data }: ValuationResultProps) {
               <div>
                 <h4 className="font-medium mb-2">Key Assumptions</h4>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Revenue Growth Rate: {data.growthRate}%</li>
-                  <li>Operating Margins: {data.margins}%</li>
+                  <li>
+                    <FinancialTooltip term="growthRate">
+                      Revenue Growth Rate: {data.growthRate}%
+                    </FinancialTooltip>
+                  </li>
+                  <li>
+                    <FinancialTooltip term="margins">
+                      Operating Margins: {data.margins}%
+                    </FinancialTooltip>
+                  </li>
                   <li>Industry: {data.industry}</li>
                   <li>Stage: {data.stage}</li>
                 </ul>
