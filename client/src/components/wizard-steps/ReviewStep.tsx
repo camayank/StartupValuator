@@ -14,8 +14,11 @@ interface ReviewStepProps {
 
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const handleSubmit = () => {
+    console.log("Current data:", data); // Debug log
     if (isValidData(data)) {
       onSubmit(data as ValuationFormData);
+    } else {
+      console.log("Data validation failed"); // Debug log
     }
   };
 
@@ -30,20 +33,23 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       'sector',
       'industry',
       'stage',
-      'region',
-      'intellectualProperty',
-      'teamExperience',
-      'competitiveDifferentiation',
-      'scalability'
+      'region'
     ];
 
-    return requiredFields.every(field => data[field as keyof ValuationFormData] !== undefined);
+    const isValid = requiredFields.every(field => {
+      const hasField = data[field as keyof ValuationFormData] !== undefined && 
+                      data[field as keyof ValuationFormData] !== null;
+      console.log(`Field ${field}: ${hasField}`); // Debug log
+      return hasField;
+    });
+
+    return isValid;
   };
 
-  const selectedSector = sectors[data.sector as keyof typeof sectors];
+  const selectedSector = data.sector ? sectors[data.sector] : null;
   const selectedIndustry = selectedSector?.subsectors[data.industry as keyof typeof selectedSector['subsectors']];
-  const selectedStage = businessStages[data.stage as keyof typeof businessStages];
-  const selectedRegion = regions[data.region as keyof typeof regions];
+  const selectedStage = data.stage ? businessStages[data.stage] : null;
+  const selectedRegion = data.region ? regions[data.region] : null;
 
   // Helper function to format qualitative data
   const formatQualitativeValue = (value: string | undefined) => {
@@ -72,7 +78,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <div>
             <p className="text-sm text-muted-foreground">Valuation Purpose</p>
             <p className="font-medium">
-              {data.valuationPurpose ? valuationPurposes[data.valuationPurpose as keyof typeof valuationPurposes] : "Not provided"}
+              {data.valuationPurpose ? valuationPurposes[data.valuationPurpose] : "Not provided"}
             </p>
           </div>
         </div>
@@ -94,12 +100,6 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <div>
             <p className="text-sm text-muted-foreground">Region</p>
             <p className="font-medium">{selectedRegion?.name || "Not provided"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Compliance Standards</p>
-            <p className="font-medium">
-              {selectedRegion?.standards.join(", ") || "Not provided"}
-            </p>
           </div>
         </div>
 
@@ -127,46 +127,6 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           </div>
         </div>
 
-        <h3 className="text-lg font-medium mt-6">Qualitative Factors</h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Team Experience</p>
-            <p className="font-medium">
-              {data.teamExperience !== undefined ? `${data.teamExperience} years` : "Not provided"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Customer Base</p>
-            <p className="font-medium">
-              {data.customerBase !== undefined ? data.customerBase.toLocaleString() : "Not provided"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Intellectual Property</p>
-            <p className="font-medium">
-              {formatQualitativeValue(data.intellectualProperty)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Competitive Position</p>
-            <p className="font-medium">
-              {formatQualitativeValue(data.competitiveDifferentiation)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Regulatory Compliance</p>
-            <p className="font-medium">
-              {formatQualitativeValue(data.regulatoryCompliance)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Scalability</p>
-            <p className="font-medium">
-              {formatQualitativeValue(data.scalability)}
-            </p>
-          </div>
-        </div>
-
         <div className="flex justify-between mt-6">
           <Button
             variant="outline"
@@ -176,7 +136,6 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!isValidData(data)}
             className="flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />
