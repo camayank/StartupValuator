@@ -26,6 +26,14 @@ interface ValuationResultProps {
   data: ValuationData | null;
 }
 
+const currencyConfig = {
+  USD: { symbol: "$", locale: "en-US" },
+  INR: { symbol: "₹", locale: "en-IN" },
+  EUR: { symbol: "€", locale: "de-DE" },
+  GBP: { symbol: "£", locale: "en-GB" },
+  JPY: { symbol: "¥", locale: "ja-JP" },
+};
+
 export function ValuationResult({ data }: ValuationResultProps) {
   const { toast } = useToast();
 
@@ -33,10 +41,27 @@ export function ValuationResult({ data }: ValuationResultProps) {
     if (!data) return;
 
     try {
-      const response = await generateReport(data);
-      const blob = new Blob([response], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'startup-valuation-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       toast({
         title: "Error",
@@ -44,6 +69,25 @@ export function ValuationResult({ data }: ValuationResultProps) {
         variant: "destructive",
       });
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    if (!data?.currency || !currencyConfig[data.currency as keyof typeof currencyConfig]) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+        notation: 'compact'
+      }).format(value);
+    }
+
+    const config = currencyConfig[data.currency as keyof typeof currencyConfig];
+    return new Intl.NumberFormat(config.locale, {
+      style: 'currency',
+      currency: data.currency,
+      maximumFractionDigits: 0,
+      notation: 'compact'
+    }).format(value);
   };
 
   if (!data) {
@@ -61,15 +105,6 @@ export function ValuationResult({ data }: ValuationResultProps) {
     );
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-      notation: 'compact'
-    }).format(value);
-  };
-
   // Prepare data for the breakdown chart
   const breakdownData = [
     {
@@ -77,7 +112,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
       value: data.details.baseValuation,
     },
     ...Object.entries(data.details.adjustments).map(([key, value]) => ({
-      name: key.replace(/([A-Z])/g, ' $1'),
+      name: key.replace(/([A-Z])/g, ' $1').trim(),
       value: Math.abs(value),
       isPositive: value > 0,
     })),
@@ -101,7 +136,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
             <h3 className="text-2xl font-bold text-primary">
               {formatCurrency(data.valuation)}
             </h3>
-            <p className="text-sm text-muted-foreground">Estimated Valuation</p>
+            <p className="text-sm text-muted-foreground">Estimated Valuation ({data.currency})</p>
           </motion.div>
 
           <motion.div
@@ -129,7 +164,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
                 <BarChart data={breakdownData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" tickFormatter={formatCurrency} />
-                  <YAxis type="category" dataKey="name" width={100} />
+                  <YAxis type="category" dataKey="name" width={120} />
                   <Tooltip
                     formatter={(value: number) => formatCurrency(value)}
                     contentStyle={{
