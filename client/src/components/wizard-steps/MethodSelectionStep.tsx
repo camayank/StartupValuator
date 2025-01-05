@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { ValuationFormData } from "@/lib/validations";
 
 interface MethodSelectionStepProps {
@@ -17,63 +18,107 @@ interface MethodSelectionStepProps {
   onBack: () => void;
 }
 
+type ValuationMethod = {
+  id: string;
+  name: string;
+  description: string;
+  recommended: boolean;
+  weightRange: [number, number];
+  suitable: boolean;
+  reasonForRecommendation?: string;
+};
+
 export function MethodSelectionStep({ data, onUpdate, onNext, onBack }: MethodSelectionStepProps) {
-  // Determine recommended methods based on business profile
-  const getRecommendedMethods = () => {
-    const methods = [];
+  // Get recommended methods based on business profile
+  const getRecommendedMethods = (): ValuationMethod[] => {
+    const methods: ValuationMethod[] = [];
+    const isEarlyStage = data.stage?.includes('ideation') || data.stage?.includes('mvp');
+    const hasRevenue = data.stage?.includes('revenue') || data.stage?.includes('established');
+    const isTech = data.sector === 'technology' || data.sector === 'digital';
+    const isEnterprise = data.sector === 'enterprise';
+    const isFundraising = data.valuationPurpose === 'fundraising';
+    const isAcquisition = data.valuationPurpose === 'acquisition';
+    const isCompliance = data.valuationPurpose === 'compliance';
 
-    // Early stage startups
-    if (data.stage?.includes('ideation') || data.stage?.includes('mvp')) {
-      methods.push({
-        id: 'scorecard',
-        name: 'Scorecard Method',
-        description: 'Compares your startup to similar funded companies, adjusting the average valuation based on key criteria.',
-        recommended: true,
-      });
-    }
+    // DCF Method
+    methods.push({
+      id: 'dcf',
+      name: 'Discounted Cash Flow (DCF)',
+      description: 'Projects future cash flows and discounts them to present value using a risk-adjusted rate.',
+      recommended: hasRevenue,
+      weightRange: hasRevenue ? [0.3, 0.5] : [0.1, 0.2],
+      suitable: hasRevenue,
+      reasonForRecommendation: hasRevenue 
+        ? 'Recommended due to established revenue streams and growth history'
+        : 'Limited applicability due to lack of historical cash flows',
+    });
 
-    // Revenue generating companies
-    if (data.stage?.includes('revenue')) {
-      methods.push({
-        id: 'dcf',
-        name: 'Discounted Cash Flow (DCF)',
-        description: 'Projects future cash flows and discounts them to present value, ideal for companies with predictable revenue.',
-        recommended: true,
-      });
-    }
+    // Comparable Company Analysis
+    methods.push({
+      id: 'comparable',
+      name: 'Market Comparables',
+      description: 'Values the company based on trading multiples of similar public companies.',
+      recommended: !isEarlyStage || isTech,
+      weightRange: [0.2, 0.4],
+      suitable: true,
+      reasonForRecommendation: isTech 
+        ? 'Strong comparable set available in technology sector'
+        : 'Provides market-based validation',
+    });
 
-    // Technology or IP-heavy companies
-    if (data.sector === 'technology' || data.intellectualProperty === 'registered') {
-      methods.push({
-        id: 'riskfactor',
-        name: 'Risk Factor Summation',
-        description: 'Evaluates various risk factors affecting the business, particularly suitable for tech startups.',
-        recommended: data.sector === 'technology',
-      });
-    }
+    // First Chicago Method
+    methods.push({
+      id: 'firstChicago',
+      name: 'First Chicago Method',
+      description: 'Combines multiple scenarios (best, base, worst case) weighted by probability.',
+      recommended: isFundraising || isAcquisition,
+      weightRange: [0.1, 0.3],
+      suitable: true,
+      reasonForRecommendation: 'Provides comprehensive scenario analysis for investment decisions',
+    });
 
-    // Companies with clear market comparables
-    if (data.stage?.includes('established')) {
-      methods.push({
-        id: 'comparable',
-        name: 'Market Comparables',
-        description: 'Uses valuation multiples from similar companies in your industry.',
-        recommended: true,
-      });
-    }
-
-    // Always include venture capital method as a baseline
+    // Venture Capital Method
     methods.push({
       id: 'vc',
       name: 'Venture Capital Method',
-      description: 'Estimates future value and applies discount rate based on investment stage.',
-      recommended: true,
+      description: 'Projects exit value and applies appropriate discount rate based on stage.',
+      recommended: isEarlyStage || isFundraising,
+      weightRange: [0.2, 0.4],
+      suitable: true,
+      reasonForRecommendation: isEarlyStage 
+        ? 'Particularly suitable for early-stage companies seeking investment'
+        : 'Provides perspective on potential exit values',
+    });
+
+    // Scorecard Method
+    methods.push({
+      id: 'scorecard',
+      name: 'Scorecard Method',
+      description: 'Compares to similar funded companies with adjustments for key success factors.',
+      recommended: isEarlyStage,
+      weightRange: [0.1, 0.3],
+      suitable: isEarlyStage,
+      reasonForRecommendation: 'Effective for early-stage companies with limited financial history',
+    });
+
+    // Asset-Based Approach
+    methods.push({
+      id: 'asset',
+      name: 'Asset-Based Approach',
+      description: 'Values the company based on its net asset value with adjustments.',
+      recommended: isCompliance || isEnterprise,
+      weightRange: [0.1, 0.2],
+      suitable: true,
+      reasonForRecommendation: isCompliance 
+        ? 'Provides solid basis for compliance valuations'
+        : 'Considers tangible and intangible assets',
     });
 
     return methods;
   };
 
-  const recommendedMethods = getRecommendedMethods();
+  const methods = getRecommendedMethods();
+  const recommendedMethods = methods.filter(m => m.recommended);
 
   return (
     <div className="space-y-6">
@@ -86,19 +131,38 @@ export function MethodSelectionStep({ data, onUpdate, onNext, onBack }: MethodSe
       </Alert>
 
       <div className="grid gap-4">
-        {recommendedMethods.map((method) => (
-          <Card key={method.id} className={method.recommended ? "border-primary" : ""}>
+        {methods.map((method) => (
+          <Card 
+            key={method.id} 
+            className={`transition-colors ${
+              method.recommended 
+                ? "border-primary bg-primary/5" 
+                : "hover:border-primary/50"
+            }`}
+          >
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{method.name}</CardTitle>
-                {method.recommended && (
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-                    Recommended
-                  </span>
+                <div className="space-y-1">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {method.name}
+                    {method.recommended && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        Recommended
+                      </span>
+                    )}
+                  </CardTitle>
+                  <CardDescription>{method.description}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                <p><strong>Weight Range:</strong> {method.weightRange[0] * 100}% - {method.weightRange[1] * 100}%</p>
+                {method.reasonForRecommendation && (
+                  <p className="mt-1"><strong>Why:</strong> {method.reasonForRecommendation}</p>
                 )}
               </div>
-              <CardDescription>{method.description}</CardDescription>
-            </CardHeader>
+            </CardContent>
           </Card>
         ))}
       </div>
