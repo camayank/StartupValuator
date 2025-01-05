@@ -39,6 +39,7 @@ import {
 import { motion } from "framer-motion";
 import { ExportButton } from "./ExportButton";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
+import { useState } from "react";
 
 interface ValuationResultProps {
   data: ValuationFormData | null;
@@ -54,11 +55,16 @@ const currencyConfig = {
 
 export function ValuationResult({ data }: ValuationResultProps) {
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Check if data is valid for report generation
+  const canGenerateReport = data && data.businessName && data.revenue && data.growthRate;
 
   const handleGenerateReport = async () => {
-    if (!data) return;
+    if (!canGenerateReport) return;
 
     try {
+      setIsGenerating(true);
       const response = await fetch('/api/report', {
         method: 'POST',
         headers: {
@@ -91,6 +97,8 @@ export function ValuationResult({ data }: ValuationResultProps) {
         description: "Failed to generate report. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -159,9 +167,13 @@ export function ValuationResult({ data }: ValuationResultProps) {
           <div className="flex justify-between items-center">
             <CardTitle className="text-2xl font-bold">Executive Summary</CardTitle>
             <div className="flex gap-2">
-              <Button onClick={handleGenerateReport} className="flex items-center">
+              <Button 
+                onClick={handleGenerateReport} 
+                className="flex items-center"
+                disabled={!canGenerateReport || isGenerating}
+              >
                 <FileText className="w-4 h-4 mr-2" />
-                Generate Report
+                {isGenerating ? "Generating..." : "Generate Report"}
               </Button>
               <ExportButton data={data} />
             </div>
