@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
+import { EcosystemNetwork } from "./EcosystemNetwork";
 
 interface ValuationResultProps {
   data: ValuationData | null;
@@ -142,8 +143,8 @@ export function ValuationResult({ data }: ValuationResultProps) {
             </div>
           </motion.div>
 
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             onClick={handleGenerateReport}
             variant="outline"
           >
@@ -158,7 +159,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
-        <FundingTimeline 
+        <FundingTimeline
           currentStage={data.stage}
           currentValuation={data.valuation}
         />
@@ -181,6 +182,16 @@ export function ValuationResult({ data }: ValuationResultProps) {
           transition={{ duration: 0.5, delay: 1.0 }}
         >
           <PotentialPredictor data={data.potentialPrediction} />
+        </motion.div>
+      )}
+
+      {data.ecosystemNetwork && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.2 }}
+        >
+          <EcosystemNetwork data={data.ecosystemNetwork} />
         </motion.div>
       )}
     </div>

@@ -43,4 +43,16 @@ export interface ValuationData {
       team_size_projection: string;
     };
   };
+  ecosystemNetwork?: {
+    nodes: Array<{
+      name: string;
+      x: number;
+      y: number;
+      size: number;
+      category: string;
+      connections: string[];
+    }>;
+    industry: string;
+    stage: string;
+  };
 }
