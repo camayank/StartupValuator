@@ -20,15 +20,23 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   };
 
   const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
-    return !!(
-      data.revenue !== undefined &&
-      data.currency &&
-      data.growthRate !== undefined &&
-      data.margins !== undefined &&
-      data.sector &&
-      data.industry &&
-      data.stage
-    );
+    const requiredFields = [
+      'revenue',
+      'currency',
+      'growthRate',
+      'margins',
+      'sector',
+      'industry',
+      'stage',
+      'teamExperience',
+      'customerBase',
+      'intellectualProperty',
+      'competitiveDifferentiation',
+      'regulatoryCompliance',
+      'scalability'
+    ];
+
+    return requiredFields.every(field => data[field as keyof ValuationFormData] !== undefined);
   };
 
   const selectedSector = sectors[data.sector as keyof typeof sectors];
@@ -57,15 +65,15 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Sector</p>
-            <p className="font-medium">{selectedSector?.name}</p>
+            <p className="font-medium">{selectedSector?.name || "Not provided"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Industry</p>
-            <p className="font-medium">{selectedIndustry}</p>
+            <p className="font-medium">{selectedIndustry || "Not provided"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Business Stage</p>
-            <p className="font-medium">{selectedStage}</p>
+            <p className="font-medium">{selectedStage || "Not provided"}</p>
           </div>
         </div>
 
@@ -74,7 +82,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <div>
             <p className="text-sm text-muted-foreground">Revenue</p>
             <p className="font-medium">
-              {data.revenue !== undefined
+              {data.revenue !== undefined && data.currency
                 ? formatCurrency(data.revenue, data.currency)
                 : "Not provided"}
             </p>
