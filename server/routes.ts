@@ -16,7 +16,28 @@ import { calculateFinancialAssumptions, validateRegionCompliance } from "./lib/f
 import XLSX from "xlsx";
 import { Parser } from "json2csv";
 import pdfMake from "pdfmake";
-import { ZodError } from "zod";
+import { z } from "zod";
+
+// Define a schema for the report data
+const reportDataSchema = valuationFormSchema.extend({
+  valuation: z.number(),
+  multiplier: z.number(),
+  details: z.object({
+    adjustments: z.object({
+      marketConditions: z.number(),
+      companySpecific: z.number(),
+      industryTrends: z.number(),
+    }).optional(),
+    assumptions: z.object({
+      growthProjections: z.array(z.number()),
+      riskFactors: z.array(z.string()),
+      marketSize: z.number(),
+    }).optional(),
+  }).optional().default({}),
+  riskAssessment: z.any().optional(),
+  potentialPrediction: z.any().optional(),
+  ecosystemNetwork: z.any().optional(),
+});
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
@@ -57,24 +78,9 @@ export function registerRoutes(app: Express): Server {
 
       try {
         [riskAssessment, potentialPrediction, ecosystemNetwork] = await Promise.allSettled([
-          assessStartupRisk({
-            revenue,
-            growthRate,
-            margins,
-            industry,
-            stage,
-          }),
-          predictStartupPotential({
-            revenue,
-            growthRate,
-            margins,
-            industry,
-            stage,
-          }),
-          generateEcosystemNetwork({
-            industry,
-            stage,
-          }),
+          assessStartupRisk(validatedData),
+          predictStartupPotential(validatedData),
+          generateEcosystemNetwork(validatedData),
         ]).then(results => results.map(result =>
           result.status === 'fulfilled' ? result.value : null
         ));
@@ -100,8 +106,7 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Valuation calculation failed:', error);
 
-      // Enhanced error handling with type checking
-      if (error instanceof ZodError) {
+      if (error instanceof z.ZodError) {
         return res.status(400).json({
           message: 'Validation failed',
           errors: error.errors,
@@ -110,6 +115,52 @@ export function registerRoutes(app: Express): Server {
 
       res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to calculate valuation'
+      });
+    }
+  });
+
+  // Enhanced report generation route
+  app.post("/api/report", async (req, res) => {
+    try {
+      const data = req.body;
+
+      // Validate and transform the data with the report schema
+      const validatedData = reportDataSchema.parse({
+        ...data,
+        details: {
+          adjustments: {
+            marketConditions: 1.0,
+            companySpecific: 1.0,
+            industryTrends: 1.0,
+          },
+          assumptions: {
+            growthProjections: [data.growthRate],
+            riskFactors: [],
+            marketSize: 0,
+          },
+          ...data.details,
+        },
+      });
+
+      // Generate PDF report with the validated data
+      const pdfBuffer = await generatePdfReport(validatedData);
+
+      // Set appropriate headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="startup-valuation-report.pdf"');
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Report generation failed:', error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Invalid data provided',
+          errors: error.errors,
+        });
+      }
+
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to generate report'
       });
     }
   });
@@ -135,36 +186,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Add new report route
-  app.post("/api/report", async (req, res) => {
-    try {
-      const data = req.body;
-
-      // Validate the request data
-      const validatedData = valuationFormSchema.parse(data);
-
-      // Generate PDF report
-      const pdfBuffer = await generatePdfReport(validatedData);
-
-      // Set appropriate headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="startup-valuation-report.pdf"');
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error('Report generation failed:', error);
-
-      if (error instanceof ZodError) {
-        return res.status(400).json({
-          message: 'Invalid data provided',
-          errors: error.errors,
-        });
-      }
-
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : 'Failed to generate report'
-      });
-    }
-  });
 
   // New founder profile routes
   app.get("/api/profile/:userId", async (req, res) => {
