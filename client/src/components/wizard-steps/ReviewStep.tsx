@@ -14,11 +14,8 @@ interface ReviewStepProps {
 
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const handleSubmit = () => {
-    console.log("Current data:", data); // Debug log
     if (isValidData(data)) {
       onSubmit(data as ValuationFormData);
-    } else {
-      console.log("Data validation failed"); // Debug log
     }
   };
 
@@ -36,14 +33,11 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       'region'
     ];
 
-    const isValid = requiredFields.every(field => {
-      const hasField = data[field as keyof ValuationFormData] !== undefined && 
-                      data[field as keyof ValuationFormData] !== null;
-      console.log(`Field ${field}: ${hasField}`); // Debug log
-      return hasField;
+    return requiredFields.every(field => {
+      const value = data[field as keyof ValuationFormData];
+      // Check if the value exists and is not empty
+      return value !== undefined && value !== null && value !== '';
     });
-
-    return isValid;
   };
 
   const selectedSector = data.sector ? sectors[data.sector] : null;
@@ -51,13 +45,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   const selectedStage = data.stage ? businessStages[data.stage] : null;
   const selectedRegion = data.region ? regions[data.region] : null;
 
-  // Helper function to format qualitative data
-  const formatQualitativeValue = (value: string | undefined) => {
-    if (!value) return "Not provided";
-    return value.split('_').map(word =>
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
+  const canGenerate = isValidData(data);
 
   return (
     <div className="space-y-6">
@@ -65,6 +53,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         <Info className="h-4 w-4" />
         <AlertDescription>
           Please review your information before we generate your valuation report.
+          All fields marked with * are required.
         </AlertDescription>
       </Alert>
 
@@ -72,11 +61,11 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         <h3 className="text-lg font-medium">Basic Information</h3>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Business Name</p>
+            <p className="text-sm text-muted-foreground">Business Name *</p>
             <p className="font-medium">{data.businessName || "Not provided"}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Valuation Purpose</p>
+            <p className="text-sm text-muted-foreground">Valuation Purpose *</p>
             <p className="font-medium">
               {data.valuationPurpose ? valuationPurposes[data.valuationPurpose] : "Not provided"}
             </p>
@@ -86,19 +75,19 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         <h3 className="text-lg font-medium mt-6">Business Information</h3>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Sector</p>
+            <p className="text-sm text-muted-foreground">Sector *</p>
             <p className="font-medium">{selectedSector?.name || "Not provided"}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Industry</p>
+            <p className="text-sm text-muted-foreground">Industry *</p>
             <p className="font-medium">{selectedIndustry || "Not provided"}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Business Stage</p>
+            <p className="text-sm text-muted-foreground">Business Stage *</p>
             <p className="font-medium">{selectedStage || "Not provided"}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Region</p>
+            <p className="text-sm text-muted-foreground">Region *</p>
             <p className="font-medium">{selectedRegion?.name || "Not provided"}</p>
           </div>
         </div>
@@ -106,7 +95,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         <h3 className="text-lg font-medium mt-6">Financial Information</h3>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-muted-foreground">Revenue</p>
+            <p className="text-sm text-muted-foreground">Revenue *</p>
             <p className="font-medium">
               {data.revenue !== undefined && data.currency
                 ? formatCurrency(data.revenue, data.currency)
@@ -114,13 +103,13 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Growth Rate</p>
+            <p className="text-sm text-muted-foreground">Growth Rate *</p>
             <p className="font-medium">
               {data.growthRate !== undefined ? `${data.growthRate}%` : "Not provided"}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Operating Margins</p>
+            <p className="text-sm text-muted-foreground">Operating Margins *</p>
             <p className="font-medium">
               {data.margins !== undefined ? `${data.margins}%` : "Not provided"}
             </p>
@@ -136,6 +125,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           </Button>
           <Button
             onClick={handleSubmit}
+            disabled={!canGenerate}
             className="flex items-center gap-2"
           >
             <FileText className="w-4 h-4" />

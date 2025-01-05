@@ -4,15 +4,13 @@ import { Info, DollarSign, TrendingUp, PieChart } from "lucide-react";
 import { currencies } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button"; // Assuming Button component is available
+import { Button } from "@/components/ui/button";
 
 interface FinancialDetailsStepProps {
   data: Partial<ValuationFormData>;
   onUpdate: (data: Partial<ValuationFormData>) => void;
   onNext: () => void;
   onBack: () => void;
-  currentStep: number;
-  totalSteps: number;
 }
 
 export function FinancialDetailsStep({
@@ -20,8 +18,6 @@ export function FinancialDetailsStep({
   onUpdate,
   onNext,
   onBack,
-  currentStep,
-  totalSteps,
 }: FinancialDetailsStepProps) {
   const handleChange = (field: keyof ValuationFormData, value: any) => {
     onUpdate({ [field]: value });
@@ -29,30 +25,25 @@ export function FinancialDetailsStep({
 
   const currencySymbol = data.currency ? currencies[data.currency as keyof typeof currencies].symbol : '$';
 
+  // Validate required fields
+  const isValid = Boolean(
+    data.revenue !== undefined && data.revenue >= 0 &&
+    data.growthRate !== undefined && 
+    data.margins !== undefined
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
-          <span className="text-sm text-muted-foreground">Financial Information</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-primary h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
-        </div>
-      </div>
-
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
           Please provide basic financial information about your business.
           All monetary values will be in {data.currency || 'USD'}.
+          Fields marked with * are required.
         </AlertDescription>
       </Alert>
 
@@ -65,7 +56,7 @@ export function FinancialDetailsStep({
         <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Revenue
+            Revenue *
           </h3>
           <div className="space-y-2">
             <label className="text-sm font-medium">Annual Revenue</label>
@@ -79,6 +70,7 @@ export function FinancialDetailsStep({
                 onChange={(e) => handleChange('revenue', Number(e.target.value))}
                 placeholder={`e.g., ${currencySymbol}1,000,000`}
                 className="pl-7 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+                required
               />
             </div>
             <p className="text-sm text-muted-foreground">
@@ -90,7 +82,7 @@ export function FinancialDetailsStep({
         <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Growth
+            Growth *
           </h3>
           <div className="space-y-2">
             <label className="text-sm font-medium">Growth Rate (%)</label>
@@ -102,6 +94,7 @@ export function FinancialDetailsStep({
                 onChange={(e) => handleChange('growthRate', Number(e.target.value))}
                 placeholder="e.g., 25"
                 className="pl-9 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+                required
               />
             </div>
             <p className="text-sm text-muted-foreground">
@@ -113,7 +106,7 @@ export function FinancialDetailsStep({
         <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <PieChart className="h-5 w-5" />
-            Margins
+            Margins *
           </h3>
           <div className="space-y-2">
             <label className="text-sm font-medium">Operating Margins (%)</label>
@@ -125,6 +118,7 @@ export function FinancialDetailsStep({
                 onChange={(e) => handleChange('margins', Number(e.target.value))}
                 placeholder="e.g., 15"
                 className="pl-9 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+                required
               />
             </div>
             <p className="text-sm text-muted-foreground">
@@ -140,10 +134,13 @@ export function FinancialDetailsStep({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
       >
-        <Button variant="outline" onClick={onBack} className="px-4 py-2">
+        <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={onNext} className="px-4 py-2">
+        <Button 
+          onClick={onNext}
+          disabled={!isValid}
+        >
           Next
         </Button>
       </motion.div>

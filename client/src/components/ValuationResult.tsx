@@ -1,3 +1,4 @@
+import { Loader2 } from "@/components/ui/loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,6 @@ import { motion } from "framer-motion";
 import { ExportButton } from "./ExportButton";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
 import { useState } from "react";
-import { Loader2 } from "@/components/ui/loader"; // Assumed import
 
 
 interface ValuationResultProps {
@@ -54,11 +54,11 @@ export function ValuationResult({ data }: ValuationResultProps) {
   // Check if data is valid for report generation
   const canGenerateReport = Boolean(
     data?.businessName &&
-    data?.revenue &&
-    data?.growthRate &&
-    data?.sector &&
-    data?.industry &&
-    data?.stage
+      data?.revenue &&
+      data?.growthRate &&
+      data?.sector &&
+      data?.industry &&
+      data?.stage
   );
 
   const handleGenerateReport = async () => {
@@ -176,8 +176,8 @@ export function ValuationResult({ data }: ValuationResultProps) {
           <div className="flex justify-between items-center">
             <CardTitle className="text-2xl font-bold">Executive Summary</CardTitle>
             <div className="flex gap-2">
-              <Button 
-                onClick={handleGenerateReport} 
+              <Button
+                onClick={handleGenerateReport}
                 className="flex items-center"
                 disabled={!canGenerateReport || isGenerating}
               >
