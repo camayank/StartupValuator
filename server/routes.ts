@@ -5,6 +5,7 @@ import { generatePdfReport } from "./lib/report";
 import { assessStartupRisk } from "./lib/riskAssessment";
 import { predictStartupPotential } from "./lib/potentialPredictor";
 import { generateEcosystemNetwork } from "./lib/ecosystemNetwork";
+import { analyzePitchDeck } from "./lib/pitchDeckAnalyzer";
 import { setupCache } from "./lib/cache";
 import { db } from "@db";
 import { founderProfiles, users } from "@db/schema";
@@ -125,6 +126,22 @@ export function registerRoutes(app: Express): Server {
       }
 
       res.json(result[0]);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Add new pitch deck analysis route
+  app.post("/api/analyze-pitch-deck", async (req, res) => {
+    try {
+      const { slides } = req.body;
+
+      if (!Array.isArray(slides) || slides.length === 0) {
+        return res.status(400).json({ message: "Invalid slides data" });
+      }
+
+      const analysis = await analyzePitchDeck(slides);
+      res.json(analysis);
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
     }
