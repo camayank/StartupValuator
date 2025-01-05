@@ -5,11 +5,11 @@ import { Profile } from "./pages/Profile";
 import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { PitchDeckAnalyzer } from "@/components/PitchDeckAnalyzer";
-import { ValuationTestForm } from "@/components/ValuationTestForm";
+import { ValuationWizard } from "@/components/ValuationWizard";
 import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
-  const handleTestSubmit = async (data: ValuationFormData) => {
+  const handleValuationSubmit = async (data: ValuationFormData) => {
     try {
       const response = await fetch('/api/valuation', {
         method: 'POST',
@@ -41,9 +41,6 @@ function App() {
             <Link href="/">
               <a className="text-sm hover:text-primary">Valuation</a>
             </Link>
-            <Link href="/test">
-              <a className="text-sm hover:text-primary">Quick Test</a>
-            </Link>
             <Link href="/pitch-deck">
               <a className="text-sm hover:text-primary">Pitch Deck</a>
             </Link>
@@ -58,15 +55,14 @@ function App() {
       </nav>
 
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/">
+          <div className="container mx-auto py-8">
+            <ValuationWizard onSubmit={handleValuationSubmit} />
+          </div>
+        </Route>
         <Route path="/docs" component={Documentation} />
         <Route path="/profile/:userId" component={Profile} />
         <Route path="/pitch-deck" component={PitchDeckAnalyzer} />
-        <Route path="/test">
-          <div className="container mx-auto py-8">
-            <ValuationTestForm onSubmit={handleTestSubmit} />
-          </div>
-        </Route>
         <Route component={NotFound} />
       </Switch>
     </div>
