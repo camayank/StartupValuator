@@ -5,6 +5,13 @@ import { currencies } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FinancialDetailsStepProps {
   data: Partial<ValuationFormData>;
@@ -27,6 +34,7 @@ export function FinancialDetailsStep({
 
   // Validate required fields
   const isValid = Boolean(
+    data.currency &&
     data.revenue !== undefined && data.revenue >= 0 &&
     data.growthRate !== undefined && 
     data.margins !== undefined
@@ -56,26 +64,47 @@ export function FinancialDetailsStep({
         <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Revenue *
+            Currency & Revenue *
           </h3>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Annual Revenue</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                {currencySymbol}
-              </span>
-              <Input
-                type="number"
-                value={data.revenue}
-                onChange={(e) => handleChange('revenue', Number(e.target.value))}
-                placeholder={`e.g., ${currencySymbol}1,000,000`}
-                className="pl-7 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
-                required
-              />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Currency</label>
+              <Select
+                value={data.currency}
+                onValueChange={(value) => handleChange('currency', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(currencies).map(([code, { name, symbol }]) => (
+                    <SelectItem key={code} value={code}>
+                      {symbol} {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Enter your total annual revenue
-            </p>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Annual Revenue</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  {currencySymbol}
+                </span>
+                <Input
+                  type="number"
+                  value={data.revenue}
+                  onChange={(e) => handleChange('revenue', Number(e.target.value))}
+                  placeholder={`e.g., ${currencySymbol}1,000,000`}
+                  className="pl-7 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+                  required
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Enter your total annual revenue
+              </p>
+            </div>
           </div>
         </div>
 
