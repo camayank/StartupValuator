@@ -11,6 +11,7 @@ import { db } from "@db";
 import { founderProfiles, users } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
+import { calculateFinancialAssumptions, validateRegionCompliance } from "./lib/financialAssumptions";
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
@@ -29,8 +30,20 @@ export function registerRoutes(app: Express): Server {
         return res.json(cachedResult);
       }
 
-      // Calculate base valuation first
-      const valuationResult = await calculateValuation(validatedData);
+      // Calculate financial assumptions with regional compliance
+      const assumptions = calculateFinancialAssumptions(validatedData);
+      const compliance = validateRegionCompliance(assumptions, validatedData);
+
+      // Apply any necessary compliance adjustments
+      const finalAssumptions = compliance.isCompliant 
+        ? assumptions 
+        : { ...assumptions, ...compliance.adjustments };
+
+      // Calculate base valuation using adjusted assumptions
+      const valuationResult = await calculateValuation({
+        ...validatedData,
+        assumptions: finalAssumptions,
+      });
 
       // Try to enhance with AI features, but continue if they fail
       let riskAssessment = null;
@@ -67,6 +80,11 @@ export function registerRoutes(app: Express): Server {
 
       const result = {
         ...valuationResult,
+        assumptions: finalAssumptions,
+        compliance: {
+          isCompliant: compliance.isCompliant,
+          reasons: compliance.reasons,
+        },
         ...(riskAssessment && { riskAssessment }),
         ...(potentialPrediction && { potentialPrediction }),
         ...(ecosystemNetwork && { ecosystemNetwork }),
