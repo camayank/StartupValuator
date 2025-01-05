@@ -1,7 +1,22 @@
 import htmlPdf from 'html-pdf-node';
-import type { ValuationData } from '../../client/src/lib/validations';
+import type { ValuationFormData } from "../../client/src/lib/validations";
 
-function generateReportHtml(data: ValuationData): string {
+function generateReportHtml(data: ValuationFormData & { 
+  valuation: number;
+  multiplier: number;
+  methodology: string;
+  confidenceScore: number;
+  details: any;
+  assumptions: any;
+  compliance?: any;
+  businessName: string;
+  stage: string;
+  industry: string;
+  region: string;
+  growthRate: number;
+  margins: number;
+  currency: string;
+}): string {
   const formatCurrency = (value: number) => {
     const currencyConfig = {
       USD: { symbol: "$", locale: "en-US" },
@@ -37,7 +52,8 @@ function generateReportHtml(data: ValuationData): string {
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Enterprise Valuation Analysis Report</title>
+      <title>Startup Valuation Analysis Report</title>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -129,6 +145,13 @@ function generateReportHtml(data: ValuationData): string {
           border-radius: 8px;
           padding: 20px;
           margin: 20px 0;
+          height: 300px;
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+          margin: 20px 0;
         }
         .compliance-badge {
           display: inline-block;
@@ -159,7 +182,7 @@ function generateReportHtml(data: ValuationData): string {
     </head>
     <body>
       <div class="header">
-        <h1>Enterprise Valuation Analysis Report</h1>
+        <h1>Startup Valuation Analysis Report</h1>
         <p>Generated on ${formatDate()}</p>
         ${data.compliance ? `
           <div>
@@ -178,245 +201,179 @@ function generateReportHtml(data: ValuationData): string {
         <div class="insight-box">
           <p><strong>Confidence Score:</strong> ${data.confidenceScore}%</p>
           <p><strong>Methodology:</strong> ${data.methodology}</p>
-          ${data.compliance ? `
-            <p><strong>Compliance:</strong> This valuation adheres to ${data.compliance.standards.join(', ')} standards</p>
-          ` : ''}
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">Executive Summary</div>
-        <p>This enterprise valuation report provides a comprehensive analysis of your company using advanced financial modeling techniques and industry-specific metrics. The valuation incorporates both quantitative data and qualitative factors to arrive at a fair market value, adhering to international valuation standards.</p>
-      </div>
+        <p>
+          Based on our comprehensive analysis of ${data.businessName}, a ${data.stage} stage company 
+          in the ${data.industry} sector, we estimate the enterprise value at ${formatCurrency(data.valuation)}.
+          This valuation reflects the company's current financial position, market dynamics, and growth potential.
+        </p>
 
-      <div class="section">
-        <div class="section-title">Market Position & Industry Analysis</div>
-        <div class="metric-card">
-          <div class="metric-title">Industry Classification</div>
-          <div class="metric-value">${data.industry.charAt(0).toUpperCase() + data.industry.slice(1)}</div>
-        </div>
-        ${data.industryBenchmarks ? `
-          <div class="subsection">
-            <div class="subsection-title">Industry Benchmarks</div>
-            <table>
-              <tr>
-                <th>Metric</th>
-                <th>Company</th>
-                <th>Industry Average</th>
-                <th>Percentile</th>
-              </tr>
-              <tr>
-                <td>Revenue Multiple</td>
-                <td>${data.multiplier.toFixed(1)}x</td>
-                <td>${data.industryBenchmarks.peerComparison.revenue_multiple.toFixed(1)}x</td>
-                <td>${formatPercentage(data.multiplier / data.industryBenchmarks.peerComparison.revenue_multiple * 100)}</td>
-              </tr>
-              <tr>
-                <td>Operating Margin</td>
-                <td>${formatPercentage(data.margins)}</td>
-                <td>${formatPercentage(data.industryBenchmarks.peerComparison.operating_margin * 100)}</td>
-                <td>${formatPercentage(data.margins / (data.industryBenchmarks.peerComparison.operating_margin * 100) * 100)}</td>
-              </tr>
-              <tr>
-                <td>Growth Rate</td>
-                <td>${formatPercentage(data.growthRate)}</td>
-                <td>${formatPercentage(data.industryBenchmarks.peerComparison.growth_rate * 100)}</td>
-                <td>${formatPercentage(data.growthRate / (data.industryBenchmarks.peerComparison.growth_rate * 100) * 100)}</td>
-              </tr>
-            </table>
-          </div>
-        ` : ''}
-      </div>
-
-      <div class="section">
-        <div class="section-title">Financial Analysis</div>
-        <div class="subsection">
-          <div class="subsection-title">Key Financial Metrics</div>
+        <div class="grid">
           <div class="metric-card">
-            <div class="metric-title">Annual Revenue</div>
-            <div class="metric-value">${formatCurrency(data.revenue)}</div>
+            <div class="metric-title">Revenue Multiple</div>
+            <div class="metric-value">${data.multiplier?.toFixed(1)}x</div>
           </div>
           <div class="metric-card">
             <div class="metric-title">Growth Rate</div>
-            <div class="metric-value">${formatPercentage(data.growthRate)}</div>
+            <div class="metric-value">${formatPercentage(data.growthRate || 0)}</div>
           </div>
           <div class="metric-card">
             <div class="metric-title">Operating Margins</div>
-            <div class="metric-value">${formatPercentage(data.margins)}</div>
+            <div class="metric-value">${formatPercentage(data.margins || 0)}</div>
           </div>
         </div>
-
-        ${data.details.assumptions ? `
-          <div class="subsection">
-            <div class="subsection-title">Valuation Parameters</div>
-            <table>
-              <tr>
-                <th>Parameter</th>
-                <th>Value</th>
-                <th>Impact</th>
-              </tr>
-              <tr>
-                <td>Cost of Capital (WACC)</td>
-                <td>${formatPercentage(data.details.assumptions.wacc * 100)}</td>
-                <td>Primary discount rate for future cash flows</td>
-              </tr>
-              <tr>
-                <td>Beta (Market Risk)</td>
-                <td>${data.details.assumptions.beta.toFixed(2)}</td>
-                <td>Measure of systematic risk relative to market</td>
-              </tr>
-              <tr>
-                <td>Risk-Free Rate</td>
-                <td>${formatPercentage(data.details.assumptions.riskFreeRate * 100)}</td>
-                <td>Base rate for cost of capital calculation</td>
-              </tr>
-              <tr>
-                <td>Market Risk Premium</td>
-                <td>${formatPercentage(data.details.assumptions.marketRiskPremium * 100)}</td>
-                <td>Additional return required over risk-free rate</td>
-              </tr>
-            </table>
-          </div>
-        ` : ''}
       </div>
 
       <div class="section">
-        <div class="section-title">Valuation Analysis</div>
-
+        <div class="section-title">Valuation Methodology</div>
+        <p>This valuation employs a weighted average approach combining:</p>
         <div class="subsection">
-          <div class="subsection-title">Methodology</div>
-          <p>${data.methodology}</p>
-          <div class="insight-box">
-            <p>The valuation methodology is tailored to your company's stage, industry context, and available data, combining multiple approaches to provide a balanced and comprehensive perspective.</p>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <div class="subsection-title">DCF Analysis</div>
-          ${data.details.methods.dcf.stages ? `
-            <table>
+          <div class="subsection-title">DCF Analysis (Present Value)</div>
+          <table>
+            <tr>
+              <th>Year</th>
+              <th>Free Cash Flow</th>
+              <th>Present Value</th>
+              <th>Working Capital</th>
+              <th>CapEx</th>
+            </tr>
+            ${data.details.methods.dcf.stages.map(stage => `
               <tr>
-                <th>Year</th>
-                <th>Projected Revenue</th>
-                <th>Free Cash Flow</th>
-                <th>Present Value</th>
+                <td>Year ${stage.year}</td>
+                <td>${formatCurrency(stage.fcf)}</td>
+                <td>${formatCurrency(stage.presentValue)}</td>
+                <td>${formatCurrency(stage.workingCapital)}</td>
+                <td>${formatCurrency(stage.capex)}</td>
               </tr>
-              ${data.details.methods.dcf.stages.map(stage => `
-                <tr>
-                  <td>Year ${stage.year}</td>
-                  <td>${formatCurrency(stage.revenue)}</td>
-                  <td>${formatCurrency(stage.fcf)}</td>
-                  <td>${formatCurrency(stage.presentValue)}</td>
-                </tr>
-              `).join('')}
-            </table>
-          ` : ''}
+            `).join('')}
+          </table>
         </div>
 
         <div class="subsection">
           <div class="subsection-title">Market Comparables Analysis</div>
-          ${data.details.methods.comparables.analysis ? `
-            <table>
-              <tr>
-                <th>Valuation Metric</th>
-                <th>Multiple</th>
-                <th>Implied Value</th>
-              </tr>
-              ${data.details.methods.comparables.analysis.map(comp => `
-                <tr>
-                  <td>${comp.metric}</td>
-                  <td>${comp.multiple.toFixed(2)}x</td>
-                  <td>${formatCurrency(comp.value)}</td>
-                </tr>
-              `).join('')}
-            </table>
-          ` : ''}
-        </div>
-
-        <div class="subsection">
-          <div class="subsection-title">Scenario Analysis</div>
-          <div class="insight-box">
-            <p>The following scenarios represent potential valuations under different market conditions and growth trajectories, incorporating both operational and market factors.</p>
-          </div>
           <table>
             <tr>
-              <th>Scenario</th>
-              <th>Valuation</th>
-              <th>Growth Rate</th>
-              <th>Operating Margin</th>
+              <th>Metric</th>
+              <th>Multiple Range</th>
+              <th>Selected Multiple</th>
+              <th>Rationale</th>
             </tr>
-            <tr>
-              <td>Conservative Case</td>
-              <td>${formatCurrency(data.details.scenarios.worst.value)}</td>
-              <td>${formatPercentage(data.details.scenarios.worst.assumptions.growthRate)}</td>
-              <td>${formatPercentage(data.details.scenarios.worst.assumptions.margins)}</td>
-            </tr>
-            <tr>
-              <td>Base Case</td>
-              <td>${formatCurrency(data.details.scenarios.base.value)}</td>
-              <td>${formatPercentage(data.details.scenarios.base.assumptions.growthRate)}</td>
-              <td>${formatPercentage(data.details.scenarios.base.assumptions.margins)}</td>
-            </tr>
-            <tr>
-              <td>Optimistic Case</td>
-              <td>${formatCurrency(data.details.scenarios.best.value)}</td>
-              <td>${formatPercentage(data.details.scenarios.best.assumptions.growthRate)}</td>
-              <td>${formatPercentage(data.details.scenarios.best.assumptions.margins)}</td>
-            </tr>
+            ${data.details.methods.comparables.multiples.details.map(detail => `
+              <tr>
+                <td>${detail.metric}</td>
+                <td>${detail.range.min.toFixed(1)}x - ${detail.range.max.toFixed(1)}x</td>
+                <td>${detail.selectedMultiple.toFixed(1)}x</td>
+                <td>${detail.reasoning}</td>
+              </tr>
+            `).join('')}
           </table>
         </div>
       </div>
 
-      ${data.riskAssessment ? `
-        <div class="section">
-          <div class="section-title">Risk Assessment</div>
-          <div class="metric-card">
-            <div class="metric-title">Overall Risk Score</div>
-            <div class="metric-value">${formatPercentage(data.riskAssessment.riskScore)}</div>
-          </div>
+      <div class="section">
+        <div class="section-title">Scenario Analysis</div>
+        <table>
+          <tr>
+            <th>Scenario</th>
+            <th>Value</th>
+            <th>Growth Rate</th>
+            <th>Operating Margin</th>
+            <th>Discount Rate</th>
+          </tr>
+          <tr>
+            <td>Conservative Case</td>
+            <td>${formatCurrency(data.details.scenarios.worst.value)}</td>
+            <td>${formatPercentage(data.details.scenarios.worst.assumptions.growthRate)}</td>
+            <td>${formatPercentage(data.details.scenarios.worst.assumptions.margins)}</td>
+            <td>${formatPercentage(data.details.scenarios.worst.assumptions.discountRate * 100)}</td>
+          </tr>
+          <tr>
+            <td>Base Case</td>
+            <td>${formatCurrency(data.details.scenarios.base.value)}</td>
+            <td>${formatPercentage(data.details.scenarios.base.assumptions.growthRate)}</td>
+            <td>${formatPercentage(data.details.scenarios.base.assumptions.margins)}</td>
+            <td>${formatPercentage(data.details.scenarios.base.assumptions.discountRate * 100)}</td>
+          </tr>
+          <tr>
+            <td>Optimistic Case</td>
+            <td>${formatCurrency(data.details.scenarios.best.value)}</td>
+            <td>${formatPercentage(data.details.scenarios.best.assumptions.growthRate)}</td>
+            <td>${formatPercentage(data.details.scenarios.best.assumptions.margins)}</td>
+            <td>${formatPercentage(data.details.scenarios.best.assumptions.discountRate * 100)}</td>
+          </tr>
+        </table>
+
+        <div class="subsection">
+          <div class="subsection-title">Sensitivity Analysis</div>
           <table>
             <tr>
-              <th>Risk Factor</th>
-              <th>Impact</th>
+              <th>Factor</th>
+              <th>-20%</th>
+              <th>-10%</th>
+              <th>Base</th>
+              <th>+10%</th>
+              <th>+20%</th>
             </tr>
-            ${Object.entries(data.riskAssessment.categories)
-              .map(([category, impact]) => `
-                <tr>
-                  <td>${category.charAt(0).toUpperCase() + category.slice(1)}</td>
-                  <td>${impact}</td>
-                </tr>
-              `).join('')}
+            ${data.details.sensitivityAnalysis.map(analysis => `
+              <tr>
+                <td>${analysis.factor}</td>
+                ${analysis.impact.map(point => 
+                  `<td>${formatCurrency(point.value)}</td>`
+                ).join('')}
+              </tr>
+            `).join('')}
           </table>
-          <div class="warning-box">
-            <p><strong>Key Risk Mitigation Recommendations:</strong></p>
-            <ul>
-              ${data.riskAssessment.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-            </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Key Assumptions</div>
+        <div class="grid">
+          <div class="metric-card">
+            <div class="metric-title">Discount Rate (WACC)</div>
+            <div class="metric-value">${formatPercentage(data.assumptions.discountRate * 100)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Terminal Growth Rate</div>
+            <div class="metric-value">${formatPercentage(data.assumptions.terminalGrowthRate * 100)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Market Risk Premium</div>
+            <div class="metric-value">${formatPercentage(data.assumptions.marketRiskPremium * 100)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Beta</div>
+            <div class="metric-value">${data.assumptions.beta.toFixed(2)}</div>
           </div>
         </div>
-      ` : ''}
+      </div>
 
       <div class="footer">
-        <p>This enterprise valuation report was generated using advanced financial modeling techniques and proprietary algorithms. The analysis incorporates industry standards, market conditions, and company-specific factors to provide a comprehensive valuation assessment.</p>
+        <p>This startup valuation report was generated using advanced financial modeling techniques and proprietary algorithms. 
+        The analysis incorporates industry standards, market conditions, and company-specific factors to provide a comprehensive valuation assessment.</p>
 
         <div class="disclaimer">
-          <p><strong>Disclaimer:</strong> This valuation represents an estimate based on the information provided and current market conditions. It should not be considered as financial advice. Actual market values may vary based on numerous factors including market conditions, negotiation dynamics, and strategic considerations. Past performance does not guarantee future results.</p>
+          <p><strong>Disclaimer:</strong> This valuation represents an estimate based on the information provided and current market conditions. 
+          It should not be considered as financial advice. Actual market values may vary based on numerous factors including market conditions, 
+          negotiation dynamics, and strategic considerations. Past performance does not guarantee future results.</p>
         </div>
 
         <p><strong>Report Details:</strong></p>
         <p>Generated: ${formatDate()}</p>
-        <p>Currency: ${data.currency} | Industry: ${data.industry} | Stage: ${data.stage}</p>
-        ${data.compliance ? `
-          <p>Compliant with: ${data.compliance.standards.join(', ')}</p>
-          <p>Required Disclosures: ${data.compliance.requirements.join(', ')}</p>
-        ` : ''}
+        <p>Business Name: ${data.businessName}</p>
+        <p>Industry: ${data.industry} | Stage: ${data.stage}</p>
+        <p>Region: ${data.region} | Currency: ${data.currency}</p>
       </div>
     </body>
     </html>
   `;
 }
 
-export async function generatePdfReport(data: ValuationData): Promise<Buffer> {
+export async function generatePdfReport(data: any): Promise<Buffer> {
   const html = generateReportHtml(data);
   const options = {
     format: 'A4',
