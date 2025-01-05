@@ -23,13 +23,13 @@ interface FundingTimelineProps {
   currentValuation: number;
 }
 
-export function FundingTimeline({ currentStage, currentValuation }: FundingTimelineProps) {
+export function FundingTimeline({ currentStage = 'seed', currentValuation = 0 }: FundingTimelineProps) {
   const timelineData: TimelineStage[] = [
     {
       stage: "Pre-seed",
       typical_valuation: 1000000,
       typical_investment: 200000,
-      current: currentStage === "seed",
+      current: currentStage === "pre-seed",
     },
     {
       stage: "Seed",
@@ -58,12 +58,23 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
   ];
 
   const formatCurrency = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value)) return '$0';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       maximumFractionDigits: 0,
       notation: 'compact'
     }).format(value);
+  };
+
+  const formatStageDisplay = (stage: string) => {
+    if (!stage) return 'N/A';
+    return stage
+      .replace(/([A-Z])/g, ' $1')
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+      .trim();
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -93,7 +104,7 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
         <CardTitle className="flex items-center justify-between">
           Funding Timeline
           <Badge variant="outline">
-            Current Stage: {currentStage.replace(/([A-Z])/g, ' $1')}
+            Current Stage: {formatStageDisplay(currentStage)}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -125,16 +136,18 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
                 animationDuration={1000}
                 animationBegin={400}
               />
-              <ReferenceLine
-                y={currentValuation}
-                stroke="hsl(var(--destructive))"
-                strokeDasharray="3 3"
-                label={{
-                  value: "Current Valuation",
-                  position: "right",
-                  fill: "hsl(var(--destructive))",
-                }}
-              />
+              {typeof currentValuation === 'number' && !isNaN(currentValuation) && (
+                <ReferenceLine
+                  y={currentValuation}
+                  stroke="hsl(var(--destructive))"
+                  strokeDasharray="3 3"
+                  label={{
+                    value: "Current Valuation",
+                    position: "right",
+                    fill: "hsl(var(--destructive))",
+                  }}
+                />
+              )}
             </BarChart>
           </ResponsiveContainer>
         </motion.div>

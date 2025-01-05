@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { valuationFormSchema, type ValuationFormData, currencies, businessStages } from "@/lib/validations";
-import { calculateValuation } from "@/lib/api";
 
 interface ValuationFormProps {
   onResult: (data: any) => void;
@@ -46,7 +45,22 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
   });
 
   const mutation = useMutation({
-    mutationFn: calculateValuation,
+    mutationFn: async (data: ValuationFormData) => {
+      const response = await fetch('/api/valuation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
+
+      return response.json();
+    },
     onSuccess: (data) => {
       onResult(data);
       toast({
@@ -54,18 +68,30 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
         description: "Your startup valuation has been updated.",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to calculate valuation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to calculate valuation. Please try again.",
         variant: "destructive",
       });
     },
   });
 
+  const handleSubmit = form.handleSubmit((data) => {
+    // Ensure numeric fields are properly parsed
+    const formattedData = {
+      ...data,
+      revenue: Number(data.revenue) || 0,
+      growthRate: Number(data.growthRate) || 0,
+      margins: Number(data.margins) || 0,
+      teamExperience: Number(data.teamExperience) || 0,
+    };
+    mutation.mutate(formattedData);
+  });
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -74,7 +100,12 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               <FormItem>
                 <FormLabel>Annual Revenue</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                    value={field.value || 0}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -114,7 +145,12 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             <FormItem>
               <FormLabel>Growth Rate (%)</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                <Input 
+                  type="number" 
+                  {...field} 
+                  onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                  value={field.value || 0}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -128,7 +164,12 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             <FormItem>
               <FormLabel>Profit Margins (%)</FormLabel>
               <FormControl>
-                <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                <Input 
+                  type="number" 
+                  {...field} 
+                  onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                  value={field.value || 0}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -217,7 +258,14 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               <FormItem>
                 <FormLabel>Team Experience (0-10)</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" max="10" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                  <Input 
+                    type="number" 
+                    min="0" 
+                    max="10" 
+                    {...field} 
+                    onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                    value={field.value || 0}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
