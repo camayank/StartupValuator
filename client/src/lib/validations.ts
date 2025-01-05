@@ -8,37 +8,42 @@ export const currencies = {
   INR: { symbol: "₹", name: "Indian Rupee" },
 } as const;
 
-// Add regions with their compliance standards
+// Add regions with their compliance standards and default currency
 export const regions = {
   us: {
     name: "United States",
     standards: ["409A", "ASC 820"],
     riskFreeRate: 0.0368, // Current 10-year Treasury yield
     marketRiskPremium: 0.0575,
+    defaultCurrency: "USD" as keyof typeof currencies,
   },
   eu: {
     name: "European Union",
     standards: ["IPEV", "IVS"],
     riskFreeRate: 0.0245,
     marketRiskPremium: 0.0550,
+    defaultCurrency: "EUR" as keyof typeof currencies,
   },
   uk: {
     name: "United Kingdom",
     standards: ["BVCA", "IVS"],
     riskFreeRate: 0.0415,
     marketRiskPremium: 0.0525,
+    defaultCurrency: "GBP" as keyof typeof currencies,
   },
   india: {
     name: "India",
     standards: ["IBBI", "IVS"],
     riskFreeRate: 0.0725,
     marketRiskPremium: 0.0650,
+    defaultCurrency: "INR" as keyof typeof currencies,
   },
   global: {
     name: "Global",
     standards: ["IVS"],
     riskFreeRate: 0.0350,
     marketRiskPremium: 0.0600,
+    defaultCurrency: "USD" as keyof typeof currencies,
   },
 } as const;
 

@@ -71,8 +71,14 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   };
 
   const handleRegionChange = (value: string) => {
-    form.setValue("region", value);
-    onUpdate({ region: value as keyof typeof regions });
+    const region = value as keyof typeof regions;
+    form.setValue("region", region);
+    // Set the default currency for the selected region
+    form.setValue("currency", regions[region].defaultCurrency);
+    onUpdate({ 
+      region,
+      currency: regions[region].defaultCurrency 
+    });
   };
 
   const handleSubmit = (values: Partial<ValuationFormData>) => {
