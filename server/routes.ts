@@ -135,16 +135,34 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Existing report route
+  // Add new report route
   app.post("/api/report", async (req, res) => {
     try {
       const data = req.body;
-      const pdfBuffer = await generatePdfReport(data);
+
+      // Validate the request data
+      const validatedData = valuationFormSchema.parse(data);
+
+      // Generate PDF report
+      const pdfBuffer = await generatePdfReport(validatedData);
+
+      // Set appropriate headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="valuation-report.pdf"');
+      res.setHeader('Content-Disposition', 'attachment; filename="startup-valuation-report.pdf"');
       res.send(pdfBuffer);
     } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
+      console.error('Report generation failed:', error);
+
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          message: 'Invalid data provided',
+          errors: error.errors,
+        });
+      }
+
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : 'Failed to generate report'
+      });
     }
   });
 
