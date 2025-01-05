@@ -10,30 +10,27 @@ import { setupCache } from "./lib/cache";
 import { db } from "@db";
 import { founderProfiles, users } from "@db/schema";
 import { eq } from "drizzle-orm";
+import { valuationFormSchema } from "../client/src/lib/validations";
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
 
-  // Existing valuation route
+  // Enhanced valuation route with proper validation
   app.post("/api/valuation", async (req, res) => {
-    const { revenue, growthRate, margins, industry, stage, currency, ...qualitativeFactors } = req.body;
-    const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}-${currency}`;
-    const cachedResult = cache.get(cacheKey);
-    if (cachedResult) {
-      return res.json(cachedResult);
-    }
-
     try {
+      // Validate request body against our schema
+      const validatedData = valuationFormSchema.parse(req.body);
+
+      const { revenue, growthRate, margins, industry, stage, currency, ...qualitativeFactors } = validatedData;
+      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}-${currency}`;
+
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return res.json(cachedResult);
+      }
+
       // Calculate base valuation first
-      const valuationResult = await calculateValuation({
-        revenue,
-        growthRate,
-        margins,
-        industry,
-        stage,
-        currency,
-        ...qualitativeFactors,
-      });
+      const valuationResult = await calculateValuation(validatedData);
 
       // Try to enhance with AI features, but continue if they fail
       let riskAssessment = null;
@@ -79,7 +76,16 @@ export function registerRoutes(app: Express): Server {
       res.json(result);
     } catch (error) {
       console.error('Valuation calculation failed:', error);
-      res.status(400).json({ 
+
+      // Enhanced error handling
+      if (error.name === 'ZodError') {
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: error.errors,
+        });
+      }
+
+      res.status(500).json({ 
         message: error instanceof Error ? error.message : 'Failed to calculate valuation'
       });
     }

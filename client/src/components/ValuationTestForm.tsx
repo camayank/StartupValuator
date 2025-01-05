@@ -11,11 +11,13 @@ import {
 } from "@/components/ui/select";
 import { industries, currencies, businessStages } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
+import { useToast } from "@/hooks/use-toast";
 
 interface ValuationTestFormProps {
   onSubmit: (data: ValuationFormData) => void;
 }
 
+// Default values that match exactly with our validation schema
 const defaultValues: ValuationFormData = {
   revenue: 1000000,
   currency: "USD",
@@ -34,10 +36,19 @@ const defaultValues: ValuationFormData = {
 
 export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
   const [formData, setFormData] = useState<ValuationFormData>(defaultValues);
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    try {
+      onSubmit(formData);
+    } catch (error) {
+      toast({
+        title: "Validation Error",
+        description: error instanceof Error ? error.message : "Failed to submit form",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleChange = (field: keyof ValuationFormData, value: any) => {

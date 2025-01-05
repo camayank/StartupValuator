@@ -103,7 +103,7 @@ export const valuationFormSchema = z.object({
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
 
-  // Additional qualitative inputs
+  // Optional qualitative inputs
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(10).optional(),
   customerBase: z.number().min(0).optional(),
@@ -114,83 +114,6 @@ export const valuationFormSchema = z.object({
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
-
-export interface ValuationData extends ValuationFormData {
-  valuation: number;
-  multiplier: number;
-  methodology: string;
-  confidenceScore: number;
-  details: {
-    baseValuation: number;
-    methods: {
-      dcf: {
-        value: number;
-        stages: Array<{
-          year: number;
-          revenue: number;
-          fcf: number;
-          presentValue: number;
-        }>;
-      };
-      comparables: {
-        value: number;
-        analysis: Array<{
-          metric: string;
-          multiple: number;
-          value: number;
-        }>;
-      };
-    };
-    scenarios: {
-      worst: {
-        value: number;
-        assumptions: {
-          growthRate: number;
-          margins: number;
-        };
-      };
-      base: {
-        value: number;
-        assumptions: {
-          growthRate: number;
-          margins: number;
-        };
-      };
-      best: {
-        value: number;
-        assumptions: {
-          growthRate: number;
-          margins: number;
-        };
-      };
-    };
-    assumptions: {
-      wacc: number;
-      growthRate: number;
-      beta: number;
-      riskFreeRate: number;
-      marketRiskPremium: number;
-      operatingMargin: number;
-    };
-  };
-  compliance: {
-    region: string;
-    standards: string[];
-    requirements: string[];
-  };
-  industryBenchmarks: {
-    peerComparison: {
-      revenue_multiple: number;
-      operating_margin: number;
-      growth_rate: number;
-    };
-  };
-  currencyConversion: {
-    rates: Record<keyof typeof currencies, number>;
-    baseRate: number;
-    baseCurrency: keyof typeof currencies;
-  };
-}
 
 export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
   return new Intl.NumberFormat('en-US', {
