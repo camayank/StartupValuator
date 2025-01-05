@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { calculateValuation } from "./lib/valuation";
 import { generatePdfReport } from "./lib/report";
 import { assessStartupRisk } from "./lib/riskAssessment";
+import { predictStartupPotential } from "./lib/potentialPredictor";
 import { setupCache } from "./lib/cache";
 
 export function registerRoutes(app: Express): Server {
@@ -21,7 +22,7 @@ export function registerRoutes(app: Express): Server {
     }
 
     try {
-      const [valuationResult, riskAssessment] = await Promise.all([
+      const [valuationResult, riskAssessment, potentialPrediction] = await Promise.all([
         calculateValuation({
           revenue,
           growthRate,
@@ -36,11 +37,19 @@ export function registerRoutes(app: Express): Server {
           industry,
           stage,
         }),
+        predictStartupPotential({
+          revenue,
+          growthRate,
+          margins,
+          industry,
+          stage,
+        }),
       ]);
 
       const result = {
         ...valuationResult,
         riskAssessment,
+        potentialPrediction,
       };
 
       // Cache the result

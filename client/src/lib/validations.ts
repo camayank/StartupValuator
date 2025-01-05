@@ -30,4 +30,17 @@ export interface ValuationData {
     };
     recommendations: string[];
   };
+  potentialPrediction?: {
+    score: number;
+    growth_potential: string;
+    success_probability: number;
+    strengths: string[];
+    areas_of_improvement: string[];
+    market_opportunities: string[];
+    five_year_projection: {
+      revenue_multiplier: number;
+      market_share_potential: string;
+      team_size_projection: string;
+    };
+  };
 }

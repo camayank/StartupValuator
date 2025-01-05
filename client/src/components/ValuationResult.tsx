@@ -7,6 +7,7 @@ import type { ValuationData } from "@/lib/validations";
 import { generateReport } from "@/lib/api";
 import { RiskAssessment } from "./RiskAssessment";
 import { FundingTimeline } from "./FundingTimeline";
+import { PotentialPredictor } from "./PotentialPredictor";
 import {
   BarChart,
   Bar,
@@ -15,8 +16,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  AnimatedAxis,
-  AnimatedGrid,
 } from "recharts";
 import { motion } from "framer-motion";
 
@@ -172,6 +171,16 @@ export function ValuationResult({ data }: ValuationResultProps) {
           transition={{ duration: 0.5, delay: 0.8 }}
         >
           <RiskAssessment data={data.riskAssessment} />
+        </motion.div>
+      )}
+
+      {data.potentialPrediction && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.0 }}
+        >
+          <PotentialPredictor data={data.potentialPrediction} />
         </motion.div>
       )}
     </div>
