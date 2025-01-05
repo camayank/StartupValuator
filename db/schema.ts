@@ -35,6 +35,34 @@ export const founderProfiles = pgTable("founder_profiles", {
     date: string;
     investors: string[];
   }[]>(),
+  // New journey tracking fields
+  journeyMilestones: jsonb("journey_milestones").$type<{
+    date: string;
+    title: string;
+    description: string;
+    category: "product" | "team" | "funding" | "market" | "other";
+    impact: number; // 1-10 scale
+  }[]>(),
+  growthMetrics: jsonb("growth_metrics").$type<{
+    date: string;
+    metric: string;
+    value: number;
+    target: number;
+    unit: string;
+  }[]>(),
+  keyAchievements: jsonb("key_achievements").$type<{
+    date: string;
+    title: string;
+    description: string;
+    impact: string;
+  }[]>(),
+  futureGoals: jsonb("future_goals").$type<{
+    targetDate: string;
+    title: string;
+    description: string;
+    status: "planned" | "in_progress" | "achieved" | "delayed";
+    priority: "low" | "medium" | "high";
+  }[]>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

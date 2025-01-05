@@ -36,6 +36,33 @@ const profileFormSchema = z.object({
     date: z.string(),
     investors: z.array(z.string()),
   })).optional(),
+  journeyMilestones: z.array(z.object({
+    date: z.string(),
+    title: z.string(),
+    description: z.string(),
+    category: z.enum(["product", "team", "funding", "market", "other"]),
+    impact: z.number().min(1).max(10),
+  })).optional(),
+  growthMetrics: z.array(z.object({
+    date: z.string(),
+    metric: z.string(),
+    value: z.number(),
+    target: z.number(),
+    unit: z.string(),
+  })).optional(),
+  keyAchievements: z.array(z.object({
+    date: z.string(),
+    title: z.string(),
+    description: z.string(),
+    impact: z.string(),
+  })).optional(),
+  futureGoals: z.array(z.object({
+    targetDate: z.string(),
+    title: z.string(),
+    description: z.string(),
+    status: z.enum(["planned", "in_progress", "achieved", "delayed"]),
+    priority: z.enum(["low", "medium", "high"]),
+  })).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -67,6 +94,10 @@ export function EditFounderProfile({
       keyRoles: [],
       previousExits: [],
       fundingHistory: [],
+      journeyMilestones: [],
+      growthMetrics: [],
+      keyAchievements: [],
+      futureGoals: [],
     },
   });
 

@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Award,
 } from "lucide-react";
+import { StartupJourneyDashboard } from "./StartupJourneyDashboard";
 
 interface ViewFounderProfileProps {
   profile: {
@@ -37,6 +38,33 @@ interface ViewFounderProfileProps {
       amount: number;
       date: string;
       investors: string[];
+    }>;
+    journeyMilestones?: Array<{
+      date: string;
+      title: string;
+      description: string;
+      category: "product" | "team" | "funding" | "market" | "other";
+      impact: number;
+    }>;
+    growthMetrics?: Array<{
+      date: string;
+      metric: string;
+      value: number;
+      target: number;
+      unit: string;
+    }>;
+    keyAchievements?: Array<{
+      date: string;
+      title: string;
+      description: string;
+      impact: string;
+    }>;
+    futureGoals?: Array<{
+      targetDate: string;
+      title: string;
+      description: string;
+      status: "planned" | "in_progress" | "achieved" | "delayed";
+      priority: "low" | "medium" | "high";
     }>;
   };
 }
@@ -124,6 +152,8 @@ export function ViewFounderProfile({ profile }: ViewFounderProfileProps) {
           </CardContent>
         </Card>
       </div>
+
+      <StartupJourneyDashboard profile={profile} />
 
       {profile.previousExits && profile.previousExits.length > 0 && (
         <Card>
