@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { valuationFormSchema, type ValuationFormData } from "@/lib/validations";
+import { valuationFormSchema, type ValuationFormData, currencies, businessStages } from "@/lib/validations";
 import { calculateValuation } from "@/lib/api";
 
 interface ValuationFormProps {
@@ -32,10 +32,16 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     resolver: zodResolver(valuationFormSchema),
     defaultValues: {
       revenue: 0,
+      currency: "INR",
       growthRate: 0,
       margins: 0,
       industry: "tech",
-      stage: "seed",
+      stage: "ideation",
+      intellectualProperty: "none",
+      teamExperience: 5,
+      marketValidation: "none",
+      competitiveDifferentiation: "medium",
+      scalability: "moderate",
     },
   });
 
@@ -60,19 +66,46 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="revenue"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Annual Revenue ($)</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="revenue"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Annual Revenue</FormLabel>
+                <FormControl>
+                  <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="currency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Currency</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.entries(currencies).map(([code, { name, symbol }]) => (
+                      <SelectItem key={code} value={code}>
+                        {symbol} - {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -139,16 +172,127 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="seed">Seed</SelectItem>
-                  <SelectItem value="seriesA">Series A</SelectItem>
-                  <SelectItem value="seriesB">Series B</SelectItem>
-                  <SelectItem value="growth">Growth</SelectItem>
+                  {Object.entries(businessStages).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground">Qualitative Factors</h3>
+
+          <FormField
+            control={form.control}
+            name="intellectualProperty"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Intellectual Property Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select IP status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="registered">Registered</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="teamExperience"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Team Experience (0-10)</FormLabel>
+                <FormControl>
+                  <Input type="number" min="0" max="10" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="marketValidation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Market Validation</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select validation level" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="early">Early Traction</SelectItem>
+                    <SelectItem value="proven">Proven</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="competitiveDifferentiation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Competitive Differentiation</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select differentiation level" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="scalability"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Scalability Potential</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select scalability level" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="limited">Limited</SelectItem>
+                    <SelectItem value="moderate">Moderate</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" className="w-full" disabled={mutation.isPending}>
           {mutation.isPending ? "Calculating..." : "Calculate Valuation"}
