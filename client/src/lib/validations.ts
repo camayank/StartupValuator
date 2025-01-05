@@ -167,7 +167,18 @@ export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
   return { ...acc, ...sector.subsectors };
 }, {} as Record<string, string>);
 
+export const valuationPurposes = {
+  fundraising: "Fundraising",
+  acquisition: "Mergers & Acquisitions",
+  compliance: "Regulatory Compliance",
+  internal: "Internal Planning",
+  stakeholder: "Stakeholder Reporting",
+  exit_planning: "Exit Planning",
+} as const;
+
 export const valuationFormSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
   revenue: z.number().min(0, "Revenue must be positive"),
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
-import { sectors, businessStages, regions } from "@/lib/validations";
+import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 
@@ -36,6 +36,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
       ...data,
+      businessName: data.businessName || "",
+      valuationPurpose: data.valuationPurpose || "",
       sector: data.sector || "",
       industry: data.industry || "",
       stage: data.stage || "",
@@ -73,11 +75,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   const handleRegionChange = (value: string) => {
     const region = value as keyof typeof regions;
     form.setValue("region", region);
-    // Set the default currency for the selected region
     form.setValue("currency", regions[region].defaultCurrency);
-    onUpdate({ 
+    onUpdate({
       region,
-      currency: regions[region].defaultCurrency 
+      currency: regions[region].defaultCurrency,
     });
   };
 
@@ -91,122 +92,169 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Let's understand your business in detail. This helps us choose the most
-          appropriate valuation method and industry benchmarks.
+          Let's start with some basic information about your business and the purpose of this valuation.
         </AlertDescription>
       </Alert>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-4">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="sector"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>What sector is your business in?</FormLabel>
-                    <Select
-                      value={selectedSector}
-                      onValueChange={handleSectorChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your business sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(sectors).map(([key, { name }]) => (
-                          <SelectItem key={key} value={key}>
-                            {name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-
-              {selectedSector && (
-                <FormField
-                  control={form.control}
-                  name="industry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Which industry segment best describes your business?</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={handleIndustryChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your industry" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors)
-                            .map(([key, name]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="businessName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Name</FormLabel>
+                  <FormDescription>
+                    Enter the legal name of your business
+                  </FormDescription>
+                  <FormControl>
+                    <Input placeholder="Enter business name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
 
+            <FormField
+              control={form.control}
+              name="valuationPurpose"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Purpose of Valuation</FormLabel>
+                  <FormDescription>
+                    This helps us tailor the valuation approach to your specific needs
+                  </FormDescription>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      onUpdate({ valuationPurpose: value as ValuationFormData['valuationPurpose'] });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select purpose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(valuationPurposes).map(([key, name]) => (
+                        <SelectItem key={key} value={key}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sector"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What sector is your business in?</FormLabel>
+                  <Select
+                    value={selectedSector}
+                    onValueChange={handleSectorChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your business sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(sectors).map(([key, { name }]) => (
+                        <SelectItem key={key} value={key}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            {selectedSector && (
               <FormField
                 control={form.control}
-                name="stage"
+                name="industry"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>What stage is your business at?</FormLabel>
+                    <FormLabel>Which industry segment best describes your business?</FormLabel>
                     <Select
                       value={field.value}
-                      onValueChange={handleStageChange}
+                      onValueChange={handleIndustryChange}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select your business stage" />
+                        <SelectValue placeholder="Select your industry" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(businessStages).map(([key, name]) => (
-                          <SelectItem key={key} value={key}>
-                            {name}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors)
+                          .map(([key, name]) => (
+                            <SelectItem key={key} value={key}>
+                              {name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="region"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primary Region of Operation</FormLabel>
-                    <FormDescription>
-                      This helps us apply region-specific valuation standards and benchmarks
-                    </FormDescription>
-                    <Select
-                      value={field.value}
-                      onValueChange={handleRegionChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select primary region" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(regions).map(([key, { name }]) => (
-                          <SelectItem key={key} value={key}>
-                            {name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-            </div>
+            )}
 
-            <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="stage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What stage is your business at?</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={handleStageChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your business stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(businessStages).map(([key, name]) => (
+                        <SelectItem key={key} value={key}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Primary Region of Operation</FormLabel>
+                  <FormDescription>
+                    This helps us apply region-specific valuation standards and benchmarks
+                  </FormDescription>
+                  <Select
+                    value={field.value}
+                    onValueChange={handleRegionChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select primary region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(regions).map(([key, { name }]) => (
+                        <SelectItem key={key} value={key}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="teamExperience"
@@ -359,8 +407,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 )}
               />
             </div>
-          </div>
-
           <Button
             type="submit"
             className="w-full mt-6"

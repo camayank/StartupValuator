@@ -2,7 +2,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { formatCurrency } from "@/lib/validations";
-import { sectors, businessStages, regions } from "@/lib/validations";
+import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 
 interface ReviewStepProps {
@@ -21,6 +21,8 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
 
   const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
     const requiredFields = [
+      'businessName',
+      'valuationPurpose',
       'revenue',
       'currency',
       'growthRate',
@@ -48,7 +50,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   // Helper function to format qualitative data
   const formatQualitativeValue = (value: string | undefined) => {
     if (!value) return "Not provided";
-    return value.split('_').map(word => 
+    return value.split('_').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
   };
@@ -63,7 +65,21 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       </Alert>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Business Information</h3>
+        <h3 className="text-lg font-medium">Basic Information</h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Business Name</p>
+            <p className="font-medium">{data.businessName || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Valuation Purpose</p>
+            <p className="font-medium">
+              {data.valuationPurpose ? valuationPurposes[data.valuationPurpose as keyof typeof valuationPurposes] : "Not provided"}
+            </p>
+          </div>
+        </div>
+
+        <h3 className="text-lg font-medium mt-6">Business Information</h3>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">Sector</p>
