@@ -13,6 +13,10 @@ import { founderProfiles, users } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
 import { calculateFinancialAssumptions, validateRegionCompliance } from "./lib/financialAssumptions";
+import XLSX from "xlsx";
+import { Parser } from "json2csv";
+import pdfMake from "pdfmake";
+import { ZodError } from "zod";
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
@@ -36,8 +40,8 @@ export function registerRoutes(app: Express): Server {
       const compliance = validateRegionCompliance(assumptions, validatedData);
 
       // Apply any necessary compliance adjustments
-      const finalAssumptions = compliance.isCompliant 
-        ? assumptions 
+      const finalAssumptions = compliance.isCompliant
+        ? assumptions
         : { ...assumptions, ...compliance.adjustments };
 
       // Calculate base valuation using adjusted assumptions
@@ -71,7 +75,7 @@ export function registerRoutes(app: Express): Server {
             industry,
             stage,
           }),
-        ]).then(results => results.map(result => 
+        ]).then(results => results.map(result =>
           result.status === 'fulfilled' ? result.value : null
         ));
       } catch (error) {
@@ -96,15 +100,15 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error('Valuation calculation failed:', error);
 
-      // Enhanced error handling
-      if (error.name === 'ZodError') {
+      // Enhanced error handling with type checking
+      if (error instanceof ZodError) {
         return res.status(400).json({
           message: 'Validation failed',
           errors: error.errors,
         });
       }
 
-      res.status(500).json({ 
+      res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to calculate valuation'
       });
     }
@@ -125,7 +129,7 @@ export function registerRoutes(app: Express): Server {
       res.json(response);
     } catch (error) {
       console.error('Chat generation failed:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to generate chat response'
       });
     }
@@ -209,6 +213,76 @@ export function registerRoutes(app: Express): Server {
       res.json(analysis);
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  // Export routes for different formats
+  app.post("/api/export/pdf", async (req, res) => {
+    try {
+      const data = req.body;
+      const pdfBuffer = await generatePdfReport(data);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", 'attachment; filename="valuation-report.pdf"');
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate PDF"
+      });
+    }
+  });
+
+  app.post("/api/export/xlsx", async (req, res) => {
+    try {
+      const data = req.body;
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+
+      // Convert data to worksheet format
+      const ws = XLSX.utils.json_to_sheet([{
+        "Business Name": data.businessName,
+        "Industry": data.industry,
+        "Stage": data.stage,
+        "Revenue": data.revenue,
+        "Growth Rate": `${data.growthRate}%`,
+        "Valuation": data.valuation,
+      }]);
+
+      // Add the worksheet to the workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Valuation Summary");
+
+      // Generate buffer
+      const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", 'attachment; filename="valuation-report.xlsx"');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Excel export failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate Excel file"
+      });
+    }
+  });
+
+  app.post("/api/export/csv", async (req, res) => {
+    try {
+      const data = req.body;
+
+      // Prepare data for CSV
+      const fields = ["businessName", "industry", "stage", "revenue", "growthRate", "valuation"];
+      const parser = new Parser({ fields });
+      const csv = parser.parse(data);
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", 'attachment; filename="valuation-report.csv"');
+      res.send(csv);
+    } catch (error) {
+      console.error("CSV export failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate CSV file"
+      });
     }
   });
 

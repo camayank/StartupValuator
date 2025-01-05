@@ -7,6 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { PitchDeckAnalyzer } from "@/components/PitchDeckAnalyzer";
 import { ValuationWizard } from "@/components/ValuationWizard";
 import { ReportGenerationProgress } from "@/components/ReportGenerationProgress";
+import { ExportButton } from "@/components/ExportButton";
 import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
@@ -26,8 +27,10 @@ function App() {
 
       const result = await response.json();
       console.log('Valuation result:', result);
+      return result;
     } catch (error) {
       console.error('Error calculating valuation:', error);
+      throw error;
     }
   };
 
@@ -59,6 +62,7 @@ function App() {
         <Route path="/">
           <div className="container mx-auto py-8">
             <ValuationWizard onSubmit={handleValuationSubmit} />
+            <ExportButton /> {/* Added ExportButton here */}
           </div>
         </Route>
         <Route path="/docs" component={Documentation} />
