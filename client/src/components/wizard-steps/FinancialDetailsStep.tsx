@@ -4,6 +4,7 @@ import { Info, DollarSign, TrendingUp, PieChart } from "lucide-react";
 import { currencies } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button"; // Assuming Button component is available
 
 interface FinancialDetailsStepProps {
   data: Partial<ValuationFormData>;
@@ -29,19 +30,18 @@ export function FinancialDetailsStep({
   const currencySymbol = data.currency ? currencies[data.currency as keyof typeof currencies].symbol : '$';
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Progress indicator */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
           <span className="text-sm text-muted-foreground">Financial Information</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
+          <div
             className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
           />
@@ -56,7 +56,7 @@ export function FinancialDetailsStep({
         </AlertDescription>
       </Alert>
 
-      <motion.div 
+      <motion.div
         className="grid md:grid-cols-2 gap-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -134,26 +134,18 @@ export function FinancialDetailsStep({
         </div>
       </motion.div>
 
-      <motion.div 
+      <motion.div
         className="flex justify-end space-x-4 mt-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
       >
-        <button
-          type="button"
-          onClick={onBack}
-          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
-        >
+        <Button variant="outline" onClick={onBack} className="px-4 py-2">
           Back
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-        >
-          Continue
-        </button>
+        </Button>
+        <Button onClick={onNext} className="px-4 py-2">
+          Next
+        </Button>
       </motion.div>
     </motion.div>
   );

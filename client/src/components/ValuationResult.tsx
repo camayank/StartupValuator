@@ -50,10 +50,49 @@ const currencyConfig = {
   EUR: { symbol: "€", locale: "de-DE" },
   GBP: { symbol: "£", locale: "en-GB" },
   JPY: { symbol: "¥", locale: "ja-JP" },
-};
+} as const;
 
 export function ValuationResult({ data }: ValuationResultProps) {
   const { toast } = useToast();
+
+  const handleGenerateReport = async () => {
+    if (!data) return;
+
+    try {
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'startup-valuation-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Valuation report has been generated and downloaded.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const formatCurrency = (value: number) => {
     if (!data?.currency || !currencyConfig[data.currency as keyof typeof currencyConfig]) {
@@ -119,7 +158,13 @@ export function ValuationResult({ data }: ValuationResultProps) {
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <CardTitle className="text-2xl font-bold">Executive Summary</CardTitle>
-            <ExportButton data={data} />
+            <div className="flex gap-2">
+              <Button onClick={handleGenerateReport} className="flex items-center">
+                <FileText className="w-4 h-4 mr-2" />
+                Generate Report
+              </Button>
+              <ExportButton data={data} />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
