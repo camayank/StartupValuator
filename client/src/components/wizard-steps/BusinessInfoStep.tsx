@@ -36,6 +36,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
       ...data,
+      sector: data.sector || "",
+      industry: data.industry || "",
+      stage: data.stage || "",
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
       intellectualProperty: data.intellectualProperty || "none",
@@ -49,6 +52,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
     setSelectedSector(value);
     // Auto-select first industry in the sector
     const firstIndustry = Object.keys(sectors[value as keyof typeof sectors].subsectors)[0];
+    form.setValue("sector", value);
+    form.setValue("industry", firstIndustry);
     onUpdate({
       sector: value as keyof typeof sectors,
       industry: firstIndustry,
@@ -56,10 +61,12 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   };
 
   const handleIndustryChange = (value: string) => {
+    form.setValue("industry", value);
     onUpdate({ industry: value });
   };
 
   const handleStageChange = (value: string) => {
+    form.setValue("stage", value);
     onUpdate({ stage: value as keyof typeof businessStages });
   };
 
@@ -116,7 +123,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     <FormItem>
                       <FormLabel>Which industry segment best describes your business?</FormLabel>
                       <Select
-                        value={data.industry}
+                        value={field.value}
                         onValueChange={handleIndustryChange}
                       >
                         <SelectTrigger>
@@ -143,7 +150,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                   <FormItem>
                     <FormLabel>What stage is your business at?</FormLabel>
                     <Select
-                      value={data.stage}
+                      value={field.value}
                       onValueChange={handleStageChange}
                     >
                       <SelectTrigger>
@@ -175,7 +182,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     </FormDescription>
                     <Slider
                       value={[field.value || 0]}
-                      onValueChange={([value]) => field.onChange(value)}
+                      onValueChange={([value]) => {
+                        field.onChange(value);
+                        onUpdate({ teamExperience: value });
+                      }}
                       max={20}
                       step={1}
                       className="pt-2"
@@ -199,7 +209,11 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     <Input
                       type="number"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        field.onChange(value);
+                        onUpdate({ customerBase: value });
+                      }}
                     />
                   </FormItem>
                 )}
@@ -211,7 +225,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Intellectual Property Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        onUpdate({ intellectualProperty: value as ValuationFormData['intellectualProperty'] });
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select IP status" />
                       </SelectTrigger>
@@ -231,7 +251,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Competitive Differentiation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        onUpdate({ competitiveDifferentiation: value as ValuationFormData['competitiveDifferentiation'] });
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select competitive position" />
                       </SelectTrigger>
@@ -251,7 +277,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Regulatory Compliance Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        onUpdate({ regulatoryCompliance: value as ValuationFormData['regulatoryCompliance'] });
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select compliance status" />
                       </SelectTrigger>
@@ -271,7 +303,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Business Scalability</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        onUpdate({ scalability: value as ValuationFormData['scalability'] });
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select scalability potential" />
                       </SelectTrigger>
