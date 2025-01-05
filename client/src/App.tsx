@@ -5,8 +5,31 @@ import { Profile } from "./pages/Profile";
 import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { PitchDeckAnalyzer } from "@/components/PitchDeckAnalyzer";
+import { ValuationTestForm } from "@/components/ValuationTestForm";
+import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
+  const handleTestSubmit = async (data: ValuationFormData) => {
+    try {
+      const response = await fetch('/api/valuation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Valuation result:', result);
+    } catch (error) {
+      console.error('Error calculating valuation:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b px-4 py-3">
@@ -17,6 +40,9 @@ function App() {
           <div className="flex gap-4">
             <Link href="/">
               <a className="text-sm hover:text-primary">Valuation</a>
+            </Link>
+            <Link href="/test">
+              <a className="text-sm hover:text-primary">Quick Test</a>
             </Link>
             <Link href="/pitch-deck">
               <a className="text-sm hover:text-primary">Pitch Deck</a>
@@ -36,6 +62,11 @@ function App() {
         <Route path="/docs" component={Documentation} />
         <Route path="/profile/:userId" component={Profile} />
         <Route path="/pitch-deck" component={PitchDeckAnalyzer} />
+        <Route path="/test">
+          <div className="container mx-auto py-8">
+            <ValuationTestForm onSubmit={handleTestSubmit} />
+          </div>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </div>
