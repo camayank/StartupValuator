@@ -12,36 +12,9 @@ import { PotentialPredictor } from "./PotentialPredictor";
 import { EcosystemNetwork } from "./EcosystemNetwork";
 import { FundingReadiness } from "./FundingReadiness";
 import { calculateFundingReadiness } from "@/lib/fundingReadiness";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-} from "recharts";
-import { motion } from "framer-motion";
 import { ExportButton } from "./ExportButton";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
-import { useState } from "react";
-
+import { useState, useCallback } from "react";
 
 interface ValuationResultProps {
   data: ValuationFormData | null;
@@ -50,18 +23,21 @@ interface ValuationResultProps {
 export function ValuationResult({ data }: ValuationResultProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   // Check if data is valid for report generation
   const canGenerateReport = Boolean(
     data?.businessName &&
-      data?.revenue &&
-      data?.growthRate &&
-      data?.sector &&
-      data?.industry &&
-      data?.stage
+    data?.revenue !== undefined &&
+    data?.revenue >= 0 &&
+    data?.growthRate !== undefined &&
+    data?.sector &&
+    data?.industry &&
+    data?.stage
   );
 
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = useCallback(async () => {
     if (!canGenerateReport || !data) return;
 
     try {
@@ -75,7 +51,11 @@ export function ValuationResult({ data }: ValuationResultProps) {
       });
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        // Handle rate limiting
+        if (response.status === 429) {
+          throw new Error("Rate limit exceeded. Please try again in a few moments.");
+        }
+        throw new Error(`Error ${response.status}: ${await response.text()}`);
       }
 
       const blob = await response.blob();
@@ -92,16 +72,33 @@ export function ValuationResult({ data }: ValuationResultProps) {
         title: "Success",
         description: "Valuation report has been generated and downloaded.",
       });
+
+      // Reset retry count on success
+      setRetryCount(0);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate report. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Report generation error:', error);
+
+      // Implement retry logic for temporary failures
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount(prev => prev + 1);
+        toast({
+          title: "Retrying...",
+          description: `Attempt ${retryCount + 1} of ${MAX_RETRIES}`,
+        });
+        setTimeout(() => handleGenerateReport(), 1000 * (retryCount + 1)); // Exponential backoff
+      } else {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to generate report. Please try again.",
+          variant: "destructive",
+        });
+        // Reset retry count after max retries
+        setRetryCount(0);
+      }
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [data, canGenerateReport, retryCount, toast]);
 
   const currencyConfig = {
     USD: { symbol: "$", locale: "en-US" },
@@ -178,13 +175,13 @@ export function ValuationResult({ data }: ValuationResultProps) {
             <div className="flex gap-2">
               <Button
                 onClick={handleGenerateReport}
-                className="flex items-center"
+                className="flex items-center gap-2"
                 disabled={!canGenerateReport || isGenerating}
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
+                    <Loader2 className="w-4 h-4 mr-2" />
+                    {retryCount > 0 ? `Retrying (${retryCount}/${MAX_RETRIES})...` : "Generating..."}
                   </>
                 ) : (
                   <>
