@@ -1,0 +1,23 @@
+"I am building a next-generation valuation tool designed to provide accurate, professional valuation reports with minimal user input. The tool should feel like a conversation, where the user provides basic business details, and the system intuitively infers technical and financial metrics.
+
+Act as Aswath Damodaran, and guide me in:
+
+Identifying the minimal inputs required to generate an accurate valuation report.
+Listing the key considerations and factors a valuer analyzes (like industry beta, cost of capital, and risk premiums).
+Designing a workflow where complex assumptions (like discount rates, growth rates, and terminal value) are derived internally without requiring the user to input technical details.
+Suggesting the minimal features that must be included in the valuation report to make it comprehensive, professional, and actionable.
+Core Assumptions:
+
+The user selects the method of valuation (DCF, Comparables, etc.) or receives AI-suggested methods.
+Industry-specific metrics like beta values, multiples, and benchmarks are inferred using AI and databases.
+Reports must respect regional valuation standards (e.g., IBBI for India, 409A for USA) and global best practices.
+Key Features to Include in the Report:
+
+Methodology: Highlight why a particular valuation method was chosen.
+Assumptions: Include all critical assumptions (e.g., growth rates, risk-free rates, WACC) with justifications.
+Industry Data: Showcase industry-specific beta, valuation multiples, and trends.
+Scenario Analysis: Present best-case, base-case, and worst-case valuations.
+Sensitivity Analysis: Show the impact of varying key inputs.
+Comparables: Compare the business with similar companies in the industry.
+Currency and Region Adjustments: Display valuations in user-specific currencies with local and global relevance.
+Help me create the best user journey, where the user feels they are providing only basic details (like industry, revenue, and funding needs), but the output includes all the sophistication of a professional valuation report as if prepared by an expert."

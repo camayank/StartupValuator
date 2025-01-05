@@ -20,6 +20,10 @@ function generateReportHtml(data: ValuationData): string {
     }).format(value);
   };
 
+  const formatPercentage = (value: number) => {
+    return `${value.toFixed(1)}%`;
+  };
+
   const formatDate = () => {
     return new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -33,7 +37,7 @@ function generateReportHtml(data: ValuationData): string {
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Startup Valuation Report</title>
+      <title>Professional Startup Valuation Report</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -64,6 +68,15 @@ function generateReportHtml(data: ValuationData): string {
           margin-bottom: 15px;
           color: #1f2937;
         }
+        .subsection {
+          margin: 20px 0;
+        }
+        .subsection-title {
+          font-size: 16px;
+          font-weight: bold;
+          color: #374151;
+          margin-bottom: 10px;
+        }
         table {
           width: 100%;
           border-collapse: collapse;
@@ -93,6 +106,13 @@ function generateReportHtml(data: ValuationData): string {
           font-size: 18px;
           color: #2563eb;
         }
+        .scenario-card {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 15px;
+          margin: 10px 0;
+        }
         .footer {
           margin-top: 40px;
           padding-top: 20px;
@@ -104,7 +124,7 @@ function generateReportHtml(data: ValuationData): string {
     </head>
     <body>
       <div class="header">
-        <h1>Startup Valuation Report</h1>
+        <h1>Professional Startup Valuation Report</h1>
         <p>Generated on ${formatDate()}</p>
       </div>
 
@@ -112,58 +132,103 @@ function generateReportHtml(data: ValuationData): string {
         <div class="valuation">
           ${formatCurrency(data.valuation)}
         </div>
-        <p>Estimated Company Valuation</p>
+        <p>Estimated Company Valuation (${data.currency})</p>
       </div>
 
       <div class="section">
-        <div class="section-title">Key Metrics Summary</div>
+        <div class="section-title">Executive Summary</div>
+        <p>This valuation report provides a comprehensive analysis of the company's worth using ${data.methodology}. The valuation considers both quantitative metrics and qualitative factors to arrive at a fair market value.</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Company Profile</div>
         <div class="metric-card">
-          <div class="metric-title">Revenue Multiple</div>
-          <div class="metric-value">${data.multiplier.toFixed(1)}x</div>
+          <div class="metric-title">Industry</div>
+          <div class="metric-value">${data.industry.charAt(0).toUpperCase() + data.industry.slice(1)}</div>
         </div>
+        <div class="metric-card">
+          <div class="metric-title">Stage</div>
+          <div class="metric-value">${data.stage.charAt(0).toUpperCase() + data.stage.slice(1)}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Key Financial Metrics</div>
         <div class="metric-card">
           <div class="metric-title">Annual Revenue</div>
           <div class="metric-value">${formatCurrency(data.revenue)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-title">Growth Rate</div>
-          <div class="metric-value">${data.growthRate}%</div>
+          <div class="metric-value">${formatPercentage(data.growthRate)}</div>
         </div>
         <div class="metric-card">
           <div class="metric-title">Profit Margins</div>
-          <div class="metric-value">${data.margins}%</div>
+          <div class="metric-value">${formatPercentage(data.margins)}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Revenue Multiple</div>
+          <div class="metric-value">${data.multiplier.toFixed(1)}x</div>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title">Valuation Breakdown</div>
-        <table>
-          <tr>
-            <th>Component</th>
-            <th>Value</th>
-          </tr>
-          <tr>
-            <td>Base Valuation</td>
-            <td>${formatCurrency(data.details.baseValuation)}</td>
-          </tr>
-          ${Object.entries(data.details.adjustments)
-            .map(([key, value]) => `
+        <div class="section-title">Valuation Analysis</div>
+
+        <div class="subsection">
+          <div class="subsection-title">Methodology</div>
+          <p>${data.methodology}</p>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Valuation Methods Comparison</div>
+          <table>
+            <tr>
+              <th>Method</th>
+              <th>Valuation</th>
+            </tr>
+            <tr>
+              <td>DCF Analysis</td>
+              <td>${formatCurrency(data.details.methods.dcf)}</td>
+            </tr>
+            <tr>
+              <td>Market Comparables</td>
+              <td>${formatCurrency(data.details.methods.comparables)}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="subsection">
+          <div class="subsection-title">Scenario Analysis</div>
+          <div class="scenario-card">
+            <table>
               <tr>
-                <td>${key.replace(/([A-Z])/g, ' $1').trim()}</td>
-                <td style="color: ${value > 0 ? '#059669' : '#dc2626'}">
-                  ${value > 0 ? '+' : ''}${formatCurrency(value)}
-                </td>
+                <th>Scenario</th>
+                <th>Valuation</th>
               </tr>
-            `).join('')}
-        </table>
+              <tr>
+                <td>Conservative Case</td>
+                <td>${formatCurrency(data.details.scenarios.worst)}</td>
+              </tr>
+              <tr>
+                <td>Base Case</td>
+                <td>${formatCurrency(data.details.scenarios.base)}</td>
+              </tr>
+              <tr>
+                <td>Optimistic Case</td>
+                <td>${formatCurrency(data.details.scenarios.best)}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
       </div>
 
       ${data.riskAssessment ? `
         <div class="section">
           <div class="section-title">Risk Assessment</div>
           <div class="metric-card">
-            <div class="metric-title">Risk Score</div>
-            <div class="metric-value">${data.riskAssessment.riskScore}%</div>
+            <div class="metric-title">Overall Risk Score</div>
+            <div class="metric-value">${formatPercentage(data.riskAssessment.riskScore)}</div>
           </div>
           <table>
             <tr>
@@ -181,14 +246,10 @@ function generateReportHtml(data: ValuationData): string {
         </div>
       ` : ''}
 
-      <div class="section">
-        <div class="section-title">Methodology</div>
-        <p>${data.methodology}</p>
-      </div>
-
       <div class="footer">
-        <p>This report was generated by StartupValuator. The valuation provided is an estimate based on the information provided and industry standards. It should not be considered as financial advice.</p>
-        <p>Currency: ${data.currency || 'USD'} | Industry: ${data.industry} | Stage: ${data.stage}</p>
+        <p>This report was generated using advanced valuation methodologies, incorporating both quantitative metrics and qualitative factors. The valuation provided is an estimate based on the information provided and industry standards. It should not be considered as financial advice.</p>
+        <p>Valuation Date: ${formatDate()}</p>
+        <p>Currency: ${data.currency} | Industry: ${data.industry} | Stage: ${data.stage}</p>
       </div>
     </body>
     </html>
