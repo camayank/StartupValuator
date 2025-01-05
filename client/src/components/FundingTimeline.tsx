@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { motion } from "framer-motion";
 
 interface TimelineStage {
   stage: string;
@@ -23,7 +24,6 @@ interface FundingTimelineProps {
 }
 
 export function FundingTimeline({ currentStage, currentValuation }: FundingTimelineProps) {
-  // Generate timeline data based on typical startup funding stages
   const timelineData: TimelineStage[] = [
     {
       stage: "Pre-seed",
@@ -69,7 +69,11 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-background border rounded-lg shadow-lg p-3">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-background border rounded-lg shadow-lg p-3"
+        >
           <p className="font-medium">{label} Stage</p>
           <p className="text-sm text-muted-foreground">
             Typical Valuation: {formatCurrency(payload[0].value)}
@@ -77,7 +81,7 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
           <p className="text-sm text-muted-foreground">
             Typical Investment: {formatCurrency(payload[1].value)}
           </p>
-        </div>
+        </motion.div>
       );
     }
     return null;
@@ -94,7 +98,12 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="h-[300px]"
+        >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={timelineData}
@@ -103,8 +112,19 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
               <XAxis dataKey="stage" />
               <YAxis tickFormatter={formatCurrency} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="typical_valuation" fill="hsl(var(--primary))" opacity={0.6} />
-              <Bar dataKey="typical_investment" fill="hsl(var(--primary))" />
+              <Bar 
+                dataKey="typical_valuation" 
+                fill="hsl(var(--primary))" 
+                opacity={0.6}
+                animationDuration={1000}
+                animationBegin={200}
+              />
+              <Bar 
+                dataKey="typical_investment" 
+                fill="hsl(var(--primary))"
+                animationDuration={1000}
+                animationBegin={400}
+              />
               <ReferenceLine
                 y={currentValuation}
                 stroke="hsl(var(--destructive))"
@@ -117,8 +137,13 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
               />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-        <div className="mt-4 space-y-2">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-4 space-y-2"
+        >
           <div className="flex items-center gap-2 text-sm">
             <div className="w-3 h-3 bg-primary opacity-60 rounded-sm" />
             <span>Typical Valuation Range</span>
@@ -131,7 +156,7 @@ export function FundingTimeline({ currentStage, currentValuation }: FundingTimel
             <div className="w-3 h-0.5 border-t-2 border-destructive border-dashed" />
             <span>Your Current Valuation</span>
           </div>
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   );
