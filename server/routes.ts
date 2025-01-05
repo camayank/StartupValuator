@@ -16,53 +16,72 @@ export function registerRoutes(app: Express): Server {
 
   // Existing valuation route
   app.post("/api/valuation", async (req, res) => {
-    const { revenue, growthRate, margins, industry, stage } = req.body;
-    const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}`;
+    const { revenue, growthRate, margins, industry, stage, currency, ...qualitativeFactors } = req.body;
+    const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}-${currency}`;
     const cachedResult = cache.get(cacheKey);
     if (cachedResult) {
       return res.json(cachedResult);
     }
 
     try {
-      const [valuationResult, riskAssessment, potentialPrediction, ecosystemNetwork] = await Promise.all([
-        calculateValuation({
-          revenue,
-          growthRate,
-          margins,
-          industry,
-          stage,
-        }),
-        assessStartupRisk({
-          revenue,
-          growthRate,
-          margins,
-          industry,
-          stage,
-        }),
-        predictStartupPotential({
-          revenue,
-          growthRate,
-          margins,
-          industry,
-          stage,
-        }),
-        generateEcosystemNetwork({
-          industry,
-          stage,
-        }),
-      ]);
+      // Calculate base valuation first
+      const valuationResult = await calculateValuation({
+        revenue,
+        growthRate,
+        margins,
+        industry,
+        stage,
+        currency,
+        ...qualitativeFactors,
+      });
+
+      // Try to enhance with AI features, but continue if they fail
+      let riskAssessment = null;
+      let potentialPrediction = null;
+      let ecosystemNetwork = null;
+
+      try {
+        [riskAssessment, potentialPrediction, ecosystemNetwork] = await Promise.allSettled([
+          assessStartupRisk({
+            revenue,
+            growthRate,
+            margins,
+            industry,
+            stage,
+          }),
+          predictStartupPotential({
+            revenue,
+            growthRate,
+            margins,
+            industry,
+            stage,
+          }),
+          generateEcosystemNetwork({
+            industry,
+            stage,
+          }),
+        ]).then(results => results.map(result => 
+          result.status === 'fulfilled' ? result.value : null
+        ));
+      } catch (error) {
+        console.error('AI enhancement features failed:', error);
+        // Continue without AI enhancements
+      }
 
       const result = {
         ...valuationResult,
-        riskAssessment,
-        potentialPrediction,
-        ecosystemNetwork,
+        ...(riskAssessment && { riskAssessment }),
+        ...(potentialPrediction && { potentialPrediction }),
+        ...(ecosystemNetwork && { ecosystemNetwork }),
       };
 
       cache.set(cacheKey, result);
       res.json(result);
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      console.error('Valuation calculation failed:', error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
+      });
     }
   });
 
