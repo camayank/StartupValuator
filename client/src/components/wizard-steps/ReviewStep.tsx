@@ -6,6 +6,7 @@ import { sectors, businessStages, regions, valuationPurposes } from "@/lib/valid
 import type { ValuationFormData } from "@/lib/validations";
 import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -16,6 +17,7 @@ interface ReviewStepProps {
 
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Strict validation logic for all required fields
   const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
@@ -50,11 +52,70 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
     return valid;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isValidData(data)) {
       return;
     }
-    onSubmit(data);
+
+    try {
+      setIsGenerating(true);
+
+      // First, trigger the valuation calculation
+      const valuationResponse = await fetch('/api/valuation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!valuationResponse.ok) {
+        throw new Error(`Valuation failed: ${await valuationResponse.text()}`);
+      }
+
+      const valuationData = await valuationResponse.json();
+
+      // Then generate the report with the combined data
+      const reportResponse = await fetch('/api/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...data, ...valuationData }),
+      });
+
+      if (!reportResponse.ok) {
+        throw new Error(`Report generation failed: ${await reportResponse.text()}`);
+      }
+
+      // Get the PDF blob and trigger download
+      const blob = await reportResponse.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'startup-valuation-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: "Your valuation report has been generated and downloaded.",
+      });
+
+      // Finally call onSubmit with the complete data
+      onSubmit({ ...data, ...valuationData });
+    } catch (error) {
+      console.error('Report generation error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate report",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const selectedSector = data.sector ? sectors[data.sector] : null;
@@ -147,9 +208,19 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <Button
             onClick={handleSubmit}
             className="px-8 font-medium flex items-center gap-2"
+            disabled={isGenerating}
           >
-            <FileText className="w-4 h-4" />
-            Generate Report
+            {isGenerating ? (
+              <>
+                <FileText className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FileText className="w-4 h-4" />
+                Generate Report
+              </>
+            )}
           </Button>
         </motion.div>
       </div>
