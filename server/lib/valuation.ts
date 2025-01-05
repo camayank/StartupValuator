@@ -214,7 +214,7 @@ function getStageMultiplier(stage: keyof typeof businessStages): number {
 }
 
 function calculateWACC(params: ValuationFormData): number {
-  const { industry, currency, revenue } = params;
+  const { industry, currency, revenue, stage } = params;
   const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
   const { metrics } = inferRegionAndStandards(currency, revenue);
 
@@ -225,7 +225,8 @@ function calculateWACC(params: ValuationFormData): number {
     metrics.smallCompanyPremium;
 
   // Adjust for company stage and size
-  const stageAdjustment = params.stage === 'scaling' ? -0.01 : params.stage === 'ideation' ? 0.02 : 0;
+  const stageAdjustment = stage.includes('revenue_scaling') ? -0.01 :
+    stage.includes('ideation') ? 0.02 : 0;
   const sizeAdjustment = revenue < 1000000 ? 0.02 : revenue > 10000000 ? -0.01 : 0;
 
   return costOfEquity + stageAdjustment + sizeAdjustment;
@@ -384,10 +385,10 @@ export function calculateValuation(params: ValuationFormData) {
   let dcfWeight = 0.4;
   let comparablesWeight = 0.6;
 
-  if (stage === 'scaling' || stage === 'exit') {
+  if (stage.includes('revenue_scaling') || stage.includes('established')) {
     dcfWeight = 0.6;
     comparablesWeight = 0.4;
-  } else if (stage === 'ideation' || stage === 'validation') {
+  } else if (stage.includes('ideation') || stage.includes('mvp')) {
     dcfWeight = 0.2;
     comparablesWeight = 0.8;
   }
@@ -401,13 +402,12 @@ export function calculateValuation(params: ValuationFormData) {
     (params.revenue ? 10 : 0) + // Revenue data available
     (params.margins ? 10 : 0) + // Margin data available
     (params.growthRate ? 10 : 0) + // Growth data available
-    (stage === 'scaling' || stage === 'exit' ? 10 : 0) + // Later stage companies
+    (stage.includes('revenue_scaling') || stage.includes('established') ? 10 : 0) + // Later stage companies
     (applicableStandards.length > 1 ? 5 : 0) + // Multiple compliance standards
     (region !== 'GLOBAL' ? 5 : 0) // Region-specific insights
   ));
 
-  // Convert back to requested currency
-  const finalValuation = finalValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
+  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
 
   // Enhanced scenario analysis
   const scenarios = {
@@ -434,7 +434,8 @@ export function calculateValuation(params: ValuationFormData) {
     },
   };
 
-  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
+  // Convert back to requested currency
+  const finalValuation = finalValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
 
   return {
     valuation: Math.max(finalValuation, 0),
