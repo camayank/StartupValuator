@@ -1,6 +1,18 @@
-import type { ValuationFormData, ValuationData } from "./validations";
+import type { ValuationFormData } from "./validations";
 
-export async function calculateValuation(data: ValuationFormData): Promise<ValuationData> {
+export interface ValuationResponse {
+  valuation: number;
+  multiplier: number;
+  details: {
+    baseValuation: number;
+    adjustments: Record<string, number>;
+  };
+  riskAssessment?: any;
+  potentialPrediction?: any;
+  ecosystemNetwork?: any;
+}
+
+export async function calculateValuation(data: ValuationFormData): Promise<ValuationResponse> {
   const response = await fetch("/api/valuation", {
     method: "POST",
     headers: {
@@ -16,7 +28,7 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
   return response.json();
 }
 
-export async function generateReport(data: ValuationData): Promise<ArrayBuffer> {
+export async function generateReport(data: ValuationFormData & ValuationResponse): Promise<Blob> {
   const response = await fetch("/api/report", {
     method: "POST",
     headers: {
@@ -29,5 +41,5 @@ export async function generateReport(data: ValuationData): Promise<ArrayBuffer> 
     throw new Error("Failed to generate report");
   }
 
-  return response.arrayBuffer();
+  return response.blob();
 }

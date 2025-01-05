@@ -8,9 +8,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Download, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import type { ValuationFormData } from "@/lib/validations";
+import type { ValuationResponse } from "@/lib/api";
 
 interface ExportButtonProps {
-  data: any;
+  data: ValuationFormData & Partial<ValuationResponse>;
   filename?: string;
 }
 
@@ -35,7 +37,7 @@ export function ExportButton({ data, filename = "valuation-report" }: ExportButt
 
       // Get the blob from the response
       const blob = await response.blob();
-      
+
       // Create a download link and trigger the download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
