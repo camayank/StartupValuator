@@ -14,31 +14,37 @@ interface ReviewStepProps {
 }
 
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
-  const handleSubmit = () => {
-    const valid = isValidData(data);
-    console.log("Submit attempted. Data valid:", valid, "Current data:", data);
-    if (valid) {
-      onSubmit(data as ValuationFormData);
-    }
-  };
-
-  const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
-    const validations = {
-      businessName: Boolean(data.businessName?.trim()),
-      valuationPurpose: Boolean(data.valuationPurpose),
-      revenue: data.revenue !== undefined && data.revenue >= 0,
-      currency: Boolean(data.currency),
-      growthRate: data.growthRate !== undefined && data.growthRate >=0, //Added check for >=0
-      margins: data.margins !== undefined && data.margins >=0, //Added check for >=0
-      sector: Boolean(data.sector),
-      industry: Boolean(data.industry),
-      stage: Boolean(data.stage),
-      region: Boolean(data.region)
+  // Simplified validation logic to be more strict
+  const isValidData = (data: Partial<ValuationFormData>): boolean => {
+    // Required field checks
+    const requiredFields = {
+      businessName: typeof data.businessName === 'string' && data.businessName.trim().length > 0,
+      valuationPurpose: typeof data.valuationPurpose === 'string' && data.valuationPurpose.length > 0,
+      revenue: typeof data.revenue === 'number' && data.revenue >= 0,
+      currency: typeof data.currency === 'string' && data.currency.length > 0,
+      growthRate: typeof data.growthRate === 'number',
+      margins: typeof data.margins === 'number',
+      sector: typeof data.sector === 'string' && data.sector.length > 0,
+      industry: typeof data.industry === 'string' && data.industry.length > 0,
+      stage: typeof data.stage === 'string' && data.stage.length > 0,
+      region: typeof data.region === 'string' && data.region.length > 0
     };
 
-    console.log("Field validations:", validations);
+    console.log('Validation results:', requiredFields);
+    return Object.values(requiredFields).every(Boolean);
+  };
 
-    return Object.values(validations).every(Boolean);
+  const handleSubmit = () => {
+    const isValid = isValidData(data);
+    console.log('Submit attempted. Form valid:', isValid, 'Form data:', data);
+
+    if (!isValid) {
+      console.log('Form validation failed');
+      return;
+    }
+
+    // Only submit if we have all required data
+    onSubmit(data as ValuationFormData);
   };
 
   const selectedSector = data.sector ? sectors[data.sector] : null;

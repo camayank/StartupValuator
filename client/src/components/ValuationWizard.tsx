@@ -52,6 +52,7 @@ const STEPS: WizardStep[] = [
 export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateFormData = (data: Partial<ValuationFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -60,14 +61,23 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const handleNext = () => {
     if (currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1);
-    } else {
-      onSubmit(formData as ValuationFormData);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = async (data: ValuationFormData) => {
+    try {
+      setIsSubmitting(true);
+      await onSubmit(data);
+    } catch (error) {
+      console.error('Submission error:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -165,34 +175,12 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
               <ReviewStep
                 data={formData}
                 onUpdate={updateFormData}
-                onSubmit={onSubmit}
+                onSubmit={handleSubmit}
                 onBack={handleBack}
               />
             )}
           </motion.div>
         </AnimatePresence>
-
-        <div className="flex justify-between mt-6">
-          {currentStep > 1 && (
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              className="flex items-center"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-          )}
-          {currentStep < STEPS.length && (
-            <Button
-              onClick={handleNext}
-              className="flex items-center ml-auto"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          )}
-        </div>
       </CardContent>
     </Card>
   );
