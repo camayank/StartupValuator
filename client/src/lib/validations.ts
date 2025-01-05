@@ -187,14 +187,21 @@ export const valuationFormSchema = z.object({
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
-
-  // Qualitative inputs
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(20).optional(),
   customerBase: z.number().min(0).optional(),
   competitiveDifferentiation: z.enum(["low", "medium", "high"]).optional(),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
   scalability: z.enum(["limited", "moderate", "high"]).optional(),
+  valuation: z.number().optional(),
+  multiplier: z.number().optional(),
+  details: z.object({
+    baseValuation: z.number(),
+    adjustments: z.record(z.string(), z.number())
+  }).optional(),
+  riskAssessment: z.any().optional(),
+  potentialPrediction: z.any().optional(),
+  ecosystemNetwork: z.any().optional()
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;

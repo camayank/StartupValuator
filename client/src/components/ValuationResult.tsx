@@ -40,28 +40,29 @@ import { motion } from "framer-motion";
 import { ExportButton } from "./ExportButton";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
 import { useState } from "react";
+import { Loader2 } from "@/components/ui/loader"; // Assumed import
+
 
 interface ValuationResultProps {
   data: ValuationFormData | null;
 }
-
-const currencyConfig = {
-  USD: { symbol: "$", locale: "en-US" },
-  INR: { symbol: "₹", locale: "en-IN" },
-  EUR: { symbol: "€", locale: "de-DE" },
-  GBP: { symbol: "£", locale: "en-GB" },
-  JPY: { symbol: "¥", locale: "ja-JP" },
-} as const;
 
 export function ValuationResult({ data }: ValuationResultProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Check if data is valid for report generation
-  const canGenerateReport = data && data.businessName && data.revenue && data.growthRate;
+  const canGenerateReport = Boolean(
+    data?.businessName &&
+    data?.revenue &&
+    data?.growthRate &&
+    data?.sector &&
+    data?.industry &&
+    data?.stage
+  );
 
   const handleGenerateReport = async () => {
-    if (!canGenerateReport) return;
+    if (!canGenerateReport || !data) return;
 
     try {
       setIsGenerating(true);
@@ -101,6 +102,14 @@ export function ValuationResult({ data }: ValuationResultProps) {
       setIsGenerating(false);
     }
   };
+
+  const currencyConfig = {
+    USD: { symbol: "$", locale: "en-US" },
+    INR: { symbol: "₹", locale: "en-IN" },
+    EUR: { symbol: "€", locale: "de-DE" },
+    GBP: { symbol: "£", locale: "en-GB" },
+    JPY: { symbol: "¥", locale: "ja-JP" },
+  } as const;
 
   const formatCurrency = (value: number) => {
     if (!data?.currency || !currencyConfig[data.currency as keyof typeof currencyConfig]) {
@@ -172,8 +181,17 @@ export function ValuationResult({ data }: ValuationResultProps) {
                 className="flex items-center"
                 disabled={!canGenerateReport || isGenerating}
               >
-                <FileText className="w-4 h-4 mr-2" />
-                {isGenerating ? "Generating..." : "Generate Report"}
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Generate Report
+                  </>
+                )}
               </Button>
               <ExportButton data={data} />
             </div>
