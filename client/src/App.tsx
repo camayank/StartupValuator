@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { PitchDeckAnalyzer } from "@/components/PitchDeckAnalyzer";
 import { ValuationWizard } from "@/components/ValuationWizard";
+import { ReportGenerationProgress } from "@/components/ReportGenerationProgress";
 import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
@@ -63,6 +64,11 @@ function App() {
         <Route path="/docs" component={Documentation} />
         <Route path="/profile/:userId" component={Profile} />
         <Route path="/pitch-deck" component={PitchDeckAnalyzer} />
+        <Route path="/report-progress">
+          <div className="container mx-auto py-8">
+            <ReportGenerationProgress onComplete={() => console.log("Report generation completed")} />
+          </div>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </div>
