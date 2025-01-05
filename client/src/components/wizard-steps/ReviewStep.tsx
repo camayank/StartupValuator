@@ -15,30 +15,30 @@ interface ReviewStepProps {
 
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const handleSubmit = () => {
-    if (isValidData(data)) {
+    const valid = isValidData(data);
+    console.log("Submit attempted. Data valid:", valid, "Current data:", data);
+    if (valid) {
       onSubmit(data as ValuationFormData);
     }
   };
 
   const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
-    const requiredFields = [
-      'businessName',
-      'valuationPurpose',
-      'revenue',
-      'currency',
-      'growthRate',
-      'margins',
-      'sector',
-      'industry',
-      'stage',
-      'region'
-    ];
+    const validations = {
+      businessName: Boolean(data.businessName?.trim()),
+      valuationPurpose: Boolean(data.valuationPurpose),
+      revenue: data.revenue !== undefined && data.revenue >= 0,
+      currency: Boolean(data.currency),
+      growthRate: data.growthRate !== undefined && data.growthRate >=0, //Added check for >=0
+      margins: data.margins !== undefined && data.margins >=0, //Added check for >=0
+      sector: Boolean(data.sector),
+      industry: Boolean(data.industry),
+      stage: Boolean(data.stage),
+      region: Boolean(data.region)
+    };
 
-    return requiredFields.every(field => {
-      const value = data[field as keyof ValuationFormData];
-      // Check if the value exists and is not empty
-      return value !== undefined && value !== null && value !== '';
-    });
+    console.log("Field validations:", validations);
+
+    return Object.values(validations).every(Boolean);
   };
 
   const selectedSector = data.sector ? sectors[data.sector] : null;
