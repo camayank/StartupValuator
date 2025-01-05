@@ -106,12 +106,11 @@ function generateReportHtml(data: ValuationData): string {
           font-size: 18px;
           color: #2563eb;
         }
-        .scenario-card {
-          background: #fff;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+        .insight-box {
+          background: #f0f9ff;
+          border-left: 4px solid #2563eb;
           padding: 15px;
-          margin: 10px 0;
+          margin: 15px 0;
         }
         .footer {
           margin-top: 40px;
@@ -133,11 +132,17 @@ function generateReportHtml(data: ValuationData): string {
           ${formatCurrency(data.valuation)}
         </div>
         <p>Estimated Company Valuation (${data.currency})</p>
+        ${data.details.assumptions ? `
+          <div class="insight-box">
+            <p>Confidence Score: ${data.confidenceScore}%</p>
+            <p>Based on ${data.methodology}</p>
+          </div>
+        ` : ''}
       </div>
 
       <div class="section">
         <div class="section-title">Executive Summary</div>
-        <p>This valuation report provides a comprehensive analysis of the company's worth using ${data.methodology}. The valuation considers both quantitative metrics and qualitative factors to arrive at a fair market value.</p>
+        <p>This valuation report provides a comprehensive analysis of your company using advanced financial modeling techniques and industry-specific metrics. The valuation considers both quantitative data and qualitative factors to arrive at a fair market value.</p>
       </div>
 
       <div class="section">
@@ -172,12 +177,37 @@ function generateReportHtml(data: ValuationData): string {
         </div>
       </div>
 
+      ${data.details.assumptions ? `
+        <div class="section">
+          <div class="section-title">Valuation Metrics</div>
+          <div class="metric-card">
+            <div class="metric-title">Weighted Average Cost of Capital (WACC)</div>
+            <div class="metric-value">${formatPercentage(data.details.assumptions.wacc * 100)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Beta (Market Risk)</div>
+            <div class="metric-value">${data.details.assumptions.beta.toFixed(2)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Risk-Free Rate</div>
+            <div class="metric-value">${formatPercentage(data.details.assumptions.riskFreeRate * 100)}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Market Risk Premium</div>
+            <div class="metric-value">${formatPercentage(data.details.assumptions.marketRiskPremium * 100)}</div>
+          </div>
+        </div>
+      ` : ''}
+
       <div class="section">
         <div class="section-title">Valuation Analysis</div>
 
         <div class="subsection">
           <div class="subsection-title">Methodology</div>
           <p>${data.methodology}</p>
+          <div class="insight-box">
+            <p>The valuation methodology is tailored to your company's stage and available data, combining multiple approaches to provide a balanced perspective.</p>
+          </div>
         </div>
 
         <div class="subsection">
@@ -188,7 +218,7 @@ function generateReportHtml(data: ValuationData): string {
               <th>Valuation</th>
             </tr>
             <tr>
-              <td>DCF Analysis</td>
+              <td>Discounted Cash Flow (DCF)</td>
               <td>${formatCurrency(data.details.methods.dcf)}</td>
             </tr>
             <tr>
@@ -200,26 +230,27 @@ function generateReportHtml(data: ValuationData): string {
 
         <div class="subsection">
           <div class="subsection-title">Scenario Analysis</div>
-          <div class="scenario-card">
-            <table>
-              <tr>
-                <th>Scenario</th>
-                <th>Valuation</th>
-              </tr>
-              <tr>
-                <td>Conservative Case</td>
-                <td>${formatCurrency(data.details.scenarios.worst)}</td>
-              </tr>
-              <tr>
-                <td>Base Case</td>
-                <td>${formatCurrency(data.details.scenarios.base)}</td>
-              </tr>
-              <tr>
-                <td>Optimistic Case</td>
-                <td>${formatCurrency(data.details.scenarios.best)}</td>
-              </tr>
-            </table>
+          <div class="insight-box">
+            <p>The following scenarios represent potential valuations under different market conditions and growth trajectories.</p>
           </div>
+          <table>
+            <tr>
+              <th>Scenario</th>
+              <th>Valuation</th>
+            </tr>
+            <tr>
+              <td>Conservative Case</td>
+              <td>${formatCurrency(data.details.scenarios.worst)}</td>
+            </tr>
+            <tr>
+              <td>Base Case</td>
+              <td>${formatCurrency(data.details.scenarios.base)}</td>
+            </tr>
+            <tr>
+              <td>Optimistic Case</td>
+              <td>${formatCurrency(data.details.scenarios.best)}</td>
+            </tr>
+          </table>
         </div>
       </div>
 
@@ -235,19 +266,26 @@ function generateReportHtml(data: ValuationData): string {
               <th>Risk Factor</th>
               <th>Impact</th>
             </tr>
-            ${Object.entries(data.riskAssessment.factors)
-              .map(([factor, impact]) => `
+            ${Object.entries(data.riskAssessment.categories)
+              .map(([category, impact]) => `
                 <tr>
-                  <td>${factor.replace(/([A-Z])/g, ' $1').trim()}</td>
+                  <td>${category.charAt(0).toUpperCase() + category.slice(1)}</td>
                   <td>${impact}</td>
                 </tr>
               `).join('')}
           </table>
+          <div class="insight-box">
+            <p>Key Recommendations:</p>
+            <ul>
+              ${data.riskAssessment.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+            </ul>
+          </div>
         </div>
       ` : ''}
 
       <div class="footer">
-        <p>This report was generated using advanced valuation methodologies, incorporating both quantitative metrics and qualitative factors. The valuation provided is an estimate based on the information provided and industry standards. It should not be considered as financial advice.</p>
+        <p>This report was generated using advanced valuation methodologies, incorporating both quantitative metrics and qualitative factors. The valuation considers industry standards, market conditions, and company-specific factors.</p>
+        <p>Note: This valuation is an estimate based on the information provided and current market conditions. It should not be considered as financial advice. Actual market values may vary based on numerous factors including market conditions, negotiation dynamics, and strategic considerations.</p>
         <p>Valuation Date: ${formatDate()}</p>
         <p>Currency: ${data.currency} | Industry: ${data.industry} | Stage: ${data.stage}</p>
       </div>

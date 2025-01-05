@@ -18,26 +18,264 @@ const EXCHANGE_RATES: CurrencyRates = {
   INR: 83.15,
 };
 
-const INDUSTRY_MULTIPLIERS = {
-  tech: { base: 12, growth: 1.5, beta: 1.2 },
-  ecommerce: { base: 8, growth: 1.2, beta: 1.1 },
-  saas: { base: 15, growth: 1.8, beta: 1.3 },
-  marketplace: { base: 10, growth: 1.4, beta: 1.15 },
+// Industry-specific metrics based on Damodaran's database
+const INDUSTRY_METRICS = {
+  tech: {
+    base: 12,
+    growth: 1.5,
+    beta: 1.2,
+    reinvestmentRate: 0.25,
+    operatingMargin: 0.22,
+    sustainableGrowth: 0.15,
+  },
+  ecommerce: {
+    base: 8,
+    growth: 1.2,
+    beta: 1.1,
+    reinvestmentRate: 0.20,
+    operatingMargin: 0.18,
+    sustainableGrowth: 0.12,
+  },
+  saas: {
+    base: 15,
+    growth: 1.8,
+    beta: 1.3,
+    reinvestmentRate: 0.30,
+    operatingMargin: 0.25,
+    sustainableGrowth: 0.18,
+  },
+  marketplace: {
+    base: 10,
+    growth: 1.4,
+    beta: 1.15,
+    reinvestmentRate: 0.22,
+    operatingMargin: 0.20,
+    sustainableGrowth: 0.14,
+  },
 };
 
-// Regional compliance standards
-const REGIONAL_ADJUSTMENTS = {
-  IBBI: {
-    riskFreeRate: 0.074, // India 10-year government bond yield
-    marketRiskPremium: 0.085,
+// Regional market data and risk premiums
+const REGIONAL_METRICS = {
+  GLOBAL: {
+    riskFreeRate: 0.042, // US 10-year treasury yield as global benchmark
+    marketRiskPremium: 0.065,
+    countryRiskPremium: 0,
     smallCompanyPremium: 0.035,
   },
-  USA_409A: {
-    riskFreeRate: 0.042, // US 10-year treasury yield
-    marketRiskPremium: 0.065,
-    smallCompanyPremium: 0.025,
+  INDIA: {
+    riskFreeRate: 0.074,
+    marketRiskPremium: 0.085,
+    countryRiskPremium: 0.025,
+    smallCompanyPremium: 0.045,
+  },
+  EU: {
+    riskFreeRate: 0.025,
+    marketRiskPremium: 0.060,
+    countryRiskPremium: 0.01,
+    smallCompanyPremium: 0.035,
   },
 };
+
+function inferRegionalMetrics(currency: string) {
+  switch (currency) {
+    case 'INR':
+      return REGIONAL_METRICS.INDIA;
+    case 'EUR':
+      return REGIONAL_METRICS.EU;
+    default:
+      return REGIONAL_METRICS.GLOBAL;
+  }
+}
+
+function calculateWACC(params: ValuationFormData): number {
+  const { industry, currency } = params;
+  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
+  const regionalData = inferRegionalMetrics(currency);
+
+  // Cost of Equity calculation using CAPM
+  const costOfEquity = regionalData.riskFreeRate +
+    (industryData.beta * regionalData.marketRiskPremium) +
+    regionalData.countryRiskPremium +
+    regionalData.smallCompanyPremium;
+
+  // For early-stage companies, we assume 100% equity financing
+  return costOfEquity;
+}
+
+function inferGrowthRate(params: ValuationFormData): number {
+  const { industry, stage, growthRate } = params;
+  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
+
+  // If user provided growth rate, validate and adjust if needed
+  if (growthRate) {
+    // Cap the growth rate based on stage and industry
+    const maxGrowth = industryData.sustainableGrowth * 2;
+    return Math.min(growthRate / 100, maxGrowth);
+  }
+
+  // Infer growth rate based on stage and industry
+  const stageMultiplier = {
+    ideation: 0.5,
+    validation: 0.8,
+    growth: 1.2,
+    scaling: 1.5,
+    exit: 1.0,
+    liquidation: 0.3,
+  }[stage] || 1.0;
+
+  return industryData.sustainableGrowth * stageMultiplier;
+}
+
+function calculateDCF(params: ValuationFormData): number {
+  const { revenue, margins, industry } = params;
+  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
+
+  // Calculate key metrics
+  const wacc = calculateWACC(params);
+  const growthRate = inferGrowthRate(params);
+  const operatingMargin = margins ? margins / 100 : industryData.operatingMargin;
+
+  // DCF parameters
+  const explicitPeriod = 5;
+  const terminalGrowthRate = Math.min(growthRate / 2, 0.03); // Terminal growth capped at 3%
+
+  let presentValue = 0;
+  let currentRevenue = revenue;
+  let lastFreeCashFlow = 0;
+
+  // Calculate explicit period cash flows
+  for (let year = 1; year <= explicitPeriod; year++) {
+    const projectedRevenue = currentRevenue * (1 + growthRate);
+    const operatingProfit = projectedRevenue * operatingMargin;
+    const freeCashFlow = operatingProfit * (1 - industryData.reinvestmentRate);
+
+    presentValue += freeCashFlow / Math.pow(1 + wacc, year);
+    currentRevenue = projectedRevenue;
+    lastFreeCashFlow = freeCashFlow;
+  }
+
+  // Terminal value calculation using Gordon Growth Model
+  const terminalValue = (lastFreeCashFlow * (1 + terminalGrowthRate)) / 
+    (wacc - terminalGrowthRate);
+  const presentTerminalValue = terminalValue / Math.pow(1 + wacc, explicitPeriod);
+
+  return presentValue + presentTerminalValue;
+}
+
+function calculateComparables(params: ValuationFormData): number {
+  const { revenue, growthRate, margins, industry, stage } = params;
+  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
+
+  // Base multiple from industry data
+  let revenueMultiple = industryData.base;
+
+  // Growth adjustment
+  const normalizedGrowth = growthRate / 100;
+  if (normalizedGrowth > industryData.sustainableGrowth * 1.5) {
+    revenueMultiple *= 1.3;
+  } else if (normalizedGrowth > industryData.sustainableGrowth) {
+    revenueMultiple *= 1.15;
+  }
+
+  // Margin adjustment
+  const normalizedMargin = margins / 100;
+  if (normalizedMargin > industryData.operatingMargin * 1.2) {
+    revenueMultiple *= 1.25;
+  } else if (normalizedMargin > industryData.operatingMargin) {
+    revenueMultiple *= 1.1;
+  }
+
+  // Stage adjustment
+  const stageMultiplier = {
+    ideation: 0.7,
+    validation: 0.9,
+    growth: 1.1,
+    scaling: 1.3,
+    exit: 1.2,
+    liquidation: 0.5,
+  }[stage] || 1.0;
+
+  return revenue * revenueMultiple * stageMultiplier;
+}
+
+function calculateValuation(params: ValuationFormData) {
+  const { currency, stage, industry } = params;
+
+  // Convert revenue to USD for calculations
+  const revenueUSD = params.revenue / EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
+  const paramsUSD = { ...params, revenue: revenueUSD };
+
+  // Calculate valuations using different methods
+  const dcfValuation = calculateDCF(paramsUSD);
+  const comparablesValuation = calculateComparables(paramsUSD);
+
+  // Determine method weights based on stage
+  let dcfWeight = 0.4;
+  let comparablesWeight = 0.6;
+
+  if (stage === 'scaling' || stage === 'exit') {
+    dcfWeight = 0.6;
+    comparablesWeight = 0.4;
+  } else if (stage === 'ideation' || stage === 'validation') {
+    dcfWeight = 0.2;
+    comparablesWeight = 0.8;
+  }
+
+  // Calculate weighted average valuation
+  const finalValuationUSD = (dcfValuation * dcfWeight) + (comparablesValuation * comparablesWeight);
+
+  // Calculate confidence score based on data quality
+  const confidenceScore = Math.min(100, Math.max(50,
+    60 + // Base confidence
+    (params.revenue ? 10 : 0) + // Revenue data available
+    (params.margins ? 10 : 0) + // Margin data available
+    (params.growthRate ? 10 : 0) + // Growth data available
+    (stage === 'scaling' || stage === 'exit' ? 10 : 0) // Later stage companies
+  ));
+
+  // Convert back to requested currency
+  const finalValuation = finalValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
+
+  // Calculate scenario analysis
+  const scenarios = {
+    worst: finalValuationUSD * 0.7,
+    base: finalValuationUSD,
+    best: finalValuationUSD * 1.3,
+  };
+
+  const industryData = INDUSTRY_METRICS[industry as keyof typeof INDUSTRY_METRICS];
+  const regionalData = inferRegionalMetrics(currency);
+
+  return {
+    valuation: Math.max(finalValuation, 0),
+    multiplier: revenueUSD > 0 ? finalValuationUSD / revenueUSD : industryData.base,
+    methodology: `Weighted Average (${dcfWeight * 100}% DCF, ${comparablesWeight * 100}% Market Comparables)`,
+    confidenceScore,
+    details: {
+      baseValuation: finalValuationUSD,
+      methods: {
+        dcf: dcfValuation,
+        comparables: comparablesValuation,
+      },
+      scenarios,
+      assumptions: {
+        wacc: calculateWACC(paramsUSD),
+        growthRate: inferGrowthRate(paramsUSD),
+        beta: industryData.beta,
+        riskFreeRate: regionalData.riskFreeRate,
+        marketRiskPremium: regionalData.marketRiskPremium,
+        operatingMargin: industryData.operatingMargin,
+      }
+    },
+    currencyConversion: {
+      rates: EXCHANGE_RATES,
+      baseRate: EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES],
+      baseCurrency: currency,
+    },
+  };
+}
+
+export { calculateValuation, inferRegionalMetrics, calculateWACC };
 
 function calculateQualitativeScore(params: ValuationFormData): number {
   let score = 1;
@@ -88,149 +326,6 @@ function calculateQualitativeScore(params: ValuationFormData): number {
   }
 
   return score;
-}
-
-function calculateDCF(params: ValuationFormData, region: 'IBBI' | 'USA_409A' = 'IBBI'): number {
-  const { revenue, growthRate, margins, industry } = params;
-  const industryData = INDUSTRY_MULTIPLIERS[industry as keyof typeof INDUSTRY_MULTIPLIERS];
-  const regionalData = REGIONAL_ADJUSTMENTS[region];
-
-  // Calculate WACC
-  const beta = industryData.beta;
-  const costOfEquity = regionalData.riskFreeRate + 
-    (beta * regionalData.marketRiskPremium) + 
-    regionalData.smallCompanyPremium;
-
-  // Simplified DCF calculation
-  const projectionYears = 5;
-  const terminalGrowthRate = Math.min(growthRate / 100, 0.03); // Cap at 3%
-
-  let presentValue = 0;
-  let currentRevenue = revenue;
-  let lastFreeCashFlow = 0;
-
-  // Calculate present value of projected cash flows
-  for (let year = 1; year <= projectionYears; year++) {
-    const projectedRevenue = currentRevenue * (1 + (growthRate / 100));
-    const freeCashFlow = projectedRevenue * (margins / 100) * 0.7; // Assuming 70% of operating profit converts to FCF
-    presentValue += freeCashFlow / Math.pow(1 + costOfEquity, year);
-    currentRevenue = projectedRevenue;
-    lastFreeCashFlow = freeCashFlow; // Track the last calculated free cash flow
-  }
-
-  // Terminal value calculation using the last calculated free cash flow
-  const terminalValue = (lastFreeCashFlow * (1 + terminalGrowthRate)) / 
-    (costOfEquity - terminalGrowthRate);
-  const presentTerminalValue = terminalValue / Math.pow(1 + costOfEquity, projectionYears);
-
-  return presentValue + presentTerminalValue;
-}
-
-function calculateComparables(params: ValuationFormData): number {
-  const { revenue, growthRate, margins, industry } = params;
-  const industryData = INDUSTRY_MULTIPLIERS[industry as keyof typeof INDUSTRY_MULTIPLIERS];
-
-  // Base multiple adjusted for growth and margins
-  let revenueMultiple = industryData.base;
-
-  // Adjust multiple based on growth rate
-  if (growthRate > 50) revenueMultiple *= 1.3;
-  else if (growthRate > 30) revenueMultiple *= 1.2;
-  else if (growthRate > 15) revenueMultiple *= 1.1;
-
-  // Adjust multiple based on margins
-  if (margins > 30) revenueMultiple *= 1.25;
-  else if (margins > 20) revenueMultiple *= 1.15;
-  else if (margins > 10) revenueMultiple *= 1.05;
-
-  return revenue * revenueMultiple;
-}
-
-function suggestValuationMethod(params: ValuationFormData): string {
-  const { revenue, stage, marketValidation } = params;
-
-  if (stage === 'ideation' || stage === 'validation') {
-    return 'comparables'; // Early stage companies are better valued using comparables
-  }
-
-  if (revenue > 1000000 && marketValidation === 'proven') {
-    return 'dcf'; // More established companies with predictable cash flows
-  }
-
-  return 'hybrid'; // Use both methods for a balanced approach
-}
-
-export function calculateValuation(params: ValuationFormData) {
-  const { currency } = params;
-
-  // Convert revenue to USD for calculations
-  const revenueUSD = params.revenue / EXCHANGE_RATES[currency];
-  params.revenue = revenueUSD;
-
-  // Determine valuation method
-  const suggestedMethod = suggestValuationMethod(params);
-
-  // Calculate valuations using different methods
-  const dcfValuation = calculateDCF(params);
-  const comparablesValuation = calculateComparables(params);
-
-  // Calculate hybrid valuation with weightage
-  let finalValuationUSD = 0;
-  let methodology = '';
-
-  switch (suggestedMethod) {
-    case 'dcf':
-      finalValuationUSD = dcfValuation;
-      methodology = "Discounted Cash Flow Analysis with Regional Adjustments";
-      break;
-    case 'comparables':
-      finalValuationUSD = comparablesValuation;
-      methodology = "Market Comparables with Industry-Specific Multiples";
-      break;
-    case 'hybrid':
-      finalValuationUSD = (dcfValuation * 0.4) + (comparablesValuation * 0.6);
-      methodology = "Hybrid Approach (40% DCF, 60% Market Comparables)";
-      break;
-  }
-
-  // Apply qualitative adjustments
-  const qualitativeMultiplier = calculateQualitativeScore(params);
-  const qualitativeAdjustment = (finalValuationUSD * (qualitativeMultiplier - 1));
-  finalValuationUSD += qualitativeAdjustment;
-
-  // Calculate scenario analysis
-  const scenarios = {
-    worst: finalValuationUSD * 0.7,
-    base: finalValuationUSD,
-    best: finalValuationUSD * 1.3,
-  };
-
-  // Convert final valuation to requested currency
-  const finalValuation = finalValuationUSD * EXCHANGE_RATES[currency];
-  const multiplier = revenueUSD > 0 ? finalValuationUSD / revenueUSD : 
-    INDUSTRY_MULTIPLIERS[params.industry as keyof typeof INDUSTRY_MULTIPLIERS].base;
-
-  return {
-    valuation: Math.max(finalValuation, 0),
-    multiplier,
-    methodology,
-    details: {
-      baseValuation: finalValuationUSD,
-      adjustments: {
-        qualitativeAdjustment,
-      },
-      scenarios,
-      methods: {
-        dcf: dcfValuation,
-        comparables: comparablesValuation,
-      },
-    },
-    currencyConversion: {
-      rates: EXCHANGE_RATES,
-      baseRate: EXCHANGE_RATES[currency],
-      baseCurrency: currency,
-    },
-  };
 }
 
 function getStageRequirements(stage: keyof typeof stageMultipliers): string[] {
