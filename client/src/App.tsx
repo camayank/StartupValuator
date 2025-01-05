@@ -1,6 +1,7 @@
 import { Switch, Route, Link } from "wouter";
 import { Home } from "./pages/Home";
 import { Documentation } from "./pages/Documentation";
+import { Profile } from "./pages/Profile";
 import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
@@ -16,6 +17,9 @@ function App() {
             <Link href="/">
               <a className="text-sm hover:text-primary">Valuation</a>
             </Link>
+            <Link href="/profile/1">
+              <a className="text-sm hover:text-primary">Profile</a>
+            </Link>
             <Link href="/docs">
               <a className="text-sm hover:text-primary">API Docs</a>
             </Link>
@@ -26,6 +30,7 @@ function App() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/docs" component={Documentation} />
+        <Route path="/profile/:userId" component={Profile} />
         <Route component={NotFound} />
       </Switch>
     </div>
