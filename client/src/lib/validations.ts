@@ -10,7 +10,7 @@ export const valuationFormSchema = z.object({
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
 
-export interface ValuationData {
+export interface ValuationData extends ValuationFormData {
   valuation: number;
   multiplier: number;
   methodology: string;

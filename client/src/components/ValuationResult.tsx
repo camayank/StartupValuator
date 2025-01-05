@@ -8,6 +8,9 @@ import { generateReport } from "@/lib/api";
 import { RiskAssessment } from "./RiskAssessment";
 import { FundingTimeline } from "./FundingTimeline";
 import { PotentialPredictor } from "./PotentialPredictor";
+import { EcosystemNetwork } from "./EcosystemNetwork";
+import { FundingReadiness } from "./FundingReadiness";
+import { calculateFundingReadiness } from "@/lib/fundingReadiness";
 import {
   BarChart,
   Bar,
@@ -18,7 +21,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion } from "framer-motion";
-import { EcosystemNetwork } from "./EcosystemNetwork";
 
 interface ValuationResultProps {
   data: ValuationData | null;
@@ -80,6 +82,9 @@ export function ValuationResult({ data }: ValuationResultProps) {
       isPositive: value > 0,
     })),
   ];
+
+  // Calculate funding readiness
+  const fundingReadiness = calculateFundingReadiness(data);
 
   return (
     <div className="space-y-6">
@@ -159,6 +164,14 @@ export function ValuationResult({ data }: ValuationResultProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
+        <FundingReadiness data={fundingReadiness} />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.8 }}
+      >
         <FundingTimeline
           currentStage={data.stage}
           currentValuation={data.valuation}
@@ -169,7 +182,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
+          transition={{ duration: 0.5, delay: 1.0 }}
         >
           <RiskAssessment data={data.riskAssessment} />
         </motion.div>
@@ -179,7 +192,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.0 }}
+          transition={{ duration: 0.5, delay: 1.2 }}
         >
           <PotentialPredictor data={data.potentialPrediction} />
         </motion.div>
@@ -189,7 +202,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.2 }}
+          transition={{ duration: 0.5, delay: 1.4 }}
         >
           <EcosystemNetwork data={data.ecosystemNetwork} />
         </motion.div>
