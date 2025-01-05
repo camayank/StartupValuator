@@ -1,14 +1,17 @@
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, DollarSign, TrendingUp, PieChart } from "lucide-react";
 import { currencies } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
+import { motion } from "framer-motion";
 
 interface FinancialDetailsStepProps {
   data: Partial<ValuationFormData>;
   onUpdate: (data: Partial<ValuationFormData>) => void;
   onNext: () => void;
   onBack: () => void;
+  currentStep: number;
+  totalSteps: number;
 }
 
 export function FinancialDetailsStep({
@@ -16,6 +19,8 @@ export function FinancialDetailsStep({
   onUpdate,
   onNext,
   onBack,
+  currentStep,
+  totalSteps,
 }: FinancialDetailsStepProps) {
   const handleChange = (field: keyof ValuationFormData, value: any) => {
     onUpdate({ [field]: value });
@@ -24,7 +29,25 @@ export function FinancialDetailsStep({
   const currencySymbol = data.currency ? currencies[data.currency as keyof typeof currencies].symbol : '$';
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      {/* Progress indicator */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
+          <span className="text-sm text-muted-foreground">Financial Information</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-300"
+            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+          />
+        </div>
+      </div>
+
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
@@ -33,43 +56,105 @@ export function FinancialDetailsStep({
         </AlertDescription>
       </Alert>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Revenue</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-              {currencySymbol}
-            </span>
-            <Input
-              type="number"
-              value={data.revenue}
-              onChange={(e) => handleChange('revenue', Number(e.target.value))}
-              placeholder="Enter your current revenue"
-              className="pl-7"
-            />
+      <motion.div 
+        className="grid md:grid-cols-2 gap-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Revenue
+          </h3>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Annual Revenue</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                {currencySymbol}
+              </span>
+              <Input
+                type="number"
+                value={data.revenue}
+                onChange={(e) => handleChange('revenue', Number(e.target.value))}
+                placeholder={`e.g., ${currencySymbol}1,000,000`}
+                className="pl-7 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Enter your total annual revenue
+            </p>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Growth Rate (%)</label>
-          <Input
-            type="number"
-            value={data.growthRate}
-            onChange={(e) => handleChange('growthRate', Number(e.target.value))}
-            placeholder="Expected annual growth rate"
-          />
+        <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Growth
+          </h3>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Growth Rate (%)</label>
+            <div className="relative">
+              <TrendingUp className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input
+                type="number"
+                value={data.growthRate}
+                onChange={(e) => handleChange('growthRate', Number(e.target.value))}
+                placeholder="e.g., 25"
+                className="pl-9 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Expected annual growth rate
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Operating Margins (%)</label>
-          <Input
-            type="number"
-            value={data.margins}
-            onChange={(e) => handleChange('margins', Number(e.target.value))}
-            placeholder="Current operating margins"
-          />
+        <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <PieChart className="h-5 w-5" />
+            Margins
+          </h3>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Operating Margins (%)</label>
+            <div className="relative">
+              <PieChart className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input
+                type="number"
+                value={data.margins}
+                onChange={(e) => handleChange('margins', Number(e.target.value))}
+                placeholder="e.g., 15"
+                className="pl-9 transition-all duration-200 hover:border-primary focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Current operating profit margin
+            </p>
+          </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+
+      <motion.div 
+        className="flex justify-end space-x-4 mt-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        >
+          Continue
+        </button>
+      </motion.div>
+    </motion.div>
   );
 }
