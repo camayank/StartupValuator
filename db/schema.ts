@@ -5,10 +5,10 @@ import { z } from "zod";
 
 // Define user roles enum
 export const userRoles = pgEnum("user_role", ["startup", "investor", "valuer", "consultant"]);
-export const subscriptionTiers = pgEnum("subscription_tier", ["free", "basic", "premium", "enterprise"]);
+export const subscriptionTiers = pgEnum("subscription_tier", ["free", "startup", "growth", "enterprise"]);
 export const planStatus = pgEnum("plan_status", ["active", "cancelled", "past_due", "trial"]);
 
-// Add new enums for tracking activities
+// Add activity tracking enums
 export const activityTypes = pgEnum("activity_type", [
   "page_view",
   "valuation_started",
@@ -20,6 +20,13 @@ export const activityTypes = pgEnum("activity_type", [
   "profile_update",
   "settings_change",
   "feature_interaction"
+]);
+
+// Add new enums for add-on services
+export const addonTypes = pgEnum("addon_type", [
+  "cap_table_management",
+  "financial_projections",
+  "compliance_reports"
 ]);
 
 export const users = pgTable("users", {
@@ -39,6 +46,26 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const userProfiles = pgTable("user_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  fullName: varchar("full_name", { length: 255 }),
+  region: varchar("region", { length: 100 }),
+  bio: text("bio"),
+  website: varchar("website", { length: 255 }),
+  linkedinUrl: varchar("linkedin_url", { length: 255 }),
+  twitterHandle: varchar("twitter_handle", { length: 50 }),
+  profilePicture: varchar("profile_picture", { length: 255 }),
+  settings: jsonb("settings").$type<{
+    emailNotifications: boolean;
+    twoFactorEnabled: boolean;
+    theme: "light" | "dark" | "system";
+    language: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
@@ -46,13 +73,17 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   price: integer("price").notNull(), // Price in cents
   billingPeriod: varchar("billing_period", { length: 20 }).notNull(), // monthly, yearly
   features: jsonb("features").$type<{
-    valuationReports: number;
+    valuationReports: number; // -1 for unlimited
+    complianceReports: boolean;
     aiAnalysis: boolean;
     customBranding: boolean;
     apiAccess: boolean;
     prioritySupport: boolean;
     teamMembers: number;
     advancedAnalytics: boolean;
+    collaborationTools: boolean;
+    realTimeData: boolean;
+    peerBenchmarking: boolean;
   }>().notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -71,26 +102,8 @@ export const userSubscriptions = pgTable("user_subscriptions", {
     reportsGenerated: number;
     apiCalls: number;
     lastReportDate: string;
-  }>(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const userProfiles = pgTable("user_profiles", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  fullName: varchar("full_name", { length: 255 }),
-  region: varchar("region", { length: 100 }),
-  bio: text("bio"),
-  website: varchar("website", { length: 255 }),
-  linkedinUrl: varchar("linkedin_url", { length: 255 }),
-  twitterHandle: varchar("twitter_handle", { length: 50 }),
-  profilePicture: varchar("profile_picture", { length: 255 }),
-  settings: jsonb("settings").$type<{
-    emailNotifications: boolean;
-    twoFactorEnabled: boolean;
-    theme: "light" | "dark" | "system";
-    language: string;
+    complianceReportsUsed: number;
+    projectionsGenerated: number;
   }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -141,6 +154,31 @@ export const workflowSuggestions = pgTable("workflow_suggestions", {
   expiresAt: timestamp("expires_at"),
 });
 
+// Add new table for pay-per-use purchases
+export const payPerUseTransactions = pgTable("pay_per_use_transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  itemType: varchar("item_type", { length: 50 }).notNull(), // 'valuation_report', 'compliance_report'
+  amount: integer("amount").notNull(), // Price in cents
+  status: varchar("status", { length: 20 }).notNull(), // 'completed', 'pending', 'failed'
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add new table for add-on subscriptions
+export const addonSubscriptions = pgTable("addon_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  addonType: addonTypes("addon_type").notNull(),
+  status: planStatus("status").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date"),
+  price: integer("price").notNull(), // Price in cents
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Define relations
 export const userToProfileRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -184,7 +222,6 @@ export const suggestionRelations = relations(workflowSuggestions, ({ one }) => (
     references: [users.id],
   }),
 }));
-
 
 // Create schemas for validation with custom validation rules
 export const insertUserSchema = createInsertSchema(users, {
