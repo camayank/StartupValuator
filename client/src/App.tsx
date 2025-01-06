@@ -30,16 +30,17 @@ import {
 import type { ValuationFormData } from "@/lib/validations";
 import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
+import { TourGuide } from "@/components/TourGuide";
 
 const mainNavItems = [
-  { href: "/", label: "Valuation", description: "Calculate your startup's value" },
-  { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts" },
-  { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations" },
+  { href: "/", label: "Valuation", description: "Calculate your startup's value", tourId: "valuation" },
+  { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", tourId: "projections" },
+  { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", tourId: "pitch-deck" },
 ];
 
 const toolsNavItems = [
-  { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics" },
-  { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance" },
+  { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics", tourId: "dashboard" },
+  { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance", tourId: "compliance" },
 ];
 
 const resourceNavItems = [
@@ -83,13 +84,16 @@ function App() {
     );
   }
 
-  const NavItem = ({ href, label, description }: { href: string; label: string; description: string }) => (
+  const NavItem = ({ href, label, description, tourId }: { href: string; label: string; description: string; tourId?: string }) => (
     <Tooltip>
       <TooltipTrigger asChild>
         <Link href={href}>
-          <span className={`text-sm hover:text-primary cursor-pointer transition-colors ${
-            location === href ? 'text-primary font-medium' : ''
-          }`}>
+          <span 
+            className={`text-sm hover:text-primary cursor-pointer transition-colors ${
+              location === href ? 'text-primary font-medium' : ''
+            }`}
+            data-tour={tourId}
+          >
             {label}
           </span>
         </Link>
@@ -269,6 +273,7 @@ function App() {
           </Switch>
         </main>
         <WorkflowSuggestions />
+        <TourGuide />
       </div>
     </TooltipProvider>
   );

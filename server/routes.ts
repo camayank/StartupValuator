@@ -43,6 +43,26 @@ export function registerRoutes(app: Express): Server {
     next();
   });
 
+  // Add activity tracking endpoint
+  app.post("/api/activities", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      await ActivityTracker.trackActivity(
+        req.user!.id,
+        req.body.activityType,
+        req,
+        req.body.metadata
+      );
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to track activity:", error);
+      res.status(500).json({ message: "Failed to track activity" });
+    }
+  });
+
   // Workflow suggestion routes
   app.get("/api/suggestions", async (req, res) => {
     if (!req.isAuthenticated()) {
