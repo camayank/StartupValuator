@@ -66,7 +66,7 @@ export function LandingPage() {
               Get an accurate, data-driven valuation for your startup in minutes. Trusted by over 10,000 founders and investors.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth?mode=signup">
+              <Link href="/valuation">
                 <Button size="lg" className="w-full sm:w-auto">
                   Value Your Startup <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -234,7 +234,7 @@ export function LandingPage() {
           <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
             Join thousands of founders making data-driven decisions with our valuation platform
           </p>
-          <Link href="/auth?mode=signup">
+          <Link href="/valuation">
             <Button size="lg" variant="secondary" className="min-w-[200px]">
               Start Free Trial
             </Button>
