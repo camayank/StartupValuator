@@ -1,5 +1,6 @@
 import type { ValuationFormData } from "../../client/src/lib/validations";
 import { industries, businessStages } from "../../client/src/lib/validations";
+import { calculateFinancialAssumptions } from "./financialAssumptions";
 import type { FinancialAssumptions } from "./financialAssumptions";
 
 interface CurrencyRates {
@@ -19,16 +20,19 @@ const EXCHANGE_RATES: CurrencyRates = {
   INR: 83.15,
 };
 
-export function calculateValuation(params: ValuationFormData & { assumptions: FinancialAssumptions }) {
-  const { currency, stage, industry, revenue, assumptions } = params;
+export async function calculateValuation(params: ValuationFormData) {
+  const { currency, stage, industry, revenue } = params;
+
+  // Generate financial assumptions first
+  const assumptions = calculateFinancialAssumptions(params);
 
   // Convert revenue to USD for calculations
   const revenueUSD = params.revenue / EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
   const paramsUSD = { ...params, revenue: revenueUSD };
 
   // Calculate valuations using different methods with enhanced assumptions
-  const dcfAnalysis = calculateDCF(paramsUSD);
-  const comparablesAnalysis = calculateComparables(paramsUSD);
+  const dcfAnalysis = calculateDCF(paramsUSD, assumptions);
+  const comparablesAnalysis = calculateComparables(paramsUSD, assumptions);
 
   // Determine method weights based on stage and data quality
   let dcfWeight = 0.4;
@@ -82,7 +86,7 @@ function calculateConfidenceScore(params: ValuationFormData): number {
   ));
 }
 
-function calculateDCF(params: ValuationFormData & { assumptions: FinancialAssumptions }): {
+function calculateDCF(params: ValuationFormData, assumptions: FinancialAssumptions): {
   value: number;
   stages: Array<{
     year: number;
@@ -92,7 +96,7 @@ function calculateDCF(params: ValuationFormData & { assumptions: FinancialAssump
     capex: number;
   }>;
 } {
-  const { revenue, assumptions, margins = 0 } = params;
+  const { revenue, margins = 0 } = params;
   const { discountRate, growthRate, terminalGrowthRate } = assumptions;
 
   let currentRevenue = revenue;
@@ -105,14 +109,14 @@ function calculateDCF(params: ValuationFormData & { assumptions: FinancialAssump
   const capexRatio = 0.12; // 12% of revenue
 
   for (let year = 1; year <= projectionYears; year++) {
-    currentRevenue *= (1 + growthRate);
+    currentRevenue *= (1 + (growthRate / 100));
     const ebitda = currentRevenue * (margins / 100);
     const workingCapital = currentRevenue * workingCapitalRatio;
     const capex = currentRevenue * capexRatio;
 
     // Free cash flow calculation considering working capital and capex
     const fcf = ebitda * (1 - 0.25) - workingCapital - capex; // Assuming 25% tax rate
-    const presentValueFactor = Math.pow(1 + discountRate, year);
+    const presentValueFactor = Math.pow(1 + (discountRate / 100), year);
     const discountedValue = fcf / presentValueFactor;
 
     presentValue += discountedValue;
@@ -126,9 +130,9 @@ function calculateDCF(params: ValuationFormData & { assumptions: FinancialAssump
   }
 
   // Calculate terminal value using enhanced Gordon Growth Model
-  const terminalFCF = stages[stages.length - 1].fcf * (1 + terminalGrowthRate);
-  const terminalValue = terminalFCF / (discountRate - terminalGrowthRate);
-  const discountedTerminalValue = terminalValue / Math.pow(1 + discountRate, projectionYears);
+  const terminalFCF = stages[stages.length - 1].fcf * (1 + (terminalGrowthRate / 100));
+  const terminalValue = terminalFCF / ((discountRate / 100) - (terminalGrowthRate / 100));
+  const discountedTerminalValue = terminalValue / Math.pow(1 + (discountRate / 100), projectionYears);
 
   return {
     value: presentValue + discountedTerminalValue,
@@ -136,7 +140,7 @@ function calculateDCF(params: ValuationFormData & { assumptions: FinancialAssump
   };
 }
 
-function calculateComparables(params: ValuationFormData & { assumptions: FinancialAssumptions }): {
+function calculateComparables(params: ValuationFormData, assumptions: FinancialAssumptions): {
   value: number;
   multiples: {
     revenue: number;
