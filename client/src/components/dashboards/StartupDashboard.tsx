@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, TrendingUp, TrendingDown } from "lucide-react";
+import { Info, TrendingUp, TrendingDown, Target, Users, LineChart } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { formatCurrency } from "@/lib/validations";
 import { cn } from "@/lib/utils";
+import type { ReadinessScore } from "@/lib/fundingReadiness";
 
 interface DashboardData {
   metrics: {
@@ -24,6 +25,7 @@ interface DashboardData {
     category: string;
     value: number;
   }>;
+  readinessScore?: ReadinessScore;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -53,19 +55,118 @@ export function StartupDashboard() {
       { category: 'Operations', value: 20 },
       { category: 'Sales', value: 15 },
     ],
+    readinessScore: {
+      overallScore: 75,
+      categories: {
+        financial: {
+          score: 0.8,
+          metrics: {
+            revenueGrowth: 0.85,
+            margins: 0.75,
+            cashRunway: 0.8,
+          },
+        },
+        market: {
+          score: 0.7,
+          metrics: {
+            marketSize: 0.8,
+            competitiveLandscape: 0.6,
+            growthPotential: 0.7,
+          },
+        },
+        team: {
+          score: 0.75,
+          metrics: {
+            founderExperience: 0.8,
+            teamCompleteness: 0.7,
+            advisors: 0.75,
+          },
+        },
+        product: {
+          score: 0.8,
+          metrics: {
+            productMaturity: 0.85,
+            marketFit: 0.8,
+            technicalInnovation: 0.75,
+          },
+        },
+      },
+      recommendations: [
+        "Consider expanding market reach",
+        "Strengthen the team by adding key advisors",
+        "Focus on improving margins",
+      ],
+      targetInvestors: [
+        {
+          type: "Early Stage VC Firms",
+          matchScore: 0.8,
+          reason: "Good foundation with room for growth",
+        },
+      ],
+    },
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-bold">Financial Overview</h1>
+        <h1 className="text-3xl font-bold">Startup Health Dashboard</h1>
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Monitor your startup's key metrics and performance indicators in real-time.
+            Track your key metrics and fundraising readiness in real-time.
           </AlertDescription>
         </Alert>
       </div>
+
+      {/* Funding Readiness Score */}
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Funding Readiness Score
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-2xl font-bold">
+              {mockData.readinessScore?.overallScore}%
+            </div>
+            <div className={cn(
+              "px-3 py-1 rounded-full text-sm font-medium",
+              mockData.readinessScore?.overallScore >= 70
+                ? "bg-green-100 text-green-800"
+                : mockData.readinessScore?.overallScore >= 50
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-red-100 text-red-800"
+            )}>
+              {mockData.readinessScore?.targetInvestors[0].type}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {Object.entries(mockData.readinessScore?.categories ?? {}).map(([category, data]) => (
+              <div key={category} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium capitalize">{category}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round(data.score * 100)}%
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full transition-all",
+                      data.score >= 0.7 ? "bg-green-500" :
+                      data.score >= 0.5 ? "bg-yellow-500" : "bg-red-500"
+                    )}
+                    style={{ width: `${data.score * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="hover:shadow-lg transition-shadow">
@@ -248,6 +349,28 @@ export function StartupDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recommendations Section */}
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LineChart className="h-5 w-5" />
+            Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {mockData.readinessScore?.recommendations.map((recommendation, index) => (
+              <div key={index} className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-medium text-primary">{index + 1}</span>
+                </div>
+                <p className="text-sm">{recommendation}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
