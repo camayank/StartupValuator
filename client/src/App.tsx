@@ -3,13 +3,13 @@ import { Home } from "./pages/Home";
 import { Documentation } from "./pages/Documentation";
 import { Profile } from "./pages/Profile";
 import { Card } from "@/components/ui/card";
-import { 
-  AlertCircle, 
-  BarChart3, 
-  Calculator, 
-  FileText, 
-  Settings, 
-  Users, 
+import {
+  AlertCircle,
+  BarChart3,
+  Calculator,
+  FileText,
+  Settings,
+  Users,
   Building2,
   PieChart,
   ClipboardCheck,
@@ -42,6 +42,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
+import { LandingPage } from "./pages/LandingPage";
 
 // Navigation configuration with improved structure and icons
 const navigationConfig = {
@@ -97,7 +98,7 @@ const resourceLinks = [
 ];
 
 function App() {
-  const { user, isLoading, logout } = useUser();
+  const { user, isLoading } = useUser();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -112,25 +113,31 @@ function App() {
     );
   }
 
-  if (!user) {
+  // Show landing page if not logged in and not on auth page
+  if (!user && !location.startsWith('/auth')) {
+    return <LandingPage />;
+  }
+
+  // Show auth page if not logged in and on auth page
+  if (!user && location.startsWith('/auth')) {
     return <AuthPage />;
   }
 
   const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig];
 
-  const NavLink = ({ href, label, description, icon: Icon }: { 
-    href: string; 
-    label: string; 
-    description: string; 
+  const NavLink = ({ href, label, description, icon: Icon }: {
+    href: string;
+    label: string;
+    description: string;
     icon: any;
   }) => (
     <Tooltip>
       <TooltipTrigger asChild>
         <Link href={href}>
-          <div 
+          <div
             className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-              location === href 
-                ? 'bg-primary/10 text-primary' 
+              location === href
+                ? 'bg-primary/10 text-primary'
                 : 'hover:bg-accent text-foreground'
             }`}
           >
@@ -227,7 +234,7 @@ function App() {
                   </Link>
                   <DropdownMenuItem
                     className="cursor-pointer text-destructive focus:text-destructive"
-                    onClick={() => logout()}
+                    onClick={() => {}}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
@@ -278,14 +285,14 @@ function App() {
                     <div className="px-4 py-2 text-sm text-muted-foreground">
                       Signed in as: {user.username}
                     </div>
-                    <MobileNavItem 
-                      href={`/profile/${user.id}`} 
-                      label="Profile Settings" 
-                      icon={Settings} 
+                    <MobileNavItem
+                      href={`/profile/${user.id}`}
+                      label="Profile Settings"
+                      icon={Settings}
                     />
                     <button
                       className="flex w-full items-center gap-3 px-4 py-2 text-destructive hover:bg-accent"
-                      onClick={() => logout()}
+                      onClick={() => {}}
                     >
                       <LogOut className="h-5 w-5" />
                       Logout
