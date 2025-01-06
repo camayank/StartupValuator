@@ -46,6 +46,7 @@
     "@types/json2csv": "^5.0.7",
     "@types/pdfkit": "^0.13.8",
     "@types/pdfmake": "^0.2.11",
+    "canvas": "^3.0.1",
     "chart.js": "^4.4.7",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
