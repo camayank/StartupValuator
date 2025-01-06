@@ -9,6 +9,15 @@ export const currencies = {
   INR: { symbol: "₹", name: "Indian Rupee" },
 } as const;
 
+export const valuationPurposes = {
+  fundraising: "Fundraising",
+  acquisition: "Mergers & Acquisitions",
+  compliance: "Regulatory Compliance",
+  internal: "Internal Planning",
+  stakeholder: "Stakeholder Reporting",
+  exit_planning: "Exit Planning",
+} as const;
+
 // Enhanced regions with compliance requirements
 export const regions = {
   us: {
@@ -59,7 +68,7 @@ export const businessStages = {
     name: "Ideation Stage",
     riskPremium: 0.25,
     valuation: {
-      methods: ["scorecard", "checklistMethod"],
+      methods: ["scorecard", "checklistMethod"] as const,
       weights: { scorecard: 0.6, checklistMethod: 0.4 }
     }
   },
@@ -67,7 +76,7 @@ export const businessStages = {
     name: "MVP Stage",
     riskPremium: 0.20,
     valuation: {
-      methods: ["vcMethod", "firstChicago"],
+      methods: ["vcMethod", "firstChicago"] as const,
       weights: { vcMethod: 0.7, firstChicago: 0.3 }
     }
   },
@@ -75,7 +84,7 @@ export const businessStages = {
     name: "Early Revenue",
     riskPremium: 0.15,
     valuation: {
-      methods: ["vcMethod", "marketMultiples", "dcf"],
+      methods: ["vcMethod", "marketMultiples", "dcf"] as const,
       weights: { vcMethod: 0.4, marketMultiples: 0.4, dcf: 0.2 }
     }
   },
@@ -83,7 +92,7 @@ export const businessStages = {
     name: "Growth Stage",
     riskPremium: 0.10,
     valuation: {
-      methods: ["dcf", "marketMultiples", "firstChicago"],
+      methods: ["dcf", "marketMultiples", "firstChicago"] as const,
       weights: { dcf: 0.4, marketMultiples: 0.4, firstChicago: 0.2 }
     }
   },
@@ -91,7 +100,7 @@ export const businessStages = {
     name: "Scaling Stage",
     riskPremium: 0.08,
     valuation: {
-      methods: ["dcf", "marketMultiples", "precedentTransactions"],
+      methods: ["dcf", "marketMultiples", "precedentTransactions"] as const,
       weights: { dcf: 0.4, marketMultiples: 0.4, precedentTransactions: 0.2 }
     }
   },
@@ -99,7 +108,7 @@ export const businessStages = {
     name: "Mature Business",
     riskPremium: 0.05,
     valuation: {
-      methods: ["dcf", "marketMultiples", "assetBased"],
+      methods: ["dcf", "marketMultiples", "assetBased"] as const,
       weights: { dcf: 0.5, marketMultiples: 0.3, assetBased: 0.2 }
     }
   },
@@ -264,8 +273,8 @@ export const complianceStandards = {
 // IP Protection status
 export const ipProtectionStatus = {
   none: "No IP Protection",
-  pending: "IP Protection Pending",
-  registered: "IP Protected",
+  pending: "Patents Pending",
+  registered: "Registered Patents/IP",
   multiple: "Multiple IP Registrations",
 } as const;
 
@@ -281,17 +290,27 @@ export const taxComplianceStatus = {
 // Combined validation schema with industry-specific metrics
 export const valuationFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
-  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
+  sector: z.enum(["technology", "digital", "enterprise"] as const),
   subsector: z.string(),
-  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
-  region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  stage: z.enum(["ideation", "mvp", "early_revenue", "growth", "scaling", "mature"] as const),
+  region: z.enum(["us", "eu", "uk", "india", "global"] as const),
+  currency: z.enum(["USD", "EUR", "GBP", "JPY", "INR"] as const),
+  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
 
   // Financial metrics
   revenue: z.number().min(0, "Revenue must be positive"),
   growthRate: z.number().min(-100).max(1000).optional(),
   margins: z.number().min(-100).max(100).optional(),
   ebitda: z.number().optional(),
+
+  // Additional business metrics
+  teamExperience: z.number().min(0).max(50, "Team experience must be between 0 and 50 years"),
+  intellectualProperty: z.enum(["none", "pending", "registered", "multiple"]),
+  customerBase: z.number().min(0),
+  competitiveDifferentiation: z.enum(["low", "medium", "high"]),
+  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]),
+  scalability: z.enum(["limited", "moderate", "high"]),
+  complianceStandard: z.enum(["409a", "ivs", "icai", "ifrs", "asc820"] as const),
 
   // Industry-specific metrics
   industryMetrics: z.object({
@@ -348,42 +367,23 @@ export const valuationFormSchema = z.object({
       description: z.string()
     }))
   }).optional(),
-
-  // Additional metrics for calculations
-  capexRate: z.number().optional(),
-  workingCapitalRate: z.number().optional(),
-  tam: z.number().optional(),
-  productLines: z.number().optional(),
-  plannedProducts: z.number().optional(),
-  currentMarkets: z.number().optional(),
-  potentialMarkets: z.number().optional(),
-  currentCustomerSegments: z.number().optional(),
-  potentialSegments: z.number().optional(),
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
 
-export const valuationPurposes = {
-  fundraising: "Fundraising",
-  acquisition: "Mergers & Acquisitions",
-  compliance: "Regulatory Compliance",
-  internal: "Internal Planning",
-  stakeholder: "Stakeholder Reporting",
-  exit_planning: "Exit Planning",
-} as const;
 
 // Categories for organizing inputs
 export const businessOverviewSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
-  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
-  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
-  region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
+  sector: z.enum(["technology", "digital", "enterprise"] as const),
+  stage: z.enum(["ideation", "mvp", "early_revenue", "growth", "scaling", "mature"] as const),
+  region: z.enum(["us", "eu", "uk", "india", "global"] as const),
   valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
 });
 
 export const financialMetricsSchema = z.object({
   revenue: z.number().min(0, "Revenue must be positive"),
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  currency: z.enum(["USD", "EUR", "GBP", "JPY", "INR"] as const),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000").optional(),
   margins: z.number().min(-100).max(100, "Margins must be between -100 and 100").optional(),
   annualProfit: z.number().optional(),
@@ -400,7 +400,7 @@ export const financialMetricsSchema = z.object({
 export const marketInsightsSchema = z.object({
   totalAddressableMarket: z.number().min(0, "TAM must be positive"),
   activeCustomers: z.number().min(0, "Number of customers must be positive"),
-  competitiveDifferentiation: z.enum(Object.keys(differentiationLevels) as [keyof typeof differentiationLevels, ...Array<keyof typeof differentiationLevels>]),
+  competitiveDifferentiation: z.enum(["low", "medium", "high"]),
   marketPosition: z.string().optional(),
 });
 
@@ -411,16 +411,16 @@ export const riskScalabilitySchema = z.object({
 });
 
 export const jurisdictionalComplianceSchema = z.object({
-  complianceStandards: z.array(z.enum(Object.keys(complianceStandards) as [keyof typeof complianceStandards, ...Array<keyof typeof complianceStandards>])),
-  ipProtection: z.enum(Object.keys(ipProtectionStatus) as [keyof typeof ipProtectionStatus, ...Array<keyof typeof ipProtectionStatus>]),
-  taxCompliance: z.enum(Object.keys(taxComplianceStatus) as [keyof typeof taxComplianceStatus, ...Array<keyof typeof taxComplianceStatus>]),
+  complianceStandards: z.array(z.enum(["409a", "ivs", "icai", "ifrs", "asc820"] as const)),
+  ipProtection: z.enum(["none", "pending", "registered", "multiple"]),
+  taxCompliance: z.enum(["compliant", "partial", "pending", "notRequired"]),
   lastComplianceReview: z.string().datetime().optional(),
 });
 
 export const qualitativeFactorsSchema = z.object({
   teamExperience: z.number().min(0).max(50, "Team experience must be between 0 and 50 years"),
   founderCredentials: z.string().optional(),
-  esgImpact: z.enum(Object.keys(esgImpactLevels) as [keyof typeof esgImpactLevels, ...Array<keyof typeof esgImpactLevels>]),
+  esgImpact: z.enum(["high", "medium", "low", "none"]),
 });
 
 
@@ -508,7 +508,7 @@ export const financialProjectionSchema = z.object({
   projectionPeriod: z.number().int().min(1).max(5),
   baseRevenue: z.number().min(0),
   baseExpenses: z.number().min(0),
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  currency: z.enum(["USD", "EUR", "GBP", "JPY", "INR"] as const),
   growthRate: z.number().min(-100).max(1000),
   marginProjection: z.number().min(-100).max(100),
   burnRate: z.number().min(0).optional(),
@@ -553,7 +553,7 @@ export const fundUtilizationSchema = z.object({
   burnRate: z.number().min(0),
   runway: z.number().min(1),
   allocation: z.array(z.object({
-    category: z.enum(Object.keys(fundingCategories) as [keyof typeof fundingCategories, ...Array<keyof typeof fundingCategories>]),
+    category: z.enum(["productDevelopment", "marketing", "operations", "hiring", "workingCapital", "researchDevelopment", "expansion", "reserves"] as const),
     percentage: z.number().min(0).max(100),
     amount: z.number().min(0),
     description: z.string(),
