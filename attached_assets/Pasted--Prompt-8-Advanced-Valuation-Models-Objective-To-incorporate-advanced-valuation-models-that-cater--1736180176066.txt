@@ -1,0 +1,58 @@
+
+Prompt 8: Advanced Valuation Models
+Objective:
+To incorporate advanced valuation models that cater to various scenarios, industries, and business stages. These models should be robust enough to meet professional standards while being adaptable for users with minimal financial expertise.
+
+Core Valuation Models
+1. Discounted Cash Flow (DCF) Analysis
+Use Case:
+Best for high-growth startups or businesses with predictable cash flows.
+Inputs:
+Projected cash flows (derived or user-provided).
+Discount rate (WACC based on industry and region).
+Terminal value (growth perpetuity or exit multiple).
+Backend Logic:
+Automatically calculate cash flows if not provided using AI-driven growth and margin assumptions.
+Adjust discount rate based on business-specific risks (e.g., stage, region, and scalability).
+2. Market Multiples
+Use Case:
+Ideal for benchmarking against similar companies in the same industry.
+Inputs:
+Revenue or EBITDA (user-provided or AI-generated).
+Comparable company multiples (sourced from APIs like PitchBook or Crunchbase).
+Backend Logic:
+Identify relevant peers using industry and region data.
+Suggest valuation ranges using EV/Revenue or EV/EBITDA multiples.
+3. Asset-Based Valuation
+Use Case:
+Best for businesses with significant tangible assets (e.g., manufacturing, real estate).
+Inputs:
+Book value of assets (user input).
+Depreciation, amortization, and adjustments for market value.
+Backend Logic:
+Auto-calculate adjustments for intangible assets (e.g., brand value, IP).
+Highlight under- or over-valued asset classes.
+4. Real Options Valuation (ROV)
+Use Case:
+Suited for startups with optionality in their business model (e.g., R&D-heavy or expansion plans).
+Inputs:
+Future project costs and expected returns (AI-predicted if unavailable).
+Risk-free rate and volatility (fetched dynamically).
+Backend Logic:
+Use Black-Scholes or binomial tree methods to compute the value of flexibility in business decisions.
+5. Precedent Transactions
+Use Case:
+Best for businesses planning an exit or acquisition.
+Inputs:
+Comparable transaction data (e.g., recent acquisitions in the same sector).
+Backend Logic:
+Fetch and rank transactions by similarity in size, region, and industry.
+Adjust for time-related factors like inflation or market changes.
+6. Qualitative Valuation Adjustments
+Use Case:
+Enhances traditional models with qualitative insights.
+Inputs:
+Team experience, IP protection, and competitive differentiation.
+Backend Logic:
+Apply qualitative risk premiums or discounts to derived valuations.
+Justify adjustments with AI-generated insights.
