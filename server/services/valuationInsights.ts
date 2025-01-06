@@ -1,10 +1,12 @@
 import { type ValuationFormData } from "../../client/src/lib/validations";
 import { getCachedMarketSentiment } from "../lib/marketSentiment";
-import { calculateFinancialAssumptions, type FinancialAssumptions } from "../lib/financialAssumptions";
+import { calculateFinancialAssumptions, validateAndAdjustAssumptions, suggestAssumptions, type FinancialAssumptions } from "../lib/financialAssumptions";
 import { frameworks, type FrameworkId, validateFrameworkCompliance } from "../lib/compliance/frameworks";
 
 export interface ValuationInsights {
   financialAssumptions: FinancialAssumptions;
+  warnings: string[];
+  suggestions: Partial<ValuationFormData>;
   marketSentiment: {
     overallScore: number;
     insights: string[];
@@ -33,9 +35,12 @@ export interface ValuationInsights {
 export async function generateValuationInsights(data: ValuationFormData): Promise<ValuationInsights> {
   // Get market sentiment data
   const sentiment = await getCachedMarketSentiment(data);
-  
-  // Calculate financial assumptions
-  const assumptions = calculateFinancialAssumptions(data);
+
+  // Validate and adjust assumptions with AI
+  const { assumptions, warnings } = validateAndAdjustAssumptions(data);
+
+  // Generate AI-driven suggestions for missing data
+  const suggestions = suggestAssumptions(data);
 
   // Determine appropriate compliance framework
   let frameworkId: FrameworkId = 'ivs'; // Default to IVS
@@ -73,6 +78,8 @@ export async function generateValuationInsights(data: ValuationFormData): Promis
 
   return {
     financialAssumptions: assumptions,
+    warnings,
+    suggestions,
     marketSentiment: {
       overallScore: sentiment.overallScore,
       insights: sentiment.insights,

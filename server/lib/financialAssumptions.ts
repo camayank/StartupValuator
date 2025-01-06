@@ -1,5 +1,177 @@
 import { regions, sectors, type ValuationFormData } from "../../client/src/lib/validations";
 
+interface ValidationRule {
+  test: (value: number) => boolean;
+  message: string;
+}
+
+interface IndustryBenchmarks {
+  growthRate: { min: number; max: number; typical: number };
+  margins: { min: number; max: number; typical: number };
+  revenueMultiple: number;
+  riskAdjustment: number;
+}
+
+const industryBenchmarks: Record<keyof typeof sectors, IndustryBenchmarks> = {
+  technology: {
+    growthRate: { min: 15, max: 200, typical: 40 },
+    margins: { min: 10, max: 80, typical: 30 },
+    revenueMultiple: 8,
+    riskAdjustment: 3,
+  },
+  digital: {
+    growthRate: { min: 10, max: 150, typical: 35 },
+    margins: { min: 8, max: 70, typical: 25 },
+    revenueMultiple: 6,
+    riskAdjustment: 3,
+  },
+  enterprise: {
+    growthRate: { min: 10, max: 100, typical: 25 },
+    margins: { min: 15, max: 60, typical: 30 },
+    revenueMultiple: 5,
+    riskAdjustment: 2,
+  },
+  consumer: {
+    growthRate: { min: 5, max: 100, typical: 20 },
+    margins: { min: 5, max: 50, typical: 15 },
+    revenueMultiple: 4,
+    riskAdjustment: 2,
+  },
+  healthcare: {
+    growthRate: { min: 8, max: 80, typical: 18 },
+    margins: { min: 12, max: 55, typical: 25 },
+    revenueMultiple: 5,
+    riskAdjustment: 1,
+  },
+  financial: {
+    growthRate: { min: 5, max: 60, typical: 12 },
+    margins: { min: 10, max: 45, typical: 20 },
+    revenueMultiple: 4,
+    riskAdjustment: 2,
+  },
+  industrial: {
+    growthRate: { min: 3, max: 40, typical: 10 },
+    margins: { min: 8, max: 35, typical: 15 },
+    revenueMultiple: 3,
+    riskAdjustment: 1,
+  },
+  energy: {
+    growthRate: { min: 2, max: 30, typical: 8 },
+    margins: { min: 5, max: 40, typical: 12 },
+    revenueMultiple: 4,
+    riskAdjustment: 2,
+  },
+  others: {
+    growthRate: { min: 5, max: 50, typical: 12 },
+    margins: { min: 8, max: 40, typical: 15 },
+    revenueMultiple: 4,
+    riskAdjustment: 2,
+  },
+};
+
+export function validateAndAdjustAssumptions(data: ValuationFormData): {
+  assumptions: FinancialAssumptions;
+  warnings: string[];
+} {
+  const warnings: string[] = [];
+  const benchmarks = industryBenchmarks[data.sector];
+
+  // Validate growth rate
+  if (data.growthRate) {
+    if (data.growthRate < benchmarks.growthRate.min) {
+      warnings.push(`Growth rate of ${data.growthRate}% is below industry minimum of ${benchmarks.growthRate.min}%`);
+    } else if (data.growthRate > benchmarks.growthRate.max) {
+      warnings.push(`Growth rate of ${data.growthRate}% exceeds industry maximum of ${benchmarks.growthRate.max}%`);
+    }
+  }
+
+  // Validate margins
+  if (data.margins) {
+    if (data.margins < benchmarks.margins.min) {
+      warnings.push(`Operating margin of ${data.margins}% is below industry minimum of ${benchmarks.margins.min}%`);
+    } else if (data.margins > benchmarks.margins.max) {
+      warnings.push(`Operating margin of ${data.margins}% exceeds industry maximum of ${benchmarks.margins.max}%`);
+    }
+  }
+
+  // Calculate assumptions with enhanced validation
+  const assumptions = calculateFinancialAssumptions(data);
+
+  // Adjust assumptions based on validation results
+  if (data.stage === 'early_revenue' && data.revenue && data.revenue < 100000) {
+    assumptions.discountRate += 5; // Higher risk for very early revenue companies
+    warnings.push("Applied higher discount rate due to early revenue stage and low revenue");
+  }
+
+  // Region-specific adjustments
+  const regionAdjustments = getRegionSpecificAdjustments(data.region);
+  assumptions.riskFreeRate = regionAdjustments.riskFreeRate;
+  assumptions.marketRiskPremium = regionAdjustments.marketRiskPremium;
+
+  if (regionAdjustments.warning) {
+    warnings.push(regionAdjustments.warning);
+  }
+
+  return { assumptions, warnings };
+}
+
+function getRegionSpecificAdjustments(region: string): {
+  riskFreeRate: number;
+  marketRiskPremium: number;
+  warning?: string;
+} {
+  const adjustments = {
+    us: {
+      riskFreeRate: 3.5,
+      marketRiskPremium: 6.0,
+    },
+    eu: {
+      riskFreeRate: 2.5,
+      marketRiskPremium: 6.5,
+    },
+    uk: {
+      riskFreeRate: 3.0,
+      marketRiskPremium: 6.5,
+    },
+    india: {
+      riskFreeRate: 7.0,
+      marketRiskPremium: 7.5,
+      warning: "Applied higher risk premium due to emerging market factors",
+    },
+    asia: {
+      riskFreeRate: 4.0,
+      marketRiskPremium: 7.0,
+    },
+    other: {
+      riskFreeRate: 5.0,
+      marketRiskPremium: 8.0,
+      warning: "Using conservative estimates due to limited regional data",
+    },
+  };
+
+  return adjustments[region.toLowerCase() as keyof typeof adjustments] || adjustments.other;
+}
+
+export function suggestAssumptions(data: ValuationFormData): Partial<ValuationFormData> {
+  const benchmarks = industryBenchmarks[data.sector];
+  const suggestions: Partial<ValuationFormData> = {};
+
+  if (!data.growthRate) {
+    suggestions.growthRate = benchmarks.growthRate.typical;
+  }
+
+  if (!data.margins) {
+    suggestions.margins = benchmarks.margins.typical;
+  }
+
+  if (!data.scalabilityPotential) {
+    suggestions.scalabilityPotential = data.stage === 'scaling' ? 8 :
+      data.stage === 'growth' ? 6 : 4;
+  }
+
+  return suggestions;
+}
+
 export interface FinancialAssumptions {
   discountRate: number; // Percentage (e.g., 15 for 15%)
   growthRate: number; // Percentage
@@ -251,5 +423,5 @@ function getPeerGroupMetrics(
 }
 
 declare const businessStages: {
-    [key: string]: string
+  [key: string]: string
 }
