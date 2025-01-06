@@ -1,0 +1,66 @@
+Prompt 2: Identify Core Features (Enhanced Response)
+Objective:
+To create a valuation tool so comprehensive and intuitive that it becomes the go-to platform for startups, investors, valuers, and SMEs worldwide. The features must deliver unmatched functionality, align with user expectations, and provide clear differentiation from competitors.
+
+Core Features
+1. Seamless Input Collection
+Simplified User Inputs:
+
+Dynamic forms that adapt based on user type and valuation purpose (e.g., startup fundraising, SME loan).
+Layman-friendly fields (e.g., “What’s your expected revenue growth?” instead of technical jargon).
+Preloaded Assumptions:
+
+Auto-fill values like inflation, risk-free rate, and industry beta using AI and integrated APIs.
+Region-Aware Adjustments:
+
+Tailor inputs based on jurisdiction (e.g., 409A in the US, ICAI standards in India).
+2. AI-Driven Valuation Engine
+Dynamic Valuation Models:
+
+Support for DCF, Market Multiples, and Real Options, auto-selected based on input.
+Integrate AI to fine-tune assumptions (e.g., WACC, growth rates) using real-time data.
+Industry Benchmarks:
+
+Peer comparison using real-time databases like Crunchbase, Tracxn, and PitchBook.
+Scenario Analysis:
+
+Sensitivity analysis with best, base, and worst-case outcomes, visualized interactively.
+Allow users to tweak assumptions and instantly see changes.
+3. Professional Valuation Reports
+Comprehensive Structure:
+
+Executive Summary: Valuation highlights and top assumptions.
+Methodology: Breakdown of valuation logic and calculations.
+Assumptions: Clearly stated financial and market assumptions with AI insights.
+Customization:
+
+Branding: Add company logos and color themes.
+Multi-Language Support: Generate reports in the user’s preferred language.
+Export Options:
+
+Support for PDF, Excel, and PowerPoint formats.
+API for integration with investor tools like DocSend or CRM systems.
+4. Compliance-Ready Features
+Region-Specific Standards:
+
+Auto-generate compliance-ready reports for ICAI (India), 409A (US), IVS (Global), and more.
+Audit Trail:
+
+Transparent valuation process with justifications for assumptions and methods.
+5. Collaboration and Multi-User Support
+Team Workspaces:
+
+Invite collaborators (e.g., co-founders, accountants, investors) for shared access.
+Real-Time Comments:
+
+Add comments and suggestions directly on the valuation report.
+Access Levels:
+
+Role-based permissions for secure sharing (e.g., view-only access for investors).
+6. Global Adaptability
+Multi-Currency Support:
+
+Automatically convert values into local currency with live exchange rates.
+Localized Compliance:
+
+Adjust for regional tax implications and regulatory nuances.
