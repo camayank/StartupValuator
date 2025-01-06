@@ -18,6 +18,18 @@ import { generateComplianceReport, generateComplianceChecklist } from "./service
 import workspaceRoutes from "./routes/workspace";
 import { frameworks, type FrameworkId, validateFrameworkCompliance, applyFrameworkAdjustments } from "./lib/compliance/frameworks";
 import { generateValuationInsights } from "./services/valuationInsights";
+import rateLimit from 'express-rate-limit';
+import errorMonitorMiddleware from "./lib/errorMonitor";
+import { setupLoadTesting } from "./lib/loadTesting";
+
+// Rate limiting configuration
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Define schemas for API requests
 const createWorkspaceSchema = z.object({
@@ -41,13 +53,20 @@ const addWorkspaceMemberSchema = z.object({
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
 
+  // Apply rate limiting to API routes
+  app.use("/api/", apiLimiter);
+
   // Set up authentication routes
   setupAuth(app);
 
-  // Activity tracking middleware
+  // Activity tracking middleware with enhanced error handling
   app.use((req, res, next) => {
     if (req.isAuthenticated() && req.user) {
-      ActivityTracker.trackActivity(req.user.id, "page_view", req).catch(console.error);
+      ActivityTracker.trackActivity(req.user.id, "page_view", req)
+        .catch(error => {
+          console.error("Activity tracking failed:", error);
+          // Continue processing despite tracking failure
+        });
     }
     next();
   });
@@ -55,8 +74,18 @@ export function registerRoutes(app: Express): Server {
   // Add workspace routes
   app.use("/api/workspaces", workspaceRoutes);
 
+  // Health check endpoint for load balancers
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "healthy", timestamp: new Date().toISOString() });
+  });
+
+  // Load testing endpoints (only in development)
+  if (process.env.NODE_ENV === "development") {
+    setupLoadTesting(app);
+  }
+
   // Workspace Management Routes
-  app.post("/api/workspaces", async (req, res) => {
+  app.post("/api/workspaces", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
     }
@@ -78,15 +107,22 @@ export function registerRoutes(app: Express): Server {
 
       res.json(workspace);
     } catch (error) {
-      console.error("Failed to create workspace:", error);
-      res.status(500).json({ message: "Failed to create workspace" });
+      next(error);
     }
   });
 
-  // Region-specific pricing route
+  // Region-specific pricing route with caching
   app.get("/api/pricing/:region", async (req, res) => {
     const { region } = req.params;
+    const cacheKey = `pricing_${region.toLowerCase()}`;
+
     try {
+      // Check cache first
+      const cachedPricing = cache.get(cacheKey);
+      if (cachedPricing) {
+        return res.json(cachedPricing);
+      }
+
       // Get base pricing tiers
       const basePricing = {
         free: { price: 0, features: ["Basic valuation", "Single user"] },
@@ -96,6 +132,10 @@ export function registerRoutes(app: Express): Server {
 
       // Apply regional adjustments (e.g., PPP-based pricing)
       const regionalPricing = adjustPricingForRegion(basePricing, region);
+
+      // Cache the result for 1 hour
+      cache.set(cacheKey, regionalPricing, 3600);
+
       res.json(regionalPricing);
     } catch (error) {
       console.error("Failed to get regional pricing:", error);
@@ -103,8 +143,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Enhanced valuation route with comprehensive insights
-  app.post("/api/valuation", async (req, res) => {
+  // Enhanced valuation route with comprehensive insights and error handling
+  app.post("/api/valuation", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
     }
@@ -139,21 +179,12 @@ export function registerRoutes(app: Express): Server {
 
       res.json(result);
     } catch (error) {
-      console.error('Valuation calculation failed:', error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Validation failed',
-          errors: error.errors,
-        });
-      }
-      res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
-      });
+      next(error);
     }
   });
 
   // Add activity tracking endpoint
-  app.post("/api/activities", async (req, res) => {
+  app.post("/api/activities", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
     }
@@ -167,13 +198,12 @@ export function registerRoutes(app: Express): Server {
       );
       res.json({ success: true });
     } catch (error) {
-      console.error("Failed to track activity:", error);
-      res.status(500).json({ message: "Failed to track activity" });
+      next(error);
     }
   });
 
   // Export routes with improved error handling and logging
-  app.post("/api/export/:format", async (req, res) => {
+  app.post("/api/export/:format", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
     }
@@ -220,15 +250,12 @@ export function registerRoutes(app: Express): Server {
         reportType: "valuation",
       });
     } catch (error) {
-      console.error(`Export to ${req.params.format} failed:`, error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate export"
-      });
+      next(error);
     }
   });
 
   // Workflow suggestion routes (unchanged)
-  app.get("/api/suggestions", async (req, res) => {
+  app.get("/api/suggestions", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
     }
@@ -238,40 +265,41 @@ export function registerRoutes(app: Express): Server {
       const suggestions = await WorkflowSuggestionEngine.getUserSuggestions(req.user!.id);
       res.json(suggestions);
     } catch (error) {
-      console.error("Failed to get suggestions:", error);
-      res.status(500).json({ message: "Failed to get suggestions" });
+      next(error);
     }
   });
 
 
   // Compliance checking routes (unchanged)
-  app.post("/api/compliance/check", async (req, res) => {
+  app.post("/api/compliance/check", async (req, res, next) => {
     try {
       const report = await generateComplianceReport(req.body);
       res.json(report);
     } catch (error) {
-      console.error("Compliance check failed:", error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate compliance report"
-      });
+      next(error);
     }
   });
 
-  app.post("/api/compliance/checklist", async (req, res) => {
+  app.post("/api/compliance/checklist", async (req, res, next) => {
     try {
       const { industry, region } = req.body;
       const checklist = await generateComplianceChecklist(industry, region);
       res.json(checklist);
     } catch (error) {
-      console.error("Checklist generation failed:", error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate compliance checklist"
-      });
+      next(error);
     }
   });
 
-
   const httpServer = createServer(app);
+
+  // Error handling middleware - must be after all routes
+  app.use(errorMonitorMiddleware);
+
+  // Monitor server errors
+  httpServer.on('error', (error) => {
+    console.error('Server error:', error);
+  });
+
   return httpServer;
 }
 
