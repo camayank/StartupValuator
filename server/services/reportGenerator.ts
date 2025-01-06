@@ -80,6 +80,15 @@ interface ValuationReport {
     detailedCalculations: Record<string, any>;
     methodologyNotes: string[];
   };
+  keyAssumptionsAndInputs: {
+    inputs: Record<string, any>;
+    assumptions: Record<string, any>;
+  };
+  regionalAdjustments: {
+    region: string;
+    adjustments: Record<string, any>;
+  };
+
 }
 
 export async function generateValuationReport(
@@ -179,21 +188,29 @@ export async function generateValuationReport(
     },
     appendices: {
       marketData: {
-        peerComparison: marketSentiment.peerComparison,
+        peerComparison: marketSentiment.peerComparison || {},
         industryMetrics: {
-          growthRate: marketSentiment.peerComparison?.averages.growthRate,
-          margins: marketSentiment.peerComparison?.averages.margins
+          growthRate: marketSentiment.peerComparison?.averages.growthRate || 0,
+          margins: marketSentiment.peerComparison?.averages.margins || 0
         }
       },
       detailedCalculations: {
-        dcf: valuation.details.dcf,
-        marketMultiples: valuation.details.marketMultiples
+        dcf: valuation.details.dcf || {},
+        marketMultiples: valuation.details.marketMultiples || {}
       },
       methodologyNotes: [
         "Valuation methodology aligned with international standards",
         "Market data sourced from reliable industry databases",
         "Risk adjustments based on comprehensive analysis"
       ]
+    },
+    keyAssumptionsAndInputs: {
+      inputs: { ...data }, //Example, replace with actual inputs
+      assumptions: { ...valuation.assumptions } //Example, replace with actual assumptions
+    },
+    regionalAdjustments: {
+      region: data.region,
+      adjustments: {} //To be implemented
     }
   };
 
@@ -268,25 +285,29 @@ function generateSensitivityFactors(valuation: ValuationResult): Array<{
   const factors = [];
 
   // Growth Rate Sensitivity
-  const growthRateValues = Object.values(valuation.sensitivityAnalysis.growthRate);
-  if (growthRateValues.length > 0) {
-    const growthImpact = Math.max(...growthRateValues) - Math.min(...growthRateValues);
-    factors.push({
-      factor: "Growth Rate",
-      impact: `${formatCurrency(growthImpact)} valuation range`,
-      recommendation: "Focus on sustainable growth initiatives"
-    });
+  if (valuation.sensitivityAnalysis.growthRate) {
+    const growthValues = Object.values(valuation.sensitivityAnalysis.growthRate);
+    if (growthValues.length > 0) {
+      const growthImpact = Math.max(...growthValues) - Math.min(...growthValues);
+      factors.push({
+        factor: "Growth Rate",
+        impact: `${formatCurrency(growthImpact)} valuation range`,
+        recommendation: "Focus on sustainable growth initiatives"
+      });
+    }
   }
 
   // Discount Rate Sensitivity
-  const discountRateValues = Object.values(valuation.sensitivityAnalysis.discountRate);
-  if (discountRateValues.length > 0) {
-    const discountImpact = Math.max(...discountRateValues) - Math.min(...discountRateValues);
-    factors.push({
-      factor: "Discount Rate",
-      impact: `${formatCurrency(discountImpact)} valuation range`,
-      recommendation: "Strengthen risk management practices"
-    });
+  if (valuation.sensitivityAnalysis.discountRate) {
+    const discountValues = Object.values(valuation.sensitivityAnalysis.discountRate);
+    if (discountValues.length > 0) {
+      const discountImpact = Math.max(...discountValues) - Math.min(...discountValues);
+      factors.push({
+        factor: "Discount Rate",
+        impact: `${formatCurrency(discountImpact)} valuation range`,
+        recommendation: "Strengthen risk management practices"
+      });
+    }
   }
 
   return factors;
@@ -313,7 +334,7 @@ function generateComplianceRequirements(data: ValuationFormData): Array<{
   // Documentation Requirements
   requirements.push({
     category: "Documentation",
-    status: 'compliant',
+    status: 'compliant' as const,
     notes: [
       "Comprehensive valuation methodology documented",
       "Key assumptions clearly stated",
@@ -324,7 +345,7 @@ function generateComplianceRequirements(data: ValuationFormData): Array<{
   // Methodology Requirements
   requirements.push({
     category: "Methodology",
-    status: data.methodologyCompliance ? 'compliant' : 'partial',
+    status: data.methodologyCompliance ? 'compliant' as const : 'partial' as const,
     notes: [
       "Standard valuation approaches considered",
       "Method selection justified",
