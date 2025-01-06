@@ -1,0 +1,43 @@
+Step 1: User Onboarding and Context Gathering
+Goal: Capture user intent and provide context-sensitive guidance.
+Prompts:
+"Welcome! What brings you here today?" (Dropdown: Fundraising, M&A, ESOPs, Market Positioning, Other)
+"Have you used valuation tools before?" (Yes/No – Adjust guidance accordingly)
+"Would you like a guided walkthrough, or proceed independently?"
+Step 2: Business Basics (General Information)
+Goal: Collect foundational data for tailored valuation logic.
+Prompts:
+"What is the name of your business?"
+"Select your industry sector." (Dropdown: SaaS, Manufacturing, Retail, etc.)
+"What is the primary region of operation?" (Dropdown: US, India, UK, etc.)
+"What is the purpose of this valuation?" (Fundraising, Exit, Internal Review)
+Step 3: Financial Data Collection
+Goal: Collect core quantitative inputs with minimal friction.
+Prompts:
+"What is your annual revenue (or projected revenue for the next year)?"
+"What is your expected revenue growth rate over the next 5 years?" (Provide slider for ease of use)
+"Enter your current operating margin (percentage)." (With a tooltip: How to calculate this)
+Step 4: Market-Specific Inputs
+Goal: Capture external and qualitative inputs for benchmarking and risk assessment.
+Prompts:
+"What is the size of your total addressable market (TAM)?" (AI can suggest benchmarks based on industry)
+"Who are your key competitors?" (Optional text input, or select from suggestions)
+"How scalable is your business model on a scale of 1-10?"
+Step 5: Risk Assessment and Qualitative Data
+Goal: Integrate subjective elements to refine valuation logic.
+Prompts:
+"What is the primary risk facing your business?" (Market, Operational, Regulatory)
+"How stable is your cash flow?" (Stable, Moderate, Volatile)
+"Do you have any intellectual property protection in place?" (Yes/No/Not Applicable)
+Step 6: Jurisdiction-Specific Adjustments
+Goal: Apply region-specific compliance standards and assumptions.
+Prompts:
+"Does your business comply with ICAI valuation standards (India)?" (Yes/No)
+"Is this valuation 409A-compliant (US-based ESOP valuations)?" (Yes/No)
+"Do you need IFRS-based adjustments (Europe)?"
+Step 7: Valuation Review and Report Customization
+Goal: Provide users with control over assumptions and report format.
+Prompts:
+"Review these assumptions. Would you like to adjust any key values?" (Interactive table)
+"What format would you like your valuation report in?" (PDF, Excel, Branded PDF)
+"Would you like to include scenario analysis or sensitivity curves in the report?"
