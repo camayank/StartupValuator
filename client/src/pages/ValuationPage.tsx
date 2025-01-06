@@ -27,13 +27,13 @@ import { calculateIndustryAdjustedValuation } from "@/lib/financialModels";
 export default function ValuationPage() {
   const [location] = useLocation();
   const params = new URLSearchParams(location.split('?')[1] || '');
-  const selectedSector = params.get('sector');
+  const selectedSector = params.get('sector') || "technology";
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
     defaultValues: {
-      sector: selectedSector as keyof typeof sectors || "technology",
-      subsector: Object.keys(sectors[selectedSector as keyof typeof sectors]?.subsectors || {})[0],
+      sector: selectedSector as keyof typeof sectors,
+      subsector: Object.keys(sectors[selectedSector as keyof typeof sectors].subsectors)[0],
       currency: "USD",
       stage: "early_revenue",
       region: "us",
@@ -43,7 +43,17 @@ export default function ValuationPage() {
       margins: 0,
       totalAddressableMarket: 0,
       marketShare: 0,
-      competitors: []
+      competitors: [],
+      industryMetrics: {
+        saas: {
+          arr: 0,
+          mrr: 0,
+          cac: 0,
+          ltv: 0,
+          churnRate: 0,
+          expansionRevenue: 0,
+        },
+      }
     }
   });
 
@@ -67,7 +77,7 @@ export default function ValuationPage() {
   };
 
   const sector = sectors[form.watch('sector')];
-  const subsector = sector?.subsectors[form.watch('subsector') as keyof typeof sector.subsectors];
+  const subsector = sector?.subsectors[form.watch('subsector')];
 
   return (
     <div className="min-h-screen bg-background/50">
@@ -177,7 +187,7 @@ export default function ValuationPage() {
                         <FormField
                           key={metric}
                           control={form.control}
-                          name={`industryMetrics.${form.watch('sector')}.${metric}`}
+                          name={`industryMetrics.saas.${metric}`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>{metric.toUpperCase()}</FormLabel>
