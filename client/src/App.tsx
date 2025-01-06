@@ -278,7 +278,7 @@ function App() {
           <Switch>
             <Route path="/">
               <div className="container mx-auto py-8">
-                <ValuationWizard onSubmit={handleValuationSubmit} />
+                <Home />
               </div>
             </Route>
             <Route path="/projections">
