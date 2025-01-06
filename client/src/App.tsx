@@ -142,6 +142,12 @@ function App() {
     return <LandingPage />;
   }
 
+  // If user is logged in and at root path, redirect to valuation
+  if (user && location === '/') {
+    setLocation('/valuation');
+    return null;
+  }
+
   const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig] || navigationConfig.startup;
 
   return (
@@ -150,7 +156,7 @@ function App() {
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r bg-card lg:block">
         <div className="flex h-full flex-col">
           <div className="border-b p-4">
-            <Link href="/">
+            <Link href="/valuation">
               <span className="text-xl font-bold cursor-pointer hover:text-primary transition-colors">
                 StartupValuator
               </span>
@@ -245,7 +251,6 @@ function App() {
       <main className="lg:pl-64">
         <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
           <Switch>
-            <Route path="/" component={Home} />
             <Route path="/valuation" component={ValuationPage} />
             <Route path="/calculator" component={ValuationCalculatorPage} />
             <Route path="/safe-calculator" component={SAFECalculatorPage} />
@@ -257,6 +262,7 @@ function App() {
             <Route path="/docs" component={Documentation} />
             <Route path="/profile/:userId" component={Profile} />
             <Route path="/journey" component={StartupJourneyDashboard} />
+            <Route path="/" component={ValuationPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
@@ -333,9 +339,9 @@ function NotFound() {
           <p className="text-sm text-muted-foreground">
             The page you're looking for doesn't exist.
           </p>
-          <Link href="/">
+          <Link href="/valuation">
             <Button variant="link" className="mt-4 p-0">
-              Return to Home
+              Return to Smart Valuation
             </Button>
           </Link>
         </CardContent>

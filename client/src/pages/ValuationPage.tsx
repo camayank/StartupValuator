@@ -4,12 +4,41 @@ import { Progress } from "@/components/ui/progress";
 import { BusinessInfoStep } from "@/components/wizard-steps/BusinessInfoStep";
 import { MethodSelectionStep } from "@/components/wizard-steps/MethodSelectionStep";
 import { ReviewStep } from "@/components/wizard-steps/ReviewStep";
+import { Brain, Sparkles, Calculator, FileText } from "lucide-react";
+import { motion } from "framer-motion";
 import type { ValuationFormData } from "@/lib/validations";
 
 const STEPS = [
   { id: 'business-info', title: 'Business Information' },
   { id: 'method-selection', title: 'Valuation Method' },
   { id: 'review', title: 'Review & Generate' }
+];
+
+const FEATURE_CARDS = [
+  {
+    title: "AI-Powered Analysis",
+    description: "Intelligent valuation powered by advanced machine learning algorithms",
+    icon: Brain,
+    color: "bg-blue-500/10 text-blue-500",
+  },
+  {
+    title: "Smart Predictions",
+    description: "Data-driven growth and market potential predictions",
+    icon: Sparkles,
+    color: "bg-purple-500/10 text-purple-500",
+  },
+  {
+    title: "Multi-Method Valuation",
+    description: "Comprehensive analysis using multiple valuation approaches",
+    icon: Calculator,
+    color: "bg-green-500/10 text-green-500",
+  },
+  {
+    title: "Detailed Reports",
+    description: "Generate in-depth valuation reports with insights",
+    icon: FileText,
+    color: "bg-orange-500/10 text-orange-500",
+  },
 ];
 
 export default function ValuationPage() {
@@ -40,11 +69,36 @@ export default function ValuationPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-8 space-y-8">
+      {/* Feature Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {FEATURE_CARDS.map((feature, index) => (
+          <motion.div
+            key={feature.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+          >
+            <Card className="h-full">
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className={`p-3 rounded-full ${feature.color}`}>
+                    <feature.icon className="w-6 h-6" />
+                  </div>
+                  <h3 className="font-semibold">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Valuation Wizard */}
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Business Valuation</h1>
+            <h1 className="text-2xl font-bold">Smart Valuation</h1>
             <div className="text-sm text-muted-foreground">
               Step {currentStep + 1} of {STEPS.length}
             </div>
@@ -67,6 +121,8 @@ export default function ValuationPage() {
               onUpdate={handleUpdate}
               onNext={handleNext}
               onBack={handleBack}
+              currentStep={currentStep + 1}
+              totalSteps={STEPS.length}
             />
           )}
           {currentStep === 2 && (
@@ -75,6 +131,8 @@ export default function ValuationPage() {
               onUpdate={handleUpdate}
               onSubmit={handleSubmit}
               onBack={handleBack}
+              currentStep={currentStep + 1}
+              totalSteps={STEPS.length}
             />
           )}
         </CardContent>
