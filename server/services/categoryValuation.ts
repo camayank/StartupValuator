@@ -1,7 +1,34 @@
-import { type ValuationFormData, type BusinessOverview, type FinancialMetrics, type MarketInsights } from "../../client/src/lib/validations";
+import { type ValuationFormData } from "../../client/src/lib/validations";
 import { calculateFinancialAssumptions } from "../lib/financialAssumptions";
-import { frameworks, type FrameworkId } from "../lib/compliance/frameworks";
-import { getCachedMarketSentiment } from "../lib/marketSentiment";
+import { calculateValuation } from "./valuationModels";
+import { recommendValuationModels, calculateHybridValuation } from "./modelSelection";
+
+export async function processCategoryValuation(data: ValuationFormData) {
+  // Get model recommendations
+  const recommendation = recommendValuationModels(data);
+
+  // Calculate valuations using recommended models
+  const valuationResults: Record<string, any> = {};
+
+  for (const [method, weight] of Object.entries(recommendation.weights)) {
+    if (weight > 0) {
+      valuationResults[method] = await calculateValuation(data, method);
+    }
+  }
+
+  // Calculate hybrid valuation
+  const hybridValuation = calculateHybridValuation(valuationResults, recommendation.weights);
+
+  return {
+    ...hybridValuation,
+    modelSelection: {
+      primaryModel: recommendation.primaryModel,
+      secondaryModel: recommendation.secondaryModel,
+      rationale: recommendation.rationale,
+      complianceNotes: recommendation.complianceNotes,
+    },
+  };
+}
 
 interface CategoryValuationResult {
   baseValue: number;
@@ -25,63 +52,17 @@ interface CategoryValuationResult {
       recommendations: string[];
     };
   };
+  modelSelection: {
+    primaryModel: string;
+    secondaryModel: string;
+    rationale: string;
+    complianceNotes: string[];
+  };
 }
 
 type CompetitiveDifferentiation = 'high' | 'medium' | 'low';
 type CashFlowStability = 'volatile' | 'moderate' | 'stable';
 type PrimaryRiskFactor = 'market' | 'regulatory' | 'operational' | 'technology' | 'competition';
-
-export async function processCategoryValuation(data: ValuationFormData): Promise<CategoryValuationResult> {
-  // Get financial assumptions based on business overview
-  const assumptions = await calculateFinancialAssumptions(data);
-
-  // Get market sentiment and peer data
-  const marketSentiment = await getCachedMarketSentiment(data);
-
-  // Calculate base value using DCF for revenue-generating companies
-  let baseValue = 0;
-  const adjustments: Record<string, number> = {};
-
-  if (isRevenueGenerating(data.stage)) {
-    baseValue = calculateDCFValue(data, assumptions);
-    adjustments.marketMultiple = calculateMarketMultipleAdjustment(data, marketSentiment);
-  } else {
-    baseValue = calculateEarlyStageValue(data, assumptions);
-    adjustments.potentialMultiple = calculatePotentialMultiple(data, marketSentiment);
-  }
-
-  // Apply risk adjustments
-  adjustments.riskPremium = calculateRiskPremium(data);
-  adjustments.qualitativeFactors = calculateQualitativeAdjustments(data);
-
-  // Apply compliance adjustments based on region
-  const complianceAdjustment = applyComplianceAdjustments(data);
-  if (complianceAdjustment) {
-    adjustments.compliance = complianceAdjustment;
-  }
-
-  // Generate peer comparison insights
-  const peerComparison = generatePeerComparison(data, marketSentiment);
-
-  // Generate validation feedback
-  const validationFeedback = validateInputs(data, marketSentiment);
-
-  return {
-    baseValue,
-    adjustments,
-    assumptions: {
-      discountRate: assumptions.discountRate,
-      growthRate: assumptions.growthRate,
-      marketMultiple: assumptions.industryMultiple,
-      riskPremium: adjustments.riskPremium,
-    },
-    insights: {
-      ...generateValuationInsights(data, marketSentiment),
-      peerComparison,
-      validationFeedback,
-    },
-  };
-}
 
 function isRevenueGenerating(stage: string): boolean {
   return ['early_revenue', 'growth', 'scaling', 'mature'].includes(stage);
@@ -386,3 +367,8 @@ function generateActionableSuggestions(data: ValuationFormData): string[] {
 
   return suggestions;
 }
+
+//Import needed types and functions.  These are assumed to exist based on the original code.
+import { type BusinessOverview, type FinancialMetrics, type MarketInsights } from "../../client/src/lib/validations";
+import { frameworks, type FrameworkId } from "../lib/compliance/frameworks";
+import { getCachedMarketSentiment } from "../lib/marketSentiment";
