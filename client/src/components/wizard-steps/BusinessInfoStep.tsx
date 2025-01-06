@@ -17,9 +17,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Building2, Trophy, Globe2, Target, HelpCircle } from "lucide-react";
-import { sectors, valuationPurposes, regions } from "@/lib/validations";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info, Building2, Trophy, Globe2, Target, HelpCircle, Shield } from "lucide-react";
+import { sectors, valuationPurposes, regions, complianceStandards } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
@@ -38,6 +38,69 @@ interface BusinessInfoStepProps {
   totalSteps: number;
 }
 
+const RegionSpecificFields = ({ region, onUpdate }: {
+  region: keyof typeof regions;
+  onUpdate: (data: Partial<ValuationFormData>) => void;
+}) => {
+  const standards = regions[region]?.standards || [];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-4 space-y-4"
+    >
+      <Alert>
+        <AlertTitle className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Region-Specific Requirements
+        </AlertTitle>
+        <AlertDescription>
+          {region === "india" && (
+            "Please confirm ICAI compliance requirements for Indian valuations."
+          )}
+          {region === "us" && (
+            "409A compliance check required for US-based valuations."
+          )}
+          {region === "eu" && (
+            "IFRS standards will be applied for EU-based valuations."
+          )}
+        </AlertDescription>
+      </Alert>
+
+      <FormField
+        name="complianceStandard"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Compliance Standards</FormLabel>
+            <FormDescription>
+              Required standards for {regions[region].name}
+            </FormDescription>
+            <Select
+              value={field.value}
+              onValueChange={(value) => {
+                field.onChange(value);
+                onUpdate({ complianceStandard: value });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select compliance standard" />
+              </SelectTrigger>
+              <SelectContent>
+                {standards.map((standard) => (
+                  <SelectItem key={standard} value={standard}>
+                    {complianceStandards[standard as keyof typeof complianceStandards]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormItem>
+        )}
+      />
+    </motion.div>
+  );
+};
+
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "technology");
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -55,7 +118,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSectorChange = (value: string) => {
     setSelectedSector(value);
-    form.setValue("sector", value as ValuationFormData['sector']);
+    form.setValue("sector", value as ValuationFormData["sector"]);
     // Reset subsector when sector changes
     form.setValue("subsector", "");
   };
@@ -159,7 +222,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         value={field.value}
                         onValueChange={(value) => {
                           field.onChange(value);
-                          onUpdate({ valuationPurpose: value as ValuationFormData['valuationPurpose'] });
+                          onUpdate({ valuationPurpose: value as ValuationFormData["valuationPurpose"] });
                         }}
                       >
                         <SelectTrigger className="pl-8">
@@ -187,10 +250,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     <FormLabel>Business Sector</FormLabel>
                     <div className="relative">
                       <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-                      <Select
-                        value={selectedSector}
-                        onValueChange={handleSectorChange}
-                      >
+                      <Select value={selectedSector} onValueChange={handleSectorChange}>
                         <SelectTrigger className="pl-8">
                           <SelectValue placeholder="Select sector" />
                         </SelectTrigger>
@@ -228,12 +288,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                             <SelectValue placeholder="Select industry segment" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors)
-                              .map(([key, { name }]) => (
+                            {Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors).map(
+                              ([key, { name }]) => (
                                 <SelectItem key={key} value={key}>
                                   {name}
                                 </SelectItem>
-                              ))}
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -257,10 +318,11 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                       <Select
                         value={field.value}
                         onValueChange={(value) => {
-                          field.onChange(value);
+                          const region = value as keyof typeof regions;
+                          field.onChange(region);
                           onUpdate({
-                            region: value as ValuationFormData['region'],
-                            currency: regions[value as keyof typeof regions].defaultCurrency,
+                            region,
+                            currency: regions[region].defaultCurrency,
                           });
                         }}
                       >
@@ -276,6 +338,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         </SelectContent>
                       </Select>
                     </div>
+                    {field.value && (
+                      <RegionSpecificFields region={field.value as keyof typeof regions} onUpdate={onUpdate} />
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

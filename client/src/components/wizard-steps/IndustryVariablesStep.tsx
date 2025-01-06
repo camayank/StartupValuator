@@ -16,6 +16,8 @@ import { motion } from "framer-motion";
 import type { ValuationFormData } from "@/lib/validations";
 import { sectors } from "@/lib/validations";
 import { Card, CardContent } from "@/components/ui/card";
+import { regions } from "@/lib/regions"; // Import regions data
+
 
 interface IndustryVariablesStepProps {
   data: Partial<ValuationFormData>;
@@ -48,10 +50,14 @@ export function IndustryVariablesStep({
 
   const sector = data.sector || 'technology';
   const subsector = data.subsector;
+  const region = data.region || 'us';
 
   // Get the metrics for the selected sector and subsector
   const currentMetrics = subsector && sectors[sector]?.subsectors[subsector]?.metrics || [];
   const benchmarks = subsector && sectors[sector]?.subsectors[subsector]?.benchmarks;
+
+  // Get region-specific adjustments
+  const regionData = regions[region as keyof typeof regions];
 
   return (
     <motion.div
@@ -62,8 +68,8 @@ export function IndustryVariablesStep({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Please provide industry-specific metrics for your {sectors[sector].name} business.
-          These metrics help us calculate a more accurate valuation based on your sector's standards.
+          Please provide industry-specific metrics for your {sectors[sector].name} business in {regionData.name}.
+          These metrics are adjusted based on regional standards and will help us calculate a more accurate valuation.
         </AlertDescription>
       </Alert>
 
@@ -73,24 +79,39 @@ export function IndustryVariablesStep({
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2">Industry Benchmarks</h3>
               {benchmarks && (
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Revenue Multiple (Early):</span>
-                    <span className="ml-2">{benchmarks.revenueMultiple.early}x</span>
+                <>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Revenue Multiple (Early):</span>
+                      <span className="ml-2">{benchmarks.revenueMultiple.early}x</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Revenue Multiple (Growth):</span>
+                      <span className="ml-2">{benchmarks.revenueMultiple.growth}x</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Gross Margin:</span>
+                      <span className="ml-2">{(benchmarks.grossMargin * 100).toFixed(1)}%</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Growth Rate:</span>
+                      <span className="ml-2">{(benchmarks.growthRate * 100).toFixed(1)}%</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">Revenue Multiple (Growth):</span>
-                    <span className="ml-2">{benchmarks.revenueMultiple.growth}x</span>
+                  <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <h4 className="text-sm font-medium mb-2">Regional Adjustments ({regionData.name})</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="font-medium">Risk-Free Rate:</span>
+                        <span className="ml-2">{(regionData.riskFreeRate * 100).toFixed(2)}%</span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Market Risk Premium:</span>
+                        <span className="ml-2">{(regionData.marketRiskPremium * 100).toFixed(2)}%</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">Gross Margin:</span>
-                    <span className="ml-2">{(benchmarks.grossMargin * 100).toFixed(1)}%</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Growth Rate:</span>
-                    <span className="ml-2">{(benchmarks.growthRate * 100).toFixed(1)}%</span>
-                  </div>
-                </div>
+                </>
               )}
             </div>
           </CardContent>
