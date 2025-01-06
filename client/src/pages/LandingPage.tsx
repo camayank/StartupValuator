@@ -6,7 +6,7 @@ import {
   Calculator,
   FileText,
   Shield,
-  Globe,
+  Clock,
   ChevronRight,
   Check,
   LineChart,
@@ -16,92 +16,96 @@ import {
   Gauge,
   Target,
   Award,
-  TrendingUp,
+  Globe,
+  Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function LandingPage() {
   const valuationFeatures = [
     {
+      icon: Clock,
+      title: "5-Minute Valuation",
+      description: "Go from zero to professional valuation report in just 5 minutes - faster than brewing your coffee",
+    },
+    {
       icon: Brain,
-      title: "AI-Powered Analysis",
-      description: "Advanced machine learning models analyze 100+ data points across market trends, industry benchmarks, and growth metrics for accurate valuations",
+      title: "AI-Powered Intelligence",
+      description: "Our advanced AI analyzes 100+ market signals, benchmarks, and growth metrics for unmatched accuracy",
     },
     {
-      icon: Calculator,
-      title: "Multiple Valuation Methods",
-      description: "Comprehensive analysis using DCF, Market Comparables, First Chicago Method, and industry-specific approaches",
+      icon: Globe,
+      title: "Global Standards",
+      description: "Built-in compliance with ICAI, 409A, IFRS standards - trusted by regulators worldwide",
     },
     {
-      icon: Shield,
-      title: "Global Compliance",
-      description: "Adherence to international standards including ICAI, 409A, IFRS, and regional compliance frameworks",
-    },
-    {
-      icon: Gauge,
-      title: "Real-Time Insights",
-      description: "Dynamic updates based on market conditions, industry trends, and company performance metrics",
+      icon: Zap,
+      title: "Dynamic Updates",
+      description: "Real-time market data integration keeps your valuation current and actionable",
     },
   ];
 
   const reportHighlights = [
     {
       icon: LineChart,
-      title: "Financial Analysis",
+      title: "Professional Valuation",
       metrics: [
-        "Industry-Specific Metrics",
+        "Multiple Valuation Methods",
+        "Industry-Specific Models",
         "Growth Rate Analysis",
-        "Margin Comparisons",
-        "Cash Flow Projections"
+        "Real-Time Market Data"
       ]
     },
     {
       icon: Target,
-      title: "Market Analysis",
+      title: "Market Intelligence",
       metrics: [
         "TAM/SAM/SOM Analysis",
-        "Competitor Benchmarking",
-        "Market Positioning",
-        "Growth Opportunities"
+        "Competitive Positioning",
+        "Market Opportunity Size",
+        "Growth Trajectory"
       ]
     },
     {
       icon: Award,
-      title: "Risk Assessment",
+      title: "Risk & Compliance",
       metrics: [
+        "Regulatory Compliance",
         "Risk Factor Analysis",
-        "Mitigation Strategies",
         "Scenario Planning",
-        "Sensitivity Analysis"
+        "Audit-Ready Reports"
       ]
     },
     {
       icon: Brain,
-      title: "AI Insights",
+      title: "AI-Driven Insights",
       metrics: [
         "Growth Predictions",
         "Investment Readiness",
-        "Strategic Recommendations",
-        "Valuation Drivers"
+        "Strategic Guidance",
+        "Value Optimization"
       ]
     },
   ];
 
   const testimonials = [
     {
-      quote: "The AI-powered insights helped us secure our Series A funding with confidence.",
+      quote: "This tool saved us weeks of work and helped us raise our Series A with confidence. The AI insights were spot-on.",
       author: "Sarah Chen",
       role: "Founder, TechStack AI",
+      amount: "$12M Raised"
     },
     {
-      quote: "Professional-grade valuations that meet compliance standards across regions.",
+      quote: "Finally, a valuation platform that combines speed with institutional-grade analysis. Perfect for due diligence.",
       author: "Michael Rodriguez",
       role: "Investment Director, Global Ventures",
+      amount: "50+ Deals Analyzed"
     },
     {
-      quote: "Game-changing platform for startup valuations. Saved us weeks of work.",
+      quote: "The compliance features are a game-changer. Helps us meet standards across different jurisdictions effortlessly.",
       author: "David Park",
       role: "CEO, HealthTech Solutions",
+      amount: "409A Compliant"
     },
   ];
 
@@ -115,20 +119,34 @@ export function LandingPage() {
         </div>
         <div className="container mx-auto px-4 py-20 lg:py-32 relative">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6"
+            >
               <Brain className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Intelligent Startup Valuation Platform</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-              AI-Powered Startup Valuations in Minutes
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Get professional-grade valuation reports powered by AI and industry-specific insights. Trusted by founders, investors, and advisors globally.
-            </p>
+              <span className="text-sm font-medium">Zero to Valuation in 5 Minutes</span>
+            </motion.div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80"
+            >
+              Professional-Grade Startup Valuations, Powered by AI
+            </motion.h1>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto"
+            >
+              Transform your startup valuation process with institutional-grade analysis, real-time market data, and AI-driven insights. Trusted by founders, VCs, and advisors globally.
+            </motion.p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/valuation">
                 <Button size="lg" className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90">
-                  Generate Your Valuation Report
+                  Start Your Valuation Now
                   <ArrowUpRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -146,7 +164,7 @@ export function LandingPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-primary" />
-                <span>Industry-Specific Models</span>
+                <span>VC-Grade Analysis</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-primary" />
@@ -161,20 +179,28 @@ export function LandingPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Intelligent Valuation Engine</h2>
+            <h2 className="text-3xl font-bold mb-4">Revolutionary Valuation Engine</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our AI-powered platform combines multiple valuation methods with real-time market data to deliver accurate and compliant valuations
+              Combines advanced AI, real-time market data, and multiple valuation methodologies for unmatched accuracy
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {valuationFeatures.map((feature) => (
-              <Card key={feature.title} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <feature.icon className="h-8 w-8 text-primary mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                key={feature.title}
+              >
+                <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <feature.icon className="h-8 w-8 text-primary mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -184,27 +210,35 @@ export function LandingPage() {
       <section className="py-20 bg-accent/5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Comprehensive Valuation Reports</h2>
+            <h2 className="text-3xl font-bold mb-4">Institutional-Grade Reports</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Professional-grade reports with detailed analysis, market insights, and growth projections
+              Every report includes comprehensive analysis, market insights, and actionable recommendations
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {reportHighlights.map((highlight) => (
-              <Card key={highlight.title} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <highlight.icon className="h-8 w-8 text-primary mb-4" />
-                  <h3 className="text-lg font-semibold mb-4">{highlight.title}</h3>
-                  <ul className="space-y-2">
-                    {highlight.metrics.map((metric) => (
-                      <li key={metric} className="flex items-center text-sm text-muted-foreground">
-                        <Check className="h-4 w-4 mr-2 text-primary" />
-                        {metric}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                key={highlight.title}
+              >
+                <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <highlight.icon className="h-8 w-8 text-primary mb-4" />
+                    <h3 className="text-lg font-semibold mb-4">{highlight.title}</h3>
+                    <ul className="space-y-2">
+                      {highlight.metrics.map((metric) => (
+                        <li key={metric} className="flex items-center text-sm text-muted-foreground">
+                          <Check className="h-4 w-4 mr-2 text-primary" />
+                          {metric}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -214,25 +248,34 @@ export function LandingPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Trusted by Startups Globally</h2>
+            <h2 className="text-3xl font-bold mb-4">Trusted by Industry Leaders</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Join hundreds of founders and investors who trust our platform for accurate valuations
+              Join hundreds of successful startups and investors who rely on our platform
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="relative overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="mb-4 text-primary">
-                    <Sparkles className="h-8 w-8" />
-                  </div>
-                  <p className="text-lg mb-4 italic">"{testimonial.quote}"</p>
-                  <div>
-                    <p className="font-semibold">{testimonial.author}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                key={index}
+              >
+                <Card className="relative overflow-hidden h-full">
+                  <CardContent className="p-6">
+                    <div className="mb-4 text-primary">
+                      <Sparkles className="h-8 w-8" />
+                    </div>
+                    <p className="text-lg mb-4 italic">"{testimonial.quote}"</p>
+                    <div className="mt-auto">
+                      <p className="font-semibold">{testimonial.author}</p>
+                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                      <p className="text-sm text-primary mt-2 font-medium">{testimonial.amount}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -241,18 +284,24 @@ export function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-6">
-            Ready to Get Your Startup Valued?
-          </h2>
-          <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-            Generate your comprehensive valuation report with industry-specific insights and compliance standards
-          </p>
-          <Link href="/valuation">
-            <Button size="lg" variant="secondary" className="min-w-[200px] gap-2">
-              Start Your Valuation Now
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl font-bold mb-6">
+              Ready to Transform Your Valuation Process?
+            </h2>
+            <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
+              Get your professional-grade valuation report in just 5 minutes. No complex spreadsheets. No waiting.
+            </p>
+            <Link href="/valuation">
+              <Button size="lg" variant="secondary" className="min-w-[200px] gap-2">
+                Start Your Valuation Now
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </section>
     </div>
