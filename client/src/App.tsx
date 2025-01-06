@@ -98,7 +98,7 @@ const resourceLinks = [
 ];
 
 function App() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, logout } = useUser();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -123,7 +123,19 @@ function App() {
     return <AuthPage />;
   }
 
+  // If we get here, user must be logged in
+  if (!user) return null;
+
   const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   const NavLink = ({ href, label, description, icon: Icon }: {
     href: string;
@@ -234,7 +246,7 @@ function App() {
                   </Link>
                   <DropdownMenuItem
                     className="cursor-pointer text-destructive focus:text-destructive"
-                    onClick={() => {}}
+                    onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
@@ -292,7 +304,7 @@ function App() {
                     />
                     <button
                       className="flex w-full items-center gap-3 px-4 py-2 text-destructive hover:bg-accent"
-                      onClick={() => {}}
+                      onClick={handleLogout}
                     >
                       <LogOut className="h-5 w-5" />
                       Logout
