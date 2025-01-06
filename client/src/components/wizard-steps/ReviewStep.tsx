@@ -1,12 +1,13 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Info, FileText } from "lucide-react";
+import { Info, FileText, TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/validations";
 import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { Link } from "wouter";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -18,6 +19,7 @@ interface ReviewStepProps {
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const isFundraising = data.valuationPurpose === 'fundraising';
 
   // Strict validation logic for all required fields
   const isValidData = (data: Partial<ValuationFormData>): data is ValuationFormData => {
@@ -191,6 +193,34 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
             </p>
           </div>
         </div>
+
+        {isFundraising && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20"
+          >
+            <div className="flex items-start gap-4">
+              <TrendingUp className="h-6 w-6 text-primary mt-1" />
+              <div>
+                <h3 className="text-lg font-medium mb-2">Enhance Your Fundraising Package</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  For fundraising purposes, we recommend creating detailed financial projections and 
+                  a fund utilization plan. This will strengthen your pitch to potential investors.
+                </p>
+                <Link href="/projections">
+                  <Button
+                    variant="outline"
+                    className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    Create Financial Projections
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div
           className="flex justify-between items-center mt-8 pt-4 border-t"

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { PitchDeckAnalyzer } from "@/components/PitchDeckAnalyzer";
 import { ValuationWizard } from "@/components/ValuationWizard";
+import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { ReportGenerationProgress } from "@/components/ReportGenerationProgress";
 import { ExportButton } from "@/components/ExportButton";
 import type { ValuationFormData } from "@/lib/validations";
@@ -38,21 +39,26 @@ function App() {
     <div className="min-h-screen bg-background">
       <nav className="border-b px-4 py-3">
         <div className="container mx-auto flex items-center justify-between">
-          <Link href="/">
-            <a className="text-xl font-bold">StartupValuator</a>
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Link href="/">
+              <span className="text-xl font-bold cursor-pointer">StartupValuator</span>
+            </Link>
+          </div>
           <div className="flex gap-4">
             <Link href="/">
-              <a className="text-sm hover:text-primary">Valuation</a>
+              <span className="text-sm hover:text-primary cursor-pointer">Valuation</span>
+            </Link>
+            <Link href="/projections">
+              <span className="text-sm hover:text-primary cursor-pointer">Financial Projections</span>
             </Link>
             <Link href="/pitch-deck">
-              <a className="text-sm hover:text-primary">Pitch Deck</a>
+              <span className="text-sm hover:text-primary cursor-pointer">Pitch Deck</span>
             </Link>
             <Link href="/profile/1">
-              <a className="text-sm hover:text-primary">Profile</a>
+              <span className="text-sm hover:text-primary cursor-pointer">Profile</span>
             </Link>
             <Link href="/docs">
-              <a className="text-sm hover:text-primary">API Docs</a>
+              <span className="text-sm hover:text-primary cursor-pointer">API Docs</span>
             </Link>
           </div>
         </div>
@@ -62,7 +68,11 @@ function App() {
         <Route path="/">
           <div className="container mx-auto py-8">
             <ValuationWizard onSubmit={handleValuationSubmit} />
-            <ExportButton /> {/* Added ExportButton here */}
+          </div>
+        </Route>
+        <Route path="/projections">
+          <div className="container mx-auto py-8">
+            <ProjectionsWizard />
           </div>
         </Route>
         <Route path="/docs" component={Documentation} />
@@ -92,9 +102,9 @@ function NotFound() {
             The page you're looking for doesn't exist.
           </p>
           <Link href="/">
-            <a className="mt-4 inline-block text-primary hover:underline">
+            <span className="mt-4 inline-block text-primary hover:underline cursor-pointer">
               Return to Home
-            </a>
+            </span>
           </Link>
         </div>
       </Card>

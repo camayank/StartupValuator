@@ -110,6 +110,8 @@ export const financialProjectionSchema = z.object({
   }),
 });
 
+export type FinancialProjectionData = z.infer<typeof financialProjectionSchema>;
+
 // Fund Utilization Schema
 export const fundUtilizationSchema = z.object({
   totalFunding: z.number().min(0),
