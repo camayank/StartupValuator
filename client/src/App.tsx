@@ -3,7 +3,7 @@ import { Home } from "./pages/Home";
 import { Documentation } from "./pages/Documentation";
 import { Profile } from "./pages/Profile";
 import { Card } from "@/components/ui/card";
-import { AlertCircle, Loader2, Menu, ChevronDown, X } from "lucide-react";
+import { AlertCircle, Loader2, Menu, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
@@ -13,7 +13,6 @@ import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import { ComplianceChecker } from "@/components/ComplianceChecker";
 import { PricingPage } from "./pages/PricingPage";
 import { useUser } from "@/hooks/use-user";
-import { usePermissions } from "@/hooks/use-permissions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,41 +21,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { ValuationFormData } from "@/lib/validations";
+import { DashboardContainer } from "@/components/DashboardContainer";
+import AuthPage from "./pages/AuthPage";
+import { RoleAccessVisualization } from "@/components/RoleAccessVisualization";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
-import AuthPage from "./pages/AuthPage";
-import { DashboardContainer } from "@/components/DashboardContainer";
 
+
+// Navigation items configuration
 const baseNavItems = [
-  { href: "/", label: "Valuation", description: "Calculate your startup's value", tourId: "valuation", feature: "valuation" },
-  { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", tourId: "projections", feature: "projections" },
-  { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", tourId: "pitch-deck", feature: "pitch_deck" },
+  { href: "/", label: "Valuation", description: "Calculate your startup's value" },
+  { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts" },
+  { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations" },
 ];
 
 const roleSpecificNavItems = {
   startup: [
-    { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics", tourId: "dashboard", feature: "health_dashboard" },
-    { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance", tourId: "compliance", feature: "compliance" },
+    { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics" },
+    { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance" },
   ],
   investor: [
-    { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", tourId: "portfolio", feature: "portfolio_management" },
-    { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments", tourId: "deal-flow", feature: "deal_flow" },
+    { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio" },
+    { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments" },
   ],
   valuer: [
-    { href: "/methodology", label: "Methodology", description: "Manage valuation methodologies", tourId: "methodology", feature: "methodology_management" },
-    { href: "/clients", label: "Clients", description: "Manage client relationships", tourId: "clients", feature: "client_management" },
+    { href: "/methodology", label: "Methodology", description: "Manage valuation methodologies" },
+    { href: "/clients", label: "Clients", description: "Manage client relationships" },
   ],
   consultant: [
-    { href: "/clients", label: "Clients", description: "Manage client relationships", tourId: "clients", feature: "client_management" },
-    { href: "/reports", label: "Reports", description: "Generate and manage reports", tourId: "reports", feature: "reporting" },
+    { href: "/clients", label: "Clients", description: "Manage client relationships" },
+    { href: "/reports", label: "Reports", description: "Generate and manage reports" },
   ],
 };
 
@@ -66,15 +62,13 @@ const resourceNavItems = [
 ];
 
 function App() {
-  const { user, isLoading, error } = useUser();
-  const { hasPermission, userRole, getRoleSpecificUIProps } = usePermissions();
+  const { user, isLoading, logout } = useUser();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const uiProps = getRoleSpecificUIProps();
 
-  // Filter navigation items based on user role and permissions
-  const mainNavItems = baseNavItems.filter(item => hasPermission(item.feature));
-  const toolsNavItems = userRole ? roleSpecificNavItems[userRole as keyof typeof roleSpecificNavItems].filter(item => hasPermission(item.feature)) : [];
+  // Filter navigation items based on user role
+  const mainNavItems = baseNavItems;
+  const toolsNavItems = user?.role ? roleSpecificNavItems[user.role as keyof typeof roleSpecificNavItems] : [];
 
   if (isLoading) {
     return (
@@ -89,30 +83,7 @@ function App() {
     return <AuthPage />;
   }
 
-  const handleValuationSubmit = async (data: ValuationFormData) => {
-    try {
-      const response = await fetch('/api/valuation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Valuation result:', result);
-      return result;
-    } catch (error) {
-      console.error('Error calculating valuation:', error);
-      throw error;
-    }
-  };
-
-  const NavItem = ({ href, label, description, tourId }: { href: string; label: string; description: string; tourId?: string }) => (
+  const NavItem = ({ href, label, description }: { href: string; label: string; description: string }) => (
     <Tooltip>
       <TooltipTrigger asChild>
         <Link href={href}>
@@ -120,7 +91,6 @@ function App() {
             className={`text-sm hover:text-primary cursor-pointer transition-colors ${
               location === href ? 'text-primary font-medium' : ''
             }`}
-            data-tour={tourId}
           >
             {label}
           </span>
@@ -149,7 +119,7 @@ function App() {
 
   return (
     <TooltipProvider>
-      <div className={`min-h-screen bg-background ${uiProps.theme ? `theme-${uiProps.theme}` : ''}`}>
+      <div className="min-h-screen bg-background">
         <nav className="sticky top-0 z-50 border-b px-4 py-3 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <div className="container mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -191,44 +161,32 @@ function App() {
               </div>
 
               <div className="flex items-center space-x-4">
-                {user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{user.username}</span>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                      <DropdownMenuItem className="text-muted-foreground">
-                        Role: {user.role}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <Link href={`/profile/${user.id}`}>
-                        <DropdownMenuItem className="cursor-pointer">
-                          Profile Settings
-                        </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuItem
-                        className="cursor-pointer text-destructive focus:text-destructive"
-                        onClick={() => {
-                          fetch('/api/logout', { method: 'POST' })
-                            .then(() => window.location.reload())
-                            .catch(console.error);
-                        }}
-                      >
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Link href="/login">
-                    <Button variant="ghost" size="sm">
-                      Login
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{user.username}</span>
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
-                  </Link>
-                )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuItem className="text-muted-foreground">
+                      Role: {user.role}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <Link href={`/profile/${user.id}`}>
+                      <DropdownMenuItem className="cursor-pointer">
+                        Profile Settings
+                      </DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuItem
+                      className="cursor-pointer text-destructive focus:text-destructive"
+                      onClick={() => logout()}
+                    >
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -247,26 +205,16 @@ function App() {
                     ))}
 
                     <div className="border-t pt-4">
-                      {user ? (
-                        <>
-                          <div className="px-4 py-2 text-sm text-muted-foreground">
-                            Role: {user.role}
-                          </div>
-                          <MobileNavItem href={`/profile/${user.id}`} label="Profile Settings" />
-                          <button
-                            className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent"
-                            onClick={() => {
-                              fetch('/api/logout', { method: 'POST' })
-                                .then(() => window.location.reload())
-                                .catch(console.error);
-                            }}
-                          >
-                            Logout
-                          </button>
-                        </>
-                      ) : (
-                        <MobileNavItem href="/login" label="Login" />
-                      )}
+                      <div className="px-4 py-2 text-sm text-muted-foreground">
+                        Role: {user.role}
+                      </div>
+                      <MobileNavItem href={`/profile/${user.id}`} label="Profile Settings" />
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent"
+                        onClick={() => logout()}
+                      >
+                        Logout
+                      </button>
                     </div>
                   </div>
                 </SheetContent>
@@ -275,7 +223,7 @@ function App() {
           </div>
         </nav>
 
-        <main className={`min-h-[calc(100vh-4rem)] ${uiProps.dashboardLayout ? `layout-${uiProps.dashboardLayout}` : ''}`}>
+        <main className="min-h-[calc(100vh-4rem)]">
           <Switch>
             <Route path="/">
               <div className="container mx-auto py-8">
@@ -302,9 +250,15 @@ function App() {
                 <ComplianceChecker />
               </div>
             </Route>
-            <Route path="/pricing" component={PricingPage} />
-            <Route path="/docs" component={Documentation} />
-            <Route path="/profile/:userId" component={Profile} />
+            <Route path="/pricing">
+              <PricingPage />
+            </Route>
+            <Route path="/docs">
+              <Documentation />
+            </Route>
+            <Route path="/profile/:userId">
+              <Profile />
+            </Route>
             <Route component={NotFound} />
           </Switch>
         </main>
