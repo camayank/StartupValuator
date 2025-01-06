@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Check,
 } from "lucide-react";
+import { RoleBasedFeatures } from "@/components/RoleBasedFeatures";
 
 export function LandingPage() {
   const features = [
@@ -181,6 +182,13 @@ export function LandingPage() {
       <section className="bg-accent/5 border-y">
         <div className="container mx-auto px-4">
           <CompetitiveAdvantages />
+        </div>
+      </section>
+
+      {/* Add RoleBasedFeatures section after CompetitiveAdvantages */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <RoleBasedFeatures />
         </div>
       </section>
 
