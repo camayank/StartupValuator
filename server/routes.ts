@@ -12,6 +12,7 @@ import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/
 import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
+import { generateComplianceReport, generateComplianceChecklist } from "./services/compliance-checker";
 
 // Define a schema for the report data
 const reportDataSchema = valuationFormSchema.extend({
@@ -238,6 +239,33 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
+  // Compliance checking routes
+  app.post("/api/compliance/check", async (req, res) => {
+    try {
+      const report = await generateComplianceReport(req.body);
+      res.json(report);
+    } catch (error) {
+      console.error("Compliance check failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate compliance report"
+      });
+    }
+  });
+
+  app.post("/api/compliance/checklist", async (req, res) => {
+    try {
+      const { industry, region } = req.body;
+      const checklist = await generateComplianceChecklist(industry, region);
+      res.json(checklist);
+    } catch (error) {
+      console.error("Checklist generation failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate compliance checklist"
+      });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

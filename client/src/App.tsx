@@ -8,6 +8,7 @@ import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
 import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
+import { ComplianceChecker } from "@/components/ComplianceChecker";
 import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
@@ -56,6 +57,9 @@ function App() {
             <Link href="/dashboard">
               <span className="text-sm hover:text-primary cursor-pointer">Health Dashboard</span>
             </Link>
+            <Link href="/compliance">
+              <span className="text-sm hover:text-primary cursor-pointer">Compliance Check</span>
+            </Link>
             <Link href="/profile/1">
               <span className="text-sm hover:text-primary cursor-pointer">Profile</span>
             </Link>
@@ -85,6 +89,11 @@ function App() {
         <Route path="/dashboard">
           <div className="container mx-auto py-8">
             <StartupHealthDashboard />
+          </div>
+        </Route>
+        <Route path="/compliance">
+          <div className="container mx-auto py-8">
+            <ComplianceChecker />
           </div>
         </Route>
         <Route path="/docs" component={Documentation} />
