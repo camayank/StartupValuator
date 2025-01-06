@@ -9,6 +9,7 @@ import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import { ComplianceChecker } from "@/components/ComplianceChecker";
+import { PricingPage } from "./pages/PricingPage";
 import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
@@ -60,6 +61,9 @@ function App() {
             <Link href="/compliance">
               <span className="text-sm hover:text-primary cursor-pointer">Compliance Check</span>
             </Link>
+            <Link href="/pricing">
+              <span className="text-sm hover:text-primary cursor-pointer">Pricing</span>
+            </Link>
             <Link href="/profile/1">
               <span className="text-sm hover:text-primary cursor-pointer">Profile</span>
             </Link>
@@ -96,6 +100,7 @@ function App() {
             <ComplianceChecker />
           </div>
         </Route>
+        <Route path="/pricing" component={PricingPage} />
         <Route path="/docs" component={Documentation} />
         <Route path="/profile/:userId" component={Profile} />
         <Route component={NotFound} />
