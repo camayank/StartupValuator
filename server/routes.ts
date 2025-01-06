@@ -8,6 +8,9 @@ import { setupCache } from "./lib/cache";
 import { z } from "zod";
 import rateLimit from 'express-rate-limit';
 
+// Initialize cache
+const cache = setupCache();
+
 // Rate limiting configuration
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -87,11 +90,11 @@ export function registerRoutes(app: Express): Server {
         enterprise: { price: 99.99, features: ["Custom branding", "API access"] },
       };
 
-      // Apply regional adjustments (e.g., PPP-based pricing)
+      // Apply regional adjustments
       const regionalPricing = adjustPricingForRegion(basePricing, region);
 
-      // Cache the result
-      cache.set(cacheKey, regionalPricing);
+      // Cache the result with 1-hour expiration
+      cache.set(cacheKey, regionalPricing, 3600);
 
       res.json(regionalPricing);
     } catch (error) {
@@ -100,7 +103,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Enhanced valuation route with comprehensive insights and error handling
+  // Enhanced valuation route with comprehensive insights
   app.post("/api/valuation", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
@@ -116,14 +119,13 @@ export function registerRoutes(app: Express): Server {
       }
 
       const baseValuation = await calculateValuation(validatedData);
-      const frameworkId = validatedData.region.toLowerCase() === 'us' ? '409a' :
-                       validatedData.region.toLowerCase() === 'india' ? 'icai' : 'ivs';
-
       const result = {
         ...baseValuation,
+        timestamp: new Date().toISOString(),
       };
 
-      cache.set(cacheKey, result);
+      // Cache the result with 15-minute expiration
+      cache.set(cacheKey, result, 900);
 
       // Track usage for billing
       await db.insert(userActivities).values({
@@ -166,7 +168,7 @@ function adjustPricingForRegion(basePricing: any, region: string) {
   return Object.entries(basePricing).reduce((acc: any, [tier, details]: [string, any]) => {
     acc[tier] = {
       ...details,
-      price: details.price * multiplier,
+      price: Math.round((details.price * multiplier) * 100) / 100, // Round to 2 decimal places
     };
     return acc;
   }, {});
