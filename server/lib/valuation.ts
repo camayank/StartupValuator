@@ -4,6 +4,12 @@ import { calculateFinancialAssumptions } from "./financialAssumptions";
 import { getCachedMarketSentiment } from "./marketSentiment";
 import type { FinancialAssumptions } from "./financialAssumptions";
 import type { MarketSentiment } from "./marketSentiment";
+import { 
+  getFramework, 
+  validateFrameworkCompliance, 
+  applyFrameworkAdjustments,
+  type FrameworkId 
+} from "./compliance/frameworks";
 
 interface CurrencyRates {
   USD: number;
@@ -22,8 +28,11 @@ const EXCHANGE_RATES: CurrencyRates = {
   INR: 83.15,
 };
 
-export async function calculateValuation(params: ValuationFormData) {
-  const { currency, stage, industry, revenue } = params;
+export async function calculateValuation(params: ValuationFormData & { framework?: FrameworkId }) {
+  const { currency, stage, industry, revenue, framework = 'ivs' } = params;
+
+  // Get compliance framework
+  const complianceFramework = getFramework(framework);
 
   // Get market sentiment analysis
   const marketSentiment = await getCachedMarketSentiment(params);
@@ -44,7 +53,7 @@ export async function calculateValuation(params: ValuationFormData) {
   const weights = determineMethodWeights(stage, industry, assumptions);
 
   // Calculate weighted average valuation with enhanced methodology
-  const finalValuationUSD = (
+  const baseValuationUSD = (
     dcfAnalysis.value * weights.dcf +
     comparablesAnalysis.value * weights.comparables +
     riskAdjustedAnalysis.value * weights.riskAdjusted
@@ -52,14 +61,41 @@ export async function calculateValuation(params: ValuationFormData) {
 
   // Calculate market sentiment adjustment
   const sentimentAdjustment = calculateMarketSentimentAdjustment(marketSentiment);
-  const adjustedValuationUSD = finalValuationUSD * sentimentAdjustment;
+
+  // Apply compliance framework adjustments
+  const frameworkAdjustedValuationUSD = applyFrameworkAdjustments(
+    complianceFramework,
+    baseValuationUSD * sentimentAdjustment
+  );
+
+  // Validate compliance
+  const complianceResults = validateFrameworkCompliance(complianceFramework, {
+    assetDescription: `${params.businessName} - ${industry} company in ${stage} stage`,
+    purposeOfValuation: params.valuationPurpose,
+    valuationDate: new Date().toISOString(),
+    dataSources: [
+      "Financial Statements",
+      "Market Data",
+      "Industry Reports",
+    ],
+    assumptions: [
+      {
+        description: "Growth Rate",
+        justification: `Industry average growth rate of ${assumptions.growthRate}%`,
+      },
+      {
+        description: "Market Risk Premium",
+        justification: `Based on current market conditions and sentiment score of ${marketSentiment.overallScore}`,
+      },
+    ],
+  });
 
   // Convert back to requested currency
-  const finalValuation = adjustedValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
+  const finalValuation = frameworkAdjustedValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
 
   return {
     valuation: Math.round(finalValuation * 100) / 100,
-    multiplier: revenue > 0 ? Math.round((adjustedValuationUSD / revenueUSD) * 100) / 100 : null,
+    multiplier: revenue > 0 ? Math.round((frameworkAdjustedValuationUSD / revenueUSD) * 100) / 100 : null,
     methodology: {
       dcfWeight: weights.dcf,
       comparablesWeight: weights.comparables,
@@ -67,15 +103,21 @@ export async function calculateValuation(params: ValuationFormData) {
       sentimentAdjustment,
     },
     marketSentiment,
+    compliance: {
+      framework: complianceFramework.name,
+      region: complianceFramework.region,
+      results: complianceResults,
+      adjustments: complianceFramework.adjustments,
+    },
     details: {
-      baseValuation: finalValuationUSD,
+      baseValuation: baseValuationUSD,
       methods: {
         dcf: dcfAnalysis,
         comparables: comparablesAnalysis,
         riskAdjusted: riskAdjustedAnalysis,
       },
-      scenarios: generateScenarioAnalysis(params, finalValuationUSD, assumptions),
-      sensitivityAnalysis: performSensitivityAnalysis(params, finalValuationUSD),
+      scenarios: generateScenarioAnalysis(params, frameworkAdjustedValuationUSD, assumptions),
+      sensitivityAnalysis: performSensitivityAnalysis(params, frameworkAdjustedValuationUSD),
       industryMetrics: getIndustryMetrics(industry, stage),
     },
     assumptions,
