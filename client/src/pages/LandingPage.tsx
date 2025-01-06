@@ -2,6 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
 import { CompetitiveAdvantages } from "@/components/CompetitiveAdvantages";
+import { RoleBasedFeatures } from "@/components/RoleBasedFeatures";
+import { EnterpriseSolutions } from "@/components/EnterpriseSolutions";
+import { PricingSection } from "@/components/PricingSection";
 import {
   BarChart3,
   Calculator,
@@ -14,8 +17,6 @@ import {
   ChevronRight,
   Check,
 } from "lucide-react";
-import { RoleBasedFeatures } from "@/components/RoleBasedFeatures";
-import { EnterpriseSolutions } from "@/components/EnterpriseSolutions"; // Import the EnterpriseSolutions component
 
 export function LandingPage() {
   const features = [
@@ -265,6 +266,13 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Add Pricing Section before CTA */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <PricingSection />
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
@@ -276,7 +284,7 @@ export function LandingPage() {
           </p>
           <Link href="/auth?mode=signup">
             <Button size="lg" variant="secondary" className="min-w-[200px]">
-              Start Free Valuation
+              Start Free Trial
             </Button>
           </Link>
         </div>
