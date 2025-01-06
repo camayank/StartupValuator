@@ -46,19 +46,21 @@ import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 import { LandingPage } from "./pages/LandingPage";
+import { StartupJourneyDashboard } from "@/components/StartupJourneyDashboard";
 
-// Navigation configuration with improved structure and icons
+// Update navigationConfig to include YC-focused features
 const navigationConfig = {
   startup: {
     mainTools: [
-      { href: "/valuation", label: "Company Valuation", description: "Complete business valuation process", icon: Calculator },
-      { href: "/safe-calculator", label: "SAFE Calculator", description: "Calculate SAFE agreement terms", icon: Calculator },
-      { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
-      { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", icon: FileText },
+      { href: "/valuation", label: "Smart Valuation", description: "AI-powered company valuation", icon: Calculator },
+      { href: "/metrics", label: "Growth Metrics", description: "Track key startup metrics", icon: BarChart3 },
+      { href: "/pitch-deck", label: "Pitch Deck AI", description: "Generate investor-ready pitch decks", icon: FileText },
+      { href: "/projections", label: "Financial Projections", description: "AI-driven financial forecasting", icon: BarChart3 },
     ],
     analytics: [
-      { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics", icon: PieChart },
-      { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance", icon: ClipboardCheck },
+      { href: "/journey", label: "Startup Journey", description: "Track your growth journey", icon: PieChart },
+      { href: "/compliance", label: "Global Compliance", description: "Multi-region compliance checks", icon: ClipboardCheck },
+      { href: "/market", label: "Market Analysis", description: "Real-time market insights", icon: BarChart3 },
     ]
   },
   investor: {
@@ -121,7 +123,7 @@ function App() {
     );
   }
 
-  // Public routes - show landing page or calculator
+  // Update the landing page component to be more YC-focused
   if (!user && !location.startsWith('/auth')) {
     if (location === '/calculator') {
       return (
@@ -136,7 +138,7 @@ function App() {
                   <Button variant="ghost">Sign In</Button>
                 </Link>
                 <Link href="/auth?mode=signup">
-                  <Button>Get Started</Button>
+                  <Button>Start Free Trial</Button>
                 </Link>
               </div>
             </div>
@@ -352,7 +354,16 @@ function App() {
             <Switch>
               <Route path="/">
                 {user && (
-                  <ValuationPage />
+                  <DashboardContainer>
+                    <StartupJourneyDashboard 
+                      profile={{
+                        journeyMilestones: [], // Will be populated from API
+                        growthMetrics: [],     // Will be populated from API
+                        keyAchievements: [],   // Will be populated from API
+                        futureGoals: []        // Will be populated from API
+                      }}
+                    />
+                  </DashboardContainer>
                 )}
                 {!user && <Home />}
               </Route>
@@ -379,6 +390,18 @@ function App() {
               </Route>
               <Route path="/profile/:userId">
                 <Profile />
+              </Route>
+              <Route path="/journey">
+                <DashboardContainer>
+                  <StartupJourneyDashboard 
+                    profile={{
+                      journeyMilestones: [], // Will be populated from API
+                      growthMetrics: [],     // Will be populated from API
+                      keyAchievements: [],   // Will be populated from API
+                      futureGoals: []        // Will be populated from API
+                    }}
+                  />
+                </DashboardContainer>
               </Route>
               <Route component={NotFound} />
             </Switch>
