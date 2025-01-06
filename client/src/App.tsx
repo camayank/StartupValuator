@@ -4,6 +4,7 @@ import { Documentation } from "./pages/Documentation";
 import { Profile } from "./pages/Profile";
 import ValuationPage from "./pages/ValuationPage";
 import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
+import SAFECalculatorPage from "./pages/SAFECalculatorPage";
 import { Card } from "@/components/ui/card";
 import {
   AlertCircle,
@@ -51,6 +52,7 @@ const navigationConfig = {
   startup: {
     mainTools: [
       { href: "/valuation", label: "Company Valuation", description: "Complete business valuation process", icon: Calculator },
+      { href: "/safe-calculator", label: "SAFE Calculator", description: "Calculate SAFE agreement terms", icon: Calculator },
       { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", icon: FileText },
     ],
@@ -62,6 +64,7 @@ const navigationConfig = {
   investor: {
     mainTools: [
       { href: "/valuation", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
+      { href: "/safe-calculator", label: "SAFE Calculator", description: "Analyze SAFE terms", icon: Calculator },
       { href: "/calculator", label: "Interactive Calculator", description: "Quick valuation estimates", icon: Calculator },
       { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", icon: PieChart },
       { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments", icon: BarChart3 },
@@ -355,6 +358,7 @@ function App() {
               </Route>
               <Route path="/valuation" component={ValuationPage} />
               <Route path="/calculator" component={ValuationCalculatorPage} />
+              <Route path="/safe-calculator" component={SAFECalculatorPage} />
               <Route path="/projections">
                 <ProjectionsWizard />
               </Route>
