@@ -179,138 +179,6 @@ export const addonSubscriptions = pgTable("addon_subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Define relations
-export const userToProfileRelations = relations(users, ({ one, many }) => ({
-  profile: one(userProfiles, {
-    fields: [users.id],
-    references: [userProfiles.userId],
-  }),
-  subscriptions: many(userSubscriptions),
-  usageStats: many(usageStats),
-  activities: many(userActivities),
-  suggestions: many(workflowSuggestions),
-}));
-
-export const profileToUserRelations = relations(userProfiles, ({ one }) => ({
-  user: one(users, {
-    fields: [userProfiles.userId],
-    references: [users.id],
-  }),
-}));
-
-export const subscriptionToUserRelation = relations(userSubscriptions, ({ one }) => ({
-  user: one(users, {
-    fields: [userSubscriptions.userId],
-    references: [users.id],
-  }),
-  plan: one(subscriptionPlans, {
-    fields: [userSubscriptions.planId],
-    references: [subscriptionPlans.id],
-  }),
-}));
-
-export const activityRelations = relations(userActivities, ({ one }) => ({
-  user: one(users, {
-    fields: [userActivities.userId],
-    references: [users.id],
-  }),
-}));
-
-export const suggestionRelations = relations(workflowSuggestions, ({ one }) => ({
-  user: one(users, {
-    fields: [workflowSuggestions.userId],
-    references: [users.id],
-  }),
-}));
-
-// Create schemas for validation with custom validation rules
-export const insertUserSchema = createInsertSchema(users, {
-  email: z.string().email("Invalid email format"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["startup", "investor", "valuer", "consultant"]),
-}).omit({
-  id: true,
-  subscriptionTier: true,
-  subscriptionStatus: true,
-  trialEndsAt: true,
-  phoneNumber: true,
-  companyName: true,
-  isEmailVerified: true,
-  lastLoginAt: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-export const selectUserSchema = createSelectSchema(users);
-export const insertUserProfileSchema = createInsertSchema(userProfiles);
-export const selectUserProfileSchema = createSelectSchema(userProfiles);
-export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
-export const selectSubscriptionPlanSchema = createSelectSchema(subscriptionPlans);
-export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions);
-export const selectUserSubscriptionSchema = createSelectSchema(userSubscriptions);
-export const insertUsageStatsSchema = createInsertSchema(usageStats);
-export const selectUsageStatsSchema = createSelectSchema(usageStats);
-export const insertUserActivitySchema = createInsertSchema(userActivities);
-export const selectUserActivitySchema = createSelectSchema(userActivities);
-export const insertWorkflowSuggestionSchema = createInsertSchema(workflowSuggestions);
-export const selectWorkflowSuggestionSchema = createSelectSchema(workflowSuggestions);
-
-// Export types
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
-export type InsertUserProfile = typeof userProfiles.$inferInsert;
-export type SelectUserProfile = typeof userProfiles.$inferSelect;
-export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
-export type SelectSubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
-export type SelectUserSubscription = typeof userSubscriptions.$inferSelect;
-export type InsertUsageStats = typeof usageStats.$inferInsert;
-export type SelectUsageStats = typeof usageStats.$inferSelect;
-export type InsertUserActivity = typeof userActivities.$inferInsert;
-export type SelectUserActivity = typeof userActivities.$inferSelect;
-export type InsertWorkflowSuggestion = typeof workflowSuggestions.$inferInsert;
-export type SelectWorkflowSuggestion = typeof workflowSuggestions.$inferSelect;
-
-export const loginAudit = pgTable("login_audit", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  ipAddress: varchar("ip_address", { length: 45 }),
-  userAgent: text("user_agent"),
-  status: varchar("status", { length: 20 }).notNull(), // success, failed
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-export const passwordResetTokens = pgTable("password_reset_tokens", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  token: varchar("token", { length: 255 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertLoginAuditSchema = createInsertSchema(loginAudit);
-export const selectLoginAuditSchema = createSelectSchema(loginAudit);
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
-export const selectPasswordResetTokenSchema = createSelectSchema(passwordResetTokens);
-
-export type InsertLoginAudit = typeof loginAudit.$inferInsert;
-export type SelectLoginAudit = typeof loginAudit.$inferSelect;
-export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
-export type SelectPasswordResetToken = typeof passwordResetTokens.$inferSelect;
-
-export const usersRelations = relations(users, ({ one, many }) => ({
-  profile: one(userProfiles, {
-    fields: [users.id],
-    references: [userProfiles.userId],
-  }),
-  subscriptions: many(userSubscriptions),
-  usageStats: many(usageStats),
-  activities: many(userActivities),
-  suggestions: many(workflowSuggestions),
-}));
-
 // Add new enums for workspace roles and audit actions
 export const workspaceRoles = pgEnum("workspace_role", ["owner", "admin", "member", "viewer"]);
 export const auditActions = pgEnum("audit_action", [
@@ -387,7 +255,7 @@ export const valuationComments = pgTable("valuation_comments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Audit trail
+// Audit trail for security and compliance
 export const auditTrail = pgTable("audit_trail", {
   id: serial("id").primaryKey(),
   workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
@@ -398,7 +266,50 @@ export const auditTrail = pgTable("audit_trail", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Add new relation types
+// Define relations
+export const userToProfileRelations = relations(users, ({ one, many }) => ({
+  profile: one(userProfiles, {
+    fields: [users.id],
+    references: [userProfiles.userId],
+  }),
+  subscriptions: many(userSubscriptions),
+  usageStats: many(usageStats),
+  activities: many(userActivities),
+  suggestions: many(workflowSuggestions),
+}));
+
+export const profileToUserRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
+export const subscriptionToUserRelation = relations(userSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [userSubscriptions.userId],
+    references: [users.id],
+  }),
+  plan: one(subscriptionPlans, {
+    fields: [userSubscriptions.planId],
+    references: [subscriptionPlans.id],
+  }),
+}));
+
+export const activityRelations = relations(userActivities, ({ one }) => ({
+  user: one(users, {
+    fields: [userActivities.userId],
+    references: [users.id],
+  }),
+}));
+
+export const suggestionRelations = relations(workflowSuggestions, ({ one }) => ({
+  user: one(users, {
+    fields: [workflowSuggestions.userId],
+    references: [users.id],
+  }),
+}));
+
 export const workspaceRelations = relations(workspaces, ({ one, many }) => ({
   owner: one(users, {
     fields: [workspaces.ownerId],
@@ -421,7 +332,39 @@ export const valuationRelations = relations(valuations, ({ one, many }) => ({
   comments: many(valuationComments),
 }));
 
-// Create schemas for validation
+
+// Create schemas for validation with custom validation rules
+export const insertUserSchema = createInsertSchema(users, {
+  email: z.string().email("Invalid email format"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["startup", "investor", "valuer", "consultant"]),
+}).omit({
+  id: true,
+  subscriptionTier: true,
+  subscriptionStatus: true,
+  trialEndsAt: true,
+  phoneNumber: true,
+  companyName: true,
+  isEmailVerified: true,
+  lastLoginAt: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const selectUserSchema = createSelectSchema(users);
+export const insertUserProfileSchema = createInsertSchema(userProfiles);
+export const selectUserProfileSchema = createSelectSchema(userProfiles);
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
+export const selectSubscriptionPlanSchema = createSelectSchema(subscriptionPlans);
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions);
+export const selectUserSubscriptionSchema = createSelectSchema(userSubscriptions);
+export const insertUsageStatsSchema = createInsertSchema(usageStats);
+export const selectUsageStatsSchema = createSelectSchema(usageStats);
+export const insertUserActivitySchema = createInsertSchema(userActivities);
+export const selectUserActivitySchema = createSelectSchema(userActivities);
+export const insertWorkflowSuggestionSchema = createInsertSchema(workflowSuggestions);
+export const selectWorkflowSuggestionSchema = createSelectSchema(workflowSuggestions);
 export const insertWorkspaceSchema = createInsertSchema(workspaces);
 export const selectWorkspaceSchema = createSelectSchema(workspaces);
 export const insertWorkspaceMemberSchema = createInsertSchema(workspaceMembers);
@@ -432,8 +375,26 @@ export const insertValuationCommentSchema = createInsertSchema(valuationComments
 export const selectValuationCommentSchema = createSelectSchema(valuationComments);
 export const insertAuditTrailSchema = createInsertSchema(auditTrail);
 export const selectAuditTrailSchema = createSelectSchema(auditTrail);
+export const insertPayPerUseTransactionSchema = createInsertSchema(payPerUseTransactions);
+export const selectPayPerUseTransactionSchema = createSelectSchema(payPerUseTransactions);
+export const insertAddonSubscriptionSchema = createInsertSchema(addonSubscriptions);
+export const selectAddonSubscriptionSchema = createSelectSchema(addonSubscriptions);
 
 // Export types
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+export type InsertUserProfile = typeof userProfiles.$inferInsert;
+export type SelectUserProfile = typeof userProfiles.$inferSelect;
+export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
+export type SelectSubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
+export type SelectUserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUsageStats = typeof usageStats.$inferInsert;
+export type SelectUsageStats = typeof usageStats.$inferSelect;
+export type InsertUserActivity = typeof userActivities.$inferInsert;
+export type SelectUserActivity = typeof userActivities.$inferSelect;
+export type InsertWorkflowSuggestion = typeof workflowSuggestions.$inferInsert;
+export type SelectWorkflowSuggestion = typeof workflowSuggestions.$inferSelect;
 export type InsertWorkspace = typeof workspaces.$inferInsert;
 export type SelectWorkspace = typeof workspaces.$inferSelect;
 export type InsertWorkspaceMember = typeof workspaceMembers.$inferInsert;
@@ -444,3 +405,46 @@ export type InsertValuationComment = typeof valuationComments.$inferInsert;
 export type SelectValuationComment = typeof valuationComments.$inferSelect;
 export type InsertAuditTrail = typeof auditTrail.$inferInsert;
 export type SelectAuditTrail = typeof auditTrail.$inferSelect;
+export type InsertPayPerUseTransaction = typeof payPerUseTransactions.$inferInsert;
+export type SelectPayPerUseTransaction = typeof payPerUseTransactions.$inferSelect;
+export type InsertAddonSubscription = typeof addonSubscriptions.$inferInsert;
+export type SelectAddonSubscription = typeof addonSubscriptions.$inferSelect;
+
+export const loginAudit = pgTable("login_audit", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  status: varchar("status", { length: 20 }).notNull(), // success, failed
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: varchar("token", { length: 255 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLoginAuditSchema = createInsertSchema(loginAudit);
+export const selectLoginAuditSchema = createSelectSchema(loginAudit);
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
+export const selectPasswordResetTokenSchema = createSelectSchema(passwordResetTokens);
+
+export type InsertLoginAudit = typeof loginAudit.$inferInsert;
+export type SelectLoginAudit = typeof loginAudit.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+export type SelectPasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  profile: one(userProfiles, {
+    fields: [users.id],
+    references: [userProfiles.userId],
+  }),
+  subscriptions: many(userSubscriptions),
+  usageStats: many(usageStats),
+  activities: many(userActivities),
+  suggestions: many(workflowSuggestions),
+}));
