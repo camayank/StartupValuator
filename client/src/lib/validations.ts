@@ -69,7 +69,8 @@ export const businessStages = {
     riskPremium: 0.25,
     valuation: {
       methods: ["scorecard", "checklistMethod"] as const,
-      weights: { scorecard: 0.6, checklistMethod: 0.4 }
+      weights: { scorecard: 0.6, checklistMethod: 0.4 },
+      requiredInputs: ["teamExperience", "intellectualProperty", "marketSize"]
     }
   },
   mvp: {
@@ -77,7 +78,8 @@ export const businessStages = {
     riskPremium: 0.20,
     valuation: {
       methods: ["vcMethod", "firstChicago"] as const,
-      weights: { vcMethod: 0.7, firstChicago: 0.3 }
+      weights: { vcMethod: 0.7, firstChicago: 0.3 },
+      requiredInputs: ["productReadiness", "userTraction", "marketValidation"]
     }
   },
   early_revenue: {
@@ -85,7 +87,8 @@ export const businessStages = {
     riskPremium: 0.15,
     valuation: {
       methods: ["vcMethod", "marketMultiples", "dcf"] as const,
-      weights: { vcMethod: 0.4, marketMultiples: 0.4, dcf: 0.2 }
+      weights: { vcMethod: 0.4, marketMultiples: 0.4, dcf: 0.2 },
+      requiredInputs: ["revenue", "growthRate", "margins", "customerMetrics"]
     }
   },
   growth: {
@@ -93,7 +96,8 @@ export const businessStages = {
     riskPremium: 0.10,
     valuation: {
       methods: ["dcf", "marketMultiples", "firstChicago"] as const,
-      weights: { dcf: 0.4, marketMultiples: 0.4, firstChicago: 0.2 }
+      weights: { dcf: 0.4, marketMultiples: 0.4, firstChicago: 0.2 },
+      requiredInputs: ["revenue", "ebitda", "workingCapital", "capex"]
     }
   },
   scaling: {
@@ -101,7 +105,8 @@ export const businessStages = {
     riskPremium: 0.08,
     valuation: {
       methods: ["dcf", "marketMultiples", "precedentTransactions"] as const,
-      weights: { dcf: 0.4, marketMultiples: 0.4, precedentTransactions: 0.2 }
+      weights: { dcf: 0.4, marketMultiples: 0.4, precedentTransactions: 0.2 },
+      requiredInputs: ["revenue", "ebitda", "marketShare", "competitivePosition"]
     }
   },
   mature: {
@@ -109,12 +114,13 @@ export const businessStages = {
     riskPremium: 0.05,
     valuation: {
       methods: ["dcf", "marketMultiples", "assetBased"] as const,
-      weights: { dcf: 0.5, marketMultiples: 0.3, assetBased: 0.2 }
+      weights: { dcf: 0.5, marketMultiples: 0.3, assetBased: 0.2 },
+      requiredInputs: ["revenue", "ebitda", "assets", "liabilities"]
     }
   },
 } as const;
 
-// Sectors and industry definitions
+// Enhanced sectors with required inputs
 export const sectors = {
   technology: {
     name: "Technology",
@@ -127,6 +133,11 @@ export const sectors = {
           grossMargin: 0.75,
           growthRate: 0.40,
           r_and_d: 0.25,
+        },
+        requiredInputs: {
+          early_revenue: ["arr", "cac", "ltv", "churnRate"],
+          growth: ["arr", "cac", "ltv", "churnRate", "expansionRevenue"],
+          scaling: ["arr", "cac", "ltv", "churnRate", "expansionRevenue", "profitMargins"]
         }
       },
       software_internet: {
@@ -137,6 +148,11 @@ export const sectors = {
           grossMargin: 0.80,
           growthRate: 0.50,
           marketing: 0.30,
+        },
+        requiredInputs: {
+          early_revenue: ["mrr", "userGrowth", "engagementRate"],
+          growth: ["mrr", "userGrowth", "engagementRate", "monetizationRate"],
+          scaling: ["mrr", "userGrowth", "engagementRate", "monetizationRate", "profitMargins"]
         }
       },
       semiconductors: {
@@ -147,6 +163,11 @@ export const sectors = {
           grossMargin: 0.60,
           growthRate: 0.25,
           r_and_d: 0.35,
+        },
+        requiredInputs: {
+          early_revenue: ["capex", "r_and_d", "patentPortfolio"],
+          growth: ["capex", "r_and_d", "patentPortfolio", "marketShare"],
+          scaling: ["capex", "r_and_d", "patentPortfolio", "marketShare", "profitMargins"]
         }
       }
     }
@@ -162,6 +183,11 @@ export const sectors = {
           grossMargin: 0.45,
           growthRate: 0.35,
           marketing: 0.25,
+        },
+        requiredInputs: {
+          early_revenue: ["gmv", "aov", "customerRetention"],
+          growth: ["gmv", "aov", "customerRetention", "repeatPurchaseRate"],
+          scaling: ["gmv", "aov", "customerRetention", "repeatPurchaseRate", "profitMargins"]
         }
       },
       digital_content: {
@@ -172,6 +198,11 @@ export const sectors = {
           grossMargin: 0.65,
           growthRate: 0.45,
           content: 0.40,
+        },
+        requiredInputs: {
+          early_revenue: ["subscribers", "contentCosts", "engagement"],
+          growth: ["subscribers", "contentCosts", "engagement", "churnRate"],
+          scaling: ["subscribers", "contentCosts", "engagement", "churnRate", "profitMargins"]
         }
       }
     }
@@ -187,6 +218,11 @@ export const sectors = {
           grossMargin: 0.85,
           growthRate: 0.35,
           sales: 0.30,
+        },
+        requiredInputs: {
+          early_revenue: ["arr", "customerLifetime", "dealSize"],
+          growth: ["arr", "customerLifetime", "dealSize", "customerAcquisitionCost"],
+          scaling: ["arr", "customerLifetime", "dealSize", "customerAcquisitionCost", "profitMargins"]
         }
       },
       cloud_services: {
@@ -197,6 +233,11 @@ export const sectors = {
           grossMargin: 0.70,
           growthRate: 0.40,
           infrastructure: 0.35,
+        },
+        requiredInputs: {
+          early_revenue: ["usage", "serverCosts", "uptime"],
+          growth: ["usage", "serverCosts", "uptime", "customerChurn"],
+          scaling: ["usage", "serverCosts", "uptime", "customerChurn", "profitMargins"]
         }
       }
     }
@@ -217,6 +258,7 @@ export interface IndustryMetrics {
     ltv: number;
     churnRate: number;
     expansionRevenue: number;
+    profitMargins: number;
   };
   ecommerce?: {
     gmv: number;
@@ -224,6 +266,7 @@ export interface IndustryMetrics {
     inventoryTurnover: number;
     repeatPurchaseRate: number;
     customerLifetimeValue: number;
+    profitMargins: number;
   };
   enterprise?: {
     tcv: number;
@@ -231,6 +274,7 @@ export interface IndustryMetrics {
     backlog: number;
     dealCycle: number;
     contractLength: number;
+    profitMargins: number;
   };
 }
 
@@ -312,29 +356,63 @@ export const valuationFormSchema = z.object({
   scalability: z.enum(["limited", "moderate", "high"]),
   complianceStandard: z.enum(["409a", "ivs", "icai", "ifrs", "asc820"] as const),
 
-  // Industry-specific metrics
+  // Dynamic industry metrics based on stage and sector
   industryMetrics: z.object({
     saas: z.object({
-      arr: z.number(),
-      mrr: z.number(),
-      cac: z.number(),
-      ltv: z.number(),
-      churnRate: z.number(),
-      expansionRevenue: z.number(),
+      arr: z.number().optional(),
+      mrr: z.number().optional(),
+      cac: z.number().optional(),
+      ltv: z.number().optional(),
+      churnRate: z.number().optional(),
+      expansionRevenue: z.number().optional(),
+      profitMargins: z.number().optional(),
     }).optional(),
     ecommerce: z.object({
-      gmv: z.number(),
-      aov: z.number(),
-      inventoryTurnover: z.number(),
-      repeatPurchaseRate: z.number(),
-      customerLifetimeValue: z.number(),
+      gmv: z.number().optional(),
+      aov: z.number().optional(),
+      inventoryTurnover: z.number().optional(),
+      repeatPurchaseRate: z.number().optional(),
+      customerLifetimeValue: z.number().optional(),
+      profitMargins: z.number().optional(),
     }).optional(),
     enterprise: z.object({
-      tcv: z.number(),
-      bookings: z.number(),
-      backlog: z.number(),
-      dealCycle: z.number(),
-      contractLength: z.number(),
+      tcv: z.number().optional(),
+      bookings: z.number().optional(),
+      backlog: z.number().optional(),
+      dealCycle: z.number().optional(),
+      contractLength: z.number().optional(),
+      profitMargins: z.number().optional(),
+    }).optional(),
+  }).optional(),
+
+  // Stage-specific requirements
+  stageMetrics: z.object({
+    ideation: z.object({
+      teamExperience: z.number().optional(),
+      intellectualProperty: z.enum(["none", "pending", "registered", "multiple"]).optional(),
+      marketValidation: z.string().optional(),
+      marketSize: z.number().optional(),
+    }).optional(),
+    mvp: z.object({
+      productReadiness: z.number().optional(),
+      userTraction: z.number().optional(),
+      marketFeedback: z.string().optional(),
+    }).optional(),
+    early_revenue: z.object({
+      customerMetrics: z.string().optional()
+    }).optional(),
+    growth: z.object({
+      ebitda: z.number().optional(),
+      workingCapital: z.number().optional(),
+      capex: z.number().optional(),
+    }).optional(),
+    scaling: z.object({
+      marketShare: z.number().optional(),
+      competitivePosition: z.string().optional()
+    }).optional(),
+    mature: z.object({
+      assets: z.number().optional(),
+      liabilities: z.number().optional()
     }).optional(),
   }).optional(),
 
@@ -367,6 +445,26 @@ export const valuationFormSchema = z.object({
       description: z.string()
     }))
   }).optional(),
+}).refine((data) => {
+  // Get required inputs based on stage and sector
+  const stage = data.stage;
+  const sector = data.sector;
+  const subsector = data.subsector;
+
+  const stageRequirements = businessStages[stage].valuation.requiredInputs;
+  const sectorRequirements = sectors[sector].subsectors[subsector]?.requiredInputs?.[stage] || [];
+
+  // Verify all required inputs are present
+  const hasAllStageInputs = stageRequirements.every(input =>
+    data.stageMetrics?.[stage]?.[input] !== undefined
+  );
+  const hasAllSectorInputs = sectorRequirements.every(input =>
+    data.industryMetrics?.[sector]?.[input] !== undefined
+  );
+
+  return hasAllStageInputs && hasAllSectorInputs;
+}, {
+  message: "Missing required inputs for selected stage and industry",
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;

@@ -1,14 +1,14 @@
 import type { ValuationFormData } from "../../client/src/lib/validations";
-import { industries, businessStages } from "../../client/src/lib/validations";
+import { businessStages, sectors } from "../../client/src/lib/validations";
 import { calculateFinancialAssumptions } from "./financialAssumptions";
 import { getCachedMarketSentiment } from "./marketSentiment";
 import type { FinancialAssumptions } from "./financialAssumptions";
 import type { MarketSentiment } from "./marketSentiment";
-import { 
-  getFramework, 
-  validateFrameworkCompliance, 
+import {
+  getFramework,
+  validateFrameworkCompliance,
   applyFrameworkAdjustments,
-  type FrameworkId 
+  type FrameworkId
 } from "./compliance/frameworks";
 
 interface CurrencyRates {
@@ -29,7 +29,7 @@ const EXCHANGE_RATES: CurrencyRates = {
 };
 
 export async function calculateValuation(params: ValuationFormData & { framework?: FrameworkId }) {
-  const { currency, stage, industry, revenue, framework = 'ivs' } = params;
+  const { currency, stage, sector, subsector, revenue, framework = 'ivs' } = params;
 
   // Get compliance framework
   const complianceFramework = getFramework(framework);
@@ -44,20 +44,42 @@ export async function calculateValuation(params: ValuationFormData & { framework
   const revenueUSD = params.revenue / EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
   const paramsUSD = { ...params, revenue: revenueUSD };
 
-  // Calculate valuations using different methods with enhanced assumptions
-  const dcfAnalysis = calculateDCF(paramsUSD, assumptions);
-  const comparablesAnalysis = calculateComparables(paramsUSD, assumptions);
-  const riskAdjustedAnalysis = calculateRiskAdjustedValuation(paramsUSD, assumptions, marketSentiment);
+  // Get stage-specific valuation methods
+  const stageConfig = businessStages[stage];
+  const sectorConfig = sectors[sector].subsectors[subsector];
 
-  // Determine method weights based on stage and data quality
-  const weights = determineMethodWeights(stage, industry, assumptions);
-
-  // Calculate weighted average valuation with enhanced methodology
-  const baseValuationUSD = (
-    dcfAnalysis.value * weights.dcf +
-    comparablesAnalysis.value * weights.comparables +
-    riskAdjustedAnalysis.value * weights.riskAdjusted
+  // Calculate valuations using stage-appropriate methods
+  const valuationResults = await Promise.all(
+    stageConfig.valuation.methods.map(async (method) => {
+      switch (method) {
+        case "scorecard":
+          return calculateScorecardValuation(paramsUSD, assumptions);
+        case "checklistMethod":
+          return calculateChecklistValuation(paramsUSD, assumptions);
+        case "vcMethod":
+          return calculateVCMethodValuation(paramsUSD, assumptions, sectorConfig);
+        case "firstChicago":
+          return calculateFirstChicagoValuation(paramsUSD, assumptions);
+        case "dcf":
+          return calculateDCF(paramsUSD, assumptions);
+        case "marketMultiples":
+          return calculateComparables(paramsUSD, assumptions);
+        case "precedentTransactions":
+          return calculatePrecedentTransactions(paramsUSD, assumptions, sectorConfig);
+        case "assetBased":
+          return calculateAssetBasedValuation(paramsUSD);
+        default:
+          throw new Error(`Unsupported valuation method: ${method}`);
+      }
+    })
   );
+
+  // Calculate weighted average valuation based on stage weights
+  const baseValuationUSD = valuationResults.reduce((acc, result, index) => {
+    const method = stageConfig.valuation.methods[index];
+    const weight = stageConfig.valuation.weights[method];
+    return acc + result.value * weight;
+  }, 0);
 
   // Calculate market sentiment adjustment
   const sentimentAdjustment = calculateMarketSentimentAdjustment(marketSentiment);
@@ -68,28 +90,6 @@ export async function calculateValuation(params: ValuationFormData & { framework
     baseValuationUSD * sentimentAdjustment
   );
 
-  // Validate compliance
-  const complianceResults = validateFrameworkCompliance(complianceFramework, {
-    assetDescription: `${params.businessName} - ${industry} company in ${stage} stage`,
-    purposeOfValuation: params.valuationPurpose,
-    valuationDate: new Date().toISOString(),
-    dataSources: [
-      "Financial Statements",
-      "Market Data",
-      "Industry Reports",
-    ],
-    assumptions: [
-      {
-        description: "Growth Rate",
-        justification: `Industry average growth rate of ${assumptions.growthRate}%`,
-      },
-      {
-        description: "Market Risk Premium",
-        justification: `Based on current market conditions and sentiment score of ${marketSentiment.overallScore}`,
-      },
-    ],
-  });
-
   // Convert back to requested currency
   const finalValuation = frameworkAdjustedValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
 
@@ -97,208 +97,216 @@ export async function calculateValuation(params: ValuationFormData & { framework
     valuation: Math.round(finalValuation * 100) / 100,
     multiplier: revenue > 0 ? Math.round((frameworkAdjustedValuationUSD / revenueUSD) * 100) / 100 : null,
     methodology: {
-      dcfWeight: weights.dcf,
-      comparablesWeight: weights.comparables,
-      riskAdjustedWeight: weights.riskAdjusted,
+      stage: stage,
+      methods: stageConfig.valuation.methods,
+      weights: stageConfig.valuation.weights,
       sentimentAdjustment,
     },
     marketSentiment,
     compliance: {
       framework: complianceFramework.name,
       region: complianceFramework.region,
-      results: complianceResults,
       adjustments: complianceFramework.adjustments,
     },
     details: {
       baseValuation: baseValuationUSD,
-      methods: {
-        dcf: dcfAnalysis,
-        comparables: comparablesAnalysis,
-        riskAdjusted: riskAdjustedAnalysis,
-      },
+      methodResults: valuationResults,
       scenarios: generateScenarioAnalysis(params, frameworkAdjustedValuationUSD, assumptions),
       sensitivityAnalysis: performSensitivityAnalysis(params, frameworkAdjustedValuationUSD),
-      industryMetrics: getIndustryMetrics(industry, stage),
+      industryMetrics: getIndustryMetrics(sector, subsector, stage),
     },
     assumptions,
   };
 }
 
-function determineMethodWeights(
-  stage: string,
-  industry: string,
-  assumptions: FinancialAssumptions
-): { dcf: number; comparables: number; riskAdjusted: number } {
-  let dcfWeight = 0.4;
-  let comparablesWeight = 0.4;
-  let riskAdjustedWeight = 0.2;
-
-  // Adjust weights based on company stage
-  if (stage.includes('revenue_scaling') || stage.includes('established')) {
-    dcfWeight = 0.5;
-    comparablesWeight = 0.3;
-    riskAdjustedWeight = 0.2;
-  } else if (stage.includes('ideation') || stage.includes('mvp')) {
-    dcfWeight = 0.2;
-    comparablesWeight = 0.5;
-    riskAdjustedWeight = 0.3;
-  }
-
-  // Adjust based on industry characteristics
-  if (industry === 'technology' || industry === 'biotech') {
-    dcfWeight *= 0.8;
-    riskAdjustedWeight *= 1.2;
-  }
-
-  // Normalize weights to ensure they sum to 1
-  const total = dcfWeight + comparablesWeight + riskAdjustedWeight;
-  return {
-    dcf: dcfWeight / total,
-    comparables: comparablesWeight / total,
-    riskAdjusted: riskAdjustedWeight / total,
-  };
-}
-
-function calculateRiskAdjustedValuation(
+async function calculateScorecardValuation(
   params: ValuationFormData,
-  assumptions: FinancialAssumptions,
-  marketSentiment: MarketSentiment
-): { value: number; riskFactors: Record<string, number> } {
-  const baseValue = (params.revenue || 0) * assumptions.industryMultiple;
+  assumptions: FinancialAssumptions
+): Promise<{ value: number; details: Record<string, number> }> {
+  const { teamExperience, intellectualProperty, totalAddressableMarket } = params;
 
-  // Calculate various risk factors including market sentiment
-  const riskFactors = {
-    marketRisk: calculateMarketRisk(params, marketSentiment),
-    executionRisk: calculateExecutionRisk(params),
-    competitiveRisk: calculateCompetitiveRisk(params, marketSentiment),
-    financialRisk: calculateFinancialRisk(params),
-    regulatoryRisk: calculateRegulatoryRisk(params.industry, marketSentiment),
+  // Scorecard criteria and weights
+  const criteria = {
+    teamStrength: Math.min(teamExperience / 10, 1) * 0.3,
+    ipStrength: {
+      none: 0,
+      pending: 0.3,
+      registered: 0.7,
+      multiple: 1
+    }[intellectualProperty] * 0.2,
+    marketSize: Math.min(totalAddressableMarket / 1e9, 1) * 0.2,
+    growthPotential: assumptions.growthRate / 100 * 0.3
   };
 
-  // Apply risk adjustments
-  const riskAdjustment = Object.values(riskFactors).reduce((acc, val) => acc * val, 1);
+  const baseValue = 1000000; // $1M base value for early-stage startups
+  const totalScore = Object.values(criteria).reduce((a, b) => a + b, 0);
 
   return {
-    value: baseValue * riskAdjustment,
-    riskFactors,
+    value: baseValue * (1 + totalScore),
+    details: criteria
   };
 }
 
-function calculateMarketRisk(params: ValuationFormData, sentiment: MarketSentiment): number {
-  return 0.7 + (sentiment.sentimentByFactor.marketConditions * 0.3);
-}
-
-function calculateExecutionRisk(params: ValuationFormData): number {
-  // Implementation of execution risk based on team experience and track record
-  return 0.95; // Example: 5% risk reduction
-}
-
-function calculateCompetitiveRisk(params: ValuationFormData, sentiment: MarketSentiment): number {
-  return 0.7 + (sentiment.sentimentByFactor.competitiveLandscape * 0.3);
-}
-
-function calculateFinancialRisk(params: ValuationFormData): number {
-  // Implementation of financial risk based on cash flow and burn rate
-  return 0.92; // Example: 8% risk reduction
-}
-
-function calculateRegulatoryRisk(industry: string, sentiment: MarketSentiment): number {
-  return 0.7 + (sentiment.sentimentByFactor.regulatoryEnvironment * 0.3);
-}
-
-function calculateMarketSentimentAdjustment(sentiment: MarketSentiment): number {
-  // Calculate weighted sentiment adjustment
-  const weights = {
-    marketConditions: 0.3,
-    industryTrends: 0.3,
-    competitiveLandscape: 0.2,
-    regulatoryEnvironment: 0.2,
+async function calculateChecklistValuation(
+  params: ValuationFormData,
+  assumptions: FinancialAssumptions
+): Promise<{ value: number; details: Record<string, number> }> {
+  const checklist = {
+    team: {
+      weight: 0.30,
+      score: Math.min(params.teamExperience / 10, 1)
+    },
+    technology: {
+      weight: 0.25,
+      score: {
+        none: 0.2,
+        pending: 0.5,
+        registered: 0.8,
+        multiple: 1
+      }[params.intellectualProperty]
+    },
+    marketSize: {
+      weight: 0.20,
+      score: Math.min(params.totalAddressableMarket / 1e9, 1)
+    },
+    competitiveDifferentiation: {
+      weight: 0.15,
+      score: {
+        low: 0.3,
+        medium: 0.6,
+        high: 1
+      }[params.competitiveDifferentiation]
+    },
+    regulatoryCompliance: {
+      weight: 0.10,
+      score: {
+        notRequired: 1,
+        inProgress: 0.5,
+        compliant: 1
+      }[params.regulatoryCompliance]
+    }
   };
 
-  const weightedScore = Object.entries(sentiment.sentimentByFactor).reduce(
-    (acc, [factor, score]) => acc + score * weights[factor as keyof typeof weights],
+  const baseValue = 2000000; // $2M base value
+  const weightedScore = Object.values(checklist).reduce(
+    (acc, { weight, score }) => acc + weight * score,
     0
   );
 
-  // Transform sentiment score to an adjustment factor (0.8 to 1.2 range)
-  return 0.8 + (weightedScore * 0.4);
-}
-
-function calculateMarketSentiment(industry: string): {
-  score: number;
-  trends: string[];
-  outlook: string;
-} {
   return {
-    score: 0.8, // Example: 80% positive sentiment
-    trends: [
-      "Growing market demand",
-      "Increasing investment activity",
-      "Positive regulatory environment"
-    ],
-    outlook: "Positive with strong growth potential"
+    value: baseValue * weightedScore,
+    details: Object.fromEntries(
+      Object.entries(checklist).map(([key, { weight, score }]) => [
+        key,
+        weight * score
+      ])
+    )
   };
 }
 
-function getIndustryTrends(industry: string): {
-  growth: number;
-  investment: number;
-  innovation: number;
-} {
-  return {
-    growth: 12.5, // Example: 12.5% annual growth
-    investment: 8.3, // Example: 8.3% investment increase
-    innovation: 0.85 // Example: 85% innovation score
-  };
-}
+async function calculateVCMethodValuation(
+  params: ValuationFormData,
+  assumptions: FinancialAssumptions,
+  sectorConfig: any
+): Promise<{ value: number; details: Record<string, any> }> {
+  const { stage, revenue, margins = 0 } = params;
 
-function assessGrowthPotential(params: ValuationFormData): {
-  score: number;
-  factors: string[];
-  recommendations: string[];
-} {
-  return {
-    score: 0.75, // Example: 75% growth potential
-    factors: [
-      "Strong market position",
-      "Scalable business model",
-      "High barriers to entry"
-    ],
-    recommendations: [
-      "Focus on market expansion",
-      "Invest in R&D",
-      "Build strategic partnerships"
-    ]
-  };
-}
+  // Get stage-specific multiple from sector config
+  const stageMultiple = sectorConfig.benchmarks.revenueMultiple[
+    stage.includes('early') ? 'early' :
+    stage.includes('growth') ? 'growth' : 'mature'
+  ];
 
-function getIndustryMetrics(industry: string, stage: string): {
-  averageValuation: number;
-  medianMultiple: number;
-  growthRate: number;
-  benchmarks: Record<string, number>;
-} {
+  // Adjust multiple based on margins
+  const marginAdjustment = margins / sectorConfig.benchmarks.grossMargin;
+  const adjustedMultiple = stageMultiple * Math.max(0.5, Math.min(1.5, marginAdjustment));
+
+  // Calculate base valuation
+  const baseValue = revenue * adjustedMultiple;
+
+  // Apply growth premium
+  const growthPremium = assumptions.growthRate > sectorConfig.benchmarks.growthRate
+    ? (assumptions.growthRate / sectorConfig.benchmarks.growthRate - 1) * 0.5
+    : 0;
+
   return {
-    averageValuation: 10000000, // Example: $10M average
-    medianMultiple: 5.2, // Example: 5.2x multiple
-    growthRate: 15.5, // Example: 15.5% growth
-    benchmarks: {
-      revenuePerEmployee: 200000,
-      profitMargin: 25.5,
-      customerAcquisitionCost: 500
+    value: baseValue * (1 + growthPremium),
+    details: {
+      stageMultiple,
+      marginAdjustment,
+      growthPremium,
+      baseValue,
+      adjustedMultiple
     }
   };
 }
 
-function calculateConfidenceScore(params: ValuationFormData, assumptions: FinancialAssumptions): number {
-  return Math.min(100, Math.max(50,
-    60 + // Base confidence
-    (params.revenue ? 10 : 0) + // Revenue data available
-    (params.margins ? 10 : 0) + // Margin data available
-    (params.growthRate ? 10 : 0) + // Growth data available
-    (params.stage.includes('revenue_scaling') || params.stage.includes('established') ? 10 : 0) + // Later stage companies
-    (assumptions.industryDataQuality ? 10 : 0) // Industry data quality
-  ));
+async function calculateFirstChicagoValuation(
+  params: ValuationFormData,
+  assumptions: FinancialAssumptions
+): Promise<{ value: number; details: Record<string, any> }> {
+  // Generate three scenarios: Best, Base, Worst
+  const scenarios = [
+    { name: 'best', probability: 0.25, multiplier: 1.3 },
+    { name: 'base', probability: 0.5, multiplier: 1.0 },
+    { name: 'worst', probability: 0.25, multiplier: 0.7 }
+  ];
+
+  const scenarioResults = scenarios.map(scenario => {
+    const adjustedAssumptions = {
+      ...assumptions,
+      growthRate: assumptions.growthRate * scenario.multiplier,
+      margins: (params.margins || 0) * scenario.multiplier
+    };
+
+    // Calculate DCF for each scenario
+    const dcfValue = calculateDCF({
+      ...params,
+      ...adjustedAssumptions
+    }, adjustedAssumptions);
+
+    return {
+      scenario: scenario.name,
+      probability: scenario.probability,
+      value: dcfValue.value,
+      assumptions: adjustedAssumptions
+    };
+  });
+
+  // Calculate probability-weighted average
+  const expectedValue = scenarioResults.reduce(
+    (acc, { probability, value }) => acc + value * probability,
+    0
+  );
+
+  return {
+    value: expectedValue,
+    details: {
+      scenarios: scenarioResults,
+      expectedValue
+    }
+  };
+}
+
+async function calculatePrecedentTransactions(
+  params: ValuationFormData,
+  assumptions: FinancialAssumptions,
+  sectorConfig: any
+): Promise<{ value: number; details: { transactions: any[] } }> {
+  const { revenue } = params;
+  const transactions = sectorConfig.precedentTransactions || [];
+  const averageMultiple = transactions.reduce((sum, transaction) => sum + transaction.multiple, 0) / transactions.length;
+  const value = revenue * averageMultiple;
+  return { value, details: { transactions } };
+}
+
+
+async function calculateAssetBasedValuation(
+  params: ValuationFormData
+): Promise<{ value: number; details: { assets: number; liabilities: number } }> {
+  const { assets, liabilities } = params;
+  const netAssetValue = assets - liabilities;
+  return { value: netAssetValue, details: { assets, liabilities } };
 }
 
 function calculateDCF(params: ValuationFormData, assumptions: FinancialAssumptions): {
@@ -369,7 +377,7 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
     }>;
   };
 } {
-  const { revenue, stage, industry, margins = 0 } = params;
+  const { revenue, stage, sector, margins = 0 } = params;
 
   // Enhanced industry-specific multiples based on comprehensive market data
   const baseMultiples = {
@@ -397,7 +405,7 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
     stage.includes('revenue') ? 1.1 :
     0.9;
 
-  const industryMultiples = baseMultiples[industry as keyof typeof baseMultiples] ||
+  const industryMultiples = baseMultiples[sector as keyof typeof baseMultiples] ||
     baseMultiples.enterprise; // Default to enterprise multiples if industry not found
 
   // Calculate multiples with detailed reasoning
@@ -410,7 +418,7 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
         metric: "Revenue",
         range: industryMultiples.revenue,
         selectedMultiple: industryMultiples.revenue.median * stageMultiplier,
-        reasoning: `Based on ${industry} sector median with ${stageMultiplier}x adjustment for ${stage} stage`,
+        reasoning: `Based on ${sector} sector median with ${stageMultiplier}x adjustment for ${stage} stage`,
       },
       {
         metric: "EBITDA",
@@ -436,6 +444,24 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
     value: (revenueValue * 0.4 + ebitdaValue * 0.35 + ebitValue * 0.25),
     multiples,
   };
+}
+
+function calculateMarketSentimentAdjustment(sentiment: MarketSentiment): number {
+  // Calculate weighted sentiment adjustment
+  const weights = {
+    marketConditions: 0.3,
+    industryTrends: 0.3,
+    competitiveLandscape: 0.2,
+    regulatoryEnvironment: 0.2,
+  };
+
+  const weightedScore = Object.entries(sentiment.sentimentByFactor).reduce(
+    (acc, [factor, score]) => acc + score * weights[factor as keyof typeof weights],
+    0
+  );
+
+  // Transform sentiment score to an adjustment factor (0.8 to 1.2 range)
+  return 0.8 + (weightedScore * 0.4);
 }
 
 function generateScenarioAnalysis(
@@ -522,6 +548,25 @@ function performSensitivityAnalysis(
       value: baseValue * (1 + (change * (factor.name === "Discount Rate" ? -2 : 1))),
     })),
   }));
+}
+
+function getIndustryMetrics(sector: string, subsector: string, stage: string): {
+  averageValuation: number;
+  medianMultiple: number;
+  growthRate: number;
+  benchmarks: Record<string, number>;
+} {
+  // Placeholder - replace with actual data retrieval
+  const metrics = {
+    "technology": {
+      "saas": {
+        "seed": { averageValuation: 5000000, medianMultiple: 3, growthRate: 30, benchmarks: { churnRate: 0.1 } },
+        "seriesA": { averageValuation: 20000000, medianMultiple: 5, growthRate: 25, benchmarks: { churnRate: 0.05 } }
+      }
+    }
+  };
+  const config = metrics[sector]?.[subsector]?.[stage];
+  return config || { averageValuation: 10000000, medianMultiple: 5.2, growthRate: 15.5, benchmarks: { revenuePerEmployee: 200000, profitMargin: 25.5, customerAcquisitionCost: 500 } };
 }
 
 export type { CurrencyRates, FinancialAssumptions };
