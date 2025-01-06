@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { currencies, sectors, businessStages } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { calculateValuation } from "@/lib/api";
-import { Check, HelpCircle } from "lucide-react";
+import { Check, HelpCircle, Info } from "lucide-react";
 import { Link } from "@/components/ui/link";
 import {
   Tooltip as UITooltip,
@@ -34,8 +34,65 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+
+// Help content for each field
+const fieldHelp = {
+  revenue: {
+    title: "Annual Revenue",
+    description: "Your company's total annual revenue in the selected currency.",
+    tips: [
+      "Include all sources of revenue from your core business",
+      "Use the last 12 months of data if available",
+      "For early-stage startups, use projected annual revenue",
+    ],
+    example: "Example: If you make $100,000 per month, enter $1,200,000",
+  },
+  growthRate: {
+    title: "Growth Rate",
+    description: "Your company's year-over-year revenue growth rate as a percentage.",
+    tips: [
+      "Calculate: ((Current Revenue - Previous Revenue) / Previous Revenue) × 100",
+      "Use historical data if available",
+      "For early-stage startups, use projected growth rate",
+    ],
+    example: "Example: If revenue doubled, enter 100%",
+  },
+  margins: {
+    title: "Operating Margins",
+    description: "Your operating profit margin as a percentage of revenue.",
+    tips: [
+      "Calculate: (Operating Income / Revenue) × 100",
+      "Operating Income = Revenue - Operating Expenses",
+      "Include all direct costs and overhead",
+    ],
+    example: "Example: If you make $200K profit on $1M revenue, enter 20%",
+  },
+  sector: {
+    title: "Business Sector",
+    description: "The primary industry sector your business operates in.",
+    tips: [
+      "Choose the sector that best matches your core business",
+      "Consider where most of your revenue comes from",
+      "This affects industry-specific valuation multiples",
+    ],
+  },
+  stage: {
+    title: "Business Stage",
+    description: "Your company's current stage of development.",
+    tips: [
+      "Consider factors like revenue, market presence, and growth",
+      "This impacts the valuation methodology used",
+      "Be realistic about your current stage",
+    ],
+  },
+};
 
 // Default values that match our validation schema
 const defaultValues: Partial<ValuationFormData> = {
@@ -114,21 +171,40 @@ export function InteractiveValuationCalculator() {
     ),
   ] : [];
 
-  const FieldLabel = ({ children, tooltip }: { children: React.ReactNode, tooltip: string }) => (
-    <div className="flex items-center gap-2 mb-2">
-      <Label>{children}</Label>
-      <TooltipProvider>
-        <UITooltip>
-          <TooltipTrigger asChild>
-            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="max-w-xs">{tooltip}</p>
-          </TooltipContent>
-        </UITooltip>
-      </TooltipProvider>
-    </div>
-  );
+  const FieldLabel = ({ field, children }: { field: keyof typeof fieldHelp, children: React.ReactNode }) => {
+    const help = fieldHelp[field];
+    return (
+      <div className="flex items-center gap-2 mb-2">
+        <Label>{children}</Label>
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+              <Info className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-80">
+            <div className="space-y-2">
+              <h4 className="font-medium">{help.title}</h4>
+              <p className="text-sm text-muted-foreground">{help.description}</p>
+              {help.tips && (
+                <div className="mt-2">
+                  <h5 className="text-sm font-medium mb-1">Tips:</h5>
+                  <ul className="text-sm space-y-1">
+                    {help.tips.map((tip, i) => (
+                      <li key={i} className="text-muted-foreground">• {tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {help.example && (
+                <p className="text-sm italic text-muted-foreground mt-2">{help.example}</p>
+              )}
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8">
@@ -138,6 +214,7 @@ export function InteractiveValuationCalculator() {
           <CardTitle>Interactive Valuation Calculator</CardTitle>
           <CardDescription>
             Adjust the parameters below to see how different factors affect your startup's valuation.
+            Hover over the info icons for detailed explanations and tips.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -147,9 +224,7 @@ export function InteractiveValuationCalculator() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Financial Metrics</h3>
                 <div>
-                  <FieldLabel tooltip="Your company's annual revenue in the selected currency">
-                    Annual Revenue
-                  </FieldLabel>
+                  <FieldLabel field="revenue">Annual Revenue</FieldLabel>
                   <div className="relative">
                     <Input
                       type="number"
@@ -168,9 +243,7 @@ export function InteractiveValuationCalculator() {
                 </div>
 
                 <div>
-                  <FieldLabel tooltip="The currency of your financial figures">
-                    Currency
-                  </FieldLabel>
+                  <Label className="mb-2">Currency</Label>
                   <Select
                     value={formData.currency}
                     onValueChange={(value) => handleInputChange('currency', value)}
@@ -189,9 +262,7 @@ export function InteractiveValuationCalculator() {
                 </div>
 
                 <div>
-                  <FieldLabel tooltip="Your annual revenue growth rate as a percentage">
-                    Growth Rate (%)
-                  </FieldLabel>
+                  <FieldLabel field="growthRate">Growth Rate (%)</FieldLabel>
                   <Input
                     type="number"
                     value={formData.growthRate}
@@ -205,9 +276,7 @@ export function InteractiveValuationCalculator() {
                 </div>
 
                 <div>
-                  <FieldLabel tooltip="Your operating profit margin as a percentage">
-                    Operating Margins (%)
-                  </FieldLabel>
+                  <FieldLabel field="margins">Operating Margins (%)</FieldLabel>
                   <Input
                     type="number"
                     value={formData.margins}
@@ -227,9 +296,7 @@ export function InteractiveValuationCalculator() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Business Information</h3>
                 <div>
-                  <FieldLabel tooltip="The primary sector your business operates in">
-                    Sector
-                  </FieldLabel>
+                  <FieldLabel field="sector">Sector</FieldLabel>
                   <Select
                     value={formData.sector}
                     onValueChange={(value) => handleInputChange('sector', value)}
@@ -251,9 +318,7 @@ export function InteractiveValuationCalculator() {
                 </div>
 
                 <div>
-                  <FieldLabel tooltip="Your company's current stage of development">
-                    Business Stage
-                  </FieldLabel>
+                  <FieldLabel field="stage">Business Stage</FieldLabel>
                   <Select
                     value={formData.stage}
                     onValueChange={(value) => handleInputChange('stage', value)}
