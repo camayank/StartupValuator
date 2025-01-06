@@ -1,146 +1,242 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { BusinessInfoStep } from "@/components/wizard-steps/BusinessInfoStep";
-import { MethodSelectionStep } from "@/components/wizard-steps/MethodSelectionStep";
-import { ReviewStep } from "@/components/wizard-steps/ReviewStep";
-import { Brain, Sparkles, Calculator, FileText } from "lucide-react";
-import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 import type { ValuationFormData } from "@/lib/validations";
-
-const STEPS = [
-  { id: 'business-info', title: 'Business Information' },
-  { id: 'method-selection', title: 'Valuation Method' },
-  { id: 'review', title: 'Review & Generate' }
-];
-
-const FEATURE_CARDS = [
-  {
-    title: "AI-Powered Analysis",
-    description: "Intelligent valuation powered by advanced machine learning algorithms",
-    icon: Brain,
-    color: "bg-blue-500/10 text-blue-500 dark:bg-blue-500/20",
-    gradient: "from-blue-500/20 to-blue-500/5",
-  },
-  {
-    title: "Smart Predictions",
-    description: "Data-driven growth and market potential predictions",
-    icon: Sparkles,
-    color: "bg-purple-500/10 text-purple-500 dark:bg-purple-500/20",
-    gradient: "from-purple-500/20 to-purple-500/5",
-  },
-  {
-    title: "Multi-Method Valuation",
-    description: "Comprehensive analysis using multiple valuation approaches",
-    icon: Calculator,
-    color: "bg-green-500/10 text-green-500 dark:bg-green-500/20",
-    gradient: "from-green-500/20 to-green-500/5",
-  },
-  {
-    title: "Detailed Reports",
-    description: "Generate in-depth valuation reports with insights",
-    icon: FileText,
-    color: "bg-orange-500/10 text-orange-500 dark:bg-orange-500/20",
-    gradient: "from-orange-500/20 to-orange-500/5",
-  },
-];
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { valuationFormSchema, sectors, businessStages } from "@/lib/validations";
+import { calculateIndustryAdjustedValuation } from "@/lib/financialModels";
 
 export default function ValuationPage() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
+  const [location] = useLocation();
+  const params = new URLSearchParams(location.split('?')[1] || '');
+  const selectedSector = params.get('sector');
 
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
+  const form = useForm<ValuationFormData>({
+    resolver: zodResolver(valuationFormSchema),
+    defaultValues: {
+      sector: selectedSector as keyof typeof sectors || "technology",
+      subsector: Object.keys(sectors[selectedSector as keyof typeof sectors]?.subsectors || {})[0],
+      currency: "USD",
+      stage: "early_revenue",
+      region: "us",
+      businessName: "",
+      revenue: 0,
+      growthRate: 0,
+      margins: 0,
+      totalAddressableMarket: 0,
+      marketShare: 0,
+      competitors: []
+    }
+  });
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
+  const [report, setReport] = useState<{
+    value: number;
+    details: {
+      baseValue: number;
+      industryMultiple: number;
+      adjustments: Record<string, number>;
+      metrics: Record<string, number>;
+    };
+  } | null>(null);
+
+  const onSubmit = async (data: ValuationFormData) => {
+    try {
+      const valuation = calculateIndustryAdjustedValuation(data);
+      setReport(valuation);
+    } catch (error) {
+      console.error('Valuation calculation error:', error);
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    }
-  };
-
-  const handleUpdate = (data: Partial<ValuationFormData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
-  };
-
-  const handleSubmit = (data: ValuationFormData) => {
-    // Handle final submission
-    console.log('Final form data:', data);
-  };
+  const sector = sectors[form.watch('sector')];
+  const subsector = sector?.subsectors[form.watch('subsector') as keyof typeof sector.subsectors];
 
   return (
     <div className="min-h-screen bg-background/50">
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FEATURE_CARDS.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-            >
-              <Card className="h-full border-none shadow-md bg-gradient-to-br hover:shadow-lg transition-shadow duration-300">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className={`p-3 rounded-full ${feature.color} bg-gradient-to-br ${feature.gradient}`}>
-                      <feature.icon className="w-6 h-6" />
-                    </div>
-                    <h3 className="font-semibold">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Valuation Wizard */}
-        <Card className="max-w-4xl mx-auto border shadow-lg bg-card">
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-4xl mx-auto">
           <CardHeader className="border-b bg-muted/50">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Smart Valuation
-              </h1>
-              <div className="text-sm text-muted-foreground">
-                Step {currentStep + 1} of {STEPS.length}
-              </div>
-            </div>
-            <Progress value={progress} className="h-2" />
+            <h1 className="text-2xl font-bold">
+              {sector?.name} Valuation
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your business details to generate a comprehensive valuation report
+            </p>
           </CardHeader>
           <CardContent className="p-6">
-            {currentStep === 0 && (
-              <BusinessInfoStep
-                data={formData}
-                onUpdate={handleUpdate}
-                onNext={handleNext}
-                currentStep={currentStep + 1}
-                totalSteps={STEPS.length}
-              />
-            )}
-            {currentStep === 1 && (
-              <MethodSelectionStep
-                data={formData}
-                onUpdate={handleUpdate}
-                onNext={handleNext}
-                onBack={handleBack}
-                currentStep={currentStep + 1}
-                totalSteps={STEPS.length}
-              />
-            )}
-            {currentStep === 2 && (
-              <ReviewStep
-                data={formData}
-                onUpdate={handleUpdate}
-                onSubmit={handleSubmit}
-                onBack={handleBack}
-                currentStep={currentStep + 1}
-                totalSteps={STEPS.length}
-              />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="businessName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Business Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="stage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Business Stage</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select stage" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(businessStages).map(([key, stage]) => (
+                              <SelectItem key={key} value={key}>
+                                {stage.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Financial Metrics */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="revenue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Annual Revenue</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="growthRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Growth Rate (%)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={e => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Industry-specific Metrics */}
+                {subsector?.metrics && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Industry Metrics</h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {subsector.metrics.map((metric) => (
+                        <FormField
+                          key={metric}
+                          control={form.control}
+                          name={`industryMetrics.${form.watch('sector')}.${metric}`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{metric.toUpperCase()}</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={e => field.onChange(Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full">
+                  Generate Valuation Report
+                </Button>
+              </form>
+            </Form>
+
+            {report && (
+              <div className="mt-8 space-y-4">
+                <h2 className="text-xl font-semibold">Valuation Report</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-sm text-muted-foreground">Valuation</div>
+                      <div className="text-2xl font-bold">
+                        ${report.value.toLocaleString()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-sm text-muted-foreground">Industry Multiple</div>
+                      <div className="text-2xl font-bold">
+                        {report.details.industryMultiple.toFixed(2)}x
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Key Metrics</h3>
+                  {Object.entries(report.details.metrics).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">
+                        {key.split('_').join(' ').toUpperCase()}
+                      </span>
+                      <span>{typeof value === 'number' ? value.toFixed(2) : value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
