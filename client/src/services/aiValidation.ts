@@ -6,10 +6,14 @@ import {
   assessCashFlowStability,
   validateTAM,
   validateDCFInputs,
+  validateFinancialProjections,
+  validateCurrencyConsistency,
+  validateValuationPurpose,
+  validateAssetValuation,
   calculateRiskPremium,
   generatePitchDeckMetrics,
   industryBenchmarks,
-  regionRules,
+  enhancedRegionRules,
   cashFlowStabilityRules,
   riskFactors
 } from "@/lib/validation/businessRules";
@@ -28,25 +32,35 @@ interface ValidationResponse {
   warnings: ValidationWarning[];
   suggestions: string[];
   industryInsights?: string[];
+  financialProjections?: {
+    revenue: number[];
+    ebitda: number[];
+    fcf: number[];
+    years: string[];
+  };
+  macroeconomicFactors?: {
+    gdpImpact: number;
+    inflationAdjustment: number;
+    interestRateEffect: number;
+  };
+  currencyAnalysis?: {
+    exchangeRateRisk: number;
+    hedgingRecommendations: string[];
+  };
+  assetValuation?: {
+    tangibleAssetsValue: number;
+    intangibleAssetsValue: number;
+    totalEnterpriseValue: number;
+  };
   riskAnalysis?: {
     totalRiskPremium: number;
     riskBreakdown: Record<string, number>;
     mitigationStrategies: string[];
   };
-  valuationMetrics?: {
-    dcf?: {
-      enterpriseValue: number;
-      sensitivityRange: { min: number; max: number };
-    };
-    marketMultiples?: {
-      evRevenue: number;
-      evEbitda: number;
-      peRatio: number;
-    };
-    realOptions?: {
-      optionValue: number;
-      keyAssumptions: Record<string, any>;
-    };
+  complianceChecks?: {
+    status: 'compliant' | 'non_compliant';
+    requirements: string[];
+    missingElements: string[];
   };
 }
 
@@ -80,6 +94,10 @@ export class AIValidationService {
       const businessMetricsWarnings = validateBusinessMetrics(data);
       const tamWarnings = validateTAM(data);
       const dcfWarnings = validateDCFInputs(data);
+      const projectionsWarnings = validateFinancialProjections(data);
+      const currencyWarnings = validateCurrencyConsistency(data);
+      const purposeWarnings = validateValuationPurpose(data);
+      const assetWarnings = validateAssetValuation(data);
       const complianceChecks = validateRegionCompliance(data);
       const cashFlowStability = assessCashFlowStability(data);
       const stabilityRules = cashFlowStabilityRules[cashFlowStability];
@@ -90,13 +108,21 @@ export class AIValidationService {
       const validationContext = {
         data,
         industryBenchmarks: industryBenchmarks[data.sector],
-        regionRules: regionRules[data.region],
+        regionRules: enhancedRegionRules[data.region],
         cashFlowStability,
         stabilityRules,
         complianceChecks,
         riskAnalysis: riskPremium,
         pitchDeckMetrics,
-        warnings: [...businessMetricsWarnings, ...tamWarnings, ...dcfWarnings]
+        warnings: [
+          ...businessMetricsWarnings,
+          ...tamWarnings,
+          ...dcfWarnings,
+          ...projectionsWarnings,
+          ...currencyWarnings,
+          ...purposeWarnings,
+          ...assetWarnings
+        ]
       };
 
       const response = await openai.chat.completions.create({
@@ -110,32 +136,46 @@ export class AIValidationService {
             1. Data consistency and completeness
             2. Industry-specific requirements and benchmarks
             3. Regional compliance and regulatory considerations
-            4. Cash flow stability and sustainability
-            5. Risk factors and mitigation strategies
-            6. Valuation methodology appropriateness
-            7. Growth potential and market positioning
+            4. Financial projections accuracy
+            5. Currency and macroeconomic impacts
+            6. Asset valuation appropriateness
+            7. Risk factors and mitigation strategies
+            8. Growth potential and market positioning
 
             Response must be in JSON format with the following structure:
             {
-              "warnings": [
-                {
-                  "field": "string (one of: revenue, growthRate, margins, tam, etc.)",
-                  "message": "string",
-                  "severity": "low|medium|high",
-                  "suggestion": "number|string (optional)"
-                }
-              ],
-              "suggestions": ["string"],
-              "industryInsights": ["string"],
+              "warnings": [],
+              "suggestions": [],
+              "industryInsights": [],
+              "financialProjections": {
+                "revenue": [],
+                "ebitda": [],
+                "fcf": [],
+                "years": []
+              },
+              "macroeconomicFactors": {
+                "gdpImpact": number,
+                "inflationAdjustment": number,
+                "interestRateEffect": number
+              },
+              "currencyAnalysis": {
+                "exchangeRateRisk": number,
+                "hedgingRecommendations": []
+              },
+              "assetValuation": {
+                "tangibleAssetsValue": number,
+                "intangibleAssetsValue": number,
+                "totalEnterpriseValue": number
+              },
               "riskAnalysis": {
                 "totalRiskPremium": number,
-                "riskBreakdown": {"riskCategory": number},
-                "mitigationStrategies": ["string"]
+                "riskBreakdown": {},
+                "mitigationStrategies": []
               },
-              "valuationMetrics": {
-                "dcf": {"enterpriseValue": number, "sensitivityRange": {"min": number, "max": number}},
-                "marketMultiples": {"evRevenue": number, "evEbitda": number, "peRatio": number},
-                "realOptions": {"optionValue": number, "keyAssumptions": {}}
+              "complianceChecks": {
+                "status": "compliant|non_compliant",
+                "requirements": [],
+                "missingElements": []
               }
             }`
           },
@@ -181,7 +221,7 @@ export class AIValidationService {
       const validationContext = {
         data,
         industryBenchmarks: industryBenchmarks[data.sector],
-        regionRules: regionRules[data.region],
+        regionRules: enhancedRegionRules[data.region],
         cashFlowStability: assessCashFlowStability(data),
         riskAnalysis: calculateRiskPremium(data),
         pitchDeckMetrics: generatePitchDeckMetrics(data)
@@ -195,14 +235,14 @@ export class AIValidationService {
             content: `Analyze the valuation context and predict potential issues.
             Consider:
             1. Industry-specific risks and challenges
-            2. Regional market conditions and regulations
-            3. Cash flow stability and sustainability
-            4. Growth trajectory and market positioning
-            5. Competitive landscape dynamics
-            6. Valuation methodology appropriateness
-            7. DCF assumptions and sensitivity factors
-            8. Market multiple comparisons
-            9. Real options considerations
+            2. Regional market conditions
+            3. Currency and macroeconomic factors
+            4. Financial projections accuracy
+            5. Asset valuation appropriateness
+            6. Compliance requirements
+            7. Growth sustainability
+            8. Market positioning
+            9. Technology and operational risks
 
             Provide predictions in a JSON array of strings.`
           },
@@ -232,7 +272,7 @@ export class AIValidationService {
       const validationContext = {
         data,
         industryBenchmarks: industryBenchmarks[data.sector],
-        regionRules: regionRules[data.region],
+        regionRules: enhancedRegionRules[data.region],
         cashFlowStability: assessCashFlowStability(data),
         stabilityRules: cashFlowStabilityRules[assessCashFlowStability(data)],
         riskAnalysis: calculateRiskPremium(data),
@@ -248,12 +288,13 @@ export class AIValidationService {
             Consider:
             1. Industry best practices and benchmarks
             2. Regional compliance requirements
-            3. Cash flow optimization opportunities
-            4. Risk mitigation strategies
-            5. Growth optimization potential
-            6. Valuation methodology refinements
-            7. Pitch deck enhancement opportunities
-            8. Competitive positioning improvements
+            3. Financial projection improvements
+            4. Currency risk management
+            5. Asset valuation optimization
+            6. Risk mitigation strategies
+            7. Growth optimization opportunities
+            8. Operational efficiency
+            9. Market positioning enhancement
 
             Provide suggestions in a JSON array of strings.`
           },
