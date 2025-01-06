@@ -15,6 +15,7 @@ import {
   Check,
 } from "lucide-react";
 import { RoleBasedFeatures } from "@/components/RoleBasedFeatures";
+import { EnterpriseSolutions } from "@/components/EnterpriseSolutions"; // Import the EnterpriseSolutions component
 
 export function LandingPage() {
   const features = [
@@ -248,6 +249,19 @@ export function LandingPage() {
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Add Enterprise Solutions section */}
+      <section className="py-20 bg-accent/5 border-y">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Enterprise-Grade Solutions
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Powerful tools for financial institutions and consulting firms with advanced integration capabilities
+          </p>
+          <EnterpriseSolutions />
         </div>
       </section>
 
