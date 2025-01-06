@@ -268,7 +268,7 @@ function validateInputs(data: ValuationFormData, marketSentiment: any) {
   return { warnings, recommendations };
 }
 
-function generateValuationInsights(data: ValuationFormData, marketSentiment: any) {
+export function generateValuationInsights(data: ValuationFormData, marketSentiment: any) {
   return {
     strengths: [
       ...getBusinessStrengths(data),
