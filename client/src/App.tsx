@@ -49,8 +49,7 @@ import { LandingPage } from "./pages/LandingPage";
 const navigationConfig = {
   startup: {
     mainTools: [
-      { href: "/", label: "Valuation", description: "Calculate your startup's value", icon: Calculator },
-      { href: "/calculator", label: "Interactive Calculator", description: "Real-time valuation estimates", icon: Calculator },
+      { href: "/valuation", label: "Full Valuation", description: "Comprehensive startup valuation", icon: Calculator },
       { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", icon: FileText },
     ],
@@ -118,8 +117,30 @@ function App() {
     );
   }
 
-  // Show landing page if not logged in and not on auth page
+  // Public routes - show landing page or calculator
   if (!user && !location.startsWith('/auth')) {
+    if (location === '/calculator') {
+      return (
+        <div className="min-h-screen bg-background">
+          <header className="border-b bg-card/80 backdrop-blur">
+            <div className="flex h-16 items-center justify-between px-4 container mx-auto">
+              <Link href="/">
+                <span className="text-xl font-bold">StartupValuator</span>
+              </Link>
+              <div className="flex items-center gap-4">
+                <Link href="/auth?mode=login">
+                  <Button variant="ghost">Sign In</Button>
+                </Link>
+                <Link href="/auth?mode=signup">
+                  <Button>Get Started</Button>
+                </Link>
+              </div>
+            </div>
+          </header>
+          <ValuationCalculatorPage />
+        </div>
+      );
+    }
     return <LandingPage />;
   }
 
@@ -327,6 +348,13 @@ function App() {
             <Switch>
               <Route path="/">
                 <Home />
+              </Route>
+              <Route path="/valuation">
+                <ValuationWizard
+                  onSubmit={(data) => {
+                    // Handle submission
+                  }}
+                />
               </Route>
               <Route path="/calculator" component={ValuationCalculatorPage} />
               <Route path="/projections">

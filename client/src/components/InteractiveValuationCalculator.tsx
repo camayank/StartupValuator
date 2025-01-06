@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { currencies, sectors, businessStages } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { calculateValuation } from "@/lib/api";
+import { Check } from "lucide-react";
+import { Link } from "@/components/ui/link";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
@@ -84,7 +87,7 @@ export function InteractiveValuationCalculator() {
 
   const breakdownData = valuation ? [
     { name: "Base Value", value: valuation.details.baseValuation },
-    ...(valuation.details.adjustments ? 
+    ...(valuation.details.adjustments ?
       Object.entries(valuation.details.adjustments).map(([key, value]) => ({
         name: key.replace(/([A-Z])/g, ' $1').trim(),
         value: Math.abs(Number(value)),
@@ -220,7 +223,7 @@ export function InteractiveValuationCalculator() {
                       <BarChart data={breakdownData} layout="vertical">
                         <XAxis type="number" tickFormatter={formatCurrency} />
                         <YAxis type="category" dataKey="name" width={150} />
-                        <Tooltip 
+                        <Tooltip
                           formatter={(value: number) => formatCurrency(value)}
                           contentStyle={{
                             backgroundColor: "hsl(var(--background))",
@@ -251,13 +254,13 @@ export function InteractiveValuationCalculator() {
                           label
                         >
                           {breakdownData.map((entry, index) => (
-                            <Cell 
+                            <Cell
                               key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]} 
+                              fill={COLORS[index % COLORS.length]}
                             />
                           ))}
                         </Pie>
-                        <Tooltip 
+                        <Tooltip
                           formatter={(value: number) => formatCurrency(value)}
                           contentStyle={{
                             backgroundColor: "hsl(var(--background))",
@@ -268,6 +271,39 @@ export function InteractiveValuationCalculator() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
+                </div>
+
+                {/* Add CTA for full features */}
+                <div className="mt-8 p-4 bg-primary/5 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-2">
+                    Want More Detailed Analysis?
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Sign up for full access to:
+                  </p>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>Comprehensive valuation reports</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>Industry-specific metrics</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>Growth potential analysis</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      <span>Expert valuation guidance</span>
+                    </li>
+                  </ul>
+                  <Link href="/auth?mode=signup">
+                    <Button className="w-full md:w-auto">
+                      Get Full Access
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
