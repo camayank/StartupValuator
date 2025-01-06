@@ -53,6 +53,31 @@ export const regions = {
   },
 } as const;
 
+// ESG Impact levels
+export const esgImpactLevels = {
+  high: "High Impact",
+  medium: "Medium Impact",
+  low: "Low Impact",
+  none: "No Significant Impact",
+} as const;
+
+// Enhanced business stages
+export const businessStages = {
+  ideation: "Ideation Stage",
+  mvp: "MVP Stage",
+  early_revenue: "Early Revenue",
+  growth: "Growth Stage",
+  scaling: "Scaling Stage",
+  mature: "Mature Business",
+} as const;
+
+// Market differentiation levels
+export const differentiationLevels = {
+  high: "Highly Differentiated",
+  medium: "Moderately Differentiated",
+  low: "Limited Differentiation",
+} as const;
+
 // Enhanced compliance standards
 export const complianceStandards = {
   "409a": "409A Valuation",
@@ -76,31 +101,6 @@ export const taxComplianceStatus = {
   partial: "Partially Compliant",
   pending: "Compliance Pending",
   notRequired: "Compliance Not Required",
-} as const;
-
-// Enhanced business stages with integrated market validation
-export const businessStages = {
-  // Pre-revenue stages
-  ideation_unvalidated: "Ideation Stage (Concept Only)",
-  ideation_validated: "Ideation Stage (Validated Concept)",
-  mvp_development: "MVP Development",
-  mvp_early_traction: "MVP with Early Traction",
-
-  // Early revenue stages
-  revenue_early: "Early Revenue Stage",
-  revenue_growing: "Growing Revenue Stage",
-  revenue_scaling: "Scaling Revenue Stage",
-
-  // Established stages
-  established_local: "Established (Local Market)",
-  established_regional: "Established (Regional)",
-  established_international: "Established (International)",
-
-  // Special situations
-  pre_ipo: "Pre-IPO Stage",
-  acquisition_target: "Acquisition Target",
-  restructuring: "Restructuring",
-  liquidation: "Liquidation",
 } as const;
 
 // Reorganized industry classifications with sector-subsector structure
@@ -207,32 +207,23 @@ export const valuationPurposes = {
   exit_planning: "Exit Planning",
 } as const;
 
-// Enhanced compliance schema
-export const complianceSchema = z.object({
-  standards: z.array(z.enum(Object.keys(complianceStandards) as [keyof typeof complianceStandards, ...Array<keyof typeof complianceStandards>])),
-  ipProtection: z.enum(Object.keys(ipProtectionStatus) as [keyof typeof ipProtectionStatus, ...Array<keyof typeof ipProtectionStatus>]),
-  taxCompliance: z.enum(Object.keys(taxComplianceStatus) as [keyof typeof taxComplianceStatus, ...Array<keyof typeof taxComplianceStatus>]),
-  lastComplianceReview: z.string().datetime().optional(),
-  complianceNotes: z.string().optional(),
-});
-
-// Business overview schema with enhanced validation
+// Categories for organizing inputs
 export const businessOverviewSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
+  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
 });
 
-// Financial metrics schema with conditional validation
 export const financialMetricsSchema = z.object({
   revenue: z.number().min(0, "Revenue must be positive"),
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000").optional(),
   margins: z.number().min(-100).max(100, "Margins must be between -100 and 100").optional(),
+  annualProfit: z.number().optional(),
 }).refine((data) => {
-  // Only require financial metrics for revenue-generating stages
-  const isRevenueStage = data.stage?.includes('revenue') || data.stage?.includes('established');
+  const isRevenueStage = ['early_revenue', 'growth', 'scaling', 'mature'].includes(data.stage as string);
   if (isRevenueStage) {
     return data.revenue > 0 && data.growthRate !== undefined && data.margins !== undefined;
   }
@@ -242,46 +233,46 @@ export const financialMetricsSchema = z.object({
 });
 
 export const marketInsightsSchema = z.object({
-  totalAddressableMarket: z.number().optional(),
-  competitiveDifferentiation: z.enum(["high", "moderate", "limited"]).optional(),
-  customerBase: z.number().min(0).optional(),
+  totalAddressableMarket: z.number().min(0, "TAM must be positive"),
+  activeCustomers: z.number().min(0, "Number of customers must be positive"),
+  competitiveDifferentiation: z.enum(Object.keys(differentiationLevels) as [keyof typeof differentiationLevels, ...Array<keyof typeof differentiationLevels>]),
+  marketPosition: z.string().optional(),
 });
 
 export const riskScalabilitySchema = z.object({
-  scalabilityPotential: z.number().min(1).max(10).optional(),
-  cashFlowStability: z.enum(["stable", "moderate", "volatile"]).optional(),
-  primaryRiskFactor: z.enum(["market", "regulatory", "operational", "technology", "competition"]).optional(),
+  primaryRiskFactor: z.enum(["market", "regulatory", "operational", "technology", "competition"]),
+  cashFlowStability: z.enum(["stable", "moderate", "volatile"]),
+  scalabilityPotential: z.number().min(1).max(10),
 });
 
-// Enhanced valuation form schema incorporating all categories
+export const jurisdictionalComplianceSchema = z.object({
+  complianceStandards: z.array(z.enum(Object.keys(complianceStandards) as [keyof typeof complianceStandards, ...Array<keyof typeof complianceStandards>])),
+  ipProtection: z.enum(Object.keys(ipProtectionStatus) as [keyof typeof ipProtectionStatus, ...Array<keyof typeof ipProtectionStatus>]),
+  taxCompliance: z.enum(Object.keys(taxComplianceStatus) as [keyof typeof taxComplianceStatus, ...Array<keyof typeof taxComplianceStatus>]),
+  lastComplianceReview: z.string().datetime().optional(),
+});
+
+export const qualitativeFactorsSchema = z.object({
+  teamExperience: z.number().min(0).max(50, "Team experience must be between 0 and 50 years"),
+  founderCredentials: z.string().optional(),
+  esgImpact: z.enum(Object.keys(esgImpactLevels) as [keyof typeof esgImpactLevels, ...Array<keyof typeof esgImpactLevels>]),
+});
+
+// Combined validation schema
 export const valuationFormSchema = z.object({
   ...businessOverviewSchema.shape,
   ...financialMetricsSchema.shape,
   ...marketInsightsSchema.shape,
   ...riskScalabilitySchema.shape,
-  ...complianceSchema.shape,
-  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
-  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
-  teamExperience: z.number().min(0).max(20).optional(),
-  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
+  ...jurisdictionalComplianceSchema.shape,
+  ...qualitativeFactorsSchema.shape,
+
+  // Optional computed fields
   valuation: z.number().optional(),
   multiplier: z.number().optional(),
   details: z.object({
     baseValuation: z.number(),
     adjustments: z.record(z.string(), z.number())
-  }).optional(),
-  assumptions: z.object({
-    discountRate: z.number(),
-    growthRate: z.number(),
-    terminalGrowthRate: z.number(),
-    beta: z.number(),
-    marketRiskPremium: z.number(),
-  }).optional(),
-  insights: z.object({
-    strengths: z.array(z.string()),
-    weaknesses: z.array(z.string()),
-    opportunities: z.array(z.string()),
-    risks: z.array(z.string()),
   }).optional(),
 });
 
@@ -291,7 +282,39 @@ export type BusinessOverview = z.infer<typeof businessOverviewSchema>;
 export type FinancialMetrics = z.infer<typeof financialMetricsSchema>;
 export type MarketInsights = z.infer<typeof marketInsightsSchema>;
 export type RiskScalability = z.infer<typeof riskScalabilitySchema>;
-export type ComplianceData = z.infer<typeof complianceSchema>;
+export type JurisdictionalCompliance = z.infer<typeof jurisdictionalComplianceSchema>;
+export type QualitativeFactors = z.infer<typeof qualitativeFactorsSchema>;
+
+// Utility functions
+export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+    notation: value >= 1000000 ? 'compact' : 'standard'
+  }).format(value);
+}
+
+// PitchDeck Types and Validation
+export const pitchDeckFormSchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  tagline: z.string().min(1, "Tagline is required"),
+  problem: z.string().min(1, "Problem statement is required"),
+  solution: z.string().min(1, "Solution description is required"),
+  marketSize: z.string().min(1, "Market size is required"),
+  businessModel: z.string().min(1, "Business model is required"),
+  competition: z.string().min(1, "Competition analysis is required"),
+  traction: z.string().optional(),
+  team: z.string().min(1, "Team information is required"),
+  financials: z.string().min(1, "Financial information is required"),
+  fundingAsk: z.string().min(1, "Funding ask is required"),
+  useOfFunds: z.string().min(1, "Use of funds is required"),
+  presentationStyle: z.enum(["professional", "modern", "creative", "minimal"]).default("professional"),
+  colorScheme: z.enum(["blue", "green", "purple", "orange", "neutral"]).default("blue"),
+  additionalNotes: z.string().optional(),
+});
+
+export type PitchDeckFormData = z.infer<typeof pitchDeckFormSchema>;
 
 export const expenseCategories = {
   personnel: {
@@ -389,34 +412,3 @@ export const fundUtilizationSchema = z.object({
     description: z.string(),
   })),
 });
-
-// Utility functions
-export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-    notation: value >= 1000000 ? 'compact' : 'standard'
-  }).format(value);
-}
-
-// PitchDeck Types and Validation
-export const pitchDeckFormSchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
-  tagline: z.string().min(1, "Tagline is required"),
-  problem: z.string().min(1, "Problem statement is required"),
-  solution: z.string().min(1, "Solution description is required"),
-  marketSize: z.string().min(1, "Market size is required"),
-  businessModel: z.string().min(1, "Business model is required"),
-  competition: z.string().min(1, "Competition analysis is required"),
-  traction: z.string().optional(),
-  team: z.string().min(1, "Team information is required"),
-  financials: z.string().min(1, "Financial information is required"),
-  fundingAsk: z.string().min(1, "Funding ask is required"),
-  useOfFunds: z.string().min(1, "Use of funds is required"),
-  presentationStyle: z.enum(["professional", "modern", "creative", "minimal"]).default("professional"),
-  colorScheme: z.enum(["blue", "green", "purple", "orange", "neutral"]).default("blue"),
-  additionalNotes: z.string().optional(),
-});
-
-export type PitchDeckFormData = z.infer<typeof pitchDeckFormSchema>;
