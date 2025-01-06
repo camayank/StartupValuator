@@ -1,12 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { CompetitiveAdvantages } from "@/components/CompetitiveAdvantages";
-import { RoleBasedFeatures } from "@/components/RoleBasedFeatures";
-import { EnterpriseSolutions } from "@/components/EnterpriseSolutions";
-import { PricingSection } from "@/components/PricingSection";
-import { LaunchTimeline } from "@/components/LaunchTimeline";
-import { IndustryVerticals } from "@/components/IndustryVerticals";
 import {
   BarChart3,
   Calculator,
@@ -18,52 +12,64 @@ import {
   Globe,
   ChevronRight,
   Check,
+  Brain,
+  Target,
+  LineChart,
+  Sparkles,
 } from "lucide-react";
 
 export function LandingPage() {
   const features = [
     {
-      icon: Calculator,
-      title: "AI-Powered Valuation",
-      description: "Get accurate startup valuations using advanced machine learning algorithms",
+      icon: Brain,
+      title: "AI-Driven Analysis",
+      description: "Get accurate valuations powered by advanced machine learning models",
     },
     {
       icon: BarChart3,
-      title: "Financial Analytics",
-      description: "Deep insights into your metrics and growth potential",
+      title: "Market Intelligence",
+      description: "Real-time market data and industry benchmarks",
     },
     {
-      icon: FileText,
-      title: "Detailed Reports",
-      description: "Comprehensive valuation reports with market analysis",
+      icon: Target,
+      title: "Industry-Specific Models",
+      description: "Tailored valuation models for your sector",
     },
     {
-      icon: Users,
-      title: "Expert Network",
-      description: "Connect with investors and financial advisors",
+      icon: Shield,
+      title: "Compliance Ready",
+      description: "Region-specific compliance (409A, IFRS, ICAI)",
     },
   ];
 
   const valuationBenefits = [
-    "Industry-specific valuation models",
-    "Real-time market comparables",
-    "Growth potential analysis",
-    "Risk assessment metrics",
-    "Future cash flow projections",
-    "Cap table modeling",
+    "Dynamic Industry Benchmarks",
+    "Regional Compliance Standards",
+    "Real-time Market Multiples",
+    "Growth Potential Analysis",
+    "Risk Assessment Metrics",
+    "AI-Powered Projections",
   ];
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Valuation Focus */}
       <section className="relative overflow-hidden bg-primary/5 border-b">
-        <div className="container mx-auto px-4 py-20 lg:py-32">
+        <div className="absolute inset-0 grid grid-cols-2 -space-x-52 opacity-40 dark:opacity-20">
+          <div className="blur-[106px] h-56 bg-gradient-to-br from-primary to-purple-400 dark:from-blue-700"></div>
+          <div className="blur-[106px] h-32 bg-gradient-to-r from-cyan-400 to-sky-300 dark:to-indigo-600"></div>
+        </div>
+        <div className="container mx-auto px-4 py-20 lg:py-32 relative">
           <div className="max-w-4xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Powered by Advanced AI</span>
+            </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              AI-Powered Startup Valuation
+              AI-Powered Startup Valuation Platform
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Get an accurate, data-driven valuation for your startup in minutes. Trusted by over 10,000 founders and investors.
+              Get precise, data-driven valuations for your startup in minutes. Trusted by over 10,000 founders and investors.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth?mode=signup">
@@ -95,7 +101,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Benefits Grid */}
+      {/* Valuation Benefits Grid */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto mb-12 text-center">
@@ -103,7 +109,7 @@ export function LandingPage() {
               The Most Advanced Startup Valuation Platform
             </h2>
             <p className="text-muted-foreground">
-              Get a comprehensive valuation backed by real market data and AI-powered analytics
+              Get comprehensive valuations backed by real market data and AI-powered analytics
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -123,11 +129,11 @@ export function LandingPage() {
               <h3 className="text-2xl font-bold mb-4">Why Choose Our Platform?</h3>
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
-                  <TrendingUp className="h-5 w-5 text-primary mt-1" />
+                  <Brain className="h-5 w-5 text-primary mt-1" />
                   <div>
-                    <span className="font-semibold">Data-Driven Accuracy</span>
+                    <span className="font-semibold">AI-Powered Precision</span>
                     <p className="text-sm text-muted-foreground">
-                      Our valuations are based on real market data and industry benchmarks
+                      Our AI models analyze vast market data to provide accurate valuations
                     </p>
                   </div>
                 </li>
@@ -141,11 +147,11 @@ export function LandingPage() {
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
-                  <Users className="h-5 w-5 text-primary mt-1" />
+                  <LineChart className="h-5 w-5 text-primary mt-1" />
                   <div>
-                    <span className="font-semibold">Expert Support</span>
+                    <span className="font-semibold">Real-time Market Data</span>
                     <p className="text-sm text-muted-foreground">
-                      Get guidance from financial experts and valuation specialists
+                      Access to latest market multiples and industry benchmarks
                     </p>
                   </div>
                 </li>
@@ -155,25 +161,11 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Add CompetitiveAdvantages section */}
-      <section className="bg-accent/5 border-y">
-        <div className="container mx-auto px-4">
-          <CompetitiveAdvantages />
-        </div>
-      </section>
-
-      {/* Role-based Features Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <RoleBasedFeatures />
-        </div>
-      </section>
-
       {/* Features Grid */}
       <section className="py-20 bg-accent/10">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Comprehensive Valuation Features
+            Advanced Valuation Features
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
@@ -191,40 +183,6 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Industry Verticals section */}
-      <section className="py-20 bg-accent/5 border-y">
-        <div className="container mx-auto px-4">
-          <IndustryVerticals />
-        </div>
-      </section>
-
-      {/* Launch Timeline section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <LaunchTimeline />
-        </div>
-      </section>
-
-      {/* Enterprise Solutions section */}
-      <section className="py-20 bg-accent/5 border-y">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Enterprise-Grade Solutions
-          </h2>
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Powerful tools for financial institutions and consulting firms with advanced integration capabilities
-          </p>
-          <EnterpriseSolutions />
-        </div>
-      </section>
-
-      {/* Add Pricing Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <PricingSection />
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
@@ -236,7 +194,7 @@ export function LandingPage() {
           </p>
           <Link href="/auth?mode=signup">
             <Button size="lg" variant="secondary" className="min-w-[200px]">
-              Start Free Trial
+              Start Free Valuation
             </Button>
           </Link>
         </div>
