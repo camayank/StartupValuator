@@ -47,6 +47,33 @@ export function LandingPage() {
     "Cap table modeling",
   ];
 
+  const roles = [
+    {
+      title: "For Startups",
+      description: "Get an accurate valuation, track growth metrics, and create investor-ready pitch decks",
+      features: ["AI-powered valuation models", "Growth trajectory analysis", "Automated pitch deck generation"],
+      cta: "Value Your Startup",
+    },
+    {
+      title: "For Investors",
+      description: "Evaluate opportunities with precision and manage your investment portfolio effectively",
+      features: ["Deal flow analysis", "Portfolio performance tracking", "Investment risk assessment"],
+      cta: "Start Due Diligence",
+    },
+    {
+      title: "For Valuers",
+      description: "Access professional tools and data for accurate startup valuations",
+      features: ["Multiple valuation methods", "Industry benchmarks", "Detailed analysis tools"],
+      cta: "Access Pro Tools",
+    },
+    {
+      title: "For Consultants",
+      description: "Provide data-driven advisory services with comprehensive valuation tools",
+      features: ["Client portfolio management", "Advisory dashboards", "White-label reports"],
+      cta: "Start Advising",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Valuation Focus */}
@@ -163,6 +190,43 @@ export function LandingPage() {
                     <feature.icon className="h-12 w-12 text-primary mb-4" />
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground">{feature.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Role-specific Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Tailored Solutions for Every Role
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Our valuation platform adapts to your specific needs, whether you're a founder, investor, valuer, or consultant
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {roles.map((role, index) => (
+              <Card key={index} className="relative group hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col h-full">
+                    <h3 className="text-xl font-semibold mb-2">{role.title}</h3>
+                    <p className="text-muted-foreground mb-4">{role.description}</p>
+                    <ul className="space-y-2 mb-6">
+                      {role.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <Check className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link href="/auth?mode=signup" className="mt-auto">
+                      <Button className="w-full group-hover:bg-primary/90">
+                        {role.cta}
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
