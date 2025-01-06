@@ -5,6 +5,7 @@ import { auditTrail, userActivities, workspaces } from "@db/schema";
 import { valuationFormSchema } from "../client/src/lib/validations";
 import { calculateValuation } from "./lib/valuation";
 import { setupCache } from "./lib/cache";
+import pitchDeckRouter from "./routes/pitch-deck";
 import { z } from "zod";
 import rateLimit from 'express-rate-limit';
 
@@ -14,7 +15,7 @@ const cache = setupCache();
 // Rate limiting configuration
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100, // Limit each IP to requests per windowMs
   message: "Too many requests from this IP, please try again later",
   standardHeaders: true,
   legacyHeaders: false,
@@ -37,6 +38,9 @@ const createWorkspaceSchema = z.object({
 export function registerRoutes(app: Express): Server {
   // Apply rate limiting to API routes
   app.use("/api/", apiLimiter);
+
+  // Mount pitch deck routes
+  app.use("/api/pitch-decks", pitchDeckRouter); // Assuming /api prefix for consistency
 
   // Health check endpoint for load balancers
   app.get("/api/health", (req, res) => {
@@ -172,15 +176,4 @@ function adjustPricingForRegion(basePricing: any, region: string) {
     };
     return acc;
   }, {});
-}
-
-function calculateComplexity(result: any): "low" | "medium" | "high" {
-  const factors = [
-    result.industry === "Technology",
-    result.valuation > 10000000,
-    result.insights?.length > 5,
-  ];
-
-  const complexityScore = factors.filter(Boolean).length;
-  return complexityScore <= 1 ? "low" : complexityScore === 2 ? "medium" : "high";
 }
