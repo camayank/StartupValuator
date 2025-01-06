@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { founderProfiles } from "@db/schema";
+import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
 import { generatePdfReport } from "./lib/report";
@@ -11,6 +11,7 @@ import { z } from "zod";
 import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/ai-personalization";
 import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
+import { setupAuth } from "./auth";
 
 // Define a schema for the report data
 const reportDataSchema = valuationFormSchema.extend({
@@ -27,6 +28,9 @@ const reportDataSchema = valuationFormSchema.extend({
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
+
+  // Set up authentication routes
+  setupAuth(app);
 
   // Pitch deck personalization routes
   app.post("/api/pitch-deck/personalize", async (req, res) => {
@@ -51,6 +55,55 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({
         message: error instanceof Error ? error.message : "Failed to analyze industry fit"
       });
+    }
+  });
+
+  // User profile routes
+  app.get("/api/profile/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const profile = await db.query.userProfiles.findFirst({
+        where: eq(userProfiles.userId, parseInt(userId)),
+      });
+
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  app.post("/api/profile", async (req, res) => {
+    try {
+      const profileData = req.body;
+      const result = await db.insert(userProfiles).values(profileData).returning();
+      res.json(result[0]);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  app.patch("/api/profile/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updateData = req.body;
+
+      const result = await db
+        .update(userProfiles)
+        .set(updateData)
+        .where(eq(userProfiles.userId, parseInt(userId)))
+        .returning();
+
+      if (!result.length) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      res.json(result[0]);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
     }
   });
 
@@ -122,55 +175,6 @@ export function registerRoutes(app: Express): Server {
       res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to calculate valuation'
       });
-    }
-  });
-
-  // Founder profile routes
-  app.get("/api/profile/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const profile = await db.query.founderProfiles.findFirst({
-        where: eq(founderProfiles.userId, parseInt(userId)),
-      });
-
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      res.json(profile);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.post("/api/profile", async (req, res) => {
-    try {
-      const profileData = req.body;
-      const result = await db.insert(founderProfiles).values(profileData).returning();
-      res.json(result[0]);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.patch("/api/profile/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const updateData = req.body;
-
-      const result = await db
-        .update(founderProfiles)
-        .set(updateData)
-        .where(eq(founderProfiles.userId, parseInt(userId)))
-        .returning();
-
-      if (!result.length) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      res.json(result[0]);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
     }
   });
 
