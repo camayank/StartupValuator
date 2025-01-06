@@ -7,6 +7,7 @@ import { Check, Zap } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import type { SelectSubscriptionPlan } from "@db/schema";
+import { EnterpriseSolutions } from "@/components/EnterpriseSolutions";
 
 const pricingPlans: SelectSubscriptionPlan[] = [
   {
@@ -325,13 +326,19 @@ export function PricingPage() {
         </div>
       </div>
 
+      {/* Enterprise Solutions */}
+      <div className="mt-16">
+        <h2 className="text-2xl font-bold mb-8 text-center">Enterprise & White-Label Solutions</h2>
+        <EnterpriseSolutions />
+      </div>
+
       <div className="mt-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">Enterprise Solutions</h2>
+        <h2 className="text-2xl font-bold mb-4">Need a Custom Solution?</h2>
         <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-          Need a custom solution? Our enterprise plan includes custom features,
-          dedicated support, and flexible pricing based on your needs.
+          Our enterprise solutions include custom features, dedicated support, and
+          flexible pricing based on your organization's specific needs.
         </p>
-        <Button variant="outline" size="lg">
+        <Button variant="outline" size="lg" onClick={() => window.location.href = "mailto:sales@example.com"}>
           Contact Sales
         </Button>
       </div>
