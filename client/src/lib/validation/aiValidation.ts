@@ -1,4 +1,5 @@
 import { ValuationFormData } from "../validations";
+import { aiValidationService } from "@/services/aiValidation";
 
 interface ValidationResult {
   isValid: boolean;
@@ -8,6 +9,8 @@ interface ValidationResult {
     severity: 'low' | 'medium' | 'high';
     suggestion?: string | number;
   }>;
+  suggestions?: string[];
+  industryInsights?: string[];
 }
 
 interface IndustryBenchmark {
@@ -48,76 +51,77 @@ const industryBenchmarks: Record<string, Record<string, IndustryBenchmark>> = {
 };
 
 const stageBasedValidation: Record<string, Record<string, IndustryBenchmark>> = {
-  seed: {
+  ideation_unvalidated: {
+    revenue: {
+      metric: "Annual Revenue",
+      range: { min: 0, max: 100000 },
+      typical: 0
+    }
+  },
+  mvp_early_traction: {
     revenue: {
       metric: "Annual Revenue",
       range: { min: 0, max: 1000000 },
       typical: 100000
     }
   },
-  early: {
+  revenue_early: {
     revenue: {
       metric: "Annual Revenue",
       range: { min: 100000, max: 5000000 },
       typical: 1000000
     }
-  },
+  }
   // Add more stage-based validations
 };
 
-export function validateFinancialMetrics(data: ValuationFormData): ValidationResult {
+export async function validateFinancialMetrics(data: ValuationFormData): Promise<ValidationResult> {
   const warnings: ValidationResult['warnings'] = [];
 
   // Get industry benchmarks
   const industryData = industryBenchmarks[data.sector];
   const stageData = stageBasedValidation[data.stage];
 
-  if (!industryData) {
-    warnings.push({
-      field: 'sector',
-      message: 'Industry benchmarks not available for this sector',
-      severity: 'low'
-    });
-    return { isValid: true, warnings };
-  }
-
-  // Validate growth rate
-  if (data.growthRate !== undefined) {
-    const growthBenchmark = industryData.growthRate;
-    if (data.growthRate > growthBenchmark.range.max) {
-      warnings.push({
-        field: 'growthRate',
-        message: `Growth rate of ${data.growthRate}% is unusually high for ${data.sector} sector`,
-        severity: 'high',
-        suggestion: growthBenchmark.typical
-      });
-    } else if (data.growthRate < growthBenchmark.range.min) {
-      warnings.push({
-        field: 'growthRate',
-        message: `Growth rate of ${data.growthRate}% is below average for ${data.sector} sector`,
-        severity: 'medium',
-        suggestion: growthBenchmark.typical
-      });
+  // Rule-based validation
+  if (industryData) {
+    // Validate growth rate
+    if (data.growthRate !== undefined) {
+      const growthBenchmark = industryData.growthRate;
+      if (data.growthRate > growthBenchmark.range.max) {
+        warnings.push({
+          field: 'growthRate',
+          message: `Growth rate of ${data.growthRate}% is unusually high for ${data.sector} sector`,
+          severity: 'high',
+          suggestion: growthBenchmark.typical
+        });
+      } else if (data.growthRate < growthBenchmark.range.min) {
+        warnings.push({
+          field: 'growthRate',
+          message: `Growth rate of ${data.growthRate}% is below average for ${data.sector} sector`,
+          severity: 'medium',
+          suggestion: growthBenchmark.typical
+        });
+      }
     }
-  }
 
-  // Validate margins
-  if (data.margins !== undefined) {
-    const marginBenchmark = industryData.margins;
-    if (data.margins > marginBenchmark.range.max) {
-      warnings.push({
-        field: 'margins',
-        message: `Operating margin of ${data.margins}% is unusually high for ${data.sector} sector`,
-        severity: 'high',
-        suggestion: marginBenchmark.typical
-      });
-    } else if (data.margins < marginBenchmark.range.min) {
-      warnings.push({
-        field: 'margins',
-        message: `Operating margin of ${data.margins}% is below average for ${data.sector} sector`,
-        severity: 'medium',
-        suggestion: marginBenchmark.typical
-      });
+    // Validate margins
+    if (data.margins !== undefined) {
+      const marginBenchmark = industryData.margins;
+      if (data.margins > marginBenchmark.range.max) {
+        warnings.push({
+          field: 'margins',
+          message: `Operating margin of ${data.margins}% is unusually high for ${data.sector} sector`,
+          severity: 'high',
+          suggestion: marginBenchmark.typical
+        });
+      } else if (data.margins < marginBenchmark.range.min) {
+        warnings.push({
+          field: 'margins',
+          message: `Operating margin of ${data.margins}% is below average for ${data.sector} sector`,
+          severity: 'medium',
+          suggestion: marginBenchmark.typical
+        });
+      }
     }
   }
 
@@ -142,7 +146,7 @@ export function validateFinancialMetrics(data: ValuationFormData): ValidationRes
   // Cross-field validation
   if (data.revenue && data.margins) {
     const operatingIncome = (data.revenue * data.margins) / 100;
-    if (operatingIncome < 0 && data.stage !== 'seed') {
+    if (operatingIncome < 0 && data.stage !== 'ideation_unvalidated') {
       warnings.push({
         field: 'margins',
         message: 'Negative operating income may affect valuation accuracy',
@@ -151,23 +155,41 @@ export function validateFinancialMetrics(data: ValuationFormData): ValidationRes
     }
   }
 
-  return {
-    isValid: warnings.filter(w => w.severity === 'high').length === 0,
-    warnings
-  };
+  // Get AI-powered validation results
+  try {
+    const aiValidation = await aiValidationService.validateInput(data);
+    warnings.push(...aiValidation.warnings);
+
+    return {
+      isValid: warnings.filter(w => w.severity === 'high').length === 0,
+      warnings,
+      suggestions: aiValidation.suggestions,
+      industryInsights: aiValidation.industryInsights
+    };
+  } catch (error) {
+    console.error('AI validation error:', error);
+    // Fallback to rule-based validation only
+    return {
+      isValid: warnings.filter(w => w.severity === 'high').length === 0,
+      warnings
+    };
+  }
 }
 
-export function getSuggestions(data: ValuationFormData): string[] {
-  const suggestions: string[] = [];
-  const { warnings } = validateFinancialMetrics(data);
+export async function getSuggestions(data: ValuationFormData): Promise<string[]> {
+  try {
+    return await aiValidationService.getSuggestions(data);
+  } catch (error) {
+    console.error('Failed to get AI suggestions:', error);
+    return [];
+  }
+}
 
-  warnings.forEach(warning => {
-    if (warning.suggestion !== undefined) {
-      suggestions.push(
-        `Consider adjusting ${warning.field} to around ${warning.suggestion} based on industry benchmarks.`
-      );
-    }
-  });
-
-  return suggestions;
+export async function predictPotentialIssues(data: ValuationFormData): Promise<string[]> {
+  try {
+    return await aiValidationService.predictPotentialIssues(data);
+  } catch (error) {
+    console.error('Failed to predict potential issues:', error);
+    return [];
+  }
 }
