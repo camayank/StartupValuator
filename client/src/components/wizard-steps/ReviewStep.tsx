@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Link } from "wouter";
+import { ValuationReport } from "@/components/ValuationReport";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -19,6 +20,7 @@ interface ReviewStepProps {
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const isFundraising = data.valuationPurpose === 'fundraising';
 
   // Strict validation logic for all required fields
@@ -62,8 +64,8 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
     try {
       setIsGenerating(true);
 
-      // First, trigger the valuation calculation
-      const valuationResponse = await fetch('/api/valuation', {
+      // First, trigger the valuation calculation and AI insights generation
+      const valuationResponse = await fetch('/api/valuation/calculate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,8 +79,8 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
 
       const valuationData = await valuationResponse.json();
 
-      // Then generate the report with the combined data
-      const reportResponse = await fetch('/api/report', {
+      // Generate AI insights
+      const insightsResponse = await fetch('/api/valuation/insights', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,28 +88,32 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         body: JSON.stringify({ ...data, ...valuationData }),
       });
 
-      if (!reportResponse.ok) {
-        throw new Error(`Report generation failed: ${await reportResponse.text()}`);
+      if (!insightsResponse.ok) {
+        throw new Error(`Insights generation failed: ${await insightsResponse.text()}`);
       }
 
-      // Get the PDF blob and trigger download
-      const blob = await reportResponse.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'startup-valuation-report.pdf';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const insightsData = await insightsResponse.json();
+
+      // Combine all data and show the report
+      const completeData = {
+        ...data,
+        ...valuationData,
+        ...insightsData,
+      };
+
+      // Update the form data with the complete information
+      onUpdate(completeData);
+
+      // Show the report
+      setShowReport(true);
 
       toast({
         title: "Success",
-        description: "Your valuation report has been generated and downloaded.",
+        description: "Your valuation report has been generated successfully.",
       });
 
       // Finally call onSubmit with the complete data
-      onSubmit({ ...data, ...valuationData });
+      onSubmit(completeData as ValuationFormData);
     } catch (error) {
       console.error('Report generation error:', error);
       toast({
@@ -124,6 +130,10 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   const selectedIndustry = selectedSector?.subsectors[data.industry as keyof typeof selectedSector['subsectors']];
   const selectedStage = data.stage ? businessStages[data.stage] : null;
   const selectedRegion = data.region ? regions[data.region] : null;
+
+  if (showReport && isValidData(data)) {
+    return <ValuationReport data={data} />;
+  }
 
   return (
     <div className="space-y-6">
