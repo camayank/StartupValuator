@@ -285,6 +285,7 @@ export const valuationFormSchema = z.object({
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
+  complianceStandard: z.enum(["409a", "ifrs", "ibbi", "mca", "none"]).optional(),
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(20).optional(),
   customerBase: z.number().min(0).optional(),
@@ -296,6 +297,13 @@ export const valuationFormSchema = z.object({
   details: z.object({
     baseValuation: z.number(),
     adjustments: z.record(z.string(), z.number())
+  }).optional(),
+  assumptions: z.object({
+    discountRate: z.number(),
+    growthRate: z.number(),
+    terminalGrowthRate: z.number(),
+    beta: z.number(),
+    marketRiskPremium: z.number(),
   }).optional(),
   riskAssessment: z.any().optional(),
   potentialPrediction: z.any().optional(),

@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, Building2, Trophy, Globe2, Users, Shield, Target, Scale, HelpCircle } from "lucide-react";
-import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
+import { sectors, businessStages, regions, valuationPurposes, industries } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
@@ -48,7 +48,7 @@ const complianceStandards = {
 };
 
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
-  const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
+  const [selectedSector, setSelectedSector] = useState<keyof typeof sectors>(data.sector || "technology");
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const form = useForm<Partial<ValuationFormData>>({
@@ -69,13 +69,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     },
   });
 
-  const handleSectorChange = (value: string) => {
+  const handleSectorChange = (value: keyof typeof sectors) => {
     setSelectedSector(value);
-    const firstIndustry = Object.keys(sectors[value as keyof typeof sectors].subsectors)[0];
-    form.setValue("sector", value as keyof typeof sectors);
+    const firstIndustry = Object.keys(sectors[value].subsectors)[0] as keyof typeof industries;
+    form.setValue("sector", value);
     form.setValue("industry", firstIndustry);
     onUpdate({
-      sector: value as keyof typeof sectors,
+      sector: value,
       industry: firstIndustry,
     });
   };
@@ -85,7 +85,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     onUpdate({ industry: value });
   };
 
-  const handleStageChange = (value: string) => {
+  const handleStageChange = (value: keyof typeof businessStages) => {
     form.setValue("stage", value);
     onUpdate({ stage: value });
   };
@@ -308,7 +308,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                                 <SelectValue placeholder="Select industry" />
                               </SelectTrigger>
                               <SelectContent>
-                                {Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors)
+                                {Object.entries(sectors[selectedSector].subsectors)
                                   .map(([key, name]) => (
                                     <SelectItem key={key} value={key}>
                                       {name}
