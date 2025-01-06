@@ -2,6 +2,7 @@ import { Switch, Route, Link, useLocation } from "wouter";
 import { Home } from "./pages/Home";
 import { Documentation } from "./pages/Documentation";
 import { Profile } from "./pages/Profile";
+import ValuationPage from "./pages/ValuationPage";
 import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
 import { Card } from "@/components/ui/card";
 import {
@@ -49,7 +50,7 @@ import { LandingPage } from "./pages/LandingPage";
 const navigationConfig = {
   startup: {
     mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Comprehensive startup valuation", icon: Calculator },
+      { href: "/valuation", label: "Company Valuation", description: "Complete business valuation process", icon: Calculator },
       { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", icon: FileText },
     ],
@@ -348,21 +349,11 @@ function App() {
             <Switch>
               <Route path="/">
                 {user && (
-                  <ValuationWizard
-                    onSubmit={(data) => {
-                      console.log('Valuation data submitted:', data);
-                    }}
-                  />
+                  <ValuationPage />
                 )}
                 {!user && <Home />}
               </Route>
-              <Route path="/valuation">
-                <ValuationWizard
-                  onSubmit={(data) => {
-                    console.log('Valuation data submitted:', data);
-                  }}
-                />
-              </Route>
+              <Route path="/valuation" component={ValuationPage} />
               <Route path="/calculator" component={ValuationCalculatorPage} />
               <Route path="/projections">
                 <ProjectionsWizard />
