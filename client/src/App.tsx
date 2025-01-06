@@ -7,8 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
 import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
-import { ReportGenerationProgress } from "@/components/ReportGenerationProgress";
-import { ExportButton } from "@/components/ExportButton";
+import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import type { ValuationFormData } from "@/lib/validations";
 
 function App() {
@@ -54,6 +53,9 @@ function App() {
             <Link href="/pitch-deck">
               <span className="text-sm hover:text-primary cursor-pointer">Pitch Deck</span>
             </Link>
+            <Link href="/dashboard">
+              <span className="text-sm hover:text-primary cursor-pointer">Health Dashboard</span>
+            </Link>
             <Link href="/profile/1">
               <span className="text-sm hover:text-primary cursor-pointer">Profile</span>
             </Link>
@@ -78,6 +80,11 @@ function App() {
         <Route path="/pitch-deck">
           <div className="container mx-auto py-8">
             <PitchDeckGenerator />
+          </div>
+        </Route>
+        <Route path="/dashboard">
+          <div className="container mx-auto py-8">
+            <StartupHealthDashboard />
           </div>
         </Route>
         <Route path="/docs" component={Documentation} />
