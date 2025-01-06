@@ -42,21 +42,32 @@ export interface MarketSentiment {
       som?: number;
     };
   };
+  economicIndicators?: {
+    inflation: number;
+    riskFreeRate: number;
+    gdpGrowth: number;
+    marketVolatility: number;
+    industryIndex: number;
+    timestamp: string;
+  };
 }
 
 export async function analyzeMarketSentiment(data: ValuationFormData): Promise<MarketSentiment> {
   try {
-    const prompt = `Analyze the current market sentiment for a ${data.industry} company in the ${data.stage} stage.
-    Consider the following aspects:
+    const economicData = await getEconomicIndicators(data.region);
+
+    const prompt = `Analyze the current market sentiment for a ${data.sector} company in the ${data.stage} stage.
+    Consider the following aspects and current economic indicators for ${data.region}:
     1. Market Conditions
-      - Current economic indicators
+      - Current economic indicators: Inflation rate: ${economicData.inflation}%, Risk-free rate: ${economicData.riskFreeRate}%
       - Industry-specific trends
       - Regional market dynamics for ${data.region}
 
     2. Industry Analysis
-      - Growth trajectory
-      - Technology adoption
+      - Growth trajectory considering GDP growth of ${economicData.gdpGrowth}%
+      - Technology adoption rates
       - Innovation landscape
+      - Industry volatility index: ${economicData.industryIndex}
 
     3. Competitive Assessment
       - Market leaders and challengers
@@ -132,7 +143,8 @@ export async function analyzeMarketSentiment(data: ValuationFormData): Promise<M
 
     return {
       ...sentimentData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      economicIndicators: economicData
     };
   } catch (error) {
     console.error('Market sentiment analysis error:', error);
@@ -148,9 +160,65 @@ export async function analyzeMarketSentiment(data: ValuationFormData): Promise<M
       insights: ['Unable to analyze market sentiment'],
       riskFactors: ['Market sentiment analysis unavailable'],
       opportunities: ['Consider manual market research'],
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      economicIndicators: await getEconomicIndicators(data.region)
     };
   }
+}
+
+async function getEconomicIndicators(region: string) {
+  // In a production environment, this would fetch real-time data from APIs
+  // For now, we'll use representative data based on region
+  const indicators = {
+    us: {
+      inflation: 3.2,
+      riskFreeRate: 4.5,
+      gdpGrowth: 2.1,
+      marketVolatility: 15.2,
+      industryIndex: 105.3
+    },
+    eu: {
+      inflation: 2.8,
+      riskFreeRate: 3.5,
+      gdpGrowth: 1.8,
+      marketVolatility: 16.5,
+      industryIndex: 102.1
+    },
+    uk: {
+      inflation: 3.0,
+      riskFreeRate: 4.0,
+      gdpGrowth: 1.9,
+      marketVolatility: 14.8,
+      industryIndex: 103.4
+    },
+    india: {
+      inflation: 5.5,
+      riskFreeRate: 6.5,
+      gdpGrowth: 6.3,
+      marketVolatility: 18.5,
+      industryIndex: 110.2
+    },
+    asia: {
+      inflation: 4.0,
+      riskFreeRate: 5.0,
+      gdpGrowth: 4.5,
+      marketVolatility: 17.2,
+      industryIndex: 106.8
+    },
+    other: {
+      inflation: 4.5,
+      riskFreeRate: 5.5,
+      gdpGrowth: 3.5,
+      marketVolatility: 16.8,
+      industryIndex: 104.5
+    }
+  };
+
+  const regionData = indicators[region.toLowerCase() as keyof typeof indicators] || indicators.other;
+  return {
+    ...regionData,
+    timestamp: new Date().toISOString()
+  };
 }
 
 // Cache market sentiment results for 1 hour
@@ -158,7 +226,7 @@ const sentimentCache = new Map<string, { data: MarketSentiment; timestamp: numbe
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 export async function getCachedMarketSentiment(data: ValuationFormData): Promise<MarketSentiment> {
-  const cacheKey = `${data.industry}-${data.stage}`;
+  const cacheKey = `${data.sector}-${data.stage}-${data.region}`;
   const cached = sentimentCache.get(cacheKey);
 
   if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
