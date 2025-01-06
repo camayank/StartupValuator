@@ -32,6 +32,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { NumericInput } from "@/components/ui/numeric-input";
 
 // High contrast color palette that meets WCAG 2.1 AA standards
 const HIGH_CONTRAST_COLORS = ["#0052CC", "#00875A", "#DE350B", "#403294"];
@@ -247,18 +248,15 @@ export function InteractiveValuationCalculator() {
                   <h3 className="text-lg font-semibold">Financial Metrics</h3>
                   <div>
                     <FieldLabel field="revenue">Annual Revenue</FieldLabel>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        value={formData.revenue}
-                        onChange={(e) => handleInputChange('revenue', Number(e.target.value))}
-                        className={`pl-8 ${errors.revenue ? 'border-destructive' : ''}`}
-                        placeholder="Enter your annual revenue"
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        {currencies[formData.currency as keyof typeof currencies]?.symbol || '$'}
-                      </span>
-                    </div>
+                    <NumericInput
+                      value={formData.revenue}
+                      onValueChange={(value) => handleInputChange('revenue', value)}
+                      className={errors.revenue ? 'border-destructive' : ''}
+                      placeholder="Enter your annual revenue"
+                      prefix={currencies[formData.currency as keyof typeof currencies]?.symbol || '$'}
+                      thousandSeparator=","
+                      decimalScale={0}
+                    />
                     {errors.revenue && (
                       <p className="text-sm text-destructive mt-1">{errors.revenue}</p>
                     )}
@@ -285,12 +283,14 @@ export function InteractiveValuationCalculator() {
 
                   <div>
                     <FieldLabel field="growthRate">Growth Rate (%)</FieldLabel>
-                    <Input
-                      type="number"
+                    <NumericInput
                       value={formData.growthRate}
-                      onChange={(e) => handleInputChange('growthRate', Number(e.target.value))}
+                      onValueChange={(value) => handleInputChange('growthRate', value)}
                       className={errors.growthRate ? 'border-destructive' : ''}
                       placeholder="Enter growth rate"
+                      suffix="%"
+                      decimalScale={1}
+                      allowNegative
                     />
                     {errors.growthRate && (
                       <p className="text-sm text-destructive mt-1">{errors.growthRate}</p>
@@ -299,12 +299,14 @@ export function InteractiveValuationCalculator() {
 
                   <div>
                     <FieldLabel field="margins">Operating Margins (%)</FieldLabel>
-                    <Input
-                      type="number"
+                    <NumericInput
                       value={formData.margins}
-                      onChange={(e) => handleInputChange('margins', Number(e.target.value))}
+                      onValueChange={(value) => handleInputChange('margins', value)}
                       className={errors.margins ? 'border-destructive' : ''}
                       placeholder="Enter operating margins"
+                      suffix="%"
+                      decimalScale={1}
+                      allowNegative
                     />
                     {errors.margins && (
                       <p className="text-sm text-destructive mt-1">{errors.margins}</p>
@@ -466,11 +468,11 @@ export function InteractiveValuationCalculator() {
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
                     {["Comprehensive valuation reports", "Industry-specific metrics",
                       "Growth potential analysis", "Expert valuation guidance"].map((feature) => (
-                      <li key={feature} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" />
-                        <span className={highContrast ? "text-black" : undefined}>{feature}</span>
-                      </li>
-                    ))}
+                        <li key={feature} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className={highContrast ? "text-black" : undefined}>{feature}</span>
+                        </li>
+                      ))}
                   </ul>
                   <Button className="w-full md:w-auto">
                     Get Full Access
