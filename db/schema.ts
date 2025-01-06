@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, pgEnum, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, pgEnum, jsonb, decimal } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -25,6 +25,52 @@ export const activityTypes = pgEnum("activity_type", [
   "profile_update",
   "settings_change",
   "feature_interaction"
+]);
+
+// Add valuation specific enums
+export const valuationMethods = pgEnum("valuation_method", [
+  "dcf",
+  "market_comparables", 
+  "first_chicago",
+  "venture_capital",
+  "berkus",
+  "scorecard",
+  "risk_factor_summation"
+]);
+
+export const valuationStages = pgEnum("valuation_stage", [
+  "ideation",
+  "mvp",
+  "early_revenue",
+  "growth",
+  "scaling",
+  "mature"
+]);
+
+export const industryVerticals = pgEnum("industry_vertical", [
+  "saas",
+  "fintech",
+  "healthtech",
+  "ecommerce",
+  "deeptech",
+  "enterprise",
+  "consumer",
+  "marketplace"
+]);
+
+export const complianceFrameworks = pgEnum("compliance_framework", [
+  "409a",
+  "ifrs",
+  "icai",
+  "ivs",
+  "aicpa"
+]);
+
+export const reportStatus = pgEnum("report_status", [
+  "draft",
+  "in_review", 
+  "approved",
+  "archived"
 ]);
 
 export const users = pgTable("users", {
@@ -71,7 +117,6 @@ export const profileRelations = relations(userProfiles, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
 
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
@@ -226,13 +271,78 @@ export const valuations = pgTable("valuations", {
   workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
   createdBy: integer("created_by").references(() => users.id).notNull(),
   businessName: varchar("business_name", { length: 255 }).notNull(),
-  industry: varchar("industry", { length: 100 }).notNull(),
-  stage: varchar("stage", { length: 50 }).notNull(),
+  industry: industryVerticals("industry").notNull(),
+  stage: valuationStages("stage").notNull(),
+  region: varchar("region", { length: 100 }).notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
-  framework: varchar("framework", { length: 50 }).notNull(),
-  data: jsonb("data").notNull(),
-  result: jsonb("result").notNull(),
-  status: varchar("status", { length: 20 }).notNull(), // draft, in_review, approved, archived
+  complianceFramework: complianceFrameworks("compliance_framework").notNull(),
+
+  // Financial metrics
+  revenue: decimal("revenue", { precision: 15, scale: 2 }),
+  revenueGrowth: decimal("revenue_growth", { precision: 5, scale: 2 }),
+  grossMargin: decimal("gross_margin", { precision: 5, scale: 2 }),
+  ebitdaMargin: decimal("ebitda_margin", { precision: 5, scale: 2 }),
+  burnRate: decimal("burn_rate", { precision: 15, scale: 2 }),
+  runway: integer("runway"), // in months
+
+  // Market data
+  totalAddressableMarket: decimal("tam", { precision: 15, scale: 2 }),
+  serviceableAddressableMarket: decimal("sam", { precision: 15, scale: 2 }),
+  serviceableObtainableMarket: decimal("som", { precision: 15, scale: 2 }),
+
+  // Industry-specific metrics stored as JSON
+  metrics: jsonb("metrics").$type<{
+    arr?: number;
+    mrr?: number;
+    cac?: number;
+    ltv?: number;
+    churnRate?: number;
+    nps?: number;
+    activeUsers?: number;
+    gmv?: number;
+    processingVolume?: number;
+    [key: string]: number | undefined;
+  }>(),
+
+  // Valuation inputs and results
+  methodology: jsonb("methodology").$type<{
+    primary: {
+      method: string;
+      weight: number;
+      assumptions: Record<string, any>;
+    };
+    secondary: Array<{
+      method: string;
+      weight: number;
+      assumptions: Record<string, any>;
+    }>;
+  }>(),
+
+  // AI analysis and insights
+  aiAnalysis: jsonb("ai_analysis").$type<{
+    riskFactors: string[];
+    growthDrivers: string[];
+    competitiveAdvantages: string[];
+    recommendations: string[];
+    marketSentiment: {
+      score: number;
+      factors: string[];
+    };
+  }>(),
+
+  // Results
+  valuationRange: jsonb("valuation_range").$type<{
+    low: number;
+    base: number;
+    high: number;
+    currency: string;
+    confidence: number;
+  }>(),
+
+  // Metadata
+  status: reportStatus("status").notNull(),
+  version: integer("version").notNull().default(1),
+  isArchived: boolean("is_archived").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -260,6 +370,86 @@ export const auditTrail = pgTable("audit_trail", {
   action: auditActions("action").notNull(),
   details: jsonb("details").notNull(),
   valuationId: integer("valuation_id").references(() => valuations.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const loginAudit = pgTable("login_audit", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  status: varchar("status", { length: 20 }).notNull(), // success, failed
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  token: varchar("token", { length: 255 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add market data table for benchmarking
+export const marketData = pgTable("market_data", {
+  id: serial("id").primaryKey(),
+  industry: industryVerticals("industry").notNull(),
+  stage: valuationStages("stage").notNull(),
+  region: varchar("region", { length: 100 }).notNull(),
+  metric: varchar("metric", { length: 100 }).notNull(),
+  value: decimal("value", { precision: 15, scale: 2 }).notNull(),
+  period: varchar("period", { length: 50 }).notNull(),
+  source: varchar("source", { length: 255 }),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Add comparable companies table
+export const comparables = pgTable("comparables", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  industry: industryVerticals("industry").notNull(),
+  stage: valuationStages("stage").notNull(),
+  region: varchar("region", { length: 100 }).notNull(),
+  metrics: jsonb("metrics").$type<{
+    revenue?: number;
+    valuation?: number;
+    multiple?: number;
+    growthRate?: number;
+    margins?: number;
+    [key: string]: number | undefined;
+  }>(),
+  source: varchar("source", { length: 255 }),
+  asOf: timestamp("as_of").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Add risk assessment table
+export const riskAssessments = pgTable("risk_assessments", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").references(() => valuations.id).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  factor: varchar("factor", { length: 255 }).notNull(),
+  impact: decimal("impact", { precision: 3, scale: 2 }).notNull(),
+  likelihood: decimal("likelihood", { precision: 3, scale: 2 }).notNull(),
+  mitigationStrategy: text("mitigation_strategy"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add AI insights table
+export const aiInsights = pgTable("ai_insights", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").references(() => valuations.id).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  insight: text("insight").notNull(),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }),
+  source: jsonb("source").$type<{
+    type: string;
+    reference: string;
+    timestamp: string;
+  }>(),
+  metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -305,6 +495,20 @@ export const insertPayPerUseTransactionSchema = createInsertSchema(payPerUseTran
 export const selectPayPerUseTransactionSchema = createSelectSchema(payPerUseTransactions);
 export const insertAddonSubscriptionSchema = createInsertSchema(addonSubscriptions);
 export const selectAddonSubscriptionSchema = createSelectSchema(addonSubscriptions);
+export const insertLoginAuditSchema = createInsertSchema(loginAudit);
+export const selectLoginAuditSchema = createInsertSchema(loginAudit);
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
+export const selectPasswordResetTokenSchema = createSelectSchema(passwordResetTokens);
+
+export const insertMarketDataSchema = createInsertSchema(marketData);
+export const selectMarketDataSchema = createSelectSchema(marketData);
+export const insertComparablesSchema = createInsertSchema(comparables);
+export const selectComparablesSchema = createSelectSchema(comparables);
+export const insertRiskAssessmentSchema = createInsertSchema(riskAssessments);
+export const selectRiskAssessmentSchema = createSelectSchema(riskAssessments);
+export const insertAiInsightSchema = createInsertSchema(aiInsights);
+export const selectAiInsightSchema = createSelectSchema(aiInsights);
+
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
@@ -334,31 +538,15 @@ export type InsertPayPerUseTransaction = typeof payPerUseTransactions.$inferInse
 export type SelectPayPerUseTransaction = typeof payPerUseTransactions.$inferSelect;
 export type InsertAddonSubscription = typeof addonSubscriptions.$inferInsert;
 export type SelectAddonSubscription = typeof addonSubscriptions.$inferSelect;
-
-export const loginAudit = pgTable("login_audit", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  ipAddress: varchar("ip_address", { length: 45 }),
-  userAgent: text("user_agent"),
-  status: varchar("status", { length: 20 }).notNull(), // success, failed
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-export const passwordResetTokens = pgTable("password_reset_tokens", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  token: varchar("token", { length: 255 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertLoginAuditSchema = createInsertSchema(loginAudit);
-export const selectLoginAuditSchema = createSelectSchema(loginAudit);
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
-export const selectPasswordResetTokenSchema = createSelectSchema(passwordResetTokens);
-
 export type InsertLoginAudit = typeof loginAudit.$inferInsert;
 export type SelectLoginAudit = typeof loginAudit.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type SelectPasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertMarketData = typeof marketData.$inferInsert;
+export type SelectMarketData = typeof marketData.$inferSelect;
+export type InsertComparable = typeof comparables.$inferInsert;
+export type SelectComparable = typeof comparables.$inferSelect;
+export type InsertRiskAssessment = typeof riskAssessments.$inferInsert;
+export type SelectRiskAssessment = typeof riskAssessments.$inferSelect;
+export type InsertAiInsight = typeof aiInsights.$inferInsert;
+export type SelectAiInsight = typeof aiInsights.$inferSelect;
