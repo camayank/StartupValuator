@@ -1,0 +1,81 @@
+Prompt 7: AI-Driven Assumptions
+Objective:
+Leverage AI to auto-fill missing data, validate user inputs, and generate intelligent assumptions for valuation calculations. The focus is on minimizing user effort and improving accuracy while tailoring assumptions to industries, regions, and user-specific needs.
+
+Core AI Capabilities
+1. Auto-Filling Missing Inputs
+Dynamic Assumptions:
+Automatically suggest values based on historical data, industry averages, and regional benchmarks.
+
+Example: If a user doesn’t provide a growth rate:
+AI Suggestion: "Based on the SaaS industry and your business stage, the average growth rate is 15%."
+User Action: Accept or adjust the suggested value.
+Integrated APIs:
+Use external data sources for real-time updates:
+
+Inflation Rates: World Bank API.
+Industry Growth Averages: Crunchbase, PitchBook, or Tracxn.
+Currency Exchange Rates: XE or Open Exchange Rates API.
+2. Validation of User Inputs
+Cross-Check with Benchmarks:
+Compare inputs (e.g., revenue growth rate, margins) with industry standards.
+
+Example:
+Input: 50% operating margin for a SaaS startup.
+AI Warning: "This margin is unusually high for your industry, where the average is 25–30%. Please review."
+Real-Time Alerts:
+Flag anomalies or unrealistic data.
+
+Example: "Negative growth rates are rare for your selected business stage. Are you sure this is correct?"
+3. Tailored Assumptions
+Region-Specific Adjustments:
+
+Adjust for local economic conditions:
+India: Higher risk-free rates and inflation assumptions.
+US: Compliance with 409A and lower default risk premiums.
+Industry-Specific Factors:
+
+SaaS: Focus on ARR (Annual Recurring Revenue) and churn rate.
+E-commerce: Consider conversion rates and average order value.
+Business Stage Customization:
+
+Idea Stage: Heavier reliance on TAM and qualitative inputs.
+Growth Stage: Emphasis on revenue projections and scalability.
+4. Generating Contextual Insights
+Risk Assessment:
+
+Identify key risks based on inputs (e.g., unstable cash flow, market concentration).
+Output: "Your business faces moderate regulatory risks due to limited IP protection."
+Peer Comparisons:
+
+Highlight how the user’s business compares with industry peers.
+Example: "Your projected growth rate of 20% is above the industry average of 15%."
+AI Workflow
+Input Validation:
+
+AI validates user-provided data against industry benchmarks.
+Auto-Fill Gaps:
+
+If inputs are missing, AI suggests values using:
+Industry-specific datasets.
+Historical financial models.
+Regional economic indicators.
+Dynamic Updates:
+
+As users provide more inputs, AI refines assumptions dynamically.
+Insight Generation:
+
+AI generates comments and justifications for assumptions to enhance transparency in the report.
+Examples of AI-Driven Assumptions
+Discount Rate (WACC):
+
+Calculate using risk-free rates, industry beta, and market risk premium from regional data.
+Terminal Value Growth Rate:
+
+Suggest a range based on industry trends (e.g., 2–3% for mature SaaS companies).
+Revenue Projections:
+
+Use historical growth rates from similar businesses to forecast future revenue.
+Risk Premium:
+
+Adjust for qualitative factors like team experience and competitive differentiation.
