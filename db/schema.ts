@@ -273,3 +273,137 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   activities: many(userActivities),
   suggestions: many(workflowSuggestions),
 }));
+
+// Add new enums for workspace roles and audit actions
+export const workspaceRoles = pgEnum("workspace_role", ["owner", "admin", "member", "viewer"]);
+export const auditActions = pgEnum("audit_action", [
+  "valuation_created",
+  "valuation_updated",
+  "comment_added",
+  "member_invited",
+  "member_removed",
+  "access_changed",
+  "report_generated",
+  "compliance_check"
+]);
+
+// Workspace table
+export const workspaces = pgTable("workspaces", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  ownerId: integer("owner_id").references(() => users.id).notNull(),
+  settings: jsonb("settings").$type<{
+    defaultCurrency: string;
+    complianceFramework: string;
+    region: string;
+    customBranding?: {
+      logo?: string;
+      colors?: Record<string, string>;
+    };
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Workspace members table
+export const workspaceMembers = pgTable("workspace_members", {
+  id: serial("id").primaryKey(),
+  workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  role: workspaceRoles("role").notNull(),
+  invitedBy: integer("invited_by").references(() => users.id).notNull(),
+  invitedAt: timestamp("invited_at").defaultNow().notNull(),
+  joinedAt: timestamp("joined_at"),
+});
+
+// Valuations table
+export const valuations = pgTable("valuations", {
+  id: serial("id").primaryKey(),
+  workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
+  createdBy: integer("created_by").references(() => users.id).notNull(),
+  businessName: varchar("business_name", { length: 255 }).notNull(),
+  industry: varchar("industry", { length: 100 }).notNull(),
+  stage: varchar("stage", { length: 50 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull(),
+  framework: varchar("framework", { length: 50 }).notNull(),
+  data: jsonb("data").notNull(),
+  result: jsonb("result").notNull(),
+  status: varchar("status", { length: 20 }).notNull(), // draft, in_review, approved, archived
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Valuation comments
+export const valuationComments = pgTable("valuation_comments", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").references(() => valuations.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  comment: text("comment").notNull(),
+  context: jsonb("context").$type<{
+    section: string;
+    field?: string;
+    value?: any;
+  }>(),
+  resolved: boolean("resolved").default(false),
+  resolvedBy: integer("resolved_by").references(() => users.id),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Audit trail
+export const auditTrail = pgTable("audit_trail", {
+  id: serial("id").primaryKey(),
+  workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  action: auditActions("action").notNull(),
+  details: jsonb("details").notNull(),
+  valuationId: integer("valuation_id").references(() => valuations.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add new relation types
+export const workspaceRelations = relations(workspaces, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [workspaces.ownerId],
+    references: [users.id],
+  }),
+  members: many(workspaceMembers),
+  valuations: many(valuations),
+  auditLogs: many(auditTrail),
+}));
+
+export const valuationRelations = relations(valuations, ({ one, many }) => ({
+  workspace: one(workspaces, {
+    fields: [valuations.workspaceId],
+    references: [workspaces.id],
+  }),
+  creator: one(users, {
+    fields: [valuations.createdBy],
+    references: [users.id],
+  }),
+  comments: many(valuationComments),
+}));
+
+// Create schemas for validation
+export const insertWorkspaceSchema = createInsertSchema(workspaces);
+export const selectWorkspaceSchema = createSelectSchema(workspaces);
+export const insertWorkspaceMemberSchema = createInsertSchema(workspaceMembers);
+export const selectWorkspaceMemberSchema = createSelectSchema(workspaceMembers);
+export const insertValuationSchema = createInsertSchema(valuations);
+export const selectValuationSchema = createSelectSchema(valuations);
+export const insertValuationCommentSchema = createInsertSchema(valuationComments);
+export const selectValuationCommentSchema = createSelectSchema(valuationComments);
+export const insertAuditTrailSchema = createInsertSchema(auditTrail);
+export const selectAuditTrailSchema = createSelectSchema(auditTrail);
+
+// Export types
+export type InsertWorkspace = typeof workspaces.$inferInsert;
+export type SelectWorkspace = typeof workspaces.$inferSelect;
+export type InsertWorkspaceMember = typeof workspaceMembers.$inferInsert;
+export type SelectWorkspaceMember = typeof workspaceMembers.$inferSelect;
+export type InsertValuation = typeof valuations.$inferInsert;
+export type SelectValuation = typeof valuations.$inferSelect;
+export type InsertValuationComment = typeof valuationComments.$inferInsert;
+export type SelectValuationComment = typeof valuationComments.$inferSelect;
+export type InsertAuditTrail = typeof auditTrail.$inferInsert;
+export type SelectAuditTrail = typeof auditTrail.$inferSelect;

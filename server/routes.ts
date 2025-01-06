@@ -15,6 +15,7 @@ import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
 import { generateComplianceReport, generateComplianceChecklist } from "./services/compliance-checker";
+import workspaceRoutes from "./routes/workspace";
 
 // Define a schema for the report data
 const reportDataSchema = valuationFormSchema.extend({
@@ -42,6 +43,9 @@ export function registerRoutes(app: Express): Server {
     }
     next();
   });
+
+  // Add workspace routes
+  app.use("/api/workspaces", workspaceRoutes);
 
   // Add activity tracking endpoint
   app.post("/api/activities", async (req, res) => {
