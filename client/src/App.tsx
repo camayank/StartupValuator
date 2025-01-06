@@ -1,23 +1,33 @@
 import { Switch, Route } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Calculator } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Dashboard from "./pages/Dashboard";
-import ValuationPage from "./pages/ValuationPage";
-import { LandingPage } from "./pages/LandingPage";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useUser } from "./hooks/use-user";
+import AuthPage from "./pages/AuthPage";
+import ValuationWizard from "./pages/ValuationWizard";
+import DashboardLayout from "./layouts/DashboardLayout";
 
 function App() {
+  const { user, isLoading } = useUser();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <main>
-        <Switch>
-          <Route path="/" component={LandingPage} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/valuation/new" component={ValuationPage} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
-    </div>
+    <DashboardLayout>
+      <Switch>
+        <Route path="/" component={ValuationWizard} />
+        <Route component={NotFound} />
+      </Switch>
+    </DashboardLayout>
   );
 }
 
@@ -35,9 +45,6 @@ function NotFound() {
           <p className="mt-4 text-sm text-gray-600">
             The page you're looking for doesn't exist.
           </p>
-          <Button variant="link" className="mt-4 p-0" onClick={() => window.location.href = "/"}>
-            Return to Home
-          </Button>
         </CardContent>
       </Card>
     </div>
