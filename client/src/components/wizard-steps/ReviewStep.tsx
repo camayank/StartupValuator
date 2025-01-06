@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ValuationReport } from "@/components/ValuationReport";
+import { ValuationDashboard } from "@/components/dashboards/ValuationDashboard";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -21,6 +22,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [valuationData, setValuationData] = useState<any>(null);
   const isFundraising = data.valuationPurpose === 'fundraising';
 
   // Strict validation logic for all required fields
@@ -45,7 +47,6 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         .filter(([_, value]) => !value)
         .map(([key]) => key);
 
-      console.log('Missing or invalid fields:', missingFields);
       toast({
         title: "Missing Required Fields",
         description: `Please fill in all required fields: ${missingFields.join(', ')}`,
@@ -77,7 +78,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         throw new Error(`Valuation failed: ${await valuationResponse.text()}`);
       }
 
-      const valuationData = await valuationResponse.json();
+      const valuationResult = await valuationResponse.json();
 
       // Generate AI insights
       const insightsResponse = await fetch('/api/valuation/insights', {
@@ -85,7 +86,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...data, ...valuationData }),
+        body: JSON.stringify({ ...data, ...valuationResult }),
       });
 
       if (!insightsResponse.ok) {
@@ -94,12 +95,15 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
 
       const insightsData = await insightsResponse.json();
 
-      // Combine all data and show the report
+      // Combine all data
       const completeData = {
         ...data,
-        ...valuationData,
+        ...valuationResult,
         ...insightsData,
       };
+
+      // Store valuation data for the dashboard
+      setValuationData(completeData);
 
       // Update the form data with the complete information
       onUpdate(completeData);
@@ -131,8 +135,19 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   const selectedStage = data.stage ? businessStages[data.stage] : null;
   const selectedRegion = data.region ? regions[data.region] : null;
 
-  if (showReport && isValidData(data)) {
-    return <ValuationReport data={data} />;
+  if (showReport && isValidData(data) && valuationData) {
+    return (
+      <div className="space-y-8">
+        <ValuationDashboard 
+          valuation={valuationData.valuation}
+          currency={data.currency}
+          marketSentiment={valuationData.marketSentiment}
+          industry={selectedIndustry || ""}
+          region={selectedRegion?.name || ""}
+        />
+        <ValuationReport data={valuationData} />
+      </div>
+    );
   }
 
   return (
