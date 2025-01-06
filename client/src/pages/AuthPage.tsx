@@ -10,13 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, AlertCircle } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AuthPage() {
-  const [searchParams] = new URLSearchParams(window.location.search);
+  const searchParams = new URLSearchParams(window.location.search);
   const defaultMode = searchParams.get('mode') === 'signup' ? false : true;
   const [isLogin, setIsLogin] = useState(defaultMode);
   const [username, setUsername] = useState("");
@@ -62,8 +62,11 @@ export default function AuthPage() {
       toast({
         title: isLogin ? "Login Successful" : "Registration Successful",
         description: isLogin ? "Welcome back!" : "Your account has been created.",
-        variant: "success",
       });
+      // Redirect after successful auth
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -81,16 +84,18 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <style jsx global>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        .shake {
-          animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-        }
-      `}</style>
+      <style>
+        {`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+          }
+          .shake {
+            animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+          }
+        `}
+      </style>
       <AnimatePresence mode="wait">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
