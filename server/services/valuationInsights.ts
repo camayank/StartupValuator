@@ -6,6 +6,33 @@ import { db } from "@db";
 import { valuations, userActivities } from "@db/schema";
 import { eq } from "drizzle-orm";
 
+// Define the market sentiment interface
+interface MarketSentiment {
+  overallScore: number;
+  insights: string[];
+  riskFactors: string[];
+  opportunities: string[];
+  marketGrowthRate?: number;
+  marketPenetration?: number;
+  totalAddressableMarket?: number;
+  competitionIntensity?: number;
+  peerComparison?: {
+    companies: Array<{
+      name: string;
+      similarity: number;
+      metrics: Record<string, number>;
+    }>;
+    averages: {
+      revenueMultiple?: number;
+      growthRate?: number;
+      margins?: number;
+      marketShare?: number;
+      cac?: number;
+      ltv?: number;
+    };
+  };
+}
+
 export interface ValuationInsights {
   financialAssumptions: FinancialAssumptions;
   warnings: string[];
@@ -44,7 +71,7 @@ export interface ValuationInsights {
 
 export async function generateValuationInsights(data: ValuationFormData): Promise<ValuationInsights> {
   // Get market sentiment data with enhanced caching
-  const sentiment = await getCachedMarketSentiment(data);
+  const sentiment = await getCachedMarketSentiment(data) as MarketSentiment;
 
   // Validate and adjust assumptions with AI
   const { assumptions, warnings } = validateAndAdjustAssumptions(data);
@@ -99,25 +126,24 @@ export async function generateValuationInsights(data: ValuationFormData): Promis
     industryAverages: {
       revenueMultiple: sentiment.peerComparison?.averages.revenueMultiple ?? 0,
       growthRate: sentiment.peerComparison?.averages.growthRate ?? 0,
-      margins: sentiment.peerComparison?.averages.margins ?? 0,
-      marketShare: sentiment.peerComparison?.averages.marketShare ?? 0,
-      customerAcquisitionCost: sentiment.peerComparison?.averages.cac ?? 0,
-      lifetimeValue: sentiment.peerComparison?.averages.ltv ?? 0
+      margins: sentiment.peerComparison?.averages.margins ?? 0
     }
   };
 
   // Track insights generation for continuous improvement
-  await db.insert(userActivities).values({
-    userId: data.userId,
-    activityType: "valuation_completed",
-    metadata: {
-      industry: data.industry,
-      stage: data.stage,
-      aiMetrics: aiMetrics,
-      warnings: warnings.length,
-      complianceStatus: compliance.requirements.every(r => r.status === 'pass')
-    }
-  });
+  if (data.userId) {
+    await db.insert(userActivities).values({
+      activityType: "valuation_completed",
+      userId: data.userId,
+      metadata: {
+        industry: data.industry,
+        stage: data.stage,
+        aiMetrics: aiMetrics,
+        warnings: warnings.length,
+        complianceStatus: compliance.requirements.every(r => r.status === 'pass')
+      }
+    });
+  }
 
   return {
     financialAssumptions: assumptions,
@@ -136,8 +162,7 @@ export async function generateValuationInsights(data: ValuationFormData): Promis
 }
 
 // Helper functions for AI-enhanced metrics
-
-function calculateGrowthPotential(data: ValuationFormData, sentiment: any): number {
+function calculateGrowthPotential(data: ValuationFormData, sentiment: MarketSentiment): number {
   const baseGrowth = data.growthRate || 0;
   const marketGrowth = sentiment.marketGrowthRate || 0;
   const penetration = sentiment.marketPenetration || 0;
@@ -149,7 +174,7 @@ function calculateGrowthPotential(data: ValuationFormData, sentiment: any): numb
   ));
 }
 
-function assessMarketFit(data: ValuationFormData, sentiment: any): number {
+function assessMarketFit(data: ValuationFormData, sentiment: MarketSentiment): number {
   const marketSize = sentiment.totalAddressableMarket || 0;
   const competition = sentiment.competitionIntensity || 0;
   const productReadiness = data.productStage === 'launched' ? 1 : 0.5;
@@ -185,7 +210,11 @@ function calculateExecutionRisk(data: ValuationFormData): number {
   return Math.min(1, risks / 5);
 }
 
-function enrichPeerAnalysis(companies: any[]): Array<{
+function enrichPeerAnalysis(companies: Array<{
+  name: string;
+  similarity: number;
+  metrics: Record<string, number>;
+}>): Array<{
   name: string;
   similarity: number;
   metrics: Record<string, number>;

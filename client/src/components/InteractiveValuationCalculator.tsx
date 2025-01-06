@@ -106,7 +106,6 @@ export function InteractiveValuationCalculator() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [highContrast, setHighContrast] = useState(() => {
-    // Check if the user has previously set a preference
     const stored = localStorage.getItem('highContrast');
     return stored ? JSON.parse(stored) : false;
   });

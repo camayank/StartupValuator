@@ -1,26 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { WorkflowSuggestionEngine } from "./services/workflowSuggestion";
-import { ActivityTracker } from "./services/activityTracker";
-import { userProfiles, workspaces, workspaceMembers, valuations, auditTrail } from "@db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { auditTrail, userActivities, workspaces } from "@db/schema";
 import { valuationFormSchema } from "../client/src/lib/validations";
-import { generatePdfReport } from "./lib/report";
 import { calculateValuation } from "./lib/valuation";
 import { setupCache } from "./lib/cache";
 import { z } from "zod";
-import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/ai-personalization";
-import { Parser } from "json2csv";
-import * as XLSX from 'xlsx';
-import { setupAuth } from "./auth";
-import { generateComplianceReport, generateComplianceChecklist } from "./services/compliance-checker";
-import workspaceRoutes from "./routes/workspace";
-import { frameworks, type FrameworkId, validateFrameworkCompliance, applyFrameworkAdjustments } from "./lib/compliance/frameworks";
-import { generateValuationInsights } from "./services/valuationInsights";
 import rateLimit from 'express-rate-limit';
-import errorMonitorMiddleware from "./lib/errorMonitor";
-import { setupLoadTesting } from "./lib/loadTesting";
 
 // Rate limiting configuration
 const apiLimiter = rateLimit({
@@ -45,44 +31,14 @@ const createWorkspaceSchema = z.object({
   }),
 });
 
-const addWorkspaceMemberSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(["admin", "member", "viewer"]),
-});
-
 export function registerRoutes(app: Express): Server {
-  const cache = setupCache();
-
   // Apply rate limiting to API routes
   app.use("/api/", apiLimiter);
-
-  // Set up authentication routes
-  setupAuth(app);
-
-  // Activity tracking middleware with enhanced error handling
-  app.use((req, res, next) => {
-    if (req.isAuthenticated() && req.user) {
-      ActivityTracker.trackActivity(req.user.id, "page_view", req)
-        .catch(error => {
-          console.error("Activity tracking failed:", error);
-          // Continue processing despite tracking failure
-        });
-    }
-    next();
-  });
-
-  // Add workspace routes
-  app.use("/api/workspaces", workspaceRoutes);
 
   // Health check endpoint for load balancers
   app.get("/api/health", (req, res) => {
     res.json({ status: "healthy", timestamp: new Date().toISOString() });
   });
-
-  // Load testing endpoints (only in development)
-  if (process.env.NODE_ENV === "development") {
-    setupLoadTesting(app);
-  }
 
   // Workspace Management Routes
   app.post("/api/workspaces", async (req, res, next) => {
@@ -103,6 +59,7 @@ export function registerRoutes(app: Express): Server {
         userId: req.user!.id,
         action: "workspace_created",
         details: { workspace },
+        valuationId: null,
       });
 
       res.json(workspace);
@@ -133,8 +90,8 @@ export function registerRoutes(app: Express): Server {
       // Apply regional adjustments (e.g., PPP-based pricing)
       const regionalPricing = adjustPricingForRegion(basePricing, region);
 
-      // Cache the result for 1 hour
-      cache.set(cacheKey, regionalPricing, 3600);
+      // Cache the result
+      cache.set(cacheKey, regionalPricing);
 
       res.json(regionalPricing);
     } catch (error) {
@@ -158,24 +115,28 @@ export function registerRoutes(app: Express): Server {
         return res.json(cachedResult);
       }
 
-      const insights = await generateValuationInsights(validatedData);
       const baseValuation = await calculateValuation(validatedData);
       const frameworkId = validatedData.region.toLowerCase() === 'us' ? '409a' :
-                         validatedData.region.toLowerCase() === 'india' ? 'icai' : 'ivs';
-
-      const framework = frameworks[frameworkId];
-      const adjustedValuation = applyFrameworkAdjustments(framework, baseValuation.valuation);
+                       validatedData.region.toLowerCase() === 'india' ? 'icai' : 'ivs';
 
       const result = {
         ...baseValuation,
-        valuation: adjustedValuation,
-        insights
       };
 
       cache.set(cacheKey, result);
 
       // Track usage for billing
-      await trackValuationUsage(req.user!.id, result);
+      await db.insert(userActivities).values({
+        userId: req.user!.id,
+        activityType: "valuation_completed",
+        path: req.path,
+        metadata: {
+          industry: validatedData.industry,
+          stage: validatedData.stage,
+          success: true,
+        },
+        sessionId: req.sessionID,
+      });
 
       res.json(result);
     } catch (error) {
@@ -183,122 +144,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Add activity tracking endpoint
-  app.post("/api/activities", async (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      await ActivityTracker.trackActivity(
-        req.user!.id,
-        req.body.activityType,
-        req,
-        req.body.metadata
-      );
-      res.json({ success: true });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Export routes with improved error handling and logging
-  app.post("/api/export/:format", async (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      const { format } = req.params;
-      const data = req.body;
-
-      let result;
-      let contentType;
-      let fileName;
-
-      switch (format) {
-        case "pdf":
-          result = await generatePdfReport(data);
-          contentType = "application/pdf";
-          fileName = "valuation-report.pdf";
-          break;
-        case "xlsx":
-          const wb = XLSX.utils.book_new();
-          const ws = XLSX.utils.json_to_sheet([data]);
-          XLSX.utils.book_append_sheet(wb, ws, "Valuation Summary");
-          result = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
-          contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-          fileName = "valuation-report.xlsx";
-          break;
-        case "csv":
-          const parser = new Parser({ fields: Object.keys(data) });
-          result = parser.parse([data]);
-          contentType = "text/csv";
-          fileName = "valuation-report.csv";
-          break;
-        default:
-          return res.status(400).json({ message: "Unsupported export format" });
-      }
-
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-      res.send(result);
-
-      // Track export for usage analytics
-      await ActivityTracker.trackActivity(req.user!.id, "report_exported", req, {
-        format,
-        reportType: "valuation",
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Workflow suggestion routes (unchanged)
-  app.get("/api/suggestions", async (req, res, next) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      await WorkflowSuggestionEngine.generateSuggestions(req.user!.id);
-      const suggestions = await WorkflowSuggestionEngine.getUserSuggestions(req.user!.id);
-      res.json(suggestions);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-
-  // Compliance checking routes (unchanged)
-  app.post("/api/compliance/check", async (req, res, next) => {
-    try {
-      const report = await generateComplianceReport(req.body);
-      res.json(report);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.post("/api/compliance/checklist", async (req, res, next) => {
-    try {
-      const { industry, region } = req.body;
-      const checklist = await generateComplianceChecklist(industry, region);
-      res.json(checklist);
-    } catch (error) {
-      next(error);
-    }
-  });
-
   const httpServer = createServer(app);
-
-  // Error handling middleware - must be after all routes
-  app.use(errorMonitorMiddleware);
-
-  // Monitor server errors
-  httpServer.on('error', (error) => {
-    console.error('Server error:', error);
-  });
 
   return httpServer;
 }
@@ -324,19 +170,6 @@ function adjustPricingForRegion(basePricing: any, region: string) {
     };
     return acc;
   }, {});
-}
-
-// Helper function to track valuation usage for billing
-async function trackValuationUsage(userId: number, result: any) {
-  try {
-    await ActivityTracker.trackActivity(userId, "valuation_completed", null, {
-      valuationAmount: result.valuation,
-      industry: result.industry,
-      complexity: calculateComplexity(result),
-    });
-  } catch (error) {
-    console.error("Failed to track valuation usage:", error);
-  }
 }
 
 function calculateComplexity(result: any): "low" | "medium" | "high" {
