@@ -1,7 +1,9 @@
 import type { ValuationFormData } from "../../client/src/lib/validations";
 import { industries, businessStages } from "../../client/src/lib/validations";
 import { calculateFinancialAssumptions } from "./financialAssumptions";
+import { getCachedMarketSentiment } from "./marketSentiment";
 import type { FinancialAssumptions } from "./financialAssumptions";
+import type { MarketSentiment } from "./marketSentiment";
 
 interface CurrencyRates {
   USD: number;
@@ -23,6 +25,9 @@ const EXCHANGE_RATES: CurrencyRates = {
 export async function calculateValuation(params: ValuationFormData) {
   const { currency, stage, industry, revenue } = params;
 
+  // Get market sentiment analysis
+  const marketSentiment = await getCachedMarketSentiment(params);
+
   // Generate financial assumptions first
   const assumptions = calculateFinancialAssumptions(params);
 
@@ -33,7 +38,7 @@ export async function calculateValuation(params: ValuationFormData) {
   // Calculate valuations using different methods with enhanced assumptions
   const dcfAnalysis = calculateDCF(paramsUSD, assumptions);
   const comparablesAnalysis = calculateComparables(paramsUSD, assumptions);
-  const riskAdjustedAnalysis = calculateRiskAdjustedValuation(paramsUSD, assumptions);
+  const riskAdjustedAnalysis = calculateRiskAdjustedValuation(paramsUSD, assumptions, marketSentiment);
 
   // Determine method weights based on stage and data quality
   const weights = determineMethodWeights(stage, industry, assumptions);
@@ -45,15 +50,9 @@ export async function calculateValuation(params: ValuationFormData) {
     riskAdjustedAnalysis.value * weights.riskAdjusted
   );
 
-  // Calculate confidence score based on data quality and assumptions reliability
-  const confidenceScore = calculateConfidenceScore(params, assumptions);
-
-  // Enhanced scenario analysis using Monte Carlo simulation
-  const scenarios = generateScenarioAnalysis(params, finalValuationUSD, assumptions);
-
   // Calculate market sentiment adjustment
-  const marketSentimentAdjustment = calculateMarketSentimentAdjustment(industry, stage);
-  const adjustedValuationUSD = finalValuationUSD * marketSentimentAdjustment;
+  const sentimentAdjustment = calculateMarketSentimentAdjustment(marketSentiment);
+  const adjustedValuationUSD = finalValuationUSD * sentimentAdjustment;
 
   // Convert back to requested currency
   const finalValuation = adjustedValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
@@ -65,9 +64,9 @@ export async function calculateValuation(params: ValuationFormData) {
       dcfWeight: weights.dcf,
       comparablesWeight: weights.comparables,
       riskAdjustedWeight: weights.riskAdjusted,
-      marketSentimentAdjustment,
+      sentimentAdjustment,
     },
-    confidenceScore,
+    marketSentiment,
     details: {
       baseValuation: finalValuationUSD,
       methods: {
@@ -75,16 +74,11 @@ export async function calculateValuation(params: ValuationFormData) {
         comparables: comparablesAnalysis,
         riskAdjusted: riskAdjustedAnalysis,
       },
-      scenarios,
+      scenarios: generateScenarioAnalysis(params, finalValuationUSD, assumptions),
       sensitivityAnalysis: performSensitivityAnalysis(params, finalValuationUSD),
       industryMetrics: getIndustryMetrics(industry, stage),
     },
     assumptions,
-    marketAnalysis: {
-      sentiment: calculateMarketSentiment(industry),
-      trends: getIndustryTrends(industry),
-      growthPotential: assessGrowthPotential(params),
-    },
   };
 }
 
@@ -125,17 +119,18 @@ function determineMethodWeights(
 
 function calculateRiskAdjustedValuation(
   params: ValuationFormData,
-  assumptions: FinancialAssumptions
+  assumptions: FinancialAssumptions,
+  marketSentiment: MarketSentiment
 ): { value: number; riskFactors: Record<string, number> } {
   const baseValue = (params.revenue || 0) * assumptions.industryMultiple;
 
-  // Calculate various risk factors
+  // Calculate various risk factors including market sentiment
   const riskFactors = {
-    marketRisk: calculateMarketRisk(params),
+    marketRisk: calculateMarketRisk(params, marketSentiment),
     executionRisk: calculateExecutionRisk(params),
-    competitiveRisk: calculateCompetitiveRisk(params),
+    competitiveRisk: calculateCompetitiveRisk(params, marketSentiment),
     financialRisk: calculateFinancialRisk(params),
-    regulatoryRisk: calculateRegulatoryRisk(params.industry),
+    regulatoryRisk: calculateRegulatoryRisk(params.industry, marketSentiment),
   };
 
   // Apply risk adjustments
@@ -147,9 +142,8 @@ function calculateRiskAdjustedValuation(
   };
 }
 
-function calculateMarketRisk(params: ValuationFormData): number {
-  // Implementation of market risk calculation based on industry trends and market size
-  return 0.9; // Example: 10% risk reduction
+function calculateMarketRisk(params: ValuationFormData, sentiment: MarketSentiment): number {
+  return 0.7 + (sentiment.sentimentByFactor.marketConditions * 0.3);
 }
 
 function calculateExecutionRisk(params: ValuationFormData): number {
@@ -157,9 +151,8 @@ function calculateExecutionRisk(params: ValuationFormData): number {
   return 0.95; // Example: 5% risk reduction
 }
 
-function calculateCompetitiveRisk(params: ValuationFormData): number {
-  // Implementation of competitive risk based on market position and barriers to entry
-  return 0.93; // Example: 7% risk reduction
+function calculateCompetitiveRisk(params: ValuationFormData, sentiment: MarketSentiment): number {
+  return 0.7 + (sentiment.sentimentByFactor.competitiveLandscape * 0.3);
 }
 
 function calculateFinancialRisk(params: ValuationFormData): number {
@@ -167,14 +160,26 @@ function calculateFinancialRisk(params: ValuationFormData): number {
   return 0.92; // Example: 8% risk reduction
 }
 
-function calculateRegulatoryRisk(industry: string): number {
-  // Implementation of regulatory risk based on industry compliance requirements
-  return 0.94; // Example: 6% risk reduction
+function calculateRegulatoryRisk(industry: string, sentiment: MarketSentiment): number {
+  return 0.7 + (sentiment.sentimentByFactor.regulatoryEnvironment * 0.3);
 }
 
-function calculateMarketSentimentAdjustment(industry: string, stage: string): number {
-  // Implementation of market sentiment adjustment based on current market conditions
-  return 1.05; // Example: 5% positive adjustment
+function calculateMarketSentimentAdjustment(sentiment: MarketSentiment): number {
+  // Calculate weighted sentiment adjustment
+  const weights = {
+    marketConditions: 0.3,
+    industryTrends: 0.3,
+    competitiveLandscape: 0.2,
+    regulatoryEnvironment: 0.2,
+  };
+
+  const weightedScore = Object.entries(sentiment.sentimentByFactor).reduce(
+    (acc, [factor, score]) => acc + score * weights[factor as keyof typeof weights],
+    0
+  );
+
+  // Transform sentiment score to an adjustment factor (0.8 to 1.2 range)
+  return 0.8 + (weightedScore * 0.4);
 }
 
 function calculateMarketSentiment(industry: string): {
@@ -326,12 +331,12 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
 
   // Enhanced industry-specific multiples based on comprehensive market data
   const baseMultiples = {
-    technology: { 
+    technology: {
       revenue: { min: 3, median: 5, max: 8 },
       ebitda: { min: 12, median: 15, max: 20 },
       ebit: { min: 10, median: 13, max: 18 }
     },
-    digital: { 
+    digital: {
       revenue: { min: 2, median: 4, max: 6 },
       ebitda: { min: 10, median: 12, max: 16 },
       ebit: { min: 8, median: 10, max: 14 }
@@ -433,7 +438,7 @@ function generateScenarioAnalysis(
   };
 
   // Calculate probability-weighted expected value
-  const expectedValue = 
+  const expectedValue =
     worst.value * worst.probability +
     base.value * base.probability +
     best.value * best.probability;
