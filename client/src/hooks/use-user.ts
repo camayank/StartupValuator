@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SelectUser } from "@db/schema";
 
+type LoginData = {
+  username: string;
+  password: string;
+};
+
+type RegisterData = LoginData & {
+  email: string;
+  role: "startup" | "investor" | "valuer" | "consultant";
+};
+
 type RequestResult = {
   ok: true;
 } | {
@@ -66,6 +76,27 @@ export function useUser() {
     retry: false
   });
 
+  const loginMutation = useMutation<RequestResult, Error, LoginData>({
+    mutationFn: (userData) => handleRequest('/api/login', 'POST', userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
+  const logoutMutation = useMutation<RequestResult, Error>({
+    mutationFn: () => handleRequest('/api/logout', 'POST'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
+  const registerMutation = useMutation<RequestResult, Error, RegisterData>({
+    mutationFn: (userData) => handleRequest('/api/register', 'POST', userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
   const upgradePlanMutation = useMutation<RequestResult, Error, { planId: number }>({
     mutationFn: (data) => handleRequest('/api/subscription/upgrade', 'POST', data),
     onSuccess: () => {
@@ -84,6 +115,9 @@ export function useUser() {
     user,
     isLoading,
     error,
+    login: loginMutation.mutateAsync,
+    logout: logoutMutation.mutateAsync,
+    register: registerMutation.mutateAsync,
     upgradePlan: upgradePlanMutation.mutateAsync,
     cancelSubscription: cancelSubscriptionMutation.mutateAsync,
   };

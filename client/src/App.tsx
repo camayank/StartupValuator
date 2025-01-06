@@ -32,6 +32,7 @@ import type { ValuationFormData } from "@/lib/validations";
 import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
+import AuthPage from "./pages/AuthPage";
 
 const baseNavItems = [
   { href: "/", label: "Valuation", description: "Calculate your startup's value", tourId: "valuation", feature: "valuation" },
@@ -74,6 +75,19 @@ function App() {
   const mainNavItems = baseNavItems.filter(item => hasPermission(item.feature));
   const toolsNavItems = userRole ? roleSpecificNavItems[userRole as keyof typeof roleSpecificNavItems].filter(item => hasPermission(item.feature)) : [];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Redirect to auth page if not logged in
+  if (!user) {
+    return <AuthPage />;
+  }
+
   const handleValuationSubmit = async (data: ValuationFormData) => {
     try {
       const response = await fetch('/api/valuation', {
@@ -96,14 +110,6 @@ function App() {
       throw error;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   const NavItem = ({ href, label, description, tourId }: { href: string; label: string; description: string; tourId?: string }) => (
     <Tooltip>
