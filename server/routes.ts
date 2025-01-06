@@ -1,21 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { calculateValuation } from "./lib/valuation";
-import { generatePdfReport } from "./lib/report";
-import { assessStartupRisk } from "./lib/riskAssessment";
-import { predictStartupPotential } from "./lib/potentialPredictor";
-import { generateEcosystemNetwork } from "./lib/ecosystemNetwork";
-import { analyzePitchDeck } from "./lib/pitchDeckAnalyzer";
-import { setupCache } from "./lib/cache";
-import { generateChatResponse } from "./lib/chatbot";
 import { db } from "@db";
-import { founderProfiles, users } from "@db/schema";
+import { founderProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
-import { calculateFinancialAssumptions, validateRegionCompliance } from "./lib/financialAssumptions";
-import XLSX from "xlsx";
-import { Parser } from "json2csv";
-import pdfMake from "pdfmake";
+import { generatePdfReport } from "./lib/report";
+import { calculateValuation } from "./lib/valuation";
+import { setupCache } from "./lib/cache";
 import { z } from "zod";
 
 // Define a schema for the report data
@@ -28,122 +19,24 @@ const reportDataSchema = valuationFormSchema.extend({
       companySpecific: z.number(),
       industryTrends: z.number(),
     }).optional(),
-    assumptions: z.object({
-      growthProjections: z.array(z.number()),
-      riskFactors: z.array(z.string()),
-      marketSize: z.number(),
-    }).optional(),
   }).optional().default({}),
-  riskAssessment: z.any().optional(),
-  potentialPrediction: z.any().optional(),
-  ecosystemNetwork: z.any().optional(),
 });
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
 
-  // Enhanced valuation route with proper validation
-  app.post("/api/valuation", async (req, res) => {
-    try {
-      // Validate request body against our schema
-      const validatedData = valuationFormSchema.parse(req.body);
-
-      const { revenue, growthRate, margins, industry, stage, currency, ...qualitativeFactors } = validatedData;
-      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}-${currency}`;
-
-      const cachedResult = cache.get(cacheKey);
-      if (cachedResult) {
-        return res.json(cachedResult);
-      }
-
-      // Calculate financial assumptions with regional compliance
-      const assumptions = calculateFinancialAssumptions(validatedData);
-      const compliance = validateRegionCompliance(assumptions, validatedData);
-
-      // Apply any necessary compliance adjustments
-      const finalAssumptions = compliance.isCompliant
-        ? assumptions
-        : { ...assumptions, ...compliance.adjustments };
-
-      // Calculate base valuation using adjusted assumptions
-      const valuationResult = await calculateValuation({
-        ...validatedData,
-        assumptions: finalAssumptions,
-      });
-
-      // Try to enhance with AI features, but continue if they fail
-      let riskAssessment = null;
-      let potentialPrediction = null;
-      let ecosystemNetwork = null;
-
-      try {
-        [riskAssessment, potentialPrediction, ecosystemNetwork] = await Promise.allSettled([
-          assessStartupRisk(validatedData),
-          predictStartupPotential(validatedData),
-          generateEcosystemNetwork(validatedData),
-        ]).then(results => results.map(result =>
-          result.status === 'fulfilled' ? result.value : null
-        ));
-      } catch (error) {
-        console.error('AI enhancement features failed:', error);
-        // Continue without AI enhancements
-      }
-
-      const result = {
-        ...valuationResult,
-        assumptions: finalAssumptions,
-        compliance: {
-          isCompliant: compliance.isCompliant,
-          reasons: compliance.reasons,
-        },
-        ...(riskAssessment && { riskAssessment }),
-        ...(potentialPrediction && { potentialPrediction }),
-        ...(ecosystemNetwork && { ecosystemNetwork }),
-      };
-
-      cache.set(cacheKey, result);
-      res.json(result);
-    } catch (error) {
-      console.error('Valuation calculation failed:', error);
-
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Validation failed',
-          errors: error.errors,
-        });
-      }
-
-      res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
-      });
-    }
-  });
-
-  // Enhanced report generation route
+  // Enhanced report generation route with better error handling
   app.post("/api/report", async (req, res) => {
     try {
-      const data = req.body;
+      console.log('Received report generation request:', JSON.stringify(req.body, null, 2));
 
-      // Validate and transform the data with the report schema
-      const validatedData = reportDataSchema.parse({
-        ...data,
-        details: {
-          adjustments: {
-            marketConditions: 1.0,
-            companySpecific: 1.0,
-            industryTrends: 1.0,
-          },
-          assumptions: {
-            growthProjections: [data.growthRate],
-            riskFactors: [],
-            marketSize: 0,
-          },
-          ...data.details,
-        },
-      });
+      // Validate request data
+      const validatedData = reportDataSchema.parse(req.body);
+      console.log('Validated data:', JSON.stringify(validatedData, null, 2));
 
-      // Generate PDF report with the validated data
+      // Generate PDF report
       const pdfBuffer = await generatePdfReport(validatedData);
+      console.log('PDF buffer generated successfully');
 
       // Set appropriate headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
@@ -165,37 +58,50 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Chatbot endpoint for financial advice
-  app.post("/api/chat", async (req, res) => {
+  // Enhanced valuation route with proper validation
+  app.post("/api/valuation", async (req, res) => {
     try {
-      const { message, context } = req.body;
+      // Validate request body against our schema
+      const validatedData = valuationFormSchema.parse(req.body);
+      const { revenue, growthRate, margins, industry, stage } = validatedData;
 
-      if (!message || typeof message !== 'string') {
+      // Create a cache key from the important parameters
+      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}`;
+
+      // Check cache first
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return res.json(cachedResult);
+      }
+
+      // Calculate valuation if not in cache
+      const result = await calculateValuation(validatedData);
+
+      // Cache the result
+      cache.set(cacheKey, result);
+      res.json(result);
+    } catch (error) {
+      console.error('Valuation calculation failed:', error);
+
+      if (error instanceof z.ZodError) {
         return res.status(400).json({
-          message: 'Invalid request. Message is required and must be a string.',
+          message: 'Validation failed',
+          errors: error.errors,
         });
       }
 
-      const response = await generateChatResponse(message, context);
-      res.json(response);
-    } catch (error) {
-      console.error('Chat generation failed:', error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to generate chat response'
+        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
       });
     }
   });
 
-
-  // New founder profile routes
+  // Founder profile routes
   app.get("/api/profile/:userId", async (req, res) => {
     try {
       const { userId } = req.params;
       const profile = await db.query.founderProfiles.findFirst({
         where: eq(founderProfiles.userId, parseInt(userId)),
-        with: {
-          user: true,
-        },
       });
 
       if (!profile) {

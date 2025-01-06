@@ -1,5 +1,16 @@
-export function setupCache() {
-  const cache = new Map<string, any>();
+interface CacheItem<T> {
+  value: T;
+  timestamp: number;
+}
+
+interface Cache {
+  get: (key: string) => any | null;
+  set: (key: string, value: any) => void;
+  clear: () => void;
+}
+
+export function setupCache(): Cache {
+  const cache = new Map<string, CacheItem<any>>();
   const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
   return {
