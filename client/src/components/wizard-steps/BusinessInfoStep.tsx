@@ -45,11 +45,14 @@ const complianceStandards = {
   "ibbi": "IBBI Guidelines",
   "mca": "MCA Regulations",
   "none": "No Specific Standard"
-};
+} as const;
+
+type ComplianceStandard = keyof typeof complianceStandards;
 
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<keyof typeof sectors>(data.sector || "technology");
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
@@ -59,7 +62,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       industry: data.industry || "",
       stage: data.stage || "ideation_unvalidated",
       region: data.region || "us",
-      complianceStandard: data.complianceStandard || "none",
+      complianceStandard: (data.complianceStandard as ComplianceStandard) || "none",
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
       intellectualProperty: data.intellectualProperty || "none",
@@ -125,6 +128,56 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       <TooltipProvider>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Basic Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Basic Information</h3>
+
+              <FormField
+                control={form.control}
+                name="businessName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter your business name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="valuationPurpose"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Purpose of Valuation</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Show advanced fields for certain purposes
+                        setShowAdvanced(value === 'fundraising' || value === 'acquisition');
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select purpose" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(valuationPurposes).map(([key, name]) => (
+                          <SelectItem key={key} value={key}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+
             <motion.div
               className="grid md:grid-cols-2 gap-6"
               initial={{ opacity: 0 }}
@@ -558,6 +611,19 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 />
               </div>
             </motion.div>
+
+            {/* Advanced Fields (shown conditionally) */}
+            {showAdvanced && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
+              >
+                <h3 className="text-lg font-semibold">Advanced Information</h3>
+                {/* Advanced fields here */}
+              </motion.div>
+            )}
 
             <motion.div
               initial={{ opacity: 0 }}
