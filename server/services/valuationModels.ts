@@ -9,6 +9,18 @@ interface ValuationResult {
     growthRate: Record<string, number>;
     discountRate: Record<string, number>;
   };
+  monteCarloAnalysis?: {
+    confidenceIntervals: {
+      p90: { lower: number; upper: number };
+      p50: { lower: number; upper: number };
+    };
+    iterations: number;
+  };
+  scenarioAnalysis?: {
+    best: { value: number; assumptions: Record<string, any> };
+    base: { value: number; assumptions: Record<string, any> };
+    worst: { value: number; assumptions: Record<string, any> };
+  };
   details: {
     dcf?: DCFDetails;
     marketMultiples?: MarketMultiplesDetails;
@@ -98,6 +110,12 @@ export async function calculateValuation(
   // Add sensitivity analysis
   valuation.sensitivityAnalysis = generateSensitivityAnalysis(data, assumptions, method);
 
+  // Add Monte Carlo simulation results
+  valuation.monteCarloAnalysis = await performMonteCarloSimulation(data, assumptions, method);
+
+  // Add scenario analysis
+  valuation.scenarioAnalysis = generateScenarioAnalysis(data, assumptions, method);
+
   return valuation;
 }
 
@@ -105,7 +123,7 @@ function determineValuationMethod(data: ValuationFormData): string {
   const { stage, sector } = data;
 
   // Use Real Options for R&D-heavy or expansion-focused companies
-  if (data.stage === 'early_revenue' && 
+  if (data.stage === 'early_revenue' &&
       ['technology', 'biotech', 'healthcare'].includes(sector)) {
     return 'realOptions';
   }
@@ -116,7 +134,7 @@ function determineValuationMethod(data: ValuationFormData): string {
   }
 
   // Use DCF for high-growth companies with predictable cash flows
-  if (['growth', 'scaling'].includes(stage) && 
+  if (['growth', 'scaling'].includes(stage) &&
       ['technology', 'saas', 'enterprise'].includes(sector)) {
     return 'dcf';
   }
@@ -144,7 +162,7 @@ async function calculateDCFValuation(
   // Calculate projected cash flows
   for (let year = 1; year <= projectionYears; year++) {
     const revenue = data.revenue * Math.pow(1 + (assumptions.growthRate / 100), year);
-    const operatingMargin = data.margins || assumptions.industryDataQuality ? 
+    const operatingMargin = data.margins || assumptions.industryDataQuality ?
       assumptions.peerGroupMetrics?.averageMargins || 20 : 20;
     const cashFlow = revenue * (operatingMargin / 100);
     projectedCashFlows.push(cashFlow);
@@ -160,7 +178,7 @@ async function calculateDCFValuation(
     presentValue += cf / Math.pow(1 + assumptions.discountRate / 100, index + 1);
   });
 
-  const terminalPresentValue = terminalValue / 
+  const terminalPresentValue = terminalValue /
     Math.pow(1 + assumptions.discountRate / 100, projectionYears);
 
   const enterpriseValue = presentValue + terminalPresentValue;
@@ -211,7 +229,7 @@ async function calculateMarketMultiplesValuation(
     scale: revenue > peerMetrics.averageRevenue ? 1.1 : 0.9,
   };
 
-  const adjustedMultiple = baseMultiple * 
+  const adjustedMultiple = baseMultiple *
     Object.values(adjustmentFactors).reduce((acc, factor) => acc * factor, 1);
 
   const enterpriseValue = revenue * adjustedMultiple;
@@ -248,8 +266,8 @@ async function calculateAssetBasedValuation(
 
   const adjustments = {
     intellectualProperty: data.ipProtection === 'registered' ? baseAssetValue * 0.2 : 0,
-    brandValue: data.competitiveDifferentiation === 'high' ? baseAssetValue * 0.15 : 
-                data.competitiveDifferentiation === 'medium' ? baseAssetValue * 0.1 : 0,
+    brandValue: data.competitiveDifferentiation === 'high' ? baseAssetValue * 0.15 :
+      data.competitiveDifferentiation === 'medium' ? baseAssetValue * 0.1 : 0,
     marketPosition: data.scalabilityPotential > 7 ? baseAssetValue * 0.1 : 0,
   };
 
@@ -288,13 +306,13 @@ async function calculateRealOptionsValuation(
   const strikePrice = underlyingValue * 0.8; // Assumed investment needed
 
   // Black-Scholes calculation
-  const d1 = (Math.log(underlyingValue / strikePrice) + 
-    (assumptions.riskFreeRate + volatility * volatility / 2) * timeToExpiry) / 
+  const d1 = (Math.log(underlyingValue / strikePrice) +
+    (assumptions.riskFreeRate + volatility * volatility / 2) * timeToExpiry) /
     (volatility * Math.sqrt(timeToExpiry));
   const d2 = d1 - volatility * Math.sqrt(timeToExpiry);
 
-  const callOptionValue = 
-    underlyingValue * normalCDF(d1) - 
+  const callOptionValue =
+    underlyingValue * normalCDF(d1) -
     strikePrice * Math.exp(-assumptions.riskFreeRate * timeToExpiry) * normalCDF(d2);
 
   return {
@@ -348,8 +366,8 @@ async function calculatePrecedentTransactionsValuation(
   ];
 
   // Calculate median multiple from comparable deals
-  const medianMultiple = comparableDeals.reduce((sum, deal) => 
-    sum + deal.multiple * deal.similarity, 0) / 
+  const medianMultiple = comparableDeals.reduce((sum, deal) =>
+    sum + deal.multiple * deal.similarity, 0) /
     comparableDeals.reduce((sum, deal) => sum + deal.similarity, 0);
 
   // Apply time adjustments (e.g., for market conditions)
@@ -358,7 +376,7 @@ async function calculatePrecedentTransactionsValuation(
     inflationAdjustment: 1.02, // 2% adjustment for inflation
   };
 
-  const adjustedMultiple = medianMultiple * 
+  const adjustedMultiple = medianMultiple *
     Object.values(timeAdjustments).reduce((a, b) => a * b, 1);
 
   const enterpriseValue = data.revenue * adjustedMultiple;
@@ -404,13 +422,13 @@ function generateSensitivityAnalysis(
       // Analyze growth rate sensitivity
       const modifiedData = { ...data };
       modifiedData.growthRate = baseGrowthRate + change;
-      growthRateAnalysis[`${baseGrowthRate + change}%`] = 
+      growthRateAnalysis[`${baseGrowthRate + change}%`] =
         calculateSimplifiedDCF(modifiedData, assumptions);
 
       // Analyze discount rate sensitivity
       const modifiedAssumptions = { ...assumptions };
       modifiedAssumptions.discountRate = baseDiscountRate + change;
-      discountRateAnalysis[`${baseDiscountRate + change}%`] = 
+      discountRateAnalysis[`${baseDiscountRate + change}%`] =
         calculateSimplifiedDCF(data, modifiedAssumptions);
     });
   }
@@ -418,6 +436,117 @@ function generateSensitivityAnalysis(
   return {
     growthRate: growthRateAnalysis,
     discountRate: discountRateAnalysis,
+  };
+}
+
+async function performMonteCarloSimulation(
+  data: ValuationFormData,
+  assumptions: FinancialAssumptions,
+  method: string
+): Promise<ValuationResult['monteCarloAnalysis']> {
+  const iterations = 1000;
+  const values: number[] = [];
+
+  // Only perform Monte Carlo for DCF and Market Multiples methods
+  if (!['dcf', 'marketMultiples'].includes(method)) {
+    return undefined;
+  }
+
+  for (let i = 0; i < iterations; i++) {
+    // Randomly vary key inputs within reasonable ranges
+    const modifiedData = { ...data };
+    const modifiedAssumptions = { ...assumptions };
+
+    // Vary growth rate (±30% of base rate)
+    modifiedData.growthRate = assumptions.growthRate * (1 + (Math.random() * 0.6 - 0.3));
+
+    // Vary discount rate (±20% of base rate)
+    modifiedAssumptions.discountRate = assumptions.discountRate * (1 + (Math.random() * 0.4 - 0.2));
+
+    // Calculate value with modified inputs
+    const value = method === 'dcf' ?
+      calculateSimplifiedDCF(modifiedData, modifiedAssumptions) :
+      calculateSimplifiedMultiples(modifiedData, modifiedAssumptions);
+
+    values.push(value);
+  }
+
+  // Sort values for confidence intervals
+  values.sort((a, b) => a - b);
+
+  return {
+    confidenceIntervals: {
+      p90: {
+        lower: values[Math.floor(iterations * 0.05)],
+        upper: values[Math.floor(iterations * 0.95)],
+      },
+      p50: {
+        lower: values[Math.floor(iterations * 0.25)],
+        upper: values[Math.floor(iterations * 0.75)],
+      },
+    },
+    iterations,
+  };
+}
+
+function generateScenarioAnalysis(
+  data: ValuationFormData,
+  assumptions: FinancialAssumptions,
+  method: string
+): ValuationResult['scenarioAnalysis'] {
+  // Generate scenarios by adjusting key inputs
+  const scenarios = {
+    best: {
+      data: { ...data },
+      assumptions: { ...assumptions },
+    },
+    base: {
+      data: { ...data },
+      assumptions: { ...assumptions },
+    },
+    worst: {
+      data: { ...data },
+      assumptions: { ...assumptions },
+    },
+  };
+
+  // Best case adjustments
+  scenarios.best.data.growthRate = (data.growthRate || assumptions.growthRate) * 1.2; // 20% higher growth
+  scenarios.best.assumptions.discountRate = assumptions.discountRate * 0.9; // 10% lower discount rate
+
+  // Worst case adjustments
+  scenarios.worst.data.growthRate = (data.growthRate || assumptions.growthRate) * 0.8; // 20% lower growth
+  scenarios.worst.assumptions.discountRate = assumptions.discountRate * 1.1; // 10% higher discount rate
+
+  // Calculate values for each scenario
+  return {
+    best: {
+      value: method === 'dcf' ?
+        calculateSimplifiedDCF(scenarios.best.data, scenarios.best.assumptions) :
+        calculateSimplifiedMultiples(scenarios.best.data, scenarios.best.assumptions),
+      assumptions: {
+        growthRate: scenarios.best.data.growthRate,
+        discountRate: scenarios.best.assumptions.discountRate,
+      },
+    },
+    base: {
+      value: method === 'dcf' ?
+        calculateSimplifiedDCF(scenarios.base.data, scenarios.base.assumptions) :
+        calculateSimplifiedMultiples(scenarios.base.data, scenarios.base.assumptions),
+      assumptions: {
+        growthRate: scenarios.base.data.growthRate,
+        discountRate: scenarios.base.assumptions.discountRate,
+      },
+    },
+    worst: {
+      value: method === 'dcf' ?
+        calculateSimplifiedDCF(scenarios.worst.data, scenarios.worst.assumptions) :
+        calculateSimplifiedMultiples(scenarios.worst.data, scenarios.worst.assumptions),
+      assumptions: {
+        growthRate: scenarios.worst.data.growthRate,
+        discountRate: scenarios.worst.assumptions.discountRate,
+      },
+    },
   };
 }
 
@@ -432,13 +561,23 @@ function calculateSimplifiedDCF(
 
   let value = 0;
   for (let year = 1; year <= projectionYears; year++) {
-    const cashFlow = data.revenue * 
-      Math.pow(1 + growthRate / 100, year) * 
+    const cashFlow = data.revenue *
+      Math.pow(1 + growthRate / 100, year) *
       (data.margins || 20) / 100;
     value += cashFlow / Math.pow(1 + discountRate / 100, year);
   }
 
   return value;
+}
+
+function calculateSimplifiedMultiples(
+  data: ValuationFormData,
+  assumptions: FinancialAssumptions
+): number {
+  // Simplified calculation for market multiples method
+  const revenue = data.revenue || 1000000; // Default to 1M if not provided
+  const multiple = assumptions.industryMultiple || 5; // Default to 5x if not provided
+  return revenue * multiple;
 }
 
 function normalCDF(x: number): number {
