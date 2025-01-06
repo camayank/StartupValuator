@@ -10,13 +10,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -31,7 +24,14 @@ interface ExpensesProjectionsStepProps {
 }
 
 export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: ExpensesProjectionsStepProps) {
-  const [expenses, setExpenses] = useState<Record<string, number>>(data.baseExpenses || {});
+  const [expenses, setExpenses] = useState<Record<string, number>>(
+    Object.fromEntries(
+      Object.keys(expenseCategories).map(key => [
+        key,
+        (data.assumptions?.expenseAssumptions?.find(a => a.category === key)?.percentage || 0) * (data.baseRevenue || 0) / 100
+      ])
+    )
+  );
 
   const form = useForm<Partial<FinancialProjectionData>>({
     defaultValues: {
@@ -43,7 +43,20 @@ export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: Expe
   });
 
   const handleSubmit = (values: Partial<FinancialProjectionData>) => {
-    onUpdate(values);
+    const expenseAssumptions = Object.entries(expenses).map(([category, amount]) => ({
+      category,
+      percentage: amount / (data.baseRevenue || 1) * 100,
+      description: expenseCategories[category as keyof typeof expenseCategories].name,
+    }));
+
+    onUpdate({
+      ...values,
+      baseExpenses: Object.values(expenses).reduce((sum, amount) => sum + amount, 0),
+      assumptions: {
+        ...data.assumptions,
+        expenseAssumptions,
+      },
+    });
     onNext();
   };
 
@@ -74,10 +87,9 @@ export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: Expe
                         <Input
                           type="number"
                           placeholder="0"
-                          {...field}
+                          value={expenses[key] || ""}
                           onChange={(e) => {
                             const value = Number(e.target.value);
-                            field.onChange(value);
                             setExpenses(prev => ({
                               ...prev,
                               [key]: value
@@ -91,7 +103,7 @@ export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: Expe
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="pl-4 border-l-2 border-muted space-y-2">
                   {category.subcategories.map((subcat, index) => (
                     <div key={index} className="text-sm text-muted-foreground">

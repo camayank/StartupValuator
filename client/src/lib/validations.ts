@@ -96,6 +96,14 @@ export const financialProjectionSchema = z.object({
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
   growthRate: z.number().min(-100).max(1000),
   marginProjection: z.number().min(-100).max(100),
+  burnRate: z.number().min(0).optional(),
+  totalFunding: z.number().min(0).optional(),
+  allocation: z.array(z.object({
+    category: z.string(),
+    percentage: z.number().min(0).max(100),
+    amount: z.number().min(0),
+    description: z.string().optional(),
+  })).optional(),
   assumptions: z.object({
     revenueAssumptions: z.array(z.object({
       category: z.string(),
@@ -108,6 +116,18 @@ export const financialProjectionSchema = z.object({
       description: z.string(),
     })),
   }),
+});
+
+// Revenue Projections Schema
+export const revenueProjectionsSchema = z.object({
+  baseRevenue: z.number().min(0, "Revenue must be positive"),
+  projectionPeriod: z.number().int().min(1).max(5, "Projection period must be between 1 and 5 years"),
+  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
+  revenueAssumptions: z.array(z.object({
+    category: z.string(),
+    growthRate: z.number(),
+    description: z.string(),
+  })).optional(),
 });
 
 export type FinancialProjectionData = z.infer<typeof financialProjectionSchema>;
