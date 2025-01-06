@@ -134,6 +134,8 @@ export function setupAuth(app: Express) {
           password: hashedPassword,
           email,
           role,
+          subscriptionTier: "free",
+          subscriptionStatus: "active",
         })
         .returning();
 
@@ -153,6 +155,7 @@ export function setupAuth(app: Express) {
         });
       });
     } catch (error) {
+      console.error('Registration error:', error);
       next(error);
     }
   });
@@ -170,13 +173,6 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
-
-        // Update last login timestamp
-        db.update(users)
-          .set({ lastLoginAt: new Date() })
-          .where(eq(users.id, user.id))
-          .execute()
-          .catch(console.error);
 
         return res.json({
           message: "Login successful",
