@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -22,25 +21,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const pitchDeckSchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
-  tagline: z.string().min(1, "Tagline is required"),
-  problem: z.string().min(10, "Problem statement should be detailed"),
-  solution: z.string().min(10, "Solution description should be detailed"),
-  marketSize: z.string().min(1, "Market size is required"),
-  businessModel: z.string().min(10, "Business model should be detailed"),
-  competition: z.string().min(10, "Competitive analysis should be detailed"),
-  traction: z.string().optional(),
-  team: z.string().min(10, "Team description should be detailed"),
-  financials: z.string().min(10, "Financial overview should be detailed"),
-  fundingAsk: z.string().min(1, "Funding ask is required"),
-  useOfFunds: z.string().min(10, "Use of funds should be detailed"),
-});
-
-type PitchDeckFormData = z.infer<typeof pitchDeckSchema>;
+import { pitchDeckFormSchema, type PitchDeckFormData } from "@/lib/validations";
 
 export function PitchDeckGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -48,7 +32,7 @@ export function PitchDeckGenerator() {
   const { toast } = useToast();
 
   const form = useForm<PitchDeckFormData>({
-    resolver: zodResolver(pitchDeckSchema),
+    resolver: zodResolver(pitchDeckFormSchema),
     defaultValues: {
       companyName: "",
       tagline: "",
@@ -62,6 +46,9 @@ export function PitchDeckGenerator() {
       financials: "",
       fundingAsk: "",
       useOfFunds: "",
+      presentationStyle: "professional",
+      colorScheme: "blue",
+      additionalNotes: "",
     },
   });
 
@@ -385,6 +372,72 @@ export function PitchDeckGenerator() {
                 <FormItem>
                   <FormLabel>Use of Funds</FormLabel>
                   <FormDescription>How will you use the investment?</FormDescription>
+                  <FormControl>
+                    <Textarea {...field} className="min-h-[100px]" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="presentationStyle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Presentation Style</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select style" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="modern">Modern</SelectItem>
+                        <SelectItem value="creative">Creative</SelectItem>
+                        <SelectItem value="minimal">Minimal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="colorScheme"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color Scheme</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select color scheme" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="purple">Purple</SelectItem>
+                        <SelectItem value="orange">Orange</SelectItem>
+                        <SelectItem value="neutral">Neutral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="additionalNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Additional Notes</FormLabel>
+                  <FormDescription>Any other information you'd like to include</FormDescription>
                   <FormControl>
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>

@@ -312,3 +312,24 @@ export function formatCurrency(value: number, currency: keyof typeof currencies 
     notation: value >= 1000000 ? 'compact' : 'standard'
   }).format(value);
 }
+
+// PitchDeck Types and Validation
+export const pitchDeckFormSchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  tagline: z.string().min(1, "Tagline is required"),
+  problem: z.string().min(1, "Problem statement is required"),
+  solution: z.string().min(1, "Solution description is required"),
+  marketSize: z.string().min(1, "Market size is required"),
+  businessModel: z.string().min(1, "Business model is required"),
+  competition: z.string().min(1, "Competition analysis is required"),
+  traction: z.string().optional(),
+  team: z.string().min(1, "Team information is required"),
+  financials: z.string().min(1, "Financial information is required"),
+  fundingAsk: z.string().min(1, "Funding ask is required"),
+  useOfFunds: z.string().min(1, "Use of funds is required"),
+  presentationStyle: z.enum(["professional", "modern", "creative", "minimal"]).default("professional"),
+  colorScheme: z.enum(["blue", "green", "purple", "orange", "neutral"]).default("blue"),
+  additionalNotes: z.string().optional(),
+});
+
+export type PitchDeckFormData = z.infer<typeof pitchDeckFormSchema>;
