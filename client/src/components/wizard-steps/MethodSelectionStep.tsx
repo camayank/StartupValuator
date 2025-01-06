@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { ValuationFormData } from "@/lib/validations";
 
 interface MethodSelectionStepProps {
@@ -25,20 +24,24 @@ type ValuationMethod = {
   recommended: boolean;
   weightRange: [number, number];
   suitable: boolean;
-  reasonForRecommendation?: string;
+  reasonForRecommendation: string;
 };
 
 export function MethodSelectionStep({ data, onUpdate, onNext, onBack }: MethodSelectionStepProps) {
   // Get recommended methods based on business profile
   const getRecommendedMethods = (): ValuationMethod[] => {
     const methods: ValuationMethod[] = [];
-    const isEarlyStage = data.stage?.includes('ideation') || data.stage?.includes('mvp');
-    const hasRevenue = data.stage?.includes('revenue') || data.stage?.includes('established');
-    const isTech = data.sector === 'technology' || data.sector === 'digital';
-    const isEnterprise = data.sector === 'enterprise';
-    const isFundraising = data.valuationPurpose === 'fundraising';
-    const isAcquisition = data.valuationPurpose === 'acquisition';
-    const isCompliance = data.valuationPurpose === 'compliance';
+    const stage = data.stage ?? '';
+    const sector = data.sector ?? '';
+    const purpose = data.valuationPurpose ?? '';
+
+    const isEarlyStage = stage.includes('ideation') || stage.includes('mvp');
+    const hasRevenue = stage.includes('revenue') || stage.includes('established');
+    const isTech = sector === 'technology' || sector === 'digital';
+    const isEnterprise = sector === 'enterprise';
+    const isFundraising = purpose === 'fundraising';
+    const isAcquisition = purpose === 'acquisition';
+    const isCompliance = purpose === 'compliance';
 
     // DCF Method
     methods.push({
@@ -98,7 +101,9 @@ export function MethodSelectionStep({ data, onUpdate, onNext, onBack }: MethodSe
       recommended: isEarlyStage,
       weightRange: [0.1, 0.3],
       suitable: isEarlyStage,
-      reasonForRecommendation: 'Effective for early-stage companies with limited financial history',
+      reasonForRecommendation: isEarlyStage 
+        ? 'Effective for early-stage companies with limited financial history'
+        : 'Less relevant for established companies',
     });
 
     // Asset-Based Approach
@@ -158,16 +163,14 @@ export function MethodSelectionStep({ data, onUpdate, onNext, onBack }: MethodSe
             <CardContent>
               <div className="text-sm text-muted-foreground">
                 <p><strong>Weight Range:</strong> {method.weightRange[0] * 100}% - {method.weightRange[1] * 100}%</p>
-                {method.reasonForRecommendation && (
-                  <p className="mt-1"><strong>Why:</strong> {method.reasonForRecommendation}</p>
-                )}
+                <p className="mt-1"><strong>Why:</strong> {method.reasonForRecommendation}</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="flex justify-end space-x-4 mt-6">
+      <div className="flex justify-between space-x-4 mt-6">
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
