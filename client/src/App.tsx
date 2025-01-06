@@ -13,6 +13,7 @@ import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import { ComplianceChecker } from "@/components/ComplianceChecker";
 import { PricingPage } from "./pages/PricingPage";
 import { useUser } from "@/hooks/use-user";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,16 +33,30 @@ import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 
-const mainNavItems = [
-  { href: "/", label: "Valuation", description: "Calculate your startup's value", tourId: "valuation" },
-  { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", tourId: "projections" },
-  { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", tourId: "pitch-deck" },
+const baseNavItems = [
+  { href: "/", label: "Valuation", description: "Calculate your startup's value", tourId: "valuation", feature: "valuation" },
+  { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", tourId: "projections", feature: "projections" },
+  { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", tourId: "pitch-deck", feature: "pitch_deck" },
 ];
 
-const toolsNavItems = [
-  { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics", tourId: "dashboard" },
-  { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance", tourId: "compliance" },
-];
+const roleSpecificNavItems = {
+  startup: [
+    { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics", tourId: "dashboard", feature: "health_dashboard" },
+    { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance", tourId: "compliance", feature: "compliance" },
+  ],
+  investor: [
+    { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", tourId: "portfolio", feature: "portfolio_management" },
+    { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments", tourId: "deal-flow", feature: "deal_flow" },
+  ],
+  valuer: [
+    { href: "/methodology", label: "Methodology", description: "Manage valuation methodologies", tourId: "methodology", feature: "methodology_management" },
+    { href: "/clients", label: "Clients", description: "Manage client relationships", tourId: "clients", feature: "client_management" },
+  ],
+  consultant: [
+    { href: "/clients", label: "Clients", description: "Manage client relationships", tourId: "clients", feature: "client_management" },
+    { href: "/reports", label: "Reports", description: "Generate and manage reports", tourId: "reports", feature: "reporting" },
+  ],
+};
 
 const resourceNavItems = [
   { href: "/pricing", label: "Pricing", description: "View our subscription plans" },
@@ -50,8 +65,14 @@ const resourceNavItems = [
 
 function App() {
   const { user, isLoading, error } = useUser();
+  const { hasPermission, userRole, getRoleSpecificUIProps } = usePermissions();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const uiProps = getRoleSpecificUIProps();
+
+  // Filter navigation items based on user role and permissions
+  const mainNavItems = baseNavItems.filter(item => hasPermission(item.feature));
+  const toolsNavItems = userRole ? roleSpecificNavItems[userRole as keyof typeof roleSpecificNavItems].filter(item => hasPermission(item.feature)) : [];
 
   const handleValuationSubmit = async (data: ValuationFormData) => {
     try {
@@ -121,7 +142,7 @@ function App() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-background">
+      <div className={`min-h-screen bg-background ${uiProps.theme ? `theme-${uiProps.theme}` : ''}`}>
         <nav className="sticky top-0 z-50 border-b px-4 py-3 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <div className="container mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -139,21 +160,23 @@ function App() {
                   <NavItem key={item.href} {...item} />
                 ))}
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-1 text-sm hover:text-primary transition-colors">
-                    Tools
-                    <ChevronDown className="h-4 w-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {toolsNavItems.map((item) => (
-                      <DropdownMenuItem key={item.href} asChild>
-                        <Link href={item.href}>
-                          <span className="w-full">{item.label}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {toolsNavItems.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-1 text-sm hover:text-primary transition-colors">
+                      Tools
+                      <ChevronDown className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {toolsNavItems.map((item) => (
+                        <DropdownMenuItem key={item.href} asChild>
+                          <Link href={item.href}>
+                            <span className="w-full">{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
                 {resourceNavItems.map((item) => (
                   <NavItem key={item.href} {...item} />
@@ -171,6 +194,9 @@ function App() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuItem className="text-muted-foreground">
+                        Role: {user.role}
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <Link href={`/profile/${user.id}`}>
                         <DropdownMenuItem className="cursor-pointer">
@@ -216,6 +242,9 @@ function App() {
                     <div className="border-t pt-4">
                       {user ? (
                         <>
+                          <div className="px-4 py-2 text-sm text-muted-foreground">
+                            Role: {user.role}
+                          </div>
                           <MobileNavItem href={`/profile/${user.id}`} label="Profile Settings" />
                           <button
                             className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-accent"
@@ -239,7 +268,7 @@ function App() {
           </div>
         </nav>
 
-        <main className="min-h-[calc(100vh-4rem)]">
+        <main className={`min-h-[calc(100vh-4rem)] ${uiProps.dashboardLayout ? `layout-${uiProps.dashboardLayout}` : ''}`}>
           <Switch>
             <Route path="/">
               <div className="container mx-auto py-8">
