@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { CompetitiveAdvantages } from "@/components/CompetitiveAdvantages";
 import {
   BarChart3,
   Calculator,
@@ -173,6 +174,13 @@ export function LandingPage() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Add CompetitiveAdvantages section here */}
+      <section className="bg-accent/5 border-y">
+        <div className="container mx-auto px-4">
+          <CompetitiveAdvantages />
         </div>
       </section>
 
