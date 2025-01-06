@@ -72,6 +72,7 @@ export function setupAuth(app: Express) {
         if (!user) {
           return done(null, false, { message: "Incorrect username." });
         }
+
         const isMatch = await crypto.compare(password, user.password);
         if (!isMatch) {
           return done(null, false, { message: "Incorrect password." });
@@ -130,6 +131,17 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Username already exists");
       }
 
+      // Check if email already exists
+      const [existingEmail] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingEmail) {
+        return res.status(400).send("Email already exists");
+      }
+
       // Hash the password
       const hashedPassword = await crypto.hash(password);
 
@@ -140,7 +152,7 @@ export function setupAuth(app: Express) {
           username,
           password: hashedPassword,
           email,
-          role: role || "startup", // Default to startup if not provided
+          role,
           subscriptionTier: "free",
           subscriptionStatus: "active",
           isEmailVerified: false,
@@ -160,6 +172,7 @@ export function setupAuth(app: Express) {
           user: {
             id: newUser.id,
             username: newUser.username,
+            email: newUser.email,
             role: newUser.role,
             subscriptionTier: newUser.subscriptionTier,
           },
@@ -190,6 +203,7 @@ export function setupAuth(app: Express) {
           user: {
             id: user.id,
             username: user.username,
+            email: user.email,
             role: user.role,
             subscriptionTier: user.subscriptionTier,
           },

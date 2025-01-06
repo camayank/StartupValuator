@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { relations } from "drizzle-orm";
+import { relations, type Relations } from "drizzle-orm";
+import { z } from "zod";
 
 // Define user roles enum
 export const userRoles = pgEnum("user_role", ["startup", "investor", "valuer", "consultant"]);
@@ -95,7 +96,6 @@ export const userProfiles = pgTable("user_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Usage tracking for analytics
 export const usageStats = pgTable("usage_stats", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -153,6 +153,13 @@ export const userToProfileRelations = relations(users, ({ one, many }) => ({
   suggestions: many(workflowSuggestions),
 }));
 
+export const profileToUserRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
 export const subscriptionToUserRelation = relations(userSubscriptions, ({ one }) => ({
   user: one(users, {
     fields: [userSubscriptions.userId],
@@ -179,8 +186,25 @@ export const suggestionRelations = relations(workflowSuggestions, ({ one }) => (
 }));
 
 
-// Create schemas for validation
-export const insertUserSchema = createInsertSchema(users);
+// Create schemas for validation with custom validation rules
+export const insertUserSchema = createInsertSchema(users, {
+  email: z.string().email("Invalid email format"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["startup", "investor", "valuer", "consultant"]),
+}).omit({
+  id: true,
+  subscriptionTier: true,
+  subscriptionStatus: true,
+  trialEndsAt: true,
+  phoneNumber: true,
+  companyName: true,
+  isEmailVerified: true,
+  lastLoginAt: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 export const selectUserSchema = createSelectSchema(users);
 export const insertUserProfileSchema = createInsertSchema(userProfiles);
 export const selectUserProfileSchema = createSelectSchema(userProfiles);
@@ -238,3 +262,14 @@ export type InsertLoginAudit = typeof loginAudit.$inferInsert;
 export type SelectLoginAudit = typeof loginAudit.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type SelectPasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  profile: one(userProfiles, {
+    fields: [users.id],
+    references: [userProfiles.userId],
+  }),
+  subscriptions: many(userSubscriptions),
+  usageStats: many(usageStats),
+  activities: many(userActivities),
+  suggestions: many(workflowSuggestions),
+}));
