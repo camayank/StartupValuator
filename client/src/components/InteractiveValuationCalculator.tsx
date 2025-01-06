@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -33,12 +32,13 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { NumericInput } from "@/components/ui/numeric-input";
+import { useToast } from "@/hooks/use-toast";
 
 // High contrast color palette that meets WCAG 2.1 AA standards
 const HIGH_CONTRAST_COLORS = ["#0052CC", "#00875A", "#DE350B", "#403294"];
 const STANDARD_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-// Help content for each field
+// Help content for each field with enhanced YC-focused examples
 const fieldHelp = {
   revenue: {
     title: "Annual Revenue",
@@ -47,6 +47,7 @@ const fieldHelp = {
       "Include all sources of revenue from your core business",
       "Use the last 12 months of data if available",
       "For early-stage startups, use projected annual revenue",
+      "YC Tip: Be realistic but ambitious with projections",
     ],
     example: "Example: If you make $100,000 per month, enter $1,200,000",
   },
@@ -57,6 +58,7 @@ const fieldHelp = {
       "Calculate: ((Current Revenue - Previous Revenue) / Previous Revenue) × 100",
       "Use historical data if available",
       "For early-stage startups, use projected growth rate",
+      "YC Tip: Show potential for hypergrowth (>20% MoM)",
     ],
     example: "Example: If revenue doubled, enter 100%",
   },
@@ -67,6 +69,7 @@ const fieldHelp = {
       "Calculate: (Operating Income / Revenue) × 100",
       "Operating Income = Revenue - Operating Expenses",
       "Include all direct costs and overhead",
+      "YC Tip: Focus on unit economics and path to profitability",
     ],
     example: "Example: If you make $200K profit on $1M revenue, enter 20%",
   },
@@ -77,6 +80,7 @@ const fieldHelp = {
       "Choose the sector that best matches your core business",
       "Consider where most of your revenue comes from",
       "This affects industry-specific valuation multiples",
+      "YC Tip: Highlight if you're in an emerging tech sector",
     ],
   },
   stage: {
@@ -86,18 +90,19 @@ const fieldHelp = {
       "Consider factors like revenue, market presence, and growth",
       "This impacts the valuation methodology used",
       "Be realistic about your current stage",
+      "YC Tip: Focus on traction and growth potential",
     ],
   },
 };
 
-// Default values that match our validation schema
+// Default values optimized for YC-stage startups
 const defaultValues: Partial<ValuationFormData> = {
-  revenue: 1000000,
+  revenue: 500000, // Conservative default for early-stage
   currency: "USD",
-  growthRate: 20,
-  margins: 15,
+  growthRate: 25, // Typical YC-stage growth rate
+  margins: 20,
   sector: "technology",
-  stage: "revenue_early",
+  stage: "seed",
 };
 
 export function InteractiveValuationCalculator() {
@@ -109,6 +114,7 @@ export function InteractiveValuationCalculator() {
     const stored = localStorage.getItem('highContrast');
     return stored ? JSON.parse(stored) : false;
   });
+  const { toast } = useToast();
 
   const colors = highContrast ? HIGH_CONTRAST_COLORS : STANDARD_COLORS;
 
@@ -159,8 +165,17 @@ export function InteractiveValuationCalculator() {
       try {
         const result = await calculateValuation(formData as ValuationFormData);
         setValuation(result);
+        toast({
+          title: "Valuation Updated",
+          description: "Your company valuation has been recalculated based on the new inputs.",
+        });
       } catch (error) {
         console.error('Calculation error:', error);
+        toast({
+          title: "Calculation Error",
+          description: "There was an error calculating your valuation. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setIsCalculating(false);
       }
@@ -169,7 +184,7 @@ export function InteractiveValuationCalculator() {
     // Debounce the calculation
     const timer = setTimeout(calculateValue, 500);
     return () => clearTimeout(timer);
-  }, [formData]);
+  }, [formData, toast]);
 
   const breakdownData = valuation ? [
     { name: "Base Value", value: valuation.details.baseValuation },
@@ -219,154 +234,152 @@ export function InteractiveValuationCalculator() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <Card className="w-full">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div>
-              <CardTitle>Interactive Valuation Calculator</CardTitle>
-              <CardDescription>
-                Adjust the parameters below to see how different factors affect your startup's valuation.
-                Hover over the info icons for detailed explanations and tips.
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleContrast}
-              aria-label={highContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
-              className="ml-4"
-            >
-              {highContrast ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Financial Metrics */}
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Financial Metrics</h3>
-                  <div>
-                    <FieldLabel field="revenue">Annual Revenue</FieldLabel>
-                    <NumericInput
-                      value={formData.revenue}
-                      onValueChange={(value) => handleInputChange('revenue', value)}
-                      className={errors.revenue ? 'border-destructive' : ''}
-                      placeholder="Enter your annual revenue"
-                      prefix={currencies[formData.currency as keyof typeof currencies]?.symbol || '$'}
-                      thousandSeparator=","
-                      decimalScale={0}
-                    />
-                    {errors.revenue && (
-                      <p className="text-sm text-destructive mt-1">{errors.revenue}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label className="mb-2">Currency</Label>
-                    <Select
-                      value={formData.currency}
-                      onValueChange={(value) => handleInputChange('currency', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(currencies).map(([code, { name, symbol }]) => (
-                          <SelectItem key={code} value={code}>
-                            {symbol} - {name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <FieldLabel field="growthRate">Growth Rate (%)</FieldLabel>
-                    <NumericInput
-                      value={formData.growthRate}
-                      onValueChange={(value) => handleInputChange('growthRate', value)}
-                      className={errors.growthRate ? 'border-destructive' : ''}
-                      placeholder="Enter growth rate"
-                      suffix="%"
-                      decimalScale={1}
-                      allowNegative
-                    />
-                    {errors.growthRate && (
-                      <p className="text-sm text-destructive mt-1">{errors.growthRate}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <FieldLabel field="margins">Operating Margins (%)</FieldLabel>
-                    <NumericInput
-                      value={formData.margins}
-                      onValueChange={(value) => handleInputChange('margins', value)}
-                      className={errors.margins ? 'border-destructive' : ''}
-                      placeholder="Enter operating margins"
-                      suffix="%"
-                      decimalScale={1}
-                      allowNegative
-                    />
-                    {errors.margins && (
-                      <p className="text-sm text-destructive mt-1">{errors.margins}</p>
-                    )}
-                  </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>Interactive Valuation Calculator</CardTitle>
+            <CardDescription>
+              Adjust the parameters below to see how different factors affect your startup's valuation.
+              Hover over the info icons for detailed explanations and YC-focused tips.
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleContrast}
+            aria-label={highContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
+            className="ml-4"
+          >
+            {highContrast ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Financial Metrics */}
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Financial Metrics</h3>
+                <div>
+                  <FieldLabel field="revenue">Annual Revenue</FieldLabel>
+                  <NumericInput
+                    value={formData.revenue}
+                    onValueChange={(value) => handleInputChange('revenue', value)}
+                    className={errors.revenue ? 'border-destructive' : ''}
+                    placeholder="Enter your annual revenue"
+                    prefix={currencies[formData.currency as keyof typeof currencies]?.symbol || '$'}
+                    thousandSeparator=","
+                    decimalScale={0}
+                  />
+                  {errors.revenue && (
+                    <p className="text-sm text-destructive mt-1">{errors.revenue}</p>
+                  )}
                 </div>
-              </div>
 
-              {/* Business Information */}
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Business Information</h3>
-                  <div>
-                    <FieldLabel field="sector">Sector</FieldLabel>
-                    <Select
-                      value={formData.sector}
-                      onValueChange={(value) => handleInputChange('sector', value)}
-                    >
-                      <SelectTrigger className={errors.sector ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select your sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(sectors).map(([key, { name }]) => (
-                          <SelectItem key={key} value={key}>
-                            {name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.sector && (
-                      <p className="text-sm text-destructive mt-1">{errors.sector}</p>
-                    )}
-                  </div>
+                <div>
+                  <Label className="mb-2">Currency</Label>
+                  <Select
+                    value={formData.currency}
+                    onValueChange={(value) => handleInputChange('currency', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(currencies).map(([code, { name, symbol }]) => (
+                        <SelectItem key={code} value={code}>
+                          {symbol} - {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div>
-                    <FieldLabel field="stage">Business Stage</FieldLabel>
-                    <Select
-                      value={formData.stage}
-                      onValueChange={(value) => handleInputChange('stage', value)}
-                    >
-                      <SelectTrigger className={errors.stage ? 'border-destructive' : ''}>
-                        <SelectValue placeholder="Select your stage" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(businessStages).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.stage && (
-                      <p className="text-sm text-destructive mt-1">{errors.stage}</p>
-                    )}
-                  </div>
+                <div>
+                  <FieldLabel field="growthRate">Growth Rate (%)</FieldLabel>
+                  <NumericInput
+                    value={formData.growthRate}
+                    onValueChange={(value) => handleInputChange('growthRate', value)}
+                    className={errors.growthRate ? 'border-destructive' : ''}
+                    placeholder="Enter growth rate"
+                    suffix="%"
+                    decimalScale={1}
+                    allowNegative
+                  />
+                  {errors.growthRate && (
+                    <p className="text-sm text-destructive mt-1">{errors.growthRate}</p>
+                  )}
+                </div>
+
+                <div>
+                  <FieldLabel field="margins">Operating Margins (%)</FieldLabel>
+                  <NumericInput
+                    value={formData.margins}
+                    onValueChange={(value) => handleInputChange('margins', value)}
+                    className={errors.margins ? 'border-destructive' : ''}
+                    placeholder="Enter operating margins"
+                    suffix="%"
+                    decimalScale={1}
+                    allowNegative
+                  />
+                  {errors.margins && (
+                    <p className="text-sm text-destructive mt-1">{errors.margins}</p>
+                  )}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Business Information */}
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Business Information</h3>
+                <div>
+                  <FieldLabel field="sector">Sector</FieldLabel>
+                  <Select
+                    value={formData.sector}
+                    onValueChange={(value) => handleInputChange('sector', value)}
+                  >
+                    <SelectTrigger className={errors.sector ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select your sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(sectors).map(([key, { name }]) => (
+                        <SelectItem key={key} value={key}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.sector && (
+                    <p className="text-sm text-destructive mt-1">{errors.sector}</p>
+                  )}
+                </div>
+
+                <div>
+                  <FieldLabel field="stage">Business Stage</FieldLabel>
+                  <Select
+                    value={formData.stage}
+                    onValueChange={(value) => handleInputChange('stage', value)}
+                  >
+                    <SelectTrigger className={errors.stage ? 'border-destructive' : ''}>
+                      <SelectValue placeholder="Select your stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(businessStages).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.stage && (
+                    <p className="text-sm text-destructive mt-1">{errors.stage}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <AnimatePresence mode="wait">
         {valuation && (
