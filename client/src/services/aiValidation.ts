@@ -1,5 +1,13 @@
 import OpenAI from "openai";
 import { ValuationFormData } from "@/lib/validations";
+import { 
+  validateBusinessMetrics, 
+  validateRegionCompliance,
+  assessCashFlowStability,
+  industryBenchmarks,
+  regionRules,
+  cashFlowStabilityRules
+} from "@/lib/validation/businessRules";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -33,25 +41,46 @@ export class AIValidationService {
     return AIValidationService.instance;
   }
 
-  private getCacheKey(data: Partial<ValuationFormData>): string {
+  private getCacheKey(data: ValuationFormData): string {
     return JSON.stringify(data);
   }
 
-  async validateInput(data: Partial<ValuationFormData>): Promise<ValidationResponse> {
+  async validateInput(data: ValuationFormData): Promise<ValidationResponse> {
     const cacheKey = this.getCacheKey(data);
     const cached = this.validationCache.get(cacheKey);
     if (cached) return cached;
 
     try {
+      // Apply business rules validation
+      const businessMetricsWarnings = validateBusinessMetrics(data);
+      const complianceChecks = validateRegionCompliance(data);
+      const cashFlowStability = assessCashFlowStability(data);
+      const stabilityRules = cashFlowStabilityRules[cashFlowStability];
+
+      // Prepare context for AI validation
+      const validationContext = {
+        data,
+        industryBenchmarks: industryBenchmarks[data.sector],
+        regionRules: regionRules[data.region],
+        cashFlowStability,
+        stabilityRules,
+        complianceChecks
+      };
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
             content: `You are a financial validation expert that helps prevent errors in startup valuations.
-            Analyze the input data and provide warnings and suggestions based on industry standards.
-            Focus on detecting potential errors, inconsistencies, and unusual patterns.
-            Provide specific, actionable feedback that helps users correct their inputs.
+            Analyze the input data and validation context to provide warnings and suggestions.
+            Focus on:
+            1. Data consistency and completeness
+            2. Industry-specific requirements
+            3. Regional compliance considerations
+            4. Cash flow stability implications
+            5. Potential risks and mitigation strategies
+
             Response must be in JSON format with the following structure:
             {
               "warnings": [
@@ -68,7 +97,7 @@ export class AIValidationService {
           },
           {
             role: "user",
-            content: JSON.stringify(data)
+            content: JSON.stringify(validationContext)
           }
         ],
         response_format: { type: "json_object" }
@@ -80,6 +109,10 @@ export class AIValidationService {
       }
 
       const result = JSON.parse(content) as ValidationResponse;
+
+      // Combine AI warnings with business rules warnings
+      result.warnings = [...businessMetricsWarnings, ...result.warnings];
+
       this.validationCache.set(cacheKey, result);
 
       // Clear cache after timeout
@@ -92,33 +125,40 @@ export class AIValidationService {
       console.error('AI Validation error:', error);
       // Fallback to basic validation
       return {
-        warnings: [],
+        warnings: validateBusinessMetrics(data),
         suggestions: [],
         industryInsights: []
       };
     }
   }
 
-  // Predict potential issues based on historical patterns
-  async predictPotentialIssues(data: Partial<ValuationFormData>): Promise<string[]> {
+  async predictPotentialIssues(data: ValuationFormData): Promise<string[]> {
     try {
+      const validationContext = {
+        data,
+        industryBenchmarks: industryBenchmarks[data.sector],
+        regionRules: regionRules[data.region],
+        cashFlowStability: assessCashFlowStability(data)
+      };
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
             content: `Analyze the valuation inputs and predict potential issues that might arise.
-            Consider both immediate and long-term implications.
-            Focus on:
-            1. Data consistency and completeness
-            2. Industry-specific requirements
-            3. Common pitfalls in similar valuations
-            4. Regulatory compliance concerns
+            Consider:
+            1. Industry-specific risks and challenges
+            2. Regional market conditions and regulations
+            3. Cash flow stability implications
+            4. Growth sustainability factors
+            5. Competitive landscape impacts
+
             Provide predictions in a JSON array of strings.`
           },
           {
             role: "user",
-            content: JSON.stringify(data)
+            content: JSON.stringify(validationContext)
           }
         ],
         response_format: { type: "json_object" }
@@ -137,25 +177,34 @@ export class AIValidationService {
     }
   }
 
-  // Get smart suggestions for improving valuation accuracy
-  async getSuggestions(data: Partial<ValuationFormData>): Promise<string[]> {
+  async getSuggestions(data: ValuationFormData): Promise<string[]> {
     try {
+      const validationContext = {
+        data,
+        industryBenchmarks: industryBenchmarks[data.sector],
+        regionRules: regionRules[data.region],
+        cashFlowStability: assessCashFlowStability(data),
+        stabilityRules: cashFlowStabilityRules[assessCashFlowStability(data)]
+      };
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `Based on the valuation inputs, provide actionable suggestions to improve accuracy.
+            content: `Based on the valuation inputs and context, provide actionable suggestions to improve accuracy.
             Consider:
-            1. Industry best practices
-            2. Similar successful valuations
-            3. Current market conditions
-            4. Growth stage considerations
+            1. Industry best practices and benchmarks
+            2. Regional compliance requirements
+            3. Cash flow stability improvements
+            4. Risk mitigation strategies
+            5. Growth optimization opportunities
+
             Provide suggestions in a JSON array of strings.`
           },
           {
             role: "user",
-            content: JSON.stringify(data)
+            content: JSON.stringify(validationContext)
           }
         ],
         response_format: { type: "json_object" }

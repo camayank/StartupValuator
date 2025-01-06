@@ -1,0 +1,48 @@
+9. TAM Validation
+Ensure TAM is a positive number.
+Validate against industry reports for reasonableness.
+Incorporate TAM into market penetration scenarios.
+Use TAM to adjust growth projections.
+Highlight potential for market expansion.
+10. DCF Methodology
+Ensure cash flow projections are provided for at least 5 years.
+Apply region-specific risk-free rates for discounting.
+Adjust for terminal growth rate assumptions based on industry norms.
+Use Weighted Average Cost of Capital (WACC) as the discount rate.
+Trigger sensitivity analysis for discount rate fluctuations (±1%).
+11. Market Multiples Methodology
+Fetch EV/EBITDA multiples from peer companies in the same industry.
+Adjust multiples based on company size and operational scale.
+Apply appropriate discounts for illiquidity in private companies.
+Highlight variations in peer multiples in the valuation report.
+Incorporate recent M&A transaction data for additional benchmarks.
+12. Real Options Valuation
+Identify optionality in the business model (e.g., expansion, R&D).
+Use Black-Scholes or binomial models to calculate option value.
+Include real options analysis as an addendum in the report.
+Apply region-specific volatility rates for high-risk industries.
+Incorporate external economic indicators in option valuation.
+13. Compliance Notes
+Dynamically fetch compliance standards for the selected jurisdiction.
+Include region-specific valuation disclaimers in the report.
+Highlight non-compliance risks if key inputs are missing.
+Map compliance notes to the selected valuation purpose (e.g., IPO, ESOP).
+Validate all assumptions against jurisdictional standards.
+14. Sensitivity Analysis
+Perform sensitivity analysis for growth rate variations (±5%).
+Adjust projections based on different scenarios (best, base, worst).
+Include visual charts for sensitivity analysis in the report.
+Apply sensitivity analysis to operating margins and TAM.
+Trigger alerts for scenarios with significant valuation drops.
+15. Pitch Deck Integration
+Allow users to export key valuation metrics into a professional pitch deck.
+Highlight competitive differentiators as part of the pitch.
+Include growth potential and scalability scores in the deck.
+Enable region-specific customization for pitch presentation.
+Fetch peer comparison visuals from industry benchmarks.
+16. Risk Analysis
+Calculate risk premiums for market, operational, and regulatory risks.
+Adjust discount rates based on identified risk factors.
+Include qualitative risk assessments in the report (e.g., SWOT analysis).
+Trigger suggestions for mitigating high-risk factors.
+Validate risk inputs against historical performance data.

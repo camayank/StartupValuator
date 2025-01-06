@@ -1,0 +1,49 @@
+Full Dataset: Business Rules and Backend Logics
+1. Business Name
+Use regex to validate the format of the name.
+Ensure uniqueness by cross-checking with the database.
+Allow special characters like & or - but restrict excessive punctuation.
+Trim whitespace to prevent input errors.
+Generate a unique business identifier for internal use.
+2. Industry Selection
+Fetch industry benchmarks for average growth rate and margins.
+Validate industry ID against the master database.
+Trigger sector-specific valuation adjustments.
+Store industry ID to correlate with peer data.
+Prepopulate industry-specific risks in risk analysis.
+3. Region Selection
+Fetch jurisdictional risk-free rates based on selected region.
+Adjust valuation method to match regional standards (e.g., IVS, USPAP).
+Map region to currency and apply default exchange rates.
+Integrate regional inflation rates into long-term projections.
+Enable region-specific compliance prompts.
+4. Revenue Input
+Ensure revenue is a positive number.
+Adjust for inflation if revenue is provided in historical terms.
+Allow conversion between currencies for multi-region businesses.
+Store revenue as the base metric for DCF and growth projections.
+Validate revenue consistency with industry benchmarks.
+5. Growth Rate Input
+Ensure growth rate is between 0% and 100%.
+Compare user-provided growth rates with industry norms.
+Trigger sensitivity analysis with ±5% adjustments.
+Use growth rate to calculate Free Cash Flow (FCF) projections.
+Warn users if growth rate exceeds industry norms by more than 50%.
+6. Cash Flow Stability
+Categorize cash flow as Stable, Moderate, or Volatile.
+Adjust discount rates based on stability level.
+Trigger scenario analysis for moderate or volatile cash flows.
+Highlight potential risks in the valuation report.
+Suggest corrective measures for cash flow improvement.
+7. Competitor Analysis
+Fetch peer financials from databases (e.g., PitchBook, Crunchbase).
+Map competitors to industry-specific benchmarks.
+Incorporate market share comparison in valuation.
+Analyze pricing strategies and scalability of competitors.
+Adjust valuation multiples based on competitor performance.
+8. Operating Margins
+Ensure margins are provided as a percentage of revenue.
+Validate margins against industry averages.
+Use operating margins to calculate EBITDA.
+Highlight deviations from peer benchmarks in the report.
+Incorporate margin trends into financial projections.
