@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import type { ValuationFormData } from "@/lib/validations";
 import { sectors } from "@/lib/validations";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface IndustryVariablesStepProps {
   data: Partial<ValuationFormData>;
@@ -30,6 +31,8 @@ export function IndustryVariablesStep({
   onUpdate,
   onNext,
   onBack,
+  currentStep,
+  totalSteps,
 }: IndustryVariablesStepProps) {
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
@@ -45,7 +48,10 @@ export function IndustryVariablesStep({
 
   const sector = data.sector || 'technology';
   const subsector = data.subsector;
-  const currentMetrics = subsector ? sectors[sector].subsectors[subsector]?.metrics : [];
+
+  // Get the metrics for the selected sector and subsector
+  const currentMetrics = subsector && sectors[sector]?.subsectors[subsector]?.metrics || [];
+  const benchmarks = subsector && sectors[sector]?.subsectors[subsector]?.benchmarks;
 
   return (
     <motion.div
@@ -61,52 +67,89 @@ export function IndustryVariablesStep({
         </AlertDescription>
       </Alert>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid gap-6">
-            {currentMetrics?.map((metric) => (
-              <FormField
-                key={metric}
-                control={form.control}
-                name={`industryMetrics.${sector}.${metric}`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{metric.toUpperCase()}</FormLabel>
-                    <FormDescription>
-                      {getMetricDescription(metric)}
-                    </FormDescription>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder={`Enter your ${metric}`}
-                        {...field}
-                        onChange={e => field.onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
+      <div className="grid gap-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold mb-2">Industry Benchmarks</h3>
+              {benchmarks && (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Revenue Multiple (Early):</span>
+                    <span className="ml-2">{benchmarks.revenueMultiple.early}x</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Revenue Multiple (Growth):</span>
+                    <span className="ml-2">{benchmarks.revenueMultiple.growth}x</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Gross Margin:</span>
+                    <span className="ml-2">{(benchmarks.grossMargin * 100).toFixed(1)}%</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Growth Rate:</span>
+                    <span className="ml-2">{(benchmarks.growthRate * 100).toFixed(1)}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex justify-between pt-6 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-            >
-              Back
-            </Button>
-            <Button type="submit">
-              Continue
-            </Button>
-          </div>
-        </form>
-      </Form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <div className="grid gap-6">
+              {currentMetrics?.map((metric: string) => (
+                <FormField
+                  key={metric}
+                  control={form.control}
+                  name={`industryMetrics.${sector}.${metric}`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{formatMetricLabel(metric)}</FormLabel>
+                      <FormDescription>
+                        {getMetricDescription(metric)}
+                      </FormDescription>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder={`Enter your ${formatMetricLabel(metric)}`}
+                          {...field}
+                          onChange={e => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </div>
+
+            <div className="flex justify-between pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+              >
+                Back
+              </Button>
+              <Button type="submit">
+                Continue
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
     </motion.div>
   );
+}
+
+function formatMetricLabel(metric: string): string {
+  return metric
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 function getMetricDescription(metric: string): string {
@@ -127,7 +170,19 @@ function getMetricDescription(metric: string): string {
     backlog: "Value of contracted work not yet delivered",
     dealCycle: "Average time to close a deal (in days)",
     contractLength: "Average length of customer contracts (in months)",
+    userGrowth: "Monthly user growth rate",
+    engagementRate: "User engagement metrics",
+    capex: "Capital expenditure as % of revenue",
+    r_and_d: "Research and development spend as % of revenue",
+    patentPortfolio: "Number of patents/pending applications",
+    customerRetention: "Customer retention rate",
+    contentCosts: "Content acquisition/production costs",
+    engagement: "User engagement metrics",
+    subscribers: "Number of active subscribers",
+    usage: "Platform usage metrics",
+    serverCosts: "Infrastructure costs per user",
+    uptime: "Service availability percentage",
   };
 
-  return descriptions[metric] || `Value for ${metric}`;
+  return descriptions[metric] || `Value for ${formatMetricLabel(metric)}`;
 }
