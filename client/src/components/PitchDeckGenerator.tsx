@@ -44,6 +44,7 @@ type PitchDeckFormData = z.infer<typeof pitchDeckSchema>;
 
 export function PitchDeckGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const { toast } = useToast();
 
   const form = useForm<PitchDeckFormData>({
@@ -67,12 +68,51 @@ export function PitchDeckGenerator() {
   const onSubmit = async (data: PitchDeckFormData) => {
     setIsGenerating(true);
     try {
-      const response = await fetch("/api/pitch-deck/generate", {
+      // Get AI-powered suggestions first
+      const suggestionsResponse = await fetch("/api/pitch-deck/personalize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
+      });
+
+      if (!suggestionsResponse.ok) {
+        throw new Error("Failed to get AI suggestions");
+      }
+
+      const suggestions = await suggestionsResponse.json();
+      setAiSuggestions(suggestions);
+
+      // Get industry-specific analysis
+      const analysisResponse = await fetch("/api/pitch-deck/industry-analysis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          industry: data.marketSize, // Using market size as industry context
+          businessModel: data.businessModel,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error("Failed to get industry analysis");
+      }
+
+      const analysis = await analysisResponse.json();
+
+      // Generate the final pitch deck with AI enhancements
+      const response = await fetch("/api/pitch-deck/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          aiSuggestions: suggestions,
+          industryAnalysis: analysis,
+        }),
       });
 
       if (!response.ok) {
@@ -91,7 +131,7 @@ export function PitchDeckGenerator() {
 
       toast({
         title: "Success!",
-        description: "Your pitch deck has been generated successfully.",
+        description: "Your AI-enhanced pitch deck has been generated successfully.",
       });
     } catch (error) {
       toast({
@@ -107,16 +147,16 @@ export function PitchDeckGenerator() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Pitch Deck Generator</CardTitle>
+        <CardTitle>AI-Enhanced Pitch Deck Generator</CardTitle>
         <CardDescription>
-          Generate a professional investor pitch deck in one click
+          Generate a professional investor pitch deck with AI-powered personalization
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Alert className="mb-6">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            Fill in the details below to generate your pitch deck. The more detailed your inputs, the better the output will be.
+            Fill in the details below to generate your pitch deck. Our AI will analyze your inputs and provide personalized suggestions to make your pitch more compelling.
           </AlertDescription>
         </Alert>
 
@@ -164,6 +204,12 @@ export function PitchDeckGenerator() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
+                  {aiSuggestions?.problemRefinement && (
+                    <Alert className="mt-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{aiSuggestions.problemRefinement}</AlertDescription>
+                    </Alert>
+                  )}
                 </FormItem>
               )}
             />
@@ -179,6 +225,12 @@ export function PitchDeckGenerator() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
+                  {aiSuggestions?.solutionEnhancement && (
+                    <Alert className="mt-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{aiSuggestions.solutionEnhancement}</AlertDescription>
+                    </Alert>
+                  )}
                 </FormItem>
               )}
             />
@@ -195,6 +247,12 @@ export function PitchDeckGenerator() {
                       <Input {...field} />
                     </FormControl>
                     <FormMessage />
+                    {aiSuggestions?.marketInsights && (
+                      <Alert className="mt-2">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>{aiSuggestions.marketInsights}</AlertDescription>
+                      </Alert>
+                    )}
                   </FormItem>
                 )}
               />
@@ -210,6 +268,12 @@ export function PitchDeckGenerator() {
                       <Input {...field} />
                     </FormControl>
                     <FormMessage />
+                    {aiSuggestions?.fundingStrategy && (
+                      <Alert className="mt-2">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>{aiSuggestions.fundingStrategy}</AlertDescription>
+                      </Alert>
+                    )}
                   </FormItem>
                 )}
               />
@@ -226,6 +290,12 @@ export function PitchDeckGenerator() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
+                  {aiSuggestions?.businessModelOptimization && (
+                    <Alert className="mt-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{aiSuggestions.businessModelOptimization}</AlertDescription>
+                    </Alert>
+                  )}
                 </FormItem>
               )}
             />
@@ -241,6 +311,12 @@ export function PitchDeckGenerator() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
+                  {aiSuggestions?.competitiveAdvantage && (
+                    <Alert className="mt-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{aiSuggestions.competitiveAdvantage}</AlertDescription>
+                    </Alert>
+                  )}
                 </FormItem>
               )}
             />
@@ -271,6 +347,12 @@ export function PitchDeckGenerator() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
+                  {aiSuggestions?.teamPresentation && (
+                    <Alert className="mt-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{aiSuggestions.teamPresentation}</AlertDescription>
+                    </Alert>
+                  )}
                 </FormItem>
               )}
             />
@@ -286,6 +368,12 @@ export function PitchDeckGenerator() {
                     <Textarea {...field} className="min-h-[100px]" />
                   </FormControl>
                   <FormMessage />
+                  {aiSuggestions?.financialNarrative && (
+                    <Alert className="mt-2">
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>{aiSuggestions.financialNarrative}</AlertDescription>
+                    </Alert>
+                  )}
                 </FormItem>
               )}
             />
@@ -309,10 +397,10 @@ export function PitchDeckGenerator() {
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Pitch Deck...
+                  Generating AI-Enhanced Pitch Deck...
                 </>
               ) : (
-                "Generate Pitch Deck"
+                "Generate AI-Enhanced Pitch Deck"
               )}
             </Button>
           </form>

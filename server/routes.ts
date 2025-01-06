@@ -8,6 +8,9 @@ import { generatePdfReport } from "./lib/report";
 import { calculateValuation } from "./lib/valuation";
 import { setupCache } from "./lib/cache";
 import { z } from "zod";
+import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/ai-personalization";
+import { Parser } from "json2csv";
+import * as XLSX from 'xlsx';
 
 // Define a schema for the report data
 const reportDataSchema = valuationFormSchema.extend({
@@ -24,6 +27,32 @@ const reportDataSchema = valuationFormSchema.extend({
 
 export function registerRoutes(app: Express): Server {
   const cache = setupCache();
+
+  // Pitch deck personalization routes
+  app.post("/api/pitch-deck/personalize", async (req, res) => {
+    try {
+      const suggestions = await generatePersonalizedSuggestions(req.body);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Pitch deck personalization failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate personalized suggestions"
+      });
+    }
+  });
+
+  app.post("/api/pitch-deck/industry-analysis", async (req, res) => {
+    try {
+      const { industry, businessModel } = req.body;
+      const analysis = await analyzeIndustryFit(industry, businessModel);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Industry analysis failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to analyze industry fit"
+      });
+    }
+  });
 
   // Enhanced report generation route with better error handling
   app.post("/api/report", async (req, res) => {
@@ -145,22 +174,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Add new pitch deck analysis route
-  app.post("/api/analyze-pitch-deck", async (req, res) => {
-    try {
-      const { slides } = req.body;
-
-      if (!Array.isArray(slides) || slides.length === 0) {
-        return res.status(400).json({ message: "Invalid slides data" });
-      }
-
-      const analysis = await analyzePitchDeck(slides);
-      res.json(analysis);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
   // Export routes for different formats
   app.post("/api/export/pdf", async (req, res) => {
     try {
@@ -180,11 +193,7 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/export/xlsx", async (req, res) => {
     try {
       const data = req.body;
-
-      // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
-
-      // Convert data to worksheet format
       const ws = XLSX.utils.json_to_sheet([{
         "Business Name": data.businessName,
         "Industry": data.industry,
@@ -194,10 +203,7 @@ export function registerRoutes(app: Express): Server {
         "Valuation": data.valuation,
       }]);
 
-      // Add the worksheet to the workbook
       XLSX.utils.book_append_sheet(wb, ws, "Valuation Summary");
-
-      // Generate buffer
       const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -214,8 +220,6 @@ export function registerRoutes(app: Express): Server {
   app.post("/api/export/csv", async (req, res) => {
     try {
       const data = req.body;
-
-      // Prepare data for CSV
       const fields = ["businessName", "industry", "stage", "revenue", "growthRate", "valuation"];
       const parser = new Parser({ fields });
       const csv = parser.parse(data);
