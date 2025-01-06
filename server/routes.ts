@@ -8,6 +8,7 @@ import { setupCache } from "./lib/cache";
 import pitchDeckRouter from "./routes/pitch-deck";
 import { z } from "zod";
 import rateLimit from 'express-rate-limit';
+import { setupAuth } from "./auth";
 
 // Initialize cache
 const cache = setupCache();
@@ -36,6 +37,9 @@ const createWorkspaceSchema = z.object({
 });
 
 export function registerRoutes(app: Express): Server {
+  // sets up /api/register, /api/login, /api/logout, /api/user
+  setupAuth(app);
+
   // Apply rate limiting to API routes
   app.use("/api/", apiLimiter);
 

@@ -1,6 +1,5 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, pgEnum, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { relations, type Relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Define user roles enum
@@ -31,15 +30,12 @@ export const addonTypes = pgEnum("addon_type", [
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: varchar("email", { length: 255 }).unique().notNull(),
   username: varchar("username", { length: 255 }).unique().notNull(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
   password: text("password").notNull(),
   role: userRoles("role").notNull(),
   subscriptionTier: subscriptionTiers("subscription_tier").default("free").notNull(),
   subscriptionStatus: planStatus("subscription_status").default("active"),
-  trialEndsAt: timestamp("trial_ends_at"),
-  phoneNumber: varchar("phone_number", { length: 20 }),
-  companyName: varchar("company_name", { length: 255 }),
   isEmailVerified: boolean("is_email_verified").default(false),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -266,73 +262,6 @@ export const auditTrail = pgTable("audit_trail", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Define relations
-export const userToProfileRelations = relations(users, ({ one, many }) => ({
-  profile: one(userProfiles, {
-    fields: [users.id],
-    references: [userProfiles.userId],
-  }),
-  subscriptions: many(userSubscriptions),
-  usageStats: many(usageStats),
-  activities: many(userActivities),
-  suggestions: many(workflowSuggestions),
-}));
-
-export const profileToUserRelations = relations(userProfiles, ({ one }) => ({
-  user: one(users, {
-    fields: [userProfiles.userId],
-    references: [users.id],
-  }),
-}));
-
-export const subscriptionToUserRelation = relations(userSubscriptions, ({ one }) => ({
-  user: one(users, {
-    fields: [userSubscriptions.userId],
-    references: [users.id],
-  }),
-  plan: one(subscriptionPlans, {
-    fields: [userSubscriptions.planId],
-    references: [subscriptionPlans.id],
-  }),
-}));
-
-export const activityRelations = relations(userActivities, ({ one }) => ({
-  user: one(users, {
-    fields: [userActivities.userId],
-    references: [users.id],
-  }),
-}));
-
-export const suggestionRelations = relations(workflowSuggestions, ({ one }) => ({
-  user: one(users, {
-    fields: [workflowSuggestions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const workspaceRelations = relations(workspaces, ({ one, many }) => ({
-  owner: one(users, {
-    fields: [workspaces.ownerId],
-    references: [users.id],
-  }),
-  members: many(workspaceMembers),
-  valuations: many(valuations),
-  auditLogs: many(auditTrail),
-}));
-
-export const valuationRelations = relations(valuations, ({ one, many }) => ({
-  workspace: one(workspaces, {
-    fields: [valuations.workspaceId],
-    references: [workspaces.id],
-  }),
-  creator: one(users, {
-    fields: [valuations.createdBy],
-    references: [users.id],
-  }),
-  comments: many(valuationComments),
-}));
-
-
 // Create schemas for validation with custom validation rules
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email("Invalid email format"),
@@ -343,13 +272,10 @@ export const insertUserSchema = createInsertSchema(users, {
   id: true,
   subscriptionTier: true,
   subscriptionStatus: true,
-  trialEndsAt: true,
-  phoneNumber: true,
-  companyName: true,
   isEmailVerified: true,
   lastLoginAt: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
 });
 
 export const selectUserSchema = createSelectSchema(users);
