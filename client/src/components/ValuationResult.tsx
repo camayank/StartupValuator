@@ -1,20 +1,38 @@
-import { Loader2 } from "@/components/ui/loader";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
 import type { ValuationFormData } from "@/lib/validations";
-import { generateReport } from "@/lib/api";
-import { RiskAssessment } from "./RiskAssessment";
-import { FundingTimeline } from "./FundingTimeline";
-import { PotentialPredictor } from "./PotentialPredictor";
-import { EcosystemNetwork } from "./EcosystemNetwork";
-import { FundingReadiness } from "./FundingReadiness";
-import { calculateFundingReadiness } from "@/lib/fundingReadiness";
-import { ExportButton } from "./ExportButton";
-import { FinancialTooltip } from "@/components/ui/financial-tooltip";
-import { useState, useCallback } from "react";
+import { formatCurrency } from "@/lib/validations";
+import { useState } from "react";
+import { Link } from "wouter";
+import { ValuationReport } from "./ValuationReport";
+import { ValuationDashboard } from "./dashboards/ValuationDashboard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 
 interface ValuationResultProps {
   data: ValuationFormData | null;
@@ -37,7 +55,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
     data?.stage
   );
 
-  const handleGenerateReport = useCallback(async () => {
+  const handleGenerateReport = async () => {
     if (!canGenerateReport || !data) return;
 
     try {
@@ -62,7 +80,7 @@ export function ValuationResult({ data }: ValuationResultProps) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'startup-valuation-report.pdf';
+      a.download = `${data.businessName.toLowerCase().replace(/\s+/g, '-')}-valuation-report.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -73,58 +91,28 @@ export function ValuationResult({ data }: ValuationResultProps) {
         description: "Valuation report has been generated and downloaded.",
       });
 
-      // Reset retry count on success
       setRetryCount(0);
     } catch (error) {
       console.error('Report generation error:', error);
 
-      // Implement retry logic for temporary failures
       if (retryCount < MAX_RETRIES) {
         setRetryCount(prev => prev + 1);
         toast({
           title: "Retrying...",
           description: `Attempt ${retryCount + 1} of ${MAX_RETRIES}`,
         });
-        setTimeout(() => handleGenerateReport(), 1000 * (retryCount + 1)); // Exponential backoff
+        setTimeout(() => handleGenerateReport(), 1000 * (retryCount + 1));
       } else {
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "Failed to generate report. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to generate report",
           variant: "destructive",
         });
-        // Reset retry count after max retries
         setRetryCount(0);
       }
     } finally {
       setIsGenerating(false);
     }
-  }, [data, canGenerateReport, retryCount, toast]);
-
-  const currencyConfig = {
-    USD: { symbol: "$", locale: "en-US" },
-    INR: { symbol: "₹", locale: "en-IN" },
-    EUR: { symbol: "€", locale: "de-DE" },
-    GBP: { symbol: "£", locale: "en-GB" },
-    JPY: { symbol: "¥", locale: "ja-JP" },
-  } as const;
-
-  const formatCurrency = (value: number) => {
-    if (!data?.currency || !currencyConfig[data.currency as keyof typeof currencyConfig]) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-        notation: 'compact'
-      }).format(value);
-    }
-
-    const config = currencyConfig[data.currency as keyof typeof currencyConfig];
-    return new Intl.NumberFormat(config.locale, {
-      style: 'currency',
-      currency: data.currency,
-      maximumFractionDigits: 0,
-      notation: 'compact'
-    }).format(value);
   };
 
   if (!data) {
@@ -147,219 +135,224 @@ export function ValuationResult({ data }: ValuationResultProps) {
     {
       name: "Base Valuation",
       value: data.details?.baseValuation || 0,
+      color: "hsl(var(--primary))",
     },
-    ...(data.details?.adjustments ? Object.entries(data.details.adjustments).map(([key, value]) => ({
-      name: key.replace(/([A-Z])/g, ' $1').trim(),
-      value: Math.abs(value),
-      isPositive: value > 0,
-    })) : []),
+    ...(data.details?.adjustments ?
+      Object.entries(data.details.adjustments)
+        .map(([key, value]) => ({
+          name: key.replace(/([A-Z])/g, ' $1').trim(),
+          value: Math.abs(Number(value)),
+          color: Number(value) > 0 ? "hsl(var(--success))" : "hsl(var(--warning))",
+          isPositive: Number(value) > 0,
+        }))
+      : []
+    ),
   ];
 
-  // Sample peer comparables data (replace with actual data)
+  // Sample peer comparables data
   const peerComparables = [
     { name: "Company A", revenue: 1000000, valuation: 5000000, multiple: 5 },
     { name: "Company B", revenue: 2000000, valuation: 12000000, multiple: 6 },
     { name: "Company C", revenue: 1500000, valuation: 9000000, multiple: 6 },
   ];
 
-  // Calculate funding readiness
-  const fundingReadiness = calculateFundingReadiness(data);
-
   return (
-    <div className="space-y-6 font-sans">
-      {/* Executive Summary Section */}
-      <Card className="bg-white shadow-lg">
-        <CardHeader className="border-b">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-2xl font-bold">Executive Summary</CardTitle>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleGenerateReport}
-                className="flex items-center gap-2"
-                disabled={!canGenerateReport || isGenerating}
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2" />
-                    {retryCount > 0 ? `Retrying (${retryCount}/${MAX_RETRIES})...` : "Generating..."}
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Generate Report
-                  </>
-                )}
-              </Button>
-              <ExportButton data={data} />
+    <div className="space-y-6">
+      {/* Executive Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="bg-white shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-2xl font-bold">Executive Summary</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleGenerateReport}
+                  className="flex items-center gap-2"
+                  disabled={!canGenerateReport || isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {retryCount > 0 ? `Retrying (${retryCount}/${MAX_RETRIES})...` : "Generating..."}
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Download Report
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="grid md:grid-cols-3 gap-6"
-          >
-            <div className="space-y-2">
-              <FinancialTooltip term="valuation" showExample>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-2">
                 <h3 className="text-3xl font-bold text-primary">
-                  {formatCurrency(data.valuation || 0)}
+                  {formatCurrency(data.valuation || 0, data.currency || 'USD')}
                 </h3>
-              </FinancialTooltip>
-              <p className="text-sm text-muted-foreground">Enterprise Value</p>
-            </div>
-            <div className="space-y-2">
-              <FinancialTooltip term="multiplier" showExample>
+                <p className="text-sm text-muted-foreground">Enterprise Value</p>
+              </div>
+              <div className="space-y-2">
                 <h3 className="text-3xl font-bold text-primary">
-                  {data.multiplier?.toFixed(1)}x
+                  {((data.valuation || 0) / (data.revenue || 1)).toFixed(1)}x
                 </h3>
-              </FinancialTooltip>
-              <p className="text-sm text-muted-foreground">Revenue Multiple</p>
-            </div>
-            <div className="space-y-2">
-              <FinancialTooltip term="growthRate" showExample>
+                <p className="text-sm text-muted-foreground">Revenue Multiple</p>
+              </div>
+              <div className="space-y-2">
                 <h3 className="text-3xl font-bold text-primary">
                   {data.growthRate}%
                 </h3>
-              </FinancialTooltip>
-              <p className="text-sm text-muted-foreground">Growth Rate</p>
-            </div>
-          </motion.div>
-        </CardContent>
-      </Card>
-
-      {/* Methodology and Assumptions Section */}
-      <Accordion type="single" collapsible className="bg-white shadow-lg rounded-lg">
-        <AccordionItem value="methodology">
-          <AccordionTrigger className="px-6 py-4 text-lg font-semibold">
-            Methodology & Assumptions
-          </AccordionTrigger>
-          <AccordionContent className="px-6 pb-4">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Valuation Approach</h4>
-                <p className="text-muted-foreground">
-                  The valuation is based on a combination of revenue multiples and growth-adjusted metrics,
-                  considering industry standards and market conditions.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Key Assumptions</h4>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>
-                    <FinancialTooltip term="growthRate">
-                      Revenue Growth Rate: {data.growthRate}%
-                    </FinancialTooltip>
-                  </li>
-                  <li>
-                    <FinancialTooltip term="margins">
-                      Operating Margins: {data.margins}%
-                    </FinancialTooltip>
-                  </li>
-                  <li>Industry: {data.industry}</li>
-                  <li>Stage: {data.stage}</li>
-                </ul>
+                <p className="text-sm text-muted-foreground">Growth Rate</p>
               </div>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      {/* Interactive Charts Section */}
-      <Card className="bg-white shadow-lg">
-        <CardHeader className="border-b">
-          <CardTitle>Valuation Analysis</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-medium mb-4">Valuation Breakdown</h4>
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={breakdownData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tickFormatter={formatCurrency} />
-                    <YAxis type="category" dataKey="name" width={120} />
-                    <Tooltip
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--background))",
-                        border: "1px solid hsl(var(--border))",
-                      }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      fill="hsl(var(--primary))"
-                      animationDuration={1000}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+      {/* Valuation Breakdown */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Valuation Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={breakdownData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(value) => formatCurrency(value, data.currency || 'USD')}
+                  />
+                  <YAxis type="category" dataKey="name" width={120} />
+                  <Tooltip
+                    formatter={(value: number) => formatCurrency(value, data.currency || 'USD')}
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--background))",
+                      border: "1px solid hsl(var(--border))",
+                    }}
+                  />
+                  <Bar dataKey="value" fill="currentColor">
+                    {breakdownData.map((entry, index) => (
+                      <motion.rect
+                        key={`bar-${index}`}
+                        fill={entry.color}
+                        initial={{ width: 0 }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-            {/* Peer Comparables Table */}
-            <div>
-              <h4 className="font-medium mb-4">Peer Comparables</h4>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Company</TableHead>
-                    <TableHead className="text-right">Revenue</TableHead>
-                    <TableHead className="text-right">Valuation</TableHead>
-                    <TableHead className="text-right">Multiple</TableHead>
+      {/* Peer Comparables */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Peer Comparables</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">Valuation</TableHead>
+                  <TableHead className="text-right">Multiple</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {peerComparables.map((company) => (
+                  <TableRow key={company.name}>
+                    <TableCell className="font-medium">{company.name}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(company.revenue, data.currency || 'USD')}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(company.valuation, data.currency || 'USD')}
+                    </TableCell>
+                    <TableCell className="text-right">{company.multiple}x</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {peerComparables.map((company) => (
-                    <TableRow key={company.name}>
-                      <TableCell className="font-medium">{company.name}</TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(company.revenue)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(company.valuation)}
-                      </TableCell>
-                      <TableCell className="text-right">{company.multiple}x</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      {/* Additional Analysis Sections */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {data.riskAssessment && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <RiskAssessment data={data.riskAssessment} />
-          </motion.div>
-        )}
-
-        {data.potentialPrediction && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <PotentialPredictor data={data.potentialPrediction} />
-          </motion.div>
-        )}
-      </div>
-
-      {/* Funding Readiness and Timeline */}
+      {/* Detailed Report */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.6 }}
       >
-        <FundingReadiness data={fundingReadiness} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Detailed Analysis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible>
+              <AccordionItem value="methodology">
+                <AccordionTrigger>Valuation Methodology</AccordionTrigger>
+                <AccordionContent>
+                  <p className="text-muted-foreground">
+                    The valuation is based on a combination of revenue multiples,
+                    growth-adjusted metrics, and market comparables. We've
+                    considered industry standards, market conditions, and your
+                    specific business characteristics.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="assumptions">
+                <AccordionTrigger>Key Assumptions</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    <li>Revenue Growth Rate: {data.growthRate}%</li>
+                    <li>Operating Margins: {data.margins}%</li>
+                    <li>Industry: {data.industry}</li>
+                    <li>Stage: {data.stage}</li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="adjustments">
+                <AccordionTrigger>Valuation Adjustments</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4">
+                    {breakdownData.slice(1).map((adjustment, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span>{adjustment.name}</span>
+                        <span className={adjustment.isPositive ? "text-success" : "text-warning"}>
+                          {adjustment.isPositive ? "+" : "-"}
+                          {formatCurrency(adjustment.value, data.currency || 'USD')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
       </motion.div>
 
       <motion.div
@@ -367,21 +360,8 @@ export function ValuationResult({ data }: ValuationResultProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.8 }}
       >
-        <FundingTimeline
-          currentStage={data.stage}
-          currentValuation={data.valuation || 0}
-        />
+        <ValuationReport data={data} />
       </motion.div>
-
-      {data.ecosystemNetwork && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.0 }}
-        >
-          <EcosystemNetwork data={data.ecosystemNetwork} />
-        </motion.div>
-      )}
     </div>
   );
 }
