@@ -24,8 +24,6 @@ import { Profile } from "./pages/Profile";
 import ValuationPage from "./pages/ValuationPage";
 import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
 import SAFECalculatorPage from "./pages/SAFECalculatorPage";
-import MarketAnalysisPage from "./pages/MarketAnalysisPage";
-import MetricsPage from "./pages/MetricsPage";
 import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
@@ -48,8 +46,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
+import MetricsPage from "./pages/MetricsPage";
+import MarketAnalysisPage from "./pages/MarketAnalysisPage";
 
-// Update navigationConfig to include YC-focused features
+
+// Navigation configuration for different user roles
 const navigationConfig = {
   startup: {
     mainTools: [
@@ -70,35 +71,10 @@ const navigationConfig = {
       { href: "/safe-calculator", label: "SAFE Calculator", description: "Analyze SAFE terms", icon: Calculator },
       { href: "/calculator", label: "Interactive Calculator", description: "Quick valuation estimates", icon: Calculator },
       { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", icon: PieChart },
-      { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments", icon: BarChart3 },
     ],
     analytics: [
       { href: "/dashboard", label: "Investment Dashboard", description: "Monitor your portfolio performance", icon: PieChart },
-      { href: "/market-analysis", label: "Market Analysis", description: "Analyze market trends", icon: BarChart3 },
-    ]
-  },
-  valuer: {
-    mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Professional valuation tools", icon: Calculator },
-      { href: "/calculator", label: "Interactive Calculator", description: "Quick scenario analysis", icon: Calculator },
-      { href: "/methodology", label: "Methodology", description: "Manage valuation methodologies", icon: BookOpen },
-      { href: "/clients", label: "Clients", description: "Manage client relationships", icon: Users },
-    ],
-    analytics: [
-      { href: "/dashboard", label: "Valuation Dashboard", description: "Track valuation projects", icon: PieChart },
-      { href: "/benchmarks", label: "Benchmark Analysis", description: "Industry comparisons", icon: BarChart3 },
-    ]
-  },
-  consultant: {
-    mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Advisory focused tools", icon: Calculator },
-      { href: "/calculator", label: "Interactive Calculator", description: "Client scenario modeling", icon: Calculator },
-      { href: "/clients", label: "Clients", description: "Manage client relationships", icon: Users },
-      { href: "/reports", label: "Reports", description: "Generate and manage reports", icon: FileText },
-    ],
-    analytics: [
-      { href: "/dashboard", label: "Advisory Dashboard", description: "Track client projects", icon: PieChart },
-      { href: "/resources", label: "Resource Library", description: "Access knowledge base", icon: BookOpen },
+      { href: "/market", label: "Market Analysis", description: "Analyze market trends", icon: BarChart3 },
     ]
   }
 };
@@ -124,17 +100,14 @@ function App() {
     );
   }
 
-  // If user is not logged in and not on auth page, show landing page
   if (!user && !location.startsWith('/auth')) {
     return <LandingPage />;
   }
 
-  // Show auth page if not logged in and on auth page
   if (!user && location.startsWith('/auth')) {
     return <AuthPage />;
   }
 
-  // If we get here, user must be logged in
   if (!user) return null;
 
   const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig] || navigationConfig.startup;
@@ -147,47 +120,6 @@ function App() {
       console.error('Logout failed:', error);
     }
   };
-
-  const NavLink = ({ href, label, description, icon: Icon }: {
-    href: string;
-    label: string;
-    description: string;
-    icon: any;
-  }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link href={href}>
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-            location === href
-              ? 'bg-primary/10 text-primary'
-              : 'hover:bg-accent text-foreground'
-          }`}>
-            <Icon className="h-5 w-5" />
-            <span>{label}</span>
-          </div>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent side="right">
-        <p>{description}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-
-  const MobileNavItem = ({ href, label, icon: Icon }: { href: string; label: string; icon: any }) => (
-    <Link href={href}>
-      <div
-        className={`flex items-center gap-3 px-4 py-2 ${
-          location === href
-            ? "bg-primary/10 text-primary"
-            : "hover:bg-accent"
-        }`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      >
-        <Icon className="h-5 w-5" />
-        <span>{label}</span>
-      </div>
-    </Link>
-  );
 
   return (
     <TooltipProvider>
@@ -203,12 +135,19 @@ function App() {
               </Link>
             </div>
 
-            <nav className="flex-1 space-y-6 p-4 overflow-y-auto">
+            <nav className="flex-1 space-y-6 p-4">
               <div>
                 <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Main Tools</h2>
                 <div className="space-y-1">
                   {userNavigation.mainTools.map((item) => (
-                    <NavLink key={item.href} {...item} />
+                    <Link key={item.href} href={item.href}>
+                      <div className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                        location === item.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-foreground'
+                      }`}>
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -217,7 +156,14 @@ function App() {
                 <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Analytics</h2>
                 <div className="space-y-1">
                   {userNavigation.analytics.map((item) => (
-                    <NavLink key={item.href} {...item} />
+                    <Link key={item.href} href={item.href}>
+                      <div className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                        location === item.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-foreground'
+                      }`}>
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -226,7 +172,14 @@ function App() {
                 <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Resources</h2>
                 <div className="space-y-1">
                   {resourceLinks.map((item) => (
-                    <NavLink key={item.href} {...item} />
+                    <Link key={item.href} href={item.href}>
+                      <div className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                        location === item.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-foreground'
+                      }`}>
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -266,7 +219,7 @@ function App() {
           </div>
         </aside>
 
-        {/* Main Content Area */}
+        {/* Main Content */}
         <main className="lg:pl-64">
           <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
             <Switch>
@@ -274,28 +227,20 @@ function App() {
               <Route path="/valuation" component={ValuationPage} />
               <Route path="/calculator" component={ValuationCalculatorPage} />
               <Route path="/safe-calculator" component={SAFECalculatorPage} />
-              <Route path="/metrics" component={MetricsPage} />
-              <Route path="/market" component={MarketAnalysisPage} />
-              <Route path="/projections">
-                <ProjectionsWizard />
-              </Route>
               <Route path="/pitch-deck">
                 <PitchDeckGenerator />
+              </Route>
+              <Route path="/projections">
+                <ProjectionsWizard />
               </Route>
               <Route path="/compliance">
                 <ComplianceChecker />
               </Route>
-              <Route path="/pricing">
-                <PricingPage />
-              </Route>
-              <Route path="/docs">
-                <Documentation />
-              </Route>
-              <Route path="/profile/:userId">
-                <Profile />
-              </Route>
+              <Route path="/pricing" component={PricingPage} />
+              <Route path="/docs" component={Documentation} />
+              <Route path="/profile/:userId" component={Profile} />
               <Route path="/journey">
-                <DashboardContainer>
+                <div>
                   <StartupJourneyDashboard
                     profile={{
                       journeyMilestones: [
@@ -335,8 +280,10 @@ function App() {
                       ]
                     }}
                   />
-                </DashboardContainer>
+                </div>
               </Route>
+              <Route path="/metrics" component={MetricsPage} />
+              <Route path="/market" component={MarketAnalysisPage} />
               <Route component={NotFound} />
             </Switch>
           </div>
@@ -344,63 +291,47 @@ function App() {
 
         {/* Mobile Navigation */}
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild className="lg:hidden fixed top-4 right-4 z-50">
-            <Button variant="ghost" size="icon">
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="fixed top-4 right-4 z-50 lg:hidden">
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-80">
             <nav className="mt-8 space-y-6">
+              {/* Mobile Navigation Content */}
               <div>
                 <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Main Tools</h2>
                 {userNavigation.mainTools.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <div
-                      className={`flex items-center gap-3 px-4 py-2 ${
-                        location === item.href
-                          ? "bg-primary/10 text-primary"
-                          : "hover:bg-accent"
-                      }`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
+                  <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className={`flex items-center gap-3 px-4 py-2 ${
+                      location === item.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                    }`}>
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
                     </div>
                   </Link>
                 ))}
               </div>
-
               <div>
                 <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Analytics</h2>
                 {userNavigation.analytics.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <div
-                      className={`flex items-center gap-3 px-4 py-2 ${
-                        location === item.href
-                          ? "bg-primary/10 text-primary"
-                          : "hover:bg-accent"
-                      }`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
+                  <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className={`flex items-center gap-3 px-4 py-2 ${
+                      location === item.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                    }`}>
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
                     </div>
                   </Link>
                 ))}
               </div>
-
               <div>
                 <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
                 {resourceLinks.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <div
-                      className={`flex items-center gap-3 px-4 py-2 ${
-                        location === item.href
-                          ? "bg-primary/10 text-primary"
-                          : "hover:bg-accent"
-                      }`}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
+                  <Link key={item.href} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className={`flex items-center gap-3 px-4 py-2 ${
+                      location === item.href ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                    }`}>
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
                     </div>
