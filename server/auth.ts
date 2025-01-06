@@ -76,6 +76,13 @@ export function setupAuth(app: Express) {
         if (!isMatch) {
           return done(null, false, { message: "Incorrect password." });
         }
+
+        // Update last login timestamp
+        await db
+          .update(users)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(users.id, user.id));
+
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -133,9 +140,13 @@ export function setupAuth(app: Express) {
           username,
           password: hashedPassword,
           email,
-          role,
+          role: role || "startup", // Default to startup if not provided
           subscriptionTier: "free",
           subscriptionStatus: "active",
+          isEmailVerified: false,
+          lastLoginAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         })
         .returning();
 
