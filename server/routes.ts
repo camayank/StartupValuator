@@ -17,6 +17,7 @@ import { setupAuth } from "./auth";
 import { generateComplianceReport, generateComplianceChecklist } from "./services/compliance-checker";
 import workspaceRoutes from "./routes/workspace";
 import { frameworks, type FrameworkId, validateFrameworkCompliance, applyFrameworkAdjustments } from "./lib/compliance/frameworks";
+import { generateValuationInsights } from "./services/valuationInsights";
 
 // Define a schema for the report data
 const reportDataSchema = valuationFormSchema.extend({
@@ -46,25 +47,14 @@ export function registerRoutes(app: Express): Server {
   // Add workspace routes
   app.use("/api/workspaces", workspaceRoutes);
 
-  // Enhanced valuation route with compliance support
+  // Enhanced valuation route with comprehensive insights
   app.post("/api/valuation", async (req, res) => {
     try {
       // Validate request body against our schema
       const validatedData = valuationFormSchema.parse(req.body);
-      const { revenue, growthRate, margins, industry, stage, region } = validatedData;
-
-      // Auto-select appropriate compliance framework based on region
-      let frameworkId: FrameworkId = 'ivs'; // Default to IVS
-      if (region.toLowerCase() === 'us') {
-        frameworkId = '409a';
-      } else if (region.toLowerCase() === 'india') {
-        frameworkId = 'icai';
-      }
-
-      const framework = frameworks[frameworkId];
 
       // Create a cache key from the important parameters
-      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}-${frameworkId}`;
+      const cacheKey = `${validatedData.revenue}-${validatedData.growthRate}-${validatedData.margins}-${validatedData.industry}-${validatedData.stage}-${validatedData.region}`;
 
       // Check cache first
       const cachedResult = cache.get(cacheKey);
@@ -72,24 +62,23 @@ export function registerRoutes(app: Express): Server {
         return res.json(cachedResult);
       }
 
+      // Generate comprehensive insights
+      const insights = await generateValuationInsights(validatedData);
+
       // Calculate base valuation
       const baseValuation = await calculateValuation(validatedData);
 
-      // Validate compliance requirements
-      const complianceResults = validateFrameworkCompliance(framework, validatedData);
-      const hasComplianceIssues = complianceResults.some(r => r.errors.length > 0);
+      // Apply compliance-specific adjustments if needed
+      const frameworkId = validatedData.region.toLowerCase() === 'us' ? '409a' : 
+                         validatedData.region.toLowerCase() === 'india' ? 'icai' : 'ivs';
 
-      // Apply compliance-specific adjustments
+      const framework = frameworks[frameworkId];
       const adjustedValuation = applyFrameworkAdjustments(framework, baseValuation.valuation);
 
       const result = {
         ...baseValuation,
         valuation: adjustedValuation,
-        compliance: {
-          framework: frameworkId,
-          requirements: complianceResults,
-          hasIssues: hasComplianceIssues,
-        },
+        insights
       };
 
       // Cache the result
@@ -232,6 +221,7 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
 
   // Compliance checking routes
   app.post("/api/compliance/check", async (req, res) => {
