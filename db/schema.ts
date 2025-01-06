@@ -7,6 +7,20 @@ export const userRoles = pgEnum("user_role", ["startup", "investor", "valuer", "
 export const subscriptionTiers = pgEnum("subscription_tier", ["free", "basic", "premium", "enterprise"]);
 export const planStatus = pgEnum("plan_status", ["active", "cancelled", "past_due", "trial"]);
 
+// Add new enums for tracking activities
+export const activityTypes = pgEnum("activity_type", [
+  "page_view",
+  "valuation_started",
+  "valuation_completed",
+  "projection_created",
+  "pitch_deck_generated",
+  "compliance_check",
+  "dashboard_view",
+  "profile_update",
+  "settings_change",
+  "feature_interaction"
+]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
@@ -91,6 +105,42 @@ export const usageStats = pgTable("usage_stats", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// New table for tracking detailed user activities
+export const userActivities = pgTable("user_activities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  activityType: activityTypes("activity_type").notNull(),
+  path: varchar("path", { length: 255 }),
+  metadata: jsonb("metadata").$type<{
+    featureId?: string;
+    duration?: number;
+    success?: boolean;
+    errorType?: string;
+    interactionDetails?: Record<string, any>;
+  }>(),
+  sessionId: varchar("session_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Table for workflow suggestions
+export const workflowSuggestions = pgTable("workflow_suggestions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  suggestedAction: varchar("suggested_action", { length: 255 }).notNull(),
+  priority: integer("priority").notNull(),
+  based_on: jsonb("based_on").$type<{
+    activityPattern?: string[];
+    userMetrics?: Record<string, number>;
+    previousActions?: string[];
+  }>(),
+  shown: boolean("shown").default(false),
+  clicked: boolean("clicked").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
 // Define relations
 export const userToProfileRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -99,6 +149,8 @@ export const userToProfileRelations = relations(users, ({ one, many }) => ({
   }),
   subscriptions: many(userSubscriptions),
   usageStats: many(usageStats),
+  activities: many(userActivities),
+  suggestions: many(workflowSuggestions),
 }));
 
 export const subscriptionToUserRelation = relations(userSubscriptions, ({ one }) => ({
@@ -112,6 +164,21 @@ export const subscriptionToUserRelation = relations(userSubscriptions, ({ one })
   }),
 }));
 
+export const activityRelations = relations(userActivities, ({ one }) => ({
+  user: one(users, {
+    fields: [userActivities.userId],
+    references: [users.id],
+  }),
+}));
+
+export const suggestionRelations = relations(workflowSuggestions, ({ one }) => ({
+  user: one(users, {
+    fields: [workflowSuggestions.userId],
+    references: [users.id],
+  }),
+}));
+
+
 // Create schemas for validation
 export const insertUserSchema = createInsertSchema(users);
 export const selectUserSchema = createSelectSchema(users);
@@ -123,7 +190,10 @@ export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions
 export const selectUserSubscriptionSchema = createSelectSchema(userSubscriptions);
 export const insertUsageStatsSchema = createInsertSchema(usageStats);
 export const selectUsageStatsSchema = createSelectSchema(usageStats);
-
+export const insertUserActivitySchema = createInsertSchema(userActivities);
+export const selectUserActivitySchema = createSelectSchema(userActivities);
+export const insertWorkflowSuggestionSchema = createInsertSchema(workflowSuggestions);
+export const selectWorkflowSuggestionSchema = createSelectSchema(workflowSuggestions);
 
 // Export types
 export type InsertUser = typeof users.$inferInsert;
@@ -136,6 +206,10 @@ export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
 export type SelectUserSubscription = typeof userSubscriptions.$inferSelect;
 export type InsertUsageStats = typeof usageStats.$inferInsert;
 export type SelectUsageStats = typeof usageStats.$inferSelect;
+export type InsertUserActivity = typeof userActivities.$inferInsert;
+export type SelectUserActivity = typeof userActivities.$inferSelect;
+export type InsertWorkflowSuggestion = typeof workflowSuggestions.$inferInsert;
+export type SelectWorkflowSuggestion = typeof workflowSuggestions.$inferSelect;
 
 export const loginAudit = pgTable("login_audit", {
   id: serial("id").primaryKey(),

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { ValuationFormData } from "@/lib/validations";
 import { useState } from "react";
+import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 
 const mainNavItems = [
   { href: "/", label: "Valuation", description: "Calculate your startup's value" },
@@ -267,6 +268,7 @@ function App() {
             <Route component={NotFound} />
           </Switch>
         </main>
+        <WorkflowSuggestions />
       </div>
     </TooltipProvider>
   );

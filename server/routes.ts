@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
+import { WorkflowSuggestionEngine } from "./services/workflowSuggestion";
+import { ActivityTracker } from "./services/activityTracker";
 import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
@@ -32,6 +34,58 @@ export function registerRoutes(app: Express): Server {
 
   // Set up authentication routes
   setupAuth(app);
+
+  // Activity tracking middleware
+  app.use((req, res, next) => {
+    if (req.isAuthenticated() && req.user) {
+      ActivityTracker.trackActivity(req.user.id, "page_view", req).catch(console.error);
+    }
+    next();
+  });
+
+  // Workflow suggestion routes
+  app.get("/api/suggestions", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      await WorkflowSuggestionEngine.generateSuggestions(req.user!.id);
+      const suggestions = await WorkflowSuggestionEngine.getUserSuggestions(req.user!.id);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Failed to get suggestions:", error);
+      res.status(500).json({ message: "Failed to get suggestions" });
+    }
+  });
+
+  app.post("/api/suggestions/:id/shown", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      await WorkflowSuggestionEngine.markSuggestionAsShown(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to mark suggestion as shown:", error);
+      res.status(500).json({ message: "Failed to update suggestion" });
+    }
+  });
+
+  app.post("/api/suggestions/:id/clicked", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    try {
+      await WorkflowSuggestionEngine.markSuggestionAsClicked(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to mark suggestion as clicked:", error);
+      res.status(500).json({ message: "Failed to update suggestion" });
+    }
+  });
 
   // Pitch deck personalization routes
   app.post("/api/pitch-deck/personalize", async (req, res) => {
