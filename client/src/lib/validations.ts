@@ -13,7 +13,7 @@ export const regions = {
   us: {
     name: "United States",
     standards: ["409A", "ASC 820"],
-    riskFreeRate: 0.0368, // Current 10-year Treasury yield
+    riskFreeRate: 0.0368,
     marketRiskPremium: 0.0575,
     defaultCurrency: "USD" as keyof typeof currencies,
   },
@@ -46,6 +46,82 @@ export const regions = {
     defaultCurrency: "USD" as keyof typeof currencies,
   },
 } as const;
+
+// Standard expense categories for startups
+export const expenseCategories = {
+  personnel: {
+    name: "Personnel & Payroll",
+    subcategories: ["Salaries", "Benefits", "Payroll Taxes", "Contractors"],
+  },
+  technology: {
+    name: "Technology & Infrastructure",
+    subcategories: ["Software Licenses", "Cloud Services", "Hardware", "IT Support"],
+  },
+  marketing: {
+    name: "Marketing & Sales",
+    subcategories: ["Advertising", "Events", "Content Creation", "Sales Tools"],
+  },
+  operations: {
+    name: "Operations & Office",
+    subcategories: ["Rent", "Utilities", "Supplies", "Insurance"],
+  },
+  rd: {
+    name: "Research & Development",
+    subcategories: ["Product Development", "Patents", "Testing", "Prototyping"],
+  },
+  professional: {
+    name: "Professional Services",
+    subcategories: ["Legal", "Accounting", "Consulting", "Advisory"],
+  },
+} as const;
+
+// Fund utilization categories
+export const fundingCategories = {
+  productDevelopment: "Product Development",
+  marketing: "Marketing & Customer Acquisition",
+  operations: "Operations & Infrastructure",
+  hiring: "Team Expansion",
+  workingCapital: "Working Capital",
+  researchDevelopment: "Research & Development",
+  expansion: "Market Expansion",
+  reserves: "Cash Reserves",
+} as const;
+
+// Financial Projections Schema
+export const financialProjectionSchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  projectionPeriod: z.number().int().min(1).max(5),
+  baseRevenue: z.number().min(0),
+  baseExpenses: z.number().min(0),
+  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  growthRate: z.number().min(-100).max(1000),
+  marginProjection: z.number().min(-100).max(100),
+  assumptions: z.object({
+    revenueAssumptions: z.array(z.object({
+      category: z.string(),
+      growthRate: z.number(),
+      description: z.string(),
+    })),
+    expenseAssumptions: z.array(z.object({
+      category: z.string(),
+      percentage: z.number(),
+      description: z.string(),
+    })),
+  }),
+});
+
+// Fund Utilization Schema
+export const fundUtilizationSchema = z.object({
+  totalFunding: z.number().min(0),
+  burnRate: z.number().min(0),
+  runway: z.number().min(1),
+  allocation: z.array(z.object({
+    category: z.enum(Object.keys(fundingCategories) as [keyof typeof fundingCategories, ...Array<keyof typeof fundingCategories>]),
+    percentage: z.number().min(0).max(100),
+    amount: z.number().min(0),
+    description: z.string(),
+  })),
+});
 
 // Enhanced business stages with integrated market validation
 export const businessStages = {
