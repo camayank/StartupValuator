@@ -18,30 +18,38 @@ import {
   Award,
   Globe,
   Zap,
+  Users,
+  Lock
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { 
+  SiYcombinator, 
+  SiAccenture, 
+  SiAnilist, 
+  SiAnaconda 
+} from "react-icons/si";
 
 export function LandingPage() {
   const valuationFeatures = [
     {
-      icon: Clock,
-      title: "5-Minute Valuation",
-      description: "Go from zero to professional valuation report in just 5 minutes - faster than brewing your coffee",
-    },
-    {
       icon: Brain,
-      title: "AI-Powered Intelligence",
-      description: "Our advanced AI analyzes 100+ market signals, benchmarks, and growth metrics for unmatched accuracy",
+      title: "AI-Powered Insights",
+      description: "Advanced AI analyzes your data for accurate, professional-grade valuations",
     },
     {
-      icon: Globe,
-      title: "Global Standards",
-      description: "Built-in compliance with ICAI, 409A, IFRS standards - trusted by regulators worldwide",
+      icon: Shield,
+      title: "Compliance-Ready Reports",
+      description: "Automated reports that meet global compliance standards (ICAI, IVS, 409A, IFRS)",
     },
     {
-      icon: Zap,
-      title: "Dynamic Updates",
-      description: "Real-time market data integration keeps your valuation current and actionable",
+      icon: Clock,
+      title: "Fast & Affordable",
+      description: "Complete your valuation in minutes, not weeks. Pay only for what you need",
+    },
+    {
+      icon: Users,
+      title: "Universal Access",
+      description: "Built for founders, investors, valuers, and consultants worldwide",
     },
   ];
 
@@ -50,62 +58,65 @@ export function LandingPage() {
       icon: LineChart,
       title: "Professional Valuation",
       metrics: [
-        "Multiple Valuation Methods",
-        "Industry-Specific Models",
-        "Growth Rate Analysis",
-        "Real-Time Market Data"
+        "DCF Analysis",
+        "Market Multiples",
+        "First Chicago Method",
+        "Real-Time Data"
       ]
     },
     {
       icon: Target,
-      title: "Market Intelligence",
+      title: "Market Analysis",
       metrics: [
         "TAM/SAM/SOM Analysis",
-        "Competitive Positioning",
-        "Market Opportunity Size",
-        "Growth Trajectory"
+        "Competitive Landscape",
+        "Growth Potential",
+        "Market Dynamics"
       ]
     },
     {
-      icon: Award,
-      title: "Risk & Compliance",
+      icon: Lock,
+      title: "Compliance",
       metrics: [
-        "Regulatory Compliance",
-        "Risk Factor Analysis",
-        "Scenario Planning",
-        "Audit-Ready Reports"
+        "409A Compliance",
+        "IFRS Standards",
+        "ICAI Guidelines",
+        "Audit Trail"
       ]
     },
     {
       icon: Brain,
-      title: "AI-Driven Insights",
+      title: "AI Insights",
       metrics: [
-        "Growth Predictions",
-        "Investment Readiness",
-        "Strategic Guidance",
-        "Value Optimization"
+        "Risk Assessment",
+        "Growth Drivers",
+        "Value Optimization",
+        "Strategic Guidance"
       ]
     },
   ];
 
   const testimonials = [
     {
-      quote: "This tool saved us weeks of work and helped us raise our Series A with confidence. The AI insights were spot-on.",
+      quote: "Transformed our valuation process. The AI insights were spot-on and helped us secure funding.",
       author: "Sarah Chen",
       role: "Founder, TechStack AI",
-      amount: "$12M Raised"
+      amount: "$12M Series A",
+      logo: SiYcombinator
     },
     {
-      quote: "Finally, a valuation platform that combines speed with institutional-grade analysis. Perfect for due diligence.",
+      quote: "Finally, a valuation tool that speaks the language of founders. Fast, accurate, and trustworthy.",
       author: "Michael Rodriguez",
-      role: "Investment Director, Global Ventures",
-      amount: "50+ Deals Analyzed"
+      role: "Partner, Global Ventures",
+      amount: "100+ Valuations",
+      logo: SiAccenture
     },
     {
-      quote: "The compliance features are a game-changer. Helps us meet standards across different jurisdictions effortlessly.",
+      quote: "Game-changing platform that delivers institutional-grade analysis in minutes.",
       author: "David Park",
-      role: "CEO, HealthTech Solutions",
-      amount: "409A Compliant"
+      role: "Investment Director",
+      amount: "409A Compliant",
+      logo: SiAnilist
     },
   ];
 
@@ -125,7 +136,7 @@ export function LandingPage() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6"
             >
               <Brain className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Zero to Valuation in 5 Minutes</span>
+              <span className="text-sm font-medium">Next-Gen Startup Valuation</span>
             </motion.div>
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
@@ -133,7 +144,7 @@ export function LandingPage() {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80"
             >
-              Professional-Grade Startup Valuations, Powered by AI
+              Your Business, Your Value, Instantly
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -141,18 +152,18 @@ export function LandingPage() {
               transition={{ delay: 0.2 }}
               className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              Transform your startup valuation process with institutional-grade analysis, real-time market data, and AI-driven insights. Trusted by founders, VCs, and advisors globally.
+              Professional-grade valuations powered by AI. Get accurate, compliant, and actionable insights for your startup in minutes.
             </motion.p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/valuation">
+              <Link href="/valuation/new">
                 <Button size="lg" className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90">
-                  Start Your Valuation Now
+                  Start Valuation
                   <ArrowUpRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/sample-report">
+              <Link href="/demo">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2">
-                  View Sample Report
+                  Learn More
                   <FileText className="h-4 w-4" />
                 </Button>
               </Link>
@@ -164,7 +175,7 @@ export function LandingPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-primary" />
-                <span>VC-Grade Analysis</span>
+                <span>AI-Powered Analysis</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-5 w-5 text-primary" />
@@ -179,9 +190,9 @@ export function LandingPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Revolutionary Valuation Engine</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Choose Our Platform</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Combines advanced AI, real-time market data, and multiple valuation methodologies for unmatched accuracy
+              Advanced technology combined with industry expertise for accurate, compliant valuations
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -206,13 +217,13 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Report Components */}
+      {/* Report Highlights */}
       <section className="py-20 bg-accent/5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Institutional-Grade Reports</h2>
+            <h2 className="text-3xl font-bold mb-4">Professional-Grade Reports</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Every report includes comprehensive analysis, market insights, and actionable recommendations
+              Get comprehensive reports with detailed analysis, market insights, and actionable recommendations
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -244,13 +255,13 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials & Partners */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Trusted by Industry Leaders</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Join hundreds of successful startups and investors who rely on our platform
+              Join hundreds of successful startups and investors who trust our platform
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
@@ -265,7 +276,7 @@ export function LandingPage() {
                 <Card className="relative overflow-hidden h-full">
                   <CardContent className="p-6">
                     <div className="mb-4 text-primary">
-                      <Sparkles className="h-8 w-8" />
+                      <testimonial.logo className="h-8 w-8" />
                     </div>
                     <p className="text-lg mb-4 italic">"{testimonial.quote}"</p>
                     <div className="mt-auto">
@@ -277,6 +288,17 @@ export function LandingPage() {
                 </Card>
               </motion.div>
             ))}
+          </div>
+
+          {/* Partner Logos */}
+          <div className="mt-16">
+            <div className="text-center text-sm text-muted-foreground mb-8">Backed by World-Class Investors</div>
+            <div className="flex justify-center items-center gap-12 opacity-50">
+              <SiYcombinator className="h-8 w-8" />
+              <SiAccenture className="h-8 w-8" />
+              <SiAnilist className="h-8 w-8" />
+              <SiAnaconda className="h-8 w-8" />
+            </div>
           </div>
         </div>
       </section>
@@ -290,14 +312,14 @@ export function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl font-bold mb-6">
-              Ready to Transform Your Valuation Process?
+              Ready to Get Your Professional Valuation?
             </h2>
             <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-              Get your professional-grade valuation report in just 5 minutes. No complex spreadsheets. No waiting.
+              Get your comprehensive valuation report in minutes. No complex spreadsheets. No waiting.
             </p>
-            <Link href="/valuation">
+            <Link href="/valuation/new">
               <Button size="lg" variant="secondary" className="min-w-[200px] gap-2">
-                Start Your Valuation Now
+                Start Your Valuation
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </Link>
