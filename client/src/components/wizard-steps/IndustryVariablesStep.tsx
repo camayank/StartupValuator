@@ -14,27 +14,92 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import type { ValuationFormData } from "@/lib/validations";
-import { sectors } from "@/lib/validations";
 import { Card, CardContent } from "@/components/ui/card";
-import { regions } from "@/lib/regions"; // Import regions data
-
 
 interface IndustryVariablesStepProps {
   data: Partial<ValuationFormData>;
   onUpdate: (data: Partial<ValuationFormData>) => void;
   onNext: () => void;
   onBack: () => void;
-  currentStep: number;
-  totalSteps: number;
 }
+
+// Industry-specific metrics configuration
+const industryMetrics = {
+  technology: {
+    saas: {
+      metrics: [
+        { key: "arr", label: "Annual Recurring Revenue", description: "Total value of recurring revenue normalized for one year" },
+        { key: "cac", label: "Customer Acquisition Cost", description: "Average cost to acquire a new customer" },
+        { key: "ltv", label: "Customer Lifetime Value", description: "Total revenue expected from a customer" },
+        { key: "churnRate", label: "Churn Rate", description: "Rate at which customers stop using your product/service" },
+        { key: "expansionRevenue", label: "Expansion Revenue", description: "Additional revenue from existing customers" }
+      ],
+      benchmarks: {
+        revenueMultiple: { early: 10, growth: 15, mature: 8 },
+        grossMargin: 0.75,
+        growthRate: 0.5,
+      }
+    },
+    enterprise: {
+      metrics: [
+        { key: "tcv", label: "Total Contract Value", description: "Total value of customer contracts" },
+        { key: "bookings", label: "Bookings", description: "Total value of contracts signed" },
+        { key: "backlog", label: "Backlog", description: "Value of contracted work not yet delivered" },
+        { key: "dealCycle", label: "Deal Cycle", description: "Average time to close a deal (in days)" },
+        { key: "contractLength", label: "Contract Length", description: "Average length of customer contracts (in months)" }
+      ],
+      benchmarks: {
+        revenueMultiple: { early: 8, growth: 12, mature: 6 },
+        grossMargin: 0.70,
+        growthRate: 0.35,
+      }
+    }
+  },
+  ecommerce: {
+    d2c: {
+      metrics: [
+        { key: "gmv", label: "Gross Merchandise Value", description: "Total value of goods sold" },
+        { key: "aov", label: "Average Order Value", description: "Average revenue per transaction" },
+        { key: "inventoryTurnover", label: "Inventory Turnover", description: "Rate at which inventory is sold and replaced" },
+        { key: "repeatPurchaseRate", label: "Repeat Purchase Rate", description: "Percentage of customers making repeat purchases" },
+        { key: "customerLifetimeValue", label: "Customer Lifetime Value", description: "Total value generated from a customer relationship" }
+      ],
+      benchmarks: {
+        revenueMultiple: { early: 3, growth: 5, mature: 2 },
+        grossMargin: 0.45,
+        growthRate: 0.40,
+      }
+    }
+  }
+};
+
+// Regional compliance standards
+const regionalStandards = {
+  us: {
+    name: "United States",
+    standards: ["409A Compliance", "GAAP Standards"],
+    riskFreeRate: 0.03,
+    marketRiskPremium: 0.055
+  },
+  india: {
+    name: "India",
+    standards: ["ICAI Standards", "Companies Act Compliance"],
+    riskFreeRate: 0.06,
+    marketRiskPremium: 0.065
+  },
+  europe: {
+    name: "Europe",
+    standards: ["IFRS Standards", "EU Regulations"],
+    riskFreeRate: 0.02,
+    marketRiskPremium: 0.05
+  }
+};
 
 export function IndustryVariablesStep({
   data,
   onUpdate,
   onNext,
   onBack,
-  currentStep,
-  totalSteps,
 }: IndustryVariablesStepProps) {
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
@@ -49,15 +114,13 @@ export function IndustryVariablesStep({
   };
 
   const sector = data.sector || 'technology';
-  const subsector = data.subsector;
+  const subsector = data.subsector || 'saas';
   const region = data.region || 'us';
 
-  // Get the metrics for the selected sector and subsector
-  const currentMetrics = subsector && sectors[sector]?.subsectors[subsector]?.metrics || [];
-  const benchmarks = subsector && sectors[sector]?.subsectors[subsector]?.benchmarks;
-
-  // Get region-specific adjustments
-  const regionData = regions[region as keyof typeof regions];
+  // Get metrics for selected industry
+  const currentMetrics = industryMetrics[sector]?.[subsector]?.metrics || [];
+  const benchmarks = industryMetrics[sector]?.[subsector]?.benchmarks;
+  const regionData = regionalStandards[region];
 
   return (
     <motion.div
@@ -68,7 +131,7 @@ export function IndustryVariablesStep({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Please provide industry-specific metrics for your {sectors[sector].name} business in {regionData.name}.
+          Please provide industry-specific metrics for your {sector} business in {regionData.name}.
           These metrics are adjusted based on regional standards and will help us calculate a more accurate valuation.
         </AlertDescription>
       </Alert>
@@ -99,7 +162,7 @@ export function IndustryVariablesStep({
                     </div>
                   </div>
                   <div className="mt-4 p-3 bg-muted rounded-lg">
-                    <h4 className="text-sm font-medium mb-2">Regional Adjustments ({regionData.name})</h4>
+                    <h4 className="text-sm font-medium mb-2">Regional Standards ({regionData.name})</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="font-medium">Risk-Free Rate:</span>
@@ -120,24 +183,23 @@ export function IndustryVariablesStep({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="grid gap-6">
-              {currentMetrics?.map((metric: string) => (
+              {currentMetrics.map((metric) => (
                 <FormField
-                  key={metric}
+                  key={metric.key}
                   control={form.control}
-                  name={`industryMetrics.${sector}.${metric}`}
+                  name={`industryMetrics.${sector}.${metric.key}`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{formatMetricLabel(metric)}</FormLabel>
+                      <FormLabel>{metric.label}</FormLabel>
                       <FormDescription>
-                        {getMetricDescription(metric)}
+                        {metric.description}
                       </FormDescription>
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
-                          placeholder={`Enter your ${formatMetricLabel(metric)}`}
+                          placeholder={`Enter your ${metric.label}`}
                           {...field}
-                          onChange={e => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
@@ -164,46 +226,4 @@ export function IndustryVariablesStep({
       </div>
     </motion.div>
   );
-}
-
-function formatMetricLabel(metric: string): string {
-  return metric
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-function getMetricDescription(metric: string): string {
-  const descriptions: Record<string, string> = {
-    arr: "Annual Recurring Revenue - Total value of recurring revenue normalized for one year",
-    mrr: "Monthly Recurring Revenue - Predictable revenue generated each month",
-    cac: "Customer Acquisition Cost - Average cost to acquire a new customer",
-    ltv: "Customer Lifetime Value - Total revenue expected from a customer",
-    churnRate: "Rate at which customers stop using your product/service",
-    expansionRevenue: "Additional revenue from existing customers",
-    gmv: "Gross Merchandise Value - Total value of goods sold",
-    aov: "Average Order Value - Average revenue per transaction",
-    inventoryTurnover: "Rate at which inventory is sold and replaced",
-    repeatPurchaseRate: "Percentage of customers making repeat purchases",
-    customerLifetimeValue: "Total value generated from a customer relationship",
-    tcv: "Total Contract Value - Total value of a customer contract",
-    bookings: "Total value of contracts signed",
-    backlog: "Value of contracted work not yet delivered",
-    dealCycle: "Average time to close a deal (in days)",
-    contractLength: "Average length of customer contracts (in months)",
-    userGrowth: "Monthly user growth rate",
-    engagementRate: "User engagement metrics",
-    capex: "Capital expenditure as % of revenue",
-    r_and_d: "Research and development spend as % of revenue",
-    patentPortfolio: "Number of patents/pending applications",
-    customerRetention: "Customer retention rate",
-    contentCosts: "Content acquisition/production costs",
-    engagement: "User engagement metrics",
-    subscribers: "Number of active subscribers",
-    usage: "Platform usage metrics",
-    serverCosts: "Infrastructure costs per user",
-    uptime: "Service availability percentage",
-  };
-
-  return descriptions[metric] || `Value for ${formatMetricLabel(metric)}`;
 }

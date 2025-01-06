@@ -3,8 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Circle, HelpCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  Circle,
+  HelpCircle,
+  Building2,
+  Calculator,
+  LineChart,
+  ClipboardCheck,
+  ArrowRight
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -12,64 +19,59 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 import type { ValuationFormData } from "@/lib/validations";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
-import { IndustryVariablesStep } from "./wizard-steps/IndustryVariablesStep"; // Added import
+import { IndustryVariablesStep } from "./wizard-steps/IndustryVariablesStep";
 import { FinancialDetailsStep } from "./wizard-steps/FinancialDetailsStep";
 import { MethodSelectionStep } from "./wizard-steps/MethodSelectionStep";
 import { ReviewStep } from "./wizard-steps/ReviewStep";
-
 
 interface ValuationWizardProps {
   onSubmit: (data: ValuationFormData) => void;
 }
 
-type WizardStep = {
-  id: number;
-  title: string;
-  description: string;
-  helpText: string;
-};
-
-const STEPS: WizardStep[] = [
+const STEPS = [
   {
     id: 1,
     title: "Business Information",
-    description: "Tell us about your business type and stage",
-    helpText: "Start by providing basic information about your company to help us understand your business context.",
+    description: "Basic company details and context",
+    icon: Building2,
+    helpText: "Enter your company's basic information to help us understand your business context.",
   },
   {
     id: 2,
     title: "Industry Variables",
-    description: "Industry-specific parameters and metrics",
-    helpText: "Enter key metrics specific to your industry that influence the valuation calculation.",
+    description: "Sector-specific metrics and KPIs",
+    icon: Calculator,
+    helpText: "Provide industry-specific metrics that are crucial for your sector's valuation.",
   },
   {
     id: 3,
     title: "Financial Information",
-    description: "Key financial metrics and projections",
-    helpText: "Provide your financial data to ensure accurate valuation calculations.",
+    description: "Key financial metrics and growth",
+    icon: LineChart,
+    helpText: "Enter your company's financial data for accurate valuation calculation.",
   },
   {
     id: 4,
     title: "Valuation Method",
-    description: "Choose and customize valuation approaches",
-    helpText: "Select the most appropriate valuation methods based on your business model.",
+    description: "Choose valuation approaches",
+    icon: Calculator,
+    helpText: "Select and customize the most appropriate valuation methods for your business.",
   },
   {
     id: 5,
-    title: "Review",
-    description: "Review and confirm your information",
-    helpText: "Review all inputs before generating your detailed valuation report.",
+    title: "Review & Generate",
+    description: "Verify and generate report",
+    icon: ClipboardCheck,
+    helpText: "Review all inputs and generate your comprehensive valuation report.",
   },
 ];
 
 export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const updateFormData = (data: Partial<ValuationFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -89,22 +91,9 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
 
   const handleSubmit = async () => {
     try {
-      setIsSubmitting(true);
-      toast({
-        title: "Processing",
-        description: "Analyzing your inputs and generating valuation report...",
-        duration: 3000,
-      });
       await onSubmit(formData as ValuationFormData);
     } catch (error) {
       console.error('Submission error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate valuation. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -157,7 +146,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                   "w-4 h-4 mb-2",
                   step.id <= currentStep ? "fill-current" : "fill-none"
                 )} />
-                <span className="text-xs font-medium">{step.title}</span>
+                <span className="text-xs font-medium hidden md:block">{step.title}</span>
               </motion.div>
             ))}
           </div>
@@ -178,24 +167,19 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
-            {/* Step Content will be rendered here */}
             {currentStep === 1 && (
               <BusinessInfoStep
                 data={formData}
                 onUpdate={updateFormData}
                 onNext={handleNext}
-                currentStep={currentStep}
-                totalSteps={STEPS.length}
               />
             )}
             {currentStep === 2 && (
-              <IndustryVariablesStep // Added component
+              <IndustryVariablesStep
                 data={formData}
                 onUpdate={updateFormData}
                 onNext={handleNext}
                 onBack={handleBack}
-                currentStep={currentStep}
-                totalSteps={STEPS.length}
               />
             )}
             {currentStep === 3 && (
@@ -204,8 +188,6 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                 onUpdate={updateFormData}
                 onNext={handleNext}
                 onBack={handleBack}
-                currentStep={currentStep}
-                totalSteps={STEPS.length}
               />
             )}
             {currentStep === 4 && (
@@ -214,8 +196,6 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                 onUpdate={updateFormData}
                 onNext={handleNext}
                 onBack={handleBack}
-                currentStep={currentStep}
-                totalSteps={STEPS.length}
               />
             )}
             {currentStep === 5 && (
@@ -224,35 +204,31 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                 onUpdate={updateFormData}
                 onSubmit={handleSubmit}
                 onBack={handleBack}
-                isSubmitting={isSubmitting}
-                currentStep={currentStep}
-                totalSteps={STEPS.length}
               />
             )}
 
-
-            <div className="flex justify-between pt-6 border-t">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={currentStep === 1}
-              >
-                Back
-              </Button>
-              {currentStep === STEPS.length ? (
+            {currentStep !== 5 && (
+              <div className="flex justify-between pt-6 border-t">
                 <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={currentStep === 1}
                 >
-                  Generate Report
+                  Back
                 </Button>
-              ) : (
                 <Button onClick={handleNext}>
                   Continue
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
+            {currentStep === 5 && (
+              <div className="flex justify-end pt-6 border-t">
+                <Button onClick={handleSubmit}>
+                  Generate Report
+                </Button>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </CardContent>
