@@ -6,7 +6,7 @@ import { Info, TrendingUp, DollarSign } from "lucide-react";
 import type { FinancialProjectionData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { revenueProjectionsSchema } from "@/lib/validations";
 import { motion } from "framer-motion";
 
@@ -24,9 +24,9 @@ export function RevenueProjectionsStep({
   const form = useForm({
     resolver: zodResolver(revenueProjectionsSchema),
     defaultValues: {
-      baseRevenue: data.baseRevenue || 0,
+      baseRevenue: data.baseRevenue,
       projectionPeriod: data.projectionPeriod || 3,
-      growthRate: data.growthRate || 0,
+      growthRate: data.growthRate,
       revenueAssumptions: data.revenueAssumptions || [],
     },
   });
@@ -65,10 +65,11 @@ export function RevenueProjectionsStep({
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
                         <Input
                           type="number"
-                          placeholder="e.g., 1000000"
+                          placeholder="Enter current revenue"
                           className="pl-9"
                           {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value === undefined || field.value === null ? "" : field.value}
+                          onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
                         />
                       </div>
                     </FormControl>
@@ -88,9 +89,10 @@ export function RevenueProjectionsStep({
                         type="number"
                         min={1}
                         max={5}
-                        placeholder="e.g., 3"
+                        placeholder="Enter period (1-5 years)"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        value={field.value === undefined ? "" : field.value}
+                        onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -104,15 +106,17 @@ export function RevenueProjectionsStep({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Expected Annual Growth Rate (%)</FormLabel>
+                    <FormDescription>Enter your projected annual growth rate</FormDescription>
                     <FormControl>
                       <div className="relative">
                         <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
                         <Input
                           type="number"
-                          placeholder="e.g., 20"
+                          placeholder="Enter growth rate"
                           className="pl-9"
                           {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value === undefined ? "" : field.value}
+                          onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
                         />
                       </div>
                     </FormControl>

@@ -24,18 +24,20 @@ interface ExpensesProjectionsStepProps {
 }
 
 export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: ExpensesProjectionsStepProps) {
-  const [expenses, setExpenses] = useState<Record<string, number>>(
+  const [expenses, setExpenses] = useState<Record<string, number | undefined>>(
     Object.fromEntries(
       Object.keys(expenseCategories).map(key => [
         key,
-        (data.assumptions?.expenseAssumptions?.find(a => a.category === key)?.percentage || 0) * (data.baseRevenue || 0) / 100
+        data.assumptions?.expenseAssumptions?.find(a => a.category === key)?.percentage
+          ? (data.assumptions.expenseAssumptions.find(a => a.category === key)?.percentage || 0) * (data.baseRevenue || 0) / 100
+          : undefined
       ])
     )
   );
 
   const form = useForm<Partial<FinancialProjectionData>>({
     defaultValues: {
-      baseExpenses: data.baseExpenses || 0,
+      baseExpenses: data.baseExpenses,
       assumptions: {
         expenseAssumptions: data.assumptions?.expenseAssumptions || [],
       },
@@ -43,18 +45,22 @@ export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: Expe
   });
 
   const handleSubmit = (values: Partial<FinancialProjectionData>) => {
-    const expenseAssumptions = Object.entries(expenses).map(([category, amount]) => ({
-      category,
-      percentage: amount / (data.baseRevenue || 1) * 100,
-      description: expenseCategories[category as keyof typeof expenseCategories].name,
-    }));
+    const validExpenses = Object.entries(expenses)
+      .filter(([_, amount]) => amount !== undefined && !isNaN(amount))
+      .map(([category, amount]) => ({
+        category,
+        percentage: ((amount || 0) / (data.baseRevenue || 1)) * 100,
+        description: expenseCategories[category as keyof typeof expenseCategories].name,
+      }));
 
     onUpdate({
       ...values,
-      baseExpenses: Object.values(expenses).reduce((sum, amount) => sum + amount, 0),
+      baseExpenses: Object.values(expenses)
+        .filter(amount => amount !== undefined && !isNaN(amount))
+        .reduce((sum, amount) => sum + (amount || 0), 0),
       assumptions: {
         ...data.assumptions,
-        expenseAssumptions,
+        expenseAssumptions: validExpenses,
       },
     });
     onNext();
@@ -86,15 +92,17 @@ export function ExpensesProjectionsStep({ data, onUpdate, onNext, onBack }: Expe
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="0"
-                          value={expenses[key] || ""}
+                          placeholder="Enter amount"
+                          value={expenses[key] === undefined ? "" : expenses[key]}
                           onChange={(e) => {
-                            const value = Number(e.target.value);
+                            const value = e.target.value === "" ? undefined : Number(e.target.value);
                             setExpenses(prev => ({
                               ...prev,
                               [key]: value
                             }));
-                            const total = Object.values({ ...expenses, [key]: value }).reduce((a, b) => a + b, 0);
+                            const total = Object.values({ ...expenses, [key]: value })
+                              .filter(val => val !== undefined && !isNaN(val))
+                              .reduce((a, b) => a + (b || 0), 0);
                             form.setValue("baseExpenses", total);
                           }}
                         />
