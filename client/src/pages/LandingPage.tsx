@@ -6,6 +6,7 @@ import { RoleBasedFeatures } from "@/components/RoleBasedFeatures";
 import { EnterpriseSolutions } from "@/components/EnterpriseSolutions";
 import { PricingSection } from "@/components/PricingSection";
 import { LaunchTimeline } from "@/components/LaunchTimeline";
+import { IndustryVerticals } from "@/components/IndustryVerticals";
 import {
   BarChart3,
   Calculator,
@@ -254,7 +255,14 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Add Launch Timeline section before Enterprise Solutions */}
+      {/* Add Industry Verticals section before Launch Timeline */}
+      <section className="py-20 bg-accent/5 border-y">
+        <div className="container mx-auto px-4">
+          <IndustryVerticals />
+        </div>
+      </section>
+
+      {/* Launch Timeline section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
           <LaunchTimeline />
