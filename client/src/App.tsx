@@ -1,13 +1,4 @@
 import { Switch, Route, Link, useLocation } from "wouter";
-import { Home } from "./pages/Home";
-import { Documentation } from "./pages/Documentation";
-import { Profile } from "./pages/Profile";
-import ValuationPage from "./pages/ValuationPage";
-import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
-import SAFECalculatorPage from "./pages/SAFECalculatorPage";
-import MarketAnalysisPage from "./pages/MarketAnalysisPage";
-import MetricsPage from "./pages/MetricsPage";
-import { Card } from "@/components/ui/card";
 import {
   AlertCircle,
   BarChart3,
@@ -21,17 +12,32 @@ import {
   BookOpen,
   LogOut,
   Menu,
-  ChevronDown
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useUser } from "@/hooks/use-user";
+import { Card } from "@/components/ui/card";
+import { Home } from "./pages/Home";
+import { Documentation } from "./pages/Documentation";
+import { Profile } from "./pages/Profile";
+import ValuationPage from "./pages/ValuationPage";
+import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
+import SAFECalculatorPage from "./pages/SAFECalculatorPage";
+import MarketAnalysisPage from "./pages/MarketAnalysisPage";
+import MetricsPage from "./pages/MetricsPage";
 import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
-import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import { ComplianceChecker } from "@/components/ComplianceChecker";
 import { PricingPage } from "./pages/PricingPage";
-import { useUser } from "@/hooks/use-user";
+import { DashboardContainer } from "@/components/DashboardContainer";
+import AuthPage from "./pages/AuthPage";
+import { RoleAccessVisualization } from "@/components/RoleAccessVisualization";
+import { StartupJourneyDashboard } from "@/components/StartupJourneyDashboard";
+import { LandingPage } from "./pages/LandingPage";
+import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
+import { TourGuide } from "@/components/TourGuide";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,15 +46,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DashboardContainer } from "@/components/DashboardContainer";
-import AuthPage from "./pages/AuthPage";
-import { RoleAccessVisualization } from "@/components/RoleAccessVisualization";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
-import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
-import { TourGuide } from "@/components/TourGuide";
-import { LandingPage } from "./pages/LandingPage";
-import { StartupJourneyDashboard } from "@/components/StartupJourneyDashboard";
 
 // Update navigationConfig to include YC-focused features
 const navigationConfig = {
@@ -125,30 +124,8 @@ function App() {
     );
   }
 
-  // Update the landing page component to be more YC-focused
+  // If user is not logged in and not on auth page, show landing page
   if (!user && !location.startsWith('/auth')) {
-    if (location === '/calculator') {
-      return (
-        <div className="min-h-screen bg-background">
-          <header className="border-b bg-card/80 backdrop-blur">
-            <div className="flex h-16 items-center justify-between px-4 container mx-auto">
-              <Link href="/">
-                <span className="text-xl font-bold">StartupValuator</span>
-              </Link>
-              <div className="flex items-center gap-4">
-                <Link href="/auth?mode=login">
-                  <Button variant="ghost">Sign In</Button>
-                </Link>
-                <Link href="/auth?mode=signup">
-                  <Button>Start Free Trial</Button>
-                </Link>
-              </div>
-            </div>
-          </header>
-          <ValuationCalculatorPage />
-        </div>
-      );
-    }
     return <LandingPage />;
   }
 
@@ -160,7 +137,7 @@ function App() {
   // If we get here, user must be logged in
   if (!user) return null;
 
-  const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig];
+  const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig] || navigationConfig.startup;
 
   const handleLogout = async () => {
     try {
@@ -180,13 +157,11 @@ function App() {
     <Tooltip>
       <TooltipTrigger asChild>
         <Link href={href}>
-          <div
-            className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-              location === href
-                ? 'bg-primary/10 text-primary'
-                : 'hover:bg-accent text-foreground'
-            }`}
-          >
+          <div className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+            location === href
+              ? 'bg-primary/10 text-primary'
+              : 'hover:bg-accent text-foreground'
+          }`}>
             <Icon className="h-5 w-5" />
             <span>{label}</span>
           </div>
@@ -291,77 +266,11 @@ function App() {
           </div>
         </aside>
 
-        {/* Mobile Header */}
-        <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur lg:hidden">
-          <div className="flex h-16 items-center justify-between px-4">
-            <Link href="/">
-              <span className="text-xl font-bold">StartupValuator</span>
-            </Link>
-
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80">
-                <nav className="mt-8 space-y-6">
-                  <div>
-                    <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Main Tools</h2>
-                    {userNavigation.mainTools.map((item) => (
-                      <MobileNavItem key={item.href} {...item} />
-                    ))}
-                  </div>
-
-                  <div>
-                    <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Analytics</h2>
-                    {userNavigation.analytics.map((item) => (
-                      <MobileNavItem key={item.href} {...item} />
-                    ))}
-                  </div>
-
-                  <div>
-                    <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
-                    {resourceLinks.map((item) => (
-                      <MobileNavItem key={item.href} {...item} />
-                    ))}
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <div className="px-4 py-2 text-sm text-muted-foreground">
-                      Signed in as: {user.username}
-                    </div>
-                    <MobileNavItem
-                      href={`/profile/${user.id}`}
-                      label="Profile Settings"
-                      icon={Settings}
-                    />
-                    <button
-                      className="flex w-full items-center gap-3 px-4 py-2 text-destructive hover:bg-accent"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="h-5 w-5" />
-                      Logout
-                    </button>
-                  </div>
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </header>
-
-        {/* Main Content */}
+        {/* Main Content Area */}
         <main className="lg:pl-64">
           <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
             <Switch>
-              <Route path="/">
-                {user && (
-                  <DashboardContainer>
-                    <StartupHealthDashboard />
-                  </DashboardContainer>
-                )}
-                {!user && <Home />}
-              </Route>
+              <Route path="/" component={Home} />
               <Route path="/valuation" component={ValuationPage} />
               <Route path="/calculator" component={ValuationCalculatorPage} />
               <Route path="/safe-calculator" component={SAFECalculatorPage} />
@@ -417,7 +326,7 @@ function App() {
                       ],
                       futureGoals: [
                         {
-                          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
+                          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
                           title: "Series A Preparation",
                           description: "Complete valuation and pitch deck for Series A funding",
                           status: "planned",
@@ -433,6 +342,75 @@ function App() {
           </div>
         </main>
 
+        {/* Mobile Navigation */}
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetTrigger asChild className="lg:hidden fixed top-4 right-4 z-50">
+            <Button variant="ghost" size="icon">
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-80">
+            <nav className="mt-8 space-y-6">
+              <div>
+                <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Main Tools</h2>
+                {userNavigation.mainTools.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div
+                      className={`flex items-center gap-3 px-4 py-2 ${
+                        location === item.href
+                          ? "bg-primary/10 text-primary"
+                          : "hover:bg-accent"
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              <div>
+                <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Analytics</h2>
+                {userNavigation.analytics.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div
+                      className={`flex items-center gap-3 px-4 py-2 ${
+                        location === item.href
+                          ? "bg-primary/10 text-primary"
+                          : "hover:bg-accent"
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              <div>
+                <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
+                {resourceLinks.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <div
+                      className={`flex items-center gap-3 px-4 py-2 ${
+                        location === item.href
+                          ? "bg-primary/10 text-primary"
+                          : "hover:bg-accent"
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          </SheetContent>
+        </Sheet>
+
         <WorkflowSuggestions />
         <TourGuide />
       </div>
@@ -440,7 +418,6 @@ function App() {
   );
 }
 
-// fallback 404 not found page
 function NotFound() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -454,9 +431,9 @@ function NotFound() {
             The page you're looking for doesn't exist.
           </p>
           <Link href="/">
-            <span className="mt-4 inline-block text-primary hover:underline cursor-pointer">
+            <Button variant="link" className="mt-4 p-0">
               Return to Home
-            </span>
+            </Button>
           </Link>
         </div>
       </Card>
