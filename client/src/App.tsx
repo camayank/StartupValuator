@@ -4,13 +4,15 @@ import { AlertCircle, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Dashboard from "./pages/Dashboard";
 import ValuationPage from "./pages/ValuationPage";
+import { LandingPage } from "./pages/LandingPage";
 
 function App() {
   return (
     <div className="min-h-screen bg-background">
       <main>
         <Switch>
-          <Route path="/" component={Dashboard} />
+          <Route path="/" component={LandingPage} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/valuation/new" component={ValuationPage} />
           <Route component={NotFound} />
         </Switch>
@@ -34,7 +36,7 @@ function NotFound() {
             The page you're looking for doesn't exist.
           </p>
           <Button variant="link" className="mt-4 p-0" onClick={() => window.location.href = "/"}>
-            Return to Dashboard
+            Return to Home
           </Button>
         </CardContent>
       </Card>
