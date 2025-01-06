@@ -4,22 +4,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EditFounderProfile } from "@/components/EditFounderProfile";
 import { ViewFounderProfile } from "@/components/ViewFounderProfile";
+import { RoleAccessVisualization } from "@/components/RoleAccessVisualization";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUser } from "@/hooks/use-user";
+
+interface FounderProfile {
+  name: string;
+  companyName: string;
+  bio?: string;
+  linkedinUrl?: string;
+  twitterHandle?: string;
+  experience?: string;
+  companyWebsite?: string;
+  industry?: string;
+  foundingDate?: string;
+  teamSize?: number;
+  fundingStage?: string;
+  investmentRaised?: number;
+  futureGoals?: Array<{
+    title: string;
+    description: string;
+    timeline: string;
+  }>;
+}
 
 export function Profile() {
   const { userId } = useParams();
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading } = useQuery<FounderProfile>({
     queryKey: [`/api/profile/${userId}`],
     enabled: !!userId,
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: Partial<FounderProfile>) => {
       const response = await fetch(`/api/profile/${userId}`, {
         method: "PATCH",
         headers: {
@@ -60,7 +83,7 @@ export function Profile() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Founder Profile</CardTitle>
@@ -85,6 +108,14 @@ export function Profile() {
             )}
           </CardContent>
         </Card>
+
+        {/* Add Role Access Visualization */}
+        {user && (
+          <RoleAccessVisualization 
+            role={user.role} 
+            tier={user.subscriptionTier} 
+          />
+        )}
       </div>
     </div>
   );
