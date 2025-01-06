@@ -305,6 +305,12 @@ export const valuationFormSchema = z.object({
     beta: z.number(),
     marketRiskPremium: z.number(),
   }).optional(),
+  insights: z.object({
+    strengths: z.array(z.string()),
+    weaknesses: z.array(z.string()),
+    opportunities: z.array(z.string()),
+    risks: z.array(z.string()),
+  }).optional(),
   riskAssessment: z.any().optional(),
   potentialPrediction: z.any().optional(),
   ecosystemNetwork: z.any().optional()

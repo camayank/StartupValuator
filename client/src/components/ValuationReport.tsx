@@ -12,7 +12,8 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Line
+  Line,
+  Pie
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,11 +64,11 @@ export function ValuationReport({ data, onExport }: ValuationReportProps) {
     const growthRates = [-2, -1, 0, 1, 2];
     const discountRates = [-2, -1, 0, 1, 2];
 
-    return growthRates.flatMap(g => 
+    return growthRates.flatMap(g =>
       discountRates.map(d => ({
         growthDiff: g,
         discountDiff: d,
-        value: baseValuation * (1 + g/100) / (1 + d/100)
+        value: baseValuation * (1 + g / 100) / (1 + d / 100)
       }))
     );
   };
@@ -198,9 +199,7 @@ export function ValuationReport({ data, onExport }: ValuationReportProps) {
                 <h4 className="font-medium mb-2">Valuation Breakdown</h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Tooltip />
-                    <Legend />
-                    <Area
+                    <Pie
                       data={[
                         { name: 'Base Value', value: data.details.baseValuation },
                         ...Object.entries(data.details.adjustments).map(([key, value]) => ({
@@ -210,7 +209,13 @@ export function ValuationReport({ data, onExport }: ValuationReportProps) {
                       ]}
                       dataKey="value"
                       nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      fill="#8884d8"
+                      label
                     />
+                    <Tooltip />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
