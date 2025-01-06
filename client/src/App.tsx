@@ -347,12 +347,18 @@ function App() {
           <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
             <Switch>
               <Route path="/">
-                <Home />
+                {user && (
+                  <ValuationWizard
+                    onSubmit={(data) => {
+                      console.log('Valuation data submitted:', data);
+                    }}
+                  />
+                )}
+                {!user && <Home />}
               </Route>
               <Route path="/valuation">
                 <ValuationWizard
                   onSubmit={(data) => {
-                    // Handle submission
                     console.log('Valuation data submitted:', data);
                   }}
                 />
