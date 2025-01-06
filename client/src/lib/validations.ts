@@ -9,6 +9,7 @@ export const currencies = {
   INR: { symbol: "₹", name: "Indian Rupee" },
 } as const;
 
+// Enhanced regions with compliance requirements
 export const regions = {
   us: {
     name: "United States",
@@ -16,6 +17,7 @@ export const regions = {
     riskFreeRate: 0.0368,
     marketRiskPremium: 0.0575,
     defaultCurrency: "USD" as keyof typeof currencies,
+    requiredCompliance: ["409a"] as const,
   },
   eu: {
     name: "European Union",
@@ -23,6 +25,7 @@ export const regions = {
     riskFreeRate: 0.0245,
     marketRiskPremium: 0.0550,
     defaultCurrency: "EUR" as keyof typeof currencies,
+    requiredCompliance: ["ivs"] as const,
   },
   uk: {
     name: "United Kingdom",
@@ -30,6 +33,7 @@ export const regions = {
     riskFreeRate: 0.0415,
     marketRiskPremium: 0.0525,
     defaultCurrency: "GBP" as keyof typeof currencies,
+    requiredCompliance: ["ivs"] as const,
   },
   india: {
     name: "India",
@@ -37,6 +41,7 @@ export const regions = {
     riskFreeRate: 0.0725,
     marketRiskPremium: 0.0650,
     defaultCurrency: "INR" as keyof typeof currencies,
+    requiredCompliance: ["icai"] as const,
   },
   global: {
     name: "Global",
@@ -44,7 +49,33 @@ export const regions = {
     riskFreeRate: 0.0350,
     marketRiskPremium: 0.0600,
     defaultCurrency: "USD" as keyof typeof currencies,
+    requiredCompliance: ["ivs"] as const,
   },
+} as const;
+
+// Enhanced compliance standards
+export const complianceStandards = {
+  "409a": "409A Valuation",
+  "ivs": "International Valuation Standards",
+  "icai": "ICAI Valuation Standards",
+  "ifrs": "IFRS Standards",
+  "asc820": "ASC 820 Fair Value",
+} as const;
+
+// IP Protection status
+export const ipProtectionStatus = {
+  none: "No IP Protection",
+  pending: "IP Protection Pending",
+  registered: "IP Protected",
+  multiple: "Multiple IP Registrations",
+} as const;
+
+// Tax compliance status
+export const taxComplianceStatus = {
+  compliant: "Tax Compliant",
+  partial: "Partially Compliant",
+  pending: "Compliance Pending",
+  notRequired: "Compliance Not Required",
 } as const;
 
 // Enhanced business stages with integrated market validation
@@ -176,7 +207,16 @@ export const valuationPurposes = {
   exit_planning: "Exit Planning",
 } as const;
 
-// Now define schemas that depend on the above constants
+// Enhanced compliance schema
+export const complianceSchema = z.object({
+  standards: z.array(z.enum(Object.keys(complianceStandards) as [keyof typeof complianceStandards, ...Array<keyof typeof complianceStandards>])),
+  ipProtection: z.enum(Object.keys(ipProtectionStatus) as [keyof typeof ipProtectionStatus, ...Array<keyof typeof ipProtectionStatus>]),
+  taxCompliance: z.enum(Object.keys(taxComplianceStatus) as [keyof typeof taxComplianceStatus, ...Array<keyof typeof taxComplianceStatus>]),
+  lastComplianceReview: z.string().datetime().optional(),
+  complianceNotes: z.string().optional(),
+});
+
+// Business overview schema with enhanced validation
 export const businessOverviewSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
@@ -184,11 +224,21 @@ export const businessOverviewSchema = z.object({
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
 });
 
+// Financial metrics schema with conditional validation
 export const financialMetricsSchema = z.object({
   revenue: z.number().min(0, "Revenue must be positive"),
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000").optional(),
   margins: z.number().min(-100).max(100, "Margins must be between -100 and 100").optional(),
+}).refine((data) => {
+  // Only require financial metrics for revenue-generating stages
+  const isRevenueStage = data.stage?.includes('revenue') || data.stage?.includes('established');
+  if (isRevenueStage) {
+    return data.revenue > 0 && data.growthRate !== undefined && data.margins !== undefined;
+  }
+  return true;
+}, {
+  message: "Financial metrics are required for revenue-generating stages",
 });
 
 export const marketInsightsSchema = z.object({
@@ -203,16 +253,15 @@ export const riskScalabilitySchema = z.object({
   primaryRiskFactor: z.enum(["market", "regulatory", "operational", "technology", "competition"]).optional(),
 });
 
-// Enhanced valuation form schema incorporating simplified categories
+// Enhanced valuation form schema incorporating all categories
 export const valuationFormSchema = z.object({
   ...businessOverviewSchema.shape,
   ...financialMetricsSchema.shape,
   ...marketInsightsSchema.shape,
   ...riskScalabilitySchema.shape,
+  ...complianceSchema.shape,
   valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
-  complianceStandard: z.enum(["409a", "ifrs", "ibbi", "mca", "none"]).optional(),
-  intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(20).optional(),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
   valuation: z.number().optional(),
@@ -234,9 +283,6 @@ export const valuationFormSchema = z.object({
     opportunities: z.array(z.string()),
     risks: z.array(z.string()),
   }).optional(),
-  riskAssessment: z.any().optional(),
-  potentialPrediction: z.any().optional(),
-  ecosystemNetwork: z.any().optional()
 });
 
 // Export types
@@ -245,6 +291,7 @@ export type BusinessOverview = z.infer<typeof businessOverviewSchema>;
 export type FinancialMetrics = z.infer<typeof financialMetricsSchema>;
 export type MarketInsights = z.infer<typeof marketInsightsSchema>;
 export type RiskScalability = z.infer<typeof riskScalabilitySchema>;
+export type ComplianceData = z.infer<typeof complianceSchema>;
 
 export const expenseCategories = {
   personnel: {
