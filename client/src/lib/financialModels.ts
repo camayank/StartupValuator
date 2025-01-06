@@ -1,4 +1,4 @@
-import { type ValuationFormData } from "./validations";
+import { type ValuationFormData, sectors, businessStages } from "./validations";
 
 // Industry-Specific Metrics Configuration
 export interface SaaSMetrics {
@@ -85,56 +85,108 @@ export interface CapTable {
 }
 
 // Industry-specific valuation functions
-export function calculateSaaSMetrics(data: ValuationFormData): SaaSMetrics | null {
-  if (data.sector !== 'SaaS') return null;
+export function calculateIndustryAdjustedValuation(data: ValuationFormData): {
+  value: number;
+  details: {
+    baseValue: number;
+    industryMultiple: number;
+    adjustments: Record<string, number>;
+    metrics: Record<string, number>;
+  };
+} {
+  const sector = sectors[data.sector];
+  const subsector = sector?.subsectors[data.subsector as keyof typeof sector.subsectors];
+  const stage = businessStages[data.stage];
 
-  const mrr = data.revenue ? data.revenue / 12 : 0;
-  const arr = mrr * 12;
-  const cac = data.customerAcquisitionCost || 0;
-  const ltv = calculateCustomerLifetimeValue(data);
-  const churnRate = data.churnRate || 0;
-  const expansionRevenue = data.expansionRevenue || 0;
+  if (!subsector || !stage) {
+    throw new Error("Invalid sector/subsector or stage");
+  }
+
+  // Get base multiple from industry benchmarks
+  const baseMultiple = subsector.benchmarks.revenueMultiple[stage.name.toLowerCase() as keyof typeof subsector.benchmarks.revenueMultiple];
+
+  // Calculate industry-specific adjustments
+  const adjustments = calculateIndustryAdjustments(data, subsector.benchmarks);
+
+  // Apply industry-specific metrics
+  const metrics = calculateIndustryMetrics(data);
+
+  // Calculate final multiple
+  const adjustedMultiple = baseMultiple * (1 + Object.values(adjustments).reduce((a, b) => a + b, 0));
+
+  // Calculate base value
+  const baseValue = data.revenue * adjustedMultiple;
 
   return {
-    arr,
-    mrr,
-    cac,
-    ltv,
-    churnRate,
-    expansionRevenue
+    value: baseValue * (1 + Object.values(adjustments).reduce((a, b) => a + b, 0)),
+    details: {
+      baseValue,
+      industryMultiple: adjustedMultiple,
+      adjustments,
+      metrics
+    }
   };
 }
 
-export function calculateEcommerceMetrics(data: ValuationFormData): EcommerceMetrics | null {
-  if (data.sector !== 'E-commerce') return null;
+function calculateIndustryAdjustments(
+  data: ValuationFormData,
+  benchmarks: Record<string, any>
+): Record<string, number> {
+  const adjustments: Record<string, number> = {};
 
-  const gmv = data.grossMerchandiseValue || 0;
-  const aov = calculateAverageOrderValue(data);
-  const inventoryTurnover = calculateInventoryTurnover(data);
-  const repeatPurchaseRate = data.repeatPurchaseRate || 0;
-  const customerLifetimeValue = calculateCustomerLifetimeValue(data);
+  // Growth rate adjustment
+  if (data.growthRate) {
+    const growthDiff = data.growthRate - benchmarks.growthRate;
+    adjustments.growth = growthDiff > 0 ? 0.1 : -0.1;
+  }
 
-  return {
-    gmv,
-    aov,
-    inventoryTurnover,
-    repeatPurchaseRate,
-    customerLifetimeValue
-  };
+  // Margins adjustment
+  if (data.margins) {
+    const marginDiff = data.margins - benchmarks.grossMargin;
+    adjustments.margins = marginDiff > 0 ? 0.15 : -0.15;
+  }
+
+  // Market share adjustment
+  if (data.marketShare) {
+    adjustments.marketPosition = data.marketShare > 10 ? 0.2 : 0;
+  }
+
+  return adjustments;
 }
 
-export function calculateEnterpriseMetrics(data: ValuationFormData): EnterpriseMetrics | null {
-  if (data.sector !== 'Enterprise') return null;
+function calculateIndustryMetrics(data: ValuationFormData): Record<string, number> {
+  const metrics: Record<string, number> = {};
 
-  return {
-    tcv: data.totalContractValue || 0,
-    bookings: data.bookings || 0,
-    backlog: data.backlog || 0,
-    dealCycle: data.averageDealCycle || 0,
-    contractLength: data.averageContractLength || 0
-  };
+  if (data.industryMetrics?.saas) {
+    const saas = data.industryMetrics.saas;
+    metrics.ltv_cac_ratio = saas.ltv / saas.cac;
+    metrics.net_revenue_retention = (saas.arr + saas.expansionRevenue) / saas.arr;
+    metrics.growth_efficiency = (saas.arr * saas.growthRate) / (saas.cac * saas.churnRate);
+  }
+
+  if (data.industryMetrics?.ecommerce) {
+    const ecom = data.industryMetrics.ecommerce;
+    metrics.customer_acquisition_efficiency = ecom.customerLifetimeValue / ecom.aov;
+    metrics.inventory_efficiency = ecom.inventoryTurnover;
+    metrics.repeat_purchase_value = ecom.repeatPurchaseRate * ecom.customerLifetimeValue;
+  }
+
+  if (data.industryMetrics?.enterprise) {
+    const ent = data.industryMetrics.enterprise;
+    metrics.contract_efficiency = ent.tcv / ent.dealCycle;
+    metrics.booking_efficiency = ent.bookings / ent.backlog;
+    metrics.customer_stickiness = ent.contractLength * ent.tcv;
+  }
+
+  return metrics;
 }
 
+// Export utility functions
+export const industryValuationUtils = {
+  calculateIndustryAdjustedValuation,
+  calculateIndustryAdjustments,
+  calculateIndustryMetrics,
+};
 // Market comparables analysis
 export function getMarketComparables(data: ValuationFormData): MarketComparable[] {
   // This would typically fetch real-time data from an API
@@ -217,132 +269,6 @@ export function modelCapTable(data: ValuationFormData): CapTable {
 }
 
 
-// Enhanced valuation methods for different stages and sectors
-export function calculateDCFValuation(data: ValuationFormData): {
-  value: number;
-  details: {
-    fcf: number[];
-    discountFactors: number[];
-    presentValues: number[];
-    terminalValue: number;
-  };
-} {
-  const years = 5;
-  const fcf = calculateFreeCashFlows(data, years);
-  const wacc = calculateWACC(data);
-  const terminalGrowthRate = data.assumptions?.terminalGrowthRate || 0.02;
-
-  // Calculate terminal value using Gordon Growth Method
-  const terminalValue = fcf[years - 1] * (1 + terminalGrowthRate) / (wacc - terminalGrowthRate);
-
-  // Calculate present values
-  const discountFactors = Array.from({ length: years }, (_, i) => Math.pow(1 + wacc, -(i + 1)));
-  const presentValues = fcf.map((cf, i) => cf * discountFactors[i]);
-
-  // Add discounted terminal value
-  const totalValue = presentValues.reduce((sum, pv) => sum + pv, 0) +
-                    terminalValue * discountFactors[years - 1];
-
-  return {
-    value: totalValue,
-    details: {
-      fcf,
-      discountFactors,
-      presentValues,
-      terminalValue
-    }
-  };
-}
-
-export function calculateMarketMultiplesValuation(data: ValuationFormData): {
-  value: number;
-  details: {
-    selectedMultiple: number;
-    adjustedMultiple: number;
-    comparables: Array<{ name: string; multiple: number; }>;
-  };
-} {
-  // Get industry multiples
-  const comparables = getIndustryMultiples(data.sector);
-
-  // Calculate median multiple
-  const multiples = comparables.map(c => c.multiple);
-  const medianMultiple = calculateMedian(multiples);
-
-  // Adjust multiple based on company characteristics
-  const adjustedMultiple = adjustMultipleForCompany(medianMultiple, data);
-
-  // Calculate value
-  const value = data.revenue * adjustedMultiple;
-
-  return {
-    value,
-    details: {
-      selectedMultiple: medianMultiple,
-      adjustedMultiple,
-      comparables
-    }
-  };
-}
-
-export function calculateVCMethodValuation(data: ValuationFormData): {
-  value: number;
-  details: {
-    exitValue: number;
-    requiredReturn: number;
-    yearsToExit: number;
-  };
-} {
-  const yearsToExit = getYearsToExit(data.stage);
-  const exitMultiple = getExitMultiple(data.sector);
-  const projectedRevenue = data.revenue * Math.pow(1 + (data.growthRate || 0), yearsToExit);
-  const exitValue = projectedRevenue * exitMultiple;
-  const requiredReturn = calculateRequiredReturn(data.stage);
-
-  const value = exitValue / Math.pow(1 + requiredReturn, yearsToExit);
-
-  return {
-    value,
-    details: {
-      exitValue,
-      requiredReturn,
-      yearsToExit
-    }
-  };
-}
-
-export function calculateFirstChicagoValuation(data: ValuationFormData): {
-  value: number;
-  details: {
-    scenarios: Array<{
-      name: string;
-      probability: number;
-      value: number;
-    }>;
-  };
-} {
-  // Calculate values for different scenarios
-  const bestCase = calculateScenarioValue(data, 'best');
-  const baseCase = calculateScenarioValue(data, 'base');
-  const worstCase = calculateScenarioValue(data, 'worst');
-
-  // Assign probabilities based on market conditions and company stage
-  const scenarios = [
-    { name: 'Best Case', value: bestCase, probability: 0.2 },
-    { name: 'Base Case', value: baseCase, probability: 0.6 },
-    { name: 'Worst Case', value: worstCase, probability: 0.2 }
-  ];
-
-  // Calculate weighted average
-  const value = scenarios.reduce((sum, scenario) =>
-    sum + scenario.value * scenario.probability, 0);
-
-  return {
-    value,
-    details: { scenarios }
-  };
-}
-
 // Helper functions for valuation calculations
 function calculateWACC(data: ValuationFormData): number {
   const riskFreeRate = data.assumptions?.riskFreeRate || 0.035;
@@ -374,115 +300,43 @@ function calculateFreeCashFlows(data: ValuationFormData, years: number): number[
     const depreciation = revenue * depreciationRate;
     const capex = revenue * capexRate;
     const workingCapitalChange = (revenue * workingCapitalRate) -
-                                (i > 0 ? baseRevenue * Math.pow(1 + growthRate, i - 1) * workingCapitalRate : 0);
+      (i > 0 ? baseRevenue * Math.pow(1 + growthRate, i - 1) * workingCapitalRate : 0);
 
     return ebit * (1 - taxRate) + depreciation - capex - workingCapitalChange;
   });
 }
 
-function getIndustryMultiples(sector: string): Array<{ name: string; multiple: number; }> {
-  // This would typically fetch from a market data API
-  // For now, returning sample data
-  return [
-    { name: "Company A", multiple: 5.2 },
-    { name: "Company B", multiple: 4.8 },
-    { name: "Company C", multiple: 6.1 },
-    { name: "Company D", multiple: 5.5 }
-  ];
+function calculateOperatingCashFlows(
+  data: ValuationFormData,
+  years: number,
+  growthRate: number,
+  margins: number
+): number[] {
+  const baseRevenue = data.revenue || 0;
+  return Array.from({ length: years }, (_, i) =>
+    baseRevenue * Math.pow(1 + growthRate, i) * margins
+  );
 }
 
-function calculateMedian(numbers: number[]): number {
-  const sorted = [...numbers].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-
-  if (sorted.length % 2 === 0) {
-    return (sorted[middle - 1] + sorted[middle]) / 2;
-  }
-
-  return sorted[middle];
+function calculateInvestingCashFlows(data: ValuationFormData, years: number): number[] {
+  const capexRate = data.capexRate || 0.1;
+  return Array.from({ length: years }, (_, i) =>
+    -(data.revenue || 0) * capexRate * Math.pow(1.1, i)
+  );
 }
 
-function adjustMultipleForCompany(baseMultiple: number, data: ValuationFormData): number {
-  let adjustedMultiple = baseMultiple;
-
-  // Adjust for growth
-  if (data.growthRate && data.growthRate > 0.2) {
-    adjustedMultiple *= 1.2;
-  }
-
-  // Adjust for margins
-  if (data.margins && data.margins > 0.3) {
-    adjustedMultiple *= 1.1;
-  }
-
-  // Adjust for stage
-  if (data.stage === 'early_revenue') {
-    adjustedMultiple *= 0.8;
-  }
-
-  return adjustedMultiple;
+function calculateFinancingCashFlows(data: ValuationFormData, years: number): number[] {
+  // Simplified financing cash flows
+  return Array.from({ length: years }, () => 0);
 }
 
-function getYearsToExit(stage: string): number {
-  const exitYears = {
-    'ideation': 7,
-    'mvp': 6,
-    'early_revenue': 5,
-    'growth': 4,
-    'scaling': 3,
-    'mature': 2
-  };
-
-  return exitYears[stage as keyof typeof exitYears] || 5;
+function calculateWorkingCapitalChanges(data: ValuationFormData, years: number): number[] {
+  const workingCapitalRate = data.workingCapitalRate || 0.1;
+  return Array.from({ length: years }, (_, i) =>
+    -(data.revenue || 0) * workingCapitalRate * Math.pow(1.1, i)
+  );
 }
 
-function getExitMultiple(sector: string): number {
-  const sectorMultiples = {
-    'technology': 8,
-    'digital': 7,
-    'enterprise': 6,
-    'consumer': 5,
-    'healthcare': 6,
-    'financial': 5
-  };
-
-  return sectorMultiples[sector as keyof typeof sectorMultiples] || 6;
-}
-
-function calculateRequiredReturn(stage: string): number {
-  const returns = {
-    'ideation': 0.8,
-    'mvp': 0.7,
-    'early_revenue': 0.6,
-    'growth': 0.5,
-    'scaling': 0.4,
-    'mature': 0.3
-  };
-
-  return returns[stage as keyof typeof returns] || 0.5;
-}
-
-function calculateScenarioValue(data: ValuationFormData, scenario: 'best' | 'base' | 'worst'): number {
-  const scenarioMultipliers = {
-    best: { growth: 1.5, margins: 1.2 },
-    base: { growth: 1.0, margins: 1.0 },
-    worst: { growth: 0.5, margins: 0.8 }
-  };
-
-  const multiplier = scenarioMultipliers[scenario];
-  const adjustedGrowth = (data.growthRate || 0.1) * multiplier.growth;
-  const adjustedMargins = (data.margins || 0.2) * multiplier.margins;
-
-  const modifiedData = {
-    ...data,
-    growthRate: adjustedGrowth,
-    margins: adjustedMargins
-  };
-
-  return calculateDCFValuation(modifiedData).value;
-}
-
-// Helper functions
 function calculateCustomerLifetimeValue(data: ValuationFormData): number {
   const avgRevenuePerCustomer = data.averageRevenuePerCustomer || 0;
   const churnRate = data.churnRate || 0.1;
@@ -532,44 +386,21 @@ function calculateCustomerExpansion(data: ValuationFormData): number {
     : 0;
 }
 
-function calculateOperatingCashFlows(
-  data: ValuationFormData,
-  years: number,
-  growthRate: number,
-  margins: number
-): number[] {
-  const baseRevenue = data.revenue || 0;
-  return Array.from({ length: years }, (_, i) =>
-    baseRevenue * Math.pow(1 + growthRate, i) * margins
-  );
-}
-
-function calculateInvestingCashFlows(data: ValuationFormData, years: number): number[] {
-  const capexRate = data.capexRate || 0.1;
-  return Array.from({ length: years }, (_, i) =>
-    -(data.revenue || 0) * capexRate * Math.pow(1.1, i)
-  );
-}
-
-function calculateFinancingCashFlows(data: ValuationFormData, years: number): number[] {
-  // Simplified financing cash flows
-  return Array.from({ length: years }, () => 0);
-}
-
-function calculateWorkingCapitalChanges(data: ValuationFormData, years: number): number[] {
-  const workingCapitalRate = data.workingCapitalRate || 0.1;
-  return Array.from({ length: years }, (_, i) =>
-    -(data.revenue || 0) * workingCapitalRate * Math.pow(1.1, i)
-  );
-}
-
 // Export utility functions for use in components
 export const valuationUtils = {
   calculateWACC,
   calculateFreeCashFlows,
-  getIndustryMultiples,
-  adjustMultipleForCompany,
-  getYearsToExit,
-  getExitMultiple,
-  calculateRequiredReturn
+  calculateOperatingCashFlows,
+  calculateInvestingCashFlows,
+  calculateFinancingCashFlows,
+  calculateWorkingCapitalChanges,
+  calculateCustomerLifetimeValue,
+  calculateAverageOrderValue,
+  calculateInventoryTurnover,
+  calculateTAMPenetration,
+  calculateMarketShareGrowth,
+  calculateGeographicExpansion,
+  calculateProductExpansion,
+  calculateCustomerExpansion
+
 };

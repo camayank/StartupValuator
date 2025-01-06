@@ -53,22 +53,196 @@ export const regions = {
   },
 } as const;
 
+// Enhanced business stages with risk premiums and valuation methods
+export const businessStages = {
+  ideation: {
+    name: "Ideation Stage",
+    riskPremium: 0.25,
+    valuation: {
+      methods: ["scorecard", "checklistMethod"],
+      weights: { scorecard: 0.6, checklistMethod: 0.4 }
+    }
+  },
+  mvp: {
+    name: "MVP Stage",
+    riskPremium: 0.20,
+    valuation: {
+      methods: ["vcMethod", "firstChicago"],
+      weights: { vcMethod: 0.7, firstChicago: 0.3 }
+    }
+  },
+  early_revenue: {
+    name: "Early Revenue",
+    riskPremium: 0.15,
+    valuation: {
+      methods: ["vcMethod", "marketMultiples", "dcf"],
+      weights: { vcMethod: 0.4, marketMultiples: 0.4, dcf: 0.2 }
+    }
+  },
+  growth: {
+    name: "Growth Stage",
+    riskPremium: 0.10,
+    valuation: {
+      methods: ["dcf", "marketMultiples", "firstChicago"],
+      weights: { dcf: 0.4, marketMultiples: 0.4, firstChicago: 0.2 }
+    }
+  },
+  scaling: {
+    name: "Scaling Stage",
+    riskPremium: 0.08,
+    valuation: {
+      methods: ["dcf", "marketMultiples", "precedentTransactions"],
+      weights: { dcf: 0.4, marketMultiples: 0.4, precedentTransactions: 0.2 }
+    }
+  },
+  mature: {
+    name: "Mature Business",
+    riskPremium: 0.05,
+    valuation: {
+      methods: ["dcf", "marketMultiples", "assetBased"],
+      weights: { dcf: 0.5, marketMultiples: 0.3, assetBased: 0.2 }
+    }
+  },
+} as const;
+
+// Sectors and industry definitions
+export const sectors = {
+  technology: {
+    name: "Technology",
+    subsectors: {
+      software_system: {
+        name: "Software (System & Application)",
+        metrics: ["arr", "cac", "ltv", "churnRate"],
+        benchmarks: {
+          revenueMultiple: { early: 6, growth: 8, mature: 5 },
+          grossMargin: 0.75,
+          growthRate: 0.40,
+          r_and_d: 0.25,
+        }
+      },
+      software_internet: {
+        name: "Software (Internet)",
+        metrics: ["mrr", "userGrowth", "engagementRate"],
+        benchmarks: {
+          revenueMultiple: { early: 7, growth: 10, mature: 6 },
+          grossMargin: 0.80,
+          growthRate: 0.50,
+          marketing: 0.30,
+        }
+      },
+      semiconductors: {
+        name: "Semiconductors",
+        metrics: ["capex", "r_and_d", "patentPortfolio"],
+        benchmarks: {
+          revenueMultiple: { early: 4, growth: 6, mature: 3 },
+          grossMargin: 0.60,
+          growthRate: 0.25,
+          r_and_d: 0.35,
+        }
+      }
+    }
+  },
+  digital: {
+    name: "Digital & E-commerce",
+    subsectors: {
+      ecommerce_retail: {
+        name: "E-Commerce & Digital Retail",
+        metrics: ["gmv", "aov", "customerRetention"],
+        benchmarks: {
+          revenueMultiple: { early: 3, growth: 4, mature: 2 },
+          grossMargin: 0.45,
+          growthRate: 0.35,
+          marketing: 0.25,
+        }
+      },
+      digital_content: {
+        name: "Digital Content & Streaming",
+        metrics: ["subscribers", "contentCosts", "engagement"],
+        benchmarks: {
+          revenueMultiple: { early: 5, growth: 7, mature: 4 },
+          grossMargin: 0.65,
+          growthRate: 0.45,
+          content: 0.40,
+        }
+      }
+    }
+  },
+  enterprise: {
+    name: "Enterprise Solutions",
+    subsectors: {
+      enterprise_software: {
+        name: "Enterprise Software",
+        metrics: ["arr", "customerLifetime", "dealSize"],
+        benchmarks: {
+          revenueMultiple: { early: 8, growth: 12, mature: 6 },
+          grossMargin: 0.85,
+          growthRate: 0.35,
+          sales: 0.30,
+        }
+      },
+      cloud_services: {
+        name: "Cloud Services & Infrastructure",
+        metrics: ["usage", "serverCosts", "uptime"],
+        benchmarks: {
+          revenueMultiple: { early: 7, growth: 10, mature: 5 },
+          grossMargin: 0.70,
+          growthRate: 0.40,
+          infrastructure: 0.35,
+        }
+      }
+    }
+  }
+} as const;
+
+// Create a flat map of all industries for backward compatibility
+export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
+  return { ...acc, ...sector.subsectors };
+}, {} as Record<string, string>);
+
+// Industry-specific metrics interface
+export interface IndustryMetrics {
+  saas?: {
+    arr: number;
+    mrr: number;
+    cac: number;
+    ltv: number;
+    churnRate: number;
+    expansionRevenue: number;
+  };
+  ecommerce?: {
+    gmv: number;
+    aov: number;
+    inventoryTurnover: number;
+    repeatPurchaseRate: number;
+    customerLifetimeValue: number;
+  };
+  enterprise?: {
+    tcv: number;
+    bookings: number;
+    backlog: number;
+    dealCycle: number;
+    contractLength: number;
+  };
+}
+
+// Export interface for industry benchmarks
+export interface IndustryBenchmarks {
+  revenueMultiple: {
+    early: number;
+    growth: number;
+    mature: number;
+  };
+  grossMargin: number;
+  growthRate: number;
+  [key: string]: any;
+}
+
 // ESG Impact levels
 export const esgImpactLevels = {
   high: "High Impact",
   medium: "Medium Impact",
   low: "Low Impact",
   none: "No Significant Impact",
-} as const;
-
-// Enhanced business stages
-export const businessStages = {
-  ideation: "Ideation Stage",
-  mvp: "MVP Stage",
-  early_revenue: "Early Revenue",
-  growth: "Growth Stage",
-  scaling: "Scaling Stage",
-  mature: "Mature Business",
 } as const;
 
 // Market differentiation levels
@@ -103,100 +277,91 @@ export const taxComplianceStatus = {
   notRequired: "Compliance Not Required",
 } as const;
 
-// Reorganized industry classifications with sector-subsector structure
-export const sectors = {
-  technology: {
-    name: "Technology",
-    subsectors: {
-      software_system: "Software (System & Application)",
-      software_internet: "Software (Internet)",
-      semiconductors: "Semiconductors",
-      computer_hardware: "Computer Hardware",
-      computer_services: "Computer Services",
-      telecom_equipment: "Telecommunications Equipment",
-      telecom_services: "Telecommunications Services",
-    }
-  },
-  digital: {
-    name: "Digital & E-commerce",
-    subsectors: {
-      ecommerce_retail: "E-Commerce & Digital Retail",
-      digital_content: "Digital Content & Streaming",
-      digital_payments: "Digital Payment Services",
-      digital_platform: "Digital Platforms & Marketplaces",
-    }
-  },
-  enterprise: {
-    name: "Enterprise Solutions",
-    subsectors: {
-      enterprise_software: "Enterprise Software",
-      cloud_services: "Cloud Services & Infrastructure",
-      cybersecurity: "Cybersecurity",
-      data_analytics: "Data Analytics & AI",
-    }
-  },
-  consumer: {
-    name: "Consumer",
-    subsectors: {
-      consumer_discretionary: "Consumer Discretionary",
-      consumer_staples: "Consumer Staples",
-      retail_general: "Retail (General)",
-      retail_special: "Retail (Specialty)",
-    }
-  },
-  healthcare: {
-    name: "Healthcare & Life Sciences",
-    subsectors: {
-      healthcare_services: "Healthcare Services",
-      medical_equipment: "Medical Equipment",
-      biotechnology: "Biotechnology",
-      pharmaceuticals: "Pharmaceuticals",
-    }
-  },
-  financial: {
-    name: "Financial Services",
-    subsectors: {
-      banking: "Banking",
-      insurance: "Insurance",
-      asset_management: "Asset Management",
-      fintech: "Financial Technology",
-    }
-  },
-  industrial: {
-    name: "Industrial & Manufacturing",
-    subsectors: {
-      industrial_general: "Industrial (General)",
-      aerospace_defense: "Aerospace & Defense",
-      automotive: "Automotive",
-      chemicals: "Chemicals",
-    }
-  },
-  energy: {
-    name: "Energy & Resources",
-    subsectors: {
-      renewable_energy: "Renewable Energy",
-      oil_gas: "Oil & Gas",
-      mining: "Mining & Minerals",
-      utilities: "Utilities",
-    }
-  },
-  others: {
-    name: "Other Sectors",
-    subsectors: {
-      real_estate: "Real Estate",
-      transportation: "Transportation & Logistics",
-      media_entertainment: "Media & Entertainment",
-      education: "Education Services",
-      professional_services: "Professional Services",
-      agriculture: "Agriculture & Food",
-    }
-  }
-} as const;
 
-// Create a flat map of all industries for backward compatibility
-export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
-  return { ...acc, ...sector.subsectors };
-}, {} as Record<string, string>);
+// Combined validation schema with industry-specific metrics
+export const valuationFormSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
+  subsector: z.string(),
+  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
+  region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
+  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+
+  // Financial metrics
+  revenue: z.number().min(0, "Revenue must be positive"),
+  growthRate: z.number().min(-100).max(1000).optional(),
+  margins: z.number().min(-100).max(100).optional(),
+  ebitda: z.number().optional(),
+
+  // Industry-specific metrics
+  industryMetrics: z.object({
+    saas: z.object({
+      arr: z.number(),
+      mrr: z.number(),
+      cac: z.number(),
+      ltv: z.number(),
+      churnRate: z.number(),
+      expansionRevenue: z.number(),
+    }).optional(),
+    ecommerce: z.object({
+      gmv: z.number(),
+      aov: z.number(),
+      inventoryTurnover: z.number(),
+      repeatPurchaseRate: z.number(),
+      customerLifetimeValue: z.number(),
+    }).optional(),
+    enterprise: z.object({
+      tcv: z.number(),
+      bookings: z.number(),
+      backlog: z.number(),
+      dealCycle: z.number(),
+      contractLength: z.number(),
+    }).optional(),
+  }).optional(),
+
+  // Market metrics
+  totalAddressableMarket: z.number().min(0),
+  marketShare: z.number().min(0).max(100),
+  competitors: z.array(z.string()),
+
+  // Valuation assumptions
+  assumptions: z.object({
+    riskFreeRate: z.number(),
+    beta: z.number(),
+    marketRiskPremium: z.number(),
+    costOfDebt: z.number().optional(),
+    taxRate: z.number().optional(),
+    debtRatio: z.number().optional(),
+    terminalGrowthRate: z.number().optional(),
+    revenueMultiple: z.number().optional(),
+  }).optional(),
+
+  // Optional computed fields
+  valuation: z.number().optional(),
+  details: z.object({
+    baseValuation: z.number(),
+    adjustments: z.record(z.string(), z.number()),
+    methodResults: z.array(z.object({
+      method: z.string(),
+      value: z.number(),
+      weight: z.number(),
+      description: z.string()
+    }))
+  }).optional(),
+
+  // Additional metrics for calculations
+  capexRate: z.number().optional(),
+  workingCapitalRate: z.number().optional(),
+  tam: z.number().optional(),
+  productLines: z.number().optional(),
+  plannedProducts: z.number().optional(),
+  currentMarkets: z.number().optional(),
+  potentialMarkets: z.number().optional(),
+  currentCustomerSegments: z.number().optional(),
+  potentialSegments: z.number().optional(),
+});
+
+export type ValuationFormData = z.infer<typeof valuationFormSchema>;
 
 export const valuationPurposes = {
   fundraising: "Fundraising",
@@ -258,26 +423,8 @@ export const qualitativeFactorsSchema = z.object({
   esgImpact: z.enum(Object.keys(esgImpactLevels) as [keyof typeof esgImpactLevels, ...Array<keyof typeof esgImpactLevels>]),
 });
 
-// Combined validation schema
-export const valuationFormSchema = z.object({
-  ...businessOverviewSchema.shape,
-  ...financialMetricsSchema.shape,
-  ...marketInsightsSchema.shape,
-  ...riskScalabilitySchema.shape,
-  ...jurisdictionalComplianceSchema.shape,
-  ...qualitativeFactorsSchema.shape,
-
-  // Optional computed fields
-  valuation: z.number().optional(),
-  multiplier: z.number().optional(),
-  details: z.object({
-    baseValuation: z.number(),
-    adjustments: z.record(z.string(), z.number())
-  }).optional(),
-});
 
 // Export types
-export type ValuationFormData = z.infer<typeof valuationFormSchema>;
 export type BusinessOverview = z.infer<typeof businessOverviewSchema>;
 export type FinancialMetrics = z.infer<typeof financialMetricsSchema>;
 export type MarketInsights = z.infer<typeof marketInsightsSchema>;
