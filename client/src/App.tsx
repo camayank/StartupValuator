@@ -5,6 +5,8 @@ import { Profile } from "./pages/Profile";
 import ValuationPage from "./pages/ValuationPage";
 import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
 import SAFECalculatorPage from "./pages/SAFECalculatorPage";
+import MarketAnalysisPage from "./pages/MarketAnalysisPage";
+import MetricsPage from "./pages/MetricsPage";
 import { Card } from "@/components/ui/card";
 import {
   AlertCircle,
@@ -355,14 +357,7 @@ function App() {
               <Route path="/">
                 {user && (
                   <DashboardContainer>
-                    <StartupJourneyDashboard 
-                      profile={{
-                        journeyMilestones: [], // Will be populated from API
-                        growthMetrics: [],     // Will be populated from API
-                        keyAchievements: [],   // Will be populated from API
-                        futureGoals: []        // Will be populated from API
-                      }}
-                    />
+                    <StartupHealthDashboard />
                   </DashboardContainer>
                 )}
                 {!user && <Home />}
@@ -370,14 +365,13 @@ function App() {
               <Route path="/valuation" component={ValuationPage} />
               <Route path="/calculator" component={ValuationCalculatorPage} />
               <Route path="/safe-calculator" component={SAFECalculatorPage} />
+              <Route path="/metrics" component={MetricsPage} />
+              <Route path="/market" component={MarketAnalysisPage} />
               <Route path="/projections">
                 <ProjectionsWizard />
               </Route>
               <Route path="/pitch-deck">
                 <PitchDeckGenerator />
-              </Route>
-              <Route path="/dashboard">
-                <DashboardContainer />
               </Route>
               <Route path="/compliance">
                 <ComplianceChecker />
@@ -393,12 +387,43 @@ function App() {
               </Route>
               <Route path="/journey">
                 <DashboardContainer>
-                  <StartupJourneyDashboard 
+                  <StartupJourneyDashboard
                     profile={{
-                      journeyMilestones: [], // Will be populated from API
-                      growthMetrics: [],     // Will be populated from API
-                      keyAchievements: [],   // Will be populated from API
-                      futureGoals: []        // Will be populated from API
+                      journeyMilestones: [
+                        {
+                          date: new Date().toISOString(),
+                          title: "Started Valuation Journey",
+                          description: "Beginning the process of understanding your startup's true value",
+                          category: "market",
+                          impact: 7
+                        }
+                      ],
+                      growthMetrics: [
+                        {
+                          date: new Date().toISOString(),
+                          metric: "User Growth",
+                          value: 100,
+                          target: 1000,
+                          unit: "users"
+                        }
+                      ],
+                      keyAchievements: [
+                        {
+                          date: new Date().toISOString(),
+                          title: "Platform Launch",
+                          description: "Successfully launched the initial version",
+                          impact: "High"
+                        }
+                      ],
+                      futureGoals: [
+                        {
+                          targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
+                          title: "Series A Preparation",
+                          description: "Complete valuation and pitch deck for Series A funding",
+                          status: "planned",
+                          priority: "high"
+                        }
+                      ]
                     }}
                   />
                 </DashboardContainer>
