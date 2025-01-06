@@ -16,18 +16,29 @@ const STEPS = [
 
 export default function ValuationPage() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [activeTab, setActiveTab] = useState(STEPS[0].id);
   const { toast } = useToast();
   const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(prev => prev + 1);
+      setActiveTab(STEPS[currentStep + 1].id);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
+      setActiveTab(STEPS[currentStep - 1].id);
+    }
+  };
+
+  const handleTabChange = (tabId: string) => {
+    const newIndex = STEPS.findIndex(step => step.id === tabId);
+    if (newIndex <= currentStep) {
+      setCurrentStep(newIndex);
+      setActiveTab(tabId);
     }
   };
 
@@ -44,7 +55,7 @@ export default function ValuationPage() {
           <Progress value={progress} className="h-2" />
         </CardHeader>
         <CardContent>
-          <div className="mb-8">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
             <TabsList className="grid grid-cols-5 gap-4">
               {STEPS.map((step, index) => {
                 const Icon = step.icon;
@@ -56,7 +67,6 @@ export default function ValuationPage() {
                     className={`flex flex-col items-center p-4 ${
                       index === currentStep ? 'border-primary' : ''
                     }`}
-                    onClick={() => index <= currentStep && setCurrentStep(index)}
                   >
                     <Icon className="h-6 w-6 mb-2" />
                     <span className="text-sm">{step.title}</span>
@@ -64,25 +74,44 @@ export default function ValuationPage() {
                 );
               })}
             </TabsList>
-          </div>
 
-          <Tabs value={STEPS[currentStep].id} className="mt-8">
-            {/* Step content will be added here */}
-            <TabsContent value="company">
-              Company Info Form
-            </TabsContent>
-            <TabsContent value="financials">
-              Financial Data Form
-            </TabsContent>
-            <TabsContent value="projections">
-              Projections Form
-            </TabsContent>
-            <TabsContent value="risk">
-              Risk Analysis Form
-            </TabsContent>
-            <TabsContent value="review">
-              Final Review
-            </TabsContent>
+            <div className="mt-8">
+              <TabsContent value="company">
+                <Card>
+                  <CardContent className="pt-6">
+                    Company Info Form
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="financials">
+                <Card>
+                  <CardContent className="pt-6">
+                    Financial Data Form
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="projections">
+                <Card>
+                  <CardContent className="pt-6">
+                    Projections Form
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="risk">
+                <Card>
+                  <CardContent className="pt-6">
+                    Risk Analysis Form
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="review">
+                <Card>
+                  <CardContent className="pt-6">
+                    Final Review
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
           </Tabs>
 
           <div className="flex justify-between mt-8">
