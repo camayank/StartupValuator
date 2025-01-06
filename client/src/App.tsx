@@ -60,7 +60,7 @@ const navigationConfig = {
   },
   investor: {
     mainTools: [
-      { href: "/", label: "Valuation", description: "Evaluate investment opportunities", icon: Calculator },
+      { href: "/valuation", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
       { href: "/calculator", label: "Interactive Calculator", description: "Quick valuation estimates", icon: Calculator },
       { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", icon: PieChart },
       { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments", icon: BarChart3 },
@@ -72,7 +72,7 @@ const navigationConfig = {
   },
   valuer: {
     mainTools: [
-      { href: "/", label: "Valuation", description: "Professional valuation tools", icon: Calculator },
+      { href: "/valuation", label: "Full Valuation", description: "Professional valuation tools", icon: Calculator },
       { href: "/calculator", label: "Interactive Calculator", description: "Quick scenario analysis", icon: Calculator },
       { href: "/methodology", label: "Methodology", description: "Manage valuation methodologies", icon: BookOpen },
       { href: "/clients", label: "Clients", description: "Manage client relationships", icon: Users },
@@ -84,7 +84,7 @@ const navigationConfig = {
   },
   consultant: {
     mainTools: [
-      { href: "/", label: "Valuation", description: "Advisory focused tools", icon: Calculator },
+      { href: "/valuation", label: "Full Valuation", description: "Advisory focused tools", icon: Calculator },
       { href: "/calculator", label: "Interactive Calculator", description: "Client scenario modeling", icon: Calculator },
       { href: "/clients", label: "Clients", description: "Manage client relationships", icon: Users },
       { href: "/reports", label: "Reports", description: "Generate and manage reports", icon: FileText },
@@ -353,6 +353,7 @@ function App() {
                 <ValuationWizard
                   onSubmit={(data) => {
                     // Handle submission
+                    console.log('Valuation data submitted:', data);
                   }}
                 />
               </Route>
@@ -390,6 +391,7 @@ function App() {
   );
 }
 
+// fallback 404 not found page
 function NotFound() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
