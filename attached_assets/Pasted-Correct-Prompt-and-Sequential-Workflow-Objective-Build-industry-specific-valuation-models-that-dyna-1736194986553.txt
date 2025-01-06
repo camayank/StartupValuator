@@ -1,0 +1,104 @@
+Correct Prompt and Sequential Workflow
+Objective: Build industry-specific valuation models that dynamically appear based on user selections (industry and segment). These models will use predefined variables tailored for each industry and segment while maintaining a user-friendly workflow, as discussed earlier. The workflow will include login, a landing page, and a step-by-step valuation process with intuitive card-based navigation.
+
+Prompt for Industry-Specific Models and Workflow
+High-Level Prompt:
+"Create a valuation tool where users first select their industry and segment. Based on the selection, dynamically display relevant variables for input, tailored to the chosen industry. Use a card-based step-by-step workflow for ease of use, including:
+
+Business Information
+Industry-Specific Variables
+Financial Information
+Valuation Method Selection
+Review and Generate Report."
+Sequential Workflow
+1. User Login and Landing Page
+Prompt:
+"Design a login system with Google and email sign-in options. Upon login, direct users to a professional landing page that highlights the tool’s key features and includes links to:
+Start Valuation
+Subscription Plans
+User Dashboard (saved reports, past valuations)."
+2. Step 1: Business Information
+Prompt:
+"Collect basic business information:
+Business Name
+Purpose of Valuation (Dropdown: Fundraising, M&A, ESOPs, etc.)
+Region of Operation (Dropdown: India, US, UK, etc.)
+Business Stage (Dropdown: Ideation, Growth, Scaling, Mature)."
+3. Step 2: Industry-Specific Variables
+Dynamic Workflow Based on Industry Selection:
+Industry Dropdown Options: SaaS, E-commerce, Manufacturing, Healthcare, etc.
+Prompt for SaaS Industry:
+"What is your monthly recurring revenue (MRR)?"
+"What is your customer acquisition cost (CAC)?"
+"What is your churn rate (percentage)?"
+Prompt for E-commerce Industry:
+"What is your average order value (AOV)?"
+"What is your conversion rate (percentage)?"
+"What is your inventory turnover ratio?"
+Prompt for Healthcare Industry:
+"What is your average revenue per patient?"
+"What percentage of your revenue is recurring?"
+"What is the total addressable market (TAM) for your specialization?"
+4. Step 3: Financial Information
+Prompt:
+"Capture core financial metrics:
+Annual Revenue
+Revenue Growth Rate
+Operating Margins
+Current and Projected Cash Flow."
+5. Step 4: Valuation Method Selection
+Prompt:
+"Display recommended valuation methods based on industry and segment:
+SaaS: DCF, ARR Multiples
+E-commerce: Market Multiples, Revenue-Based
+Healthcare: Asset-Based, Market Comparables
+Let users select a method, with a tooltip or guide explaining each method."
+6. Step 5: Review and Generate Report
+Prompt:
+"Display a summary of inputs and assumptions, with options to edit any field dynamically.
+Include real-time recalculations for changes.
+Allow users to customize the report format (PDF/Excel) and branding (logo, colors)."
+Backend Logic for Industry-Specific Models
+Predefined Models:
+
+Create a library of valuation models for each industry using parameters like:
+SaaS: MRR, churn rate, LTV/CAC ratio.
+E-commerce: AOV, conversion rates, inventory turnover.
+Manufacturing: Asset values, production capacity, operating margins.
+Link each model to backend logic tailored to the chosen valuation methods.
+Dynamic Variable Display:
+
+Use conditional logic to display only the variables relevant to the selected industry and segment.
+Real-Time Calculations:
+
+Backend logic should adjust valuation results dynamically based on user inputs and external data (e.g., market benchmarks).
+Login and Landing Page Workflow
+Login Page
+Google and email login options.
+Redirect to the Landing Page post-login.
+Landing Page
+Sections:
+Hero Section: "Discover Your Startup’s True Value – Fast and Easy."
+Features: List industry-specific models, compliance-ready reports, and AI-powered insights.
+Call-to-Actions:
+"Start Your Valuation Now" (Redirects to Step 1).
+"Explore Subscription Plans" (Redirects to pricing page).
+UI Enhancements
+Card-Based Workflow:
+
+Display each step as a clickable card (e.g., Business Info → Industry Variables → Financials → Valuation Method → Review).
+Highlight the active step with progress indicators.
+Tooltips and Guidance:
+
+Provide brief, inline tooltips explaining each input field.
+Add "Learn More" links for complex terms or methods.
+Minimalistic Design:
+
+Clean UI with ample whitespace.
+Use consistent color schemes and typography for a professional look.
+Next Steps
+Would you like to:
+
+Validate the updated prompts and workflows for accuracy and usability?
+Focus on refining backend logic for industry-specific models?
+Optimize UI/UX for maximum user satisfaction?
