@@ -4,7 +4,7 @@ import { Documentation } from "./pages/Documentation";
 import { Profile } from "./pages/Profile";
 import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
-import { PitchDeckAnalyzer } from "@/components/PitchDeckAnalyzer";
+import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
 import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { ReportGenerationProgress } from "@/components/ReportGenerationProgress";
@@ -75,14 +75,13 @@ function App() {
             <ProjectionsWizard />
           </div>
         </Route>
-        <Route path="/docs" component={Documentation} />
-        <Route path="/profile/:userId" component={Profile} />
-        <Route path="/pitch-deck" component={PitchDeckAnalyzer} />
-        <Route path="/report-progress">
+        <Route path="/pitch-deck">
           <div className="container mx-auto py-8">
-            <ReportGenerationProgress onComplete={() => console.log("Report generation completed")} />
+            <PitchDeckGenerator />
           </div>
         </Route>
+        <Route path="/docs" component={Documentation} />
+        <Route path="/profile/:userId" component={Profile} />
         <Route component={NotFound} />
       </Switch>
     </div>
