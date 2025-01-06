@@ -16,18 +16,17 @@ import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
 import { generateComplianceReport, generateComplianceChecklist } from "./services/compliance-checker";
 import workspaceRoutes from "./routes/workspace";
+import { frameworks, type FrameworkId, validateFrameworkCompliance, applyFrameworkAdjustments } from "./lib/compliance/frameworks";
 
 // Define a schema for the report data
 const reportDataSchema = valuationFormSchema.extend({
   valuation: z.number(),
   multiplier: z.number(),
   details: z.object({
-    adjustments: z.object({
-      marketConditions: z.number(),
-      companySpecific: z.number(),
-      industryTrends: z.number(),
-    }).optional(),
-  }).optional().default({}),
+    baseValuation: z.number(),
+    adjustments: z.record(z.string(), z.number()),
+  }).optional(),
+  complianceFramework: z.enum(['ivs', 'icai', '409a']).optional(),
 });
 
 export function registerRoutes(app: Express): Server {
@@ -46,6 +45,71 @@ export function registerRoutes(app: Express): Server {
 
   // Add workspace routes
   app.use("/api/workspaces", workspaceRoutes);
+
+  // Enhanced valuation route with compliance support
+  app.post("/api/valuation", async (req, res) => {
+    try {
+      // Validate request body against our schema
+      const validatedData = valuationFormSchema.parse(req.body);
+      const { revenue, growthRate, margins, industry, stage, region } = validatedData;
+
+      // Auto-select appropriate compliance framework based on region
+      let frameworkId: FrameworkId = 'ivs'; // Default to IVS
+      if (region.toLowerCase() === 'us') {
+        frameworkId = '409a';
+      } else if (region.toLowerCase() === 'india') {
+        frameworkId = 'icai';
+      }
+
+      const framework = frameworks[frameworkId];
+
+      // Create a cache key from the important parameters
+      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}-${frameworkId}`;
+
+      // Check cache first
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return res.json(cachedResult);
+      }
+
+      // Calculate base valuation
+      const baseValuation = await calculateValuation(validatedData);
+
+      // Validate compliance requirements
+      const complianceResults = validateFrameworkCompliance(framework, validatedData);
+      const hasComplianceIssues = complianceResults.some(r => r.errors.length > 0);
+
+      // Apply compliance-specific adjustments
+      const adjustedValuation = applyFrameworkAdjustments(framework, baseValuation.valuation);
+
+      const result = {
+        ...baseValuation,
+        valuation: adjustedValuation,
+        compliance: {
+          framework: frameworkId,
+          requirements: complianceResults,
+          hasIssues: hasComplianceIssues,
+        },
+      };
+
+      // Cache the result
+      cache.set(cacheKey, result);
+      res.json(result);
+    } catch (error) {
+      console.error('Valuation calculation failed:', error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: error.errors,
+        });
+      }
+
+      res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
+      });
+    }
+  });
 
   // Add activity tracking endpoint
   app.post("/api/activities", async (req, res) => {
@@ -83,181 +147,33 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/suggestions/:id/shown", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
+  // Compliance checking routes with enhanced documentation
+  app.post("/api/compliance/check", async (req, res) => {
     try {
-      await WorkflowSuggestionEngine.markSuggestionAsShown(parseInt(req.params.id));
-      res.json({ success: true });
+      const report = await generateComplianceReport(req.body);
+      res.json(report);
     } catch (error) {
-      console.error("Failed to mark suggestion as shown:", error);
-      res.status(500).json({ message: "Failed to update suggestion" });
-    }
-  });
-
-  app.post("/api/suggestions/:id/clicked", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      await WorkflowSuggestionEngine.markSuggestionAsClicked(parseInt(req.params.id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Failed to mark suggestion as clicked:", error);
-      res.status(500).json({ message: "Failed to update suggestion" });
-    }
-  });
-
-  // Pitch deck personalization routes
-  app.post("/api/pitch-deck/personalize", async (req, res) => {
-    try {
-      const suggestions = await generatePersonalizedSuggestions(req.body);
-      res.json(suggestions);
-    } catch (error) {
-      console.error("Pitch deck personalization failed:", error);
+      console.error("Compliance check failed:", error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate personalized suggestions"
+        message: error instanceof Error ? error.message : "Failed to generate compliance report"
       });
     }
   });
 
-  app.post("/api/pitch-deck/industry-analysis", async (req, res) => {
+  app.post("/api/compliance/checklist", async (req, res) => {
     try {
-      const { industry, businessModel } = req.body;
-      const analysis = await analyzeIndustryFit(industry, businessModel);
-      res.json(analysis);
+      const { industry, region } = req.body;
+      const checklist = await generateComplianceChecklist(industry, region);
+      res.json(checklist);
     } catch (error) {
-      console.error("Industry analysis failed:", error);
+      console.error("Checklist generation failed:", error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to analyze industry fit"
+        message: error instanceof Error ? error.message : "Failed to generate compliance checklist"
       });
     }
   });
 
-  // User profile routes
-  app.get("/api/profile/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const profile = await db.query.userProfiles.findFirst({
-        where: eq(userProfiles.userId, parseInt(userId)),
-      });
-
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      res.json(profile);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.post("/api/profile", async (req, res) => {
-    try {
-      const profileData = req.body;
-      const result = await db.insert(userProfiles).values(profileData).returning();
-      res.json(result[0]);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.patch("/api/profile/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const updateData = req.body;
-
-      const result = await db
-        .update(userProfiles)
-        .set(updateData)
-        .where(eq(userProfiles.userId, parseInt(userId)))
-        .returning();
-
-      if (!result.length) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      res.json(result[0]);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  // Enhanced report generation route with better error handling
-  app.post("/api/report", async (req, res) => {
-    try {
-      console.log('Received report generation request:', JSON.stringify(req.body, null, 2));
-
-      // Validate request data
-      const validatedData = reportDataSchema.parse(req.body);
-      console.log('Validated data:', JSON.stringify(validatedData, null, 2));
-
-      // Generate PDF report
-      const pdfBuffer = await generatePdfReport(validatedData);
-      console.log('PDF buffer generated successfully');
-
-      // Set appropriate headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="startup-valuation-report.pdf"');
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error('Report generation failed:', error);
-
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Invalid data provided',
-          errors: error.errors,
-        });
-      }
-
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : 'Failed to generate report'
-      });
-    }
-  });
-
-  // Enhanced valuation route with proper validation
-  app.post("/api/valuation", async (req, res) => {
-    try {
-      // Validate request body against our schema
-      const validatedData = valuationFormSchema.parse(req.body);
-      const { revenue, growthRate, margins, industry, stage } = validatedData;
-
-      // Create a cache key from the important parameters
-      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}`;
-
-      // Check cache first
-      const cachedResult = cache.get(cacheKey);
-      if (cachedResult) {
-        return res.json(cachedResult);
-      }
-
-      // Calculate valuation if not in cache
-      const result = await calculateValuation(validatedData);
-
-      // Cache the result
-      cache.set(cacheKey, result);
-      res.json(result);
-    } catch (error) {
-      console.error('Valuation calculation failed:', error);
-
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Validation failed',
-          errors: error.errors,
-        });
-      }
-
-      res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
-      });
-    }
-  });
-
-  // Export routes for different formats
+  // Export routes with compliance documentation
   app.post("/api/export/pdf", async (req, res) => {
     try {
       const data = req.body;
@@ -272,7 +188,6 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-
   app.post("/api/export/xlsx", async (req, res) => {
     try {
       const data = req.body;
