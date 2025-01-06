@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// Define all constants first
 export const currencies = {
   USD: { symbol: "$", name: "US Dollar" },
   EUR: { symbol: "€", name: "Euro" },
@@ -8,7 +9,6 @@ export const currencies = {
   INR: { symbol: "₹", name: "Indian Rupee" },
 } as const;
 
-// Add regions with their compliance standards and default currency
 export const regions = {
   us: {
     name: "United States",
@@ -46,104 +46,6 @@ export const regions = {
     defaultCurrency: "USD" as keyof typeof currencies,
   },
 } as const;
-
-// Standard expense categories for startups
-export const expenseCategories = {
-  personnel: {
-    name: "Personnel & Payroll",
-    subcategories: ["Salaries", "Benefits", "Payroll Taxes", "Contractors"],
-  },
-  technology: {
-    name: "Technology & Infrastructure",
-    subcategories: ["Software Licenses", "Cloud Services", "Hardware", "IT Support"],
-  },
-  marketing: {
-    name: "Marketing & Sales",
-    subcategories: ["Advertising", "Events", "Content Creation", "Sales Tools"],
-  },
-  operations: {
-    name: "Operations & Office",
-    subcategories: ["Rent", "Utilities", "Supplies", "Insurance"],
-  },
-  rd: {
-    name: "Research & Development",
-    subcategories: ["Product Development", "Patents", "Testing", "Prototyping"],
-  },
-  professional: {
-    name: "Professional Services",
-    subcategories: ["Legal", "Accounting", "Consulting", "Advisory"],
-  },
-} as const;
-
-// Fund utilization categories
-export const fundingCategories = {
-  productDevelopment: "Product Development",
-  marketing: "Marketing & Customer Acquisition",
-  operations: "Operations & Infrastructure",
-  hiring: "Team Expansion",
-  workingCapital: "Working Capital",
-  researchDevelopment: "Research & Development",
-  expansion: "Market Expansion",
-  reserves: "Cash Reserves",
-} as const;
-
-// Financial Projections Schema
-export const financialProjectionSchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
-  projectionPeriod: z.number().int().min(1).max(5),
-  baseRevenue: z.number().min(0),
-  baseExpenses: z.number().min(0),
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
-  growthRate: z.number().min(-100).max(1000),
-  marginProjection: z.number().min(-100).max(100),
-  burnRate: z.number().min(0).optional(),
-  totalFunding: z.number().min(0).optional(),
-  allocation: z.array(z.object({
-    category: z.string(),
-    percentage: z.number().min(0).max(100),
-    amount: z.number().min(0),
-    description: z.string().optional(),
-  })).optional(),
-  assumptions: z.object({
-    revenueAssumptions: z.array(z.object({
-      category: z.string(),
-      growthRate: z.number(),
-      description: z.string(),
-    })),
-    expenseAssumptions: z.array(z.object({
-      category: z.string(),
-      percentage: z.number(),
-      description: z.string(),
-    })),
-  }),
-});
-
-// Revenue Projections Schema
-export const revenueProjectionsSchema = z.object({
-  baseRevenue: z.number().min(0, "Revenue must be positive"),
-  projectionPeriod: z.number().int().min(1).max(5, "Projection period must be between 1 and 5 years"),
-  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
-  revenueAssumptions: z.array(z.object({
-    category: z.string(),
-    growthRate: z.number(),
-    description: z.string(),
-  })).optional(),
-});
-
-export type FinancialProjectionData = z.infer<typeof financialProjectionSchema>;
-
-// Fund Utilization Schema
-export const fundUtilizationSchema = z.object({
-  totalFunding: z.number().min(0),
-  burnRate: z.number().min(0),
-  runway: z.number().min(1),
-  allocation: z.array(z.object({
-    category: z.enum(Object.keys(fundingCategories) as [keyof typeof fundingCategories, ...Array<keyof typeof fundingCategories>]),
-    percentage: z.number().min(0).max(100),
-    amount: z.number().min(0),
-    description: z.string(),
-  })),
-});
 
 // Enhanced business stages with integrated market validation
 export const businessStages = {
@@ -274,24 +176,45 @@ export const valuationPurposes = {
   exit_planning: "Exit Planning",
 } as const;
 
-export const valuationFormSchema = z.object({
+// Now define schemas that depend on the above constants
+export const businessOverviewSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
-  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
-  revenue: z.number().min(0, "Revenue must be positive"),
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
-  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
-  margins: z.number().min(-100).max(100, "Margins must be between -100 and 100"),
   sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
-  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
+});
+
+export const financialMetricsSchema = z.object({
+  revenue: z.number().min(0, "Revenue must be positive"),
+  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000").optional(),
+  margins: z.number().min(-100).max(100, "Margins must be between -100 and 100").optional(),
+});
+
+export const marketInsightsSchema = z.object({
+  totalAddressableMarket: z.number().optional(),
+  competitiveDifferentiation: z.enum(["high", "moderate", "limited"]).optional(),
+  customerBase: z.number().min(0).optional(),
+});
+
+export const riskScalabilitySchema = z.object({
+  scalabilityPotential: z.number().min(1).max(10).optional(),
+  cashFlowStability: z.enum(["stable", "moderate", "volatile"]).optional(),
+  primaryRiskFactor: z.enum(["market", "regulatory", "operational", "technology", "competition"]).optional(),
+});
+
+// Enhanced valuation form schema incorporating simplified categories
+export const valuationFormSchema = z.object({
+  ...businessOverviewSchema.shape,
+  ...financialMetricsSchema.shape,
+  ...marketInsightsSchema.shape,
+  ...riskScalabilitySchema.shape,
+  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
+  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   complianceStandard: z.enum(["409a", "ifrs", "ibbi", "mca", "none"]).optional(),
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(20).optional(),
-  customerBase: z.number().min(0).optional(),
-  competitiveDifferentiation: z.enum(["low", "medium", "high"]).optional(),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
-  scalability: z.enum(["limited", "moderate", "high"]).optional(),
   valuation: z.number().optional(),
   multiplier: z.number().optional(),
   details: z.object({
@@ -316,8 +239,111 @@ export const valuationFormSchema = z.object({
   ecosystemNetwork: z.any().optional()
 });
 
+// Export types
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
+export type BusinessOverview = z.infer<typeof businessOverviewSchema>;
+export type FinancialMetrics = z.infer<typeof financialMetricsSchema>;
+export type MarketInsights = z.infer<typeof marketInsightsSchema>;
+export type RiskScalability = z.infer<typeof riskScalabilitySchema>;
 
+export const expenseCategories = {
+  personnel: {
+    name: "Personnel & Payroll",
+    subcategories: ["Salaries", "Benefits", "Payroll Taxes", "Contractors"],
+  },
+  technology: {
+    name: "Technology & Infrastructure",
+    subcategories: ["Software Licenses", "Cloud Services", "Hardware", "IT Support"],
+  },
+  marketing: {
+    name: "Marketing & Sales",
+    subcategories: ["Advertising", "Events", "Content Creation", "Sales Tools"],
+  },
+  operations: {
+    name: "Operations & Office",
+    subcategories: ["Rent", "Utilities", "Supplies", "Insurance"],
+  },
+  rd: {
+    name: "Research & Development",
+    subcategories: ["Product Development", "Patents", "Testing", "Prototyping"],
+  },
+  professional: {
+    name: "Professional Services",
+    subcategories: ["Legal", "Accounting", "Consulting", "Advisory"],
+  },
+} as const;
+
+// Fund utilization categories
+export const fundingCategories = {
+  productDevelopment: "Product Development",
+  marketing: "Marketing & Customer Acquisition",
+  operations: "Operations & Infrastructure",
+  hiring: "Team Expansion",
+  workingCapital: "Working Capital",
+  researchDevelopment: "Research & Development",
+  expansion: "Market Expansion",
+  reserves: "Cash Reserves",
+} as const;
+
+// Financial Projections Schema
+export const financialProjectionSchema = z.object({
+  companyName: z.string().min(1, "Company name is required"),
+  projectionPeriod: z.number().int().min(1).max(5),
+  baseRevenue: z.number().min(0),
+  baseExpenses: z.number().min(0),
+  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  growthRate: z.number().min(-100).max(1000),
+  marginProjection: z.number().min(-100).max(100),
+  burnRate: z.number().min(0).optional(),
+  totalFunding: z.number().min(0).optional(),
+  allocation: z.array(z.object({
+    category: z.string(),
+    percentage: z.number().min(0).max(100),
+    amount: z.number().min(0),
+    description: z.string().optional(),
+  })).optional(),
+  assumptions: z.object({
+    revenueAssumptions: z.array(z.object({
+      category: z.string(),
+      growthRate: z.number(),
+      description: z.string(),
+    })),
+    expenseAssumptions: z.array(z.object({
+      category: z.string(),
+      percentage: z.number(),
+      description: z.string(),
+    })),
+  }),
+});
+
+// Revenue Projections Schema
+export const revenueProjectionsSchema = z.object({
+  baseRevenue: z.number().min(0, "Revenue must be positive"),
+  projectionPeriod: z.number().int().min(1).max(5, "Projection period must be between 1 and 5 years"),
+  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
+  revenueAssumptions: z.array(z.object({
+    category: z.string(),
+    growthRate: z.number(),
+    description: z.string(),
+  })).optional(),
+});
+
+export type FinancialProjectionData = z.infer<typeof financialProjectionSchema>;
+
+// Fund Utilization Schema
+export const fundUtilizationSchema = z.object({
+  totalFunding: z.number().min(0),
+  burnRate: z.number().min(0),
+  runway: z.number().min(1),
+  allocation: z.array(z.object({
+    category: z.enum(Object.keys(fundingCategories) as [keyof typeof fundingCategories, ...Array<keyof typeof fundingCategories>]),
+    percentage: z.number().min(0).max(100),
+    amount: z.number().min(0),
+    description: z.string(),
+  })),
+});
+
+// Utility functions
 export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
