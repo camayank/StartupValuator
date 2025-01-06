@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, varchar, pgEnum, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -6,6 +7,11 @@ import { z } from "zod";
 export const userRoles = pgEnum("user_role", ["startup", "investor", "valuer", "consultant"]);
 export const subscriptionTiers = pgEnum("subscription_tier", ["free", "startup", "growth", "enterprise"]);
 export const planStatus = pgEnum("plan_status", ["active", "cancelled", "past_due", "trial"]);
+export const addonTypes = pgEnum("addon_type", [
+  "cap_table_management",
+  "financial_projections",
+  "compliance_reports"
+]);
 
 // Add activity tracking enums
 export const activityTypes = pgEnum("activity_type", [
@@ -19,13 +25,6 @@ export const activityTypes = pgEnum("activity_type", [
   "profile_update",
   "settings_change",
   "feature_interaction"
-]);
-
-// Add new enums for add-on services
-export const addonTypes = pgEnum("addon_type", [
-  "cap_table_management",
-  "financial_projections",
-  "compliance_reports"
 ]);
 
 export const users = pgTable("users", {
@@ -47,20 +46,32 @@ export const userProfiles = pgTable("user_profiles", {
   userId: integer("user_id").references(() => users.id).notNull(),
   fullName: varchar("full_name", { length: 255 }),
   region: varchar("region", { length: 100 }),
+  companyName: varchar("company_name", { length: 255 }),
   bio: text("bio"),
   website: varchar("website", { length: 255 }),
-  linkedinUrl: varchar("linkedin_url", { length: 255 }),
-  twitterHandle: varchar("twitter_handle", { length: 50 }),
-  profilePicture: varchar("profile_picture", { length: 255 }),
   settings: jsonb("settings").$type<{
     emailNotifications: boolean;
-    twoFactorEnabled: boolean;
     theme: "light" | "dark" | "system";
     language: string;
   }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const userRelations = relations(users, ({ one }) => ({
+  profile: one(userProfiles, {
+    fields: [users.id],
+    references: [userProfiles.userId],
+  }),
+}));
+
+export const profileRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
 
 export const subscriptionPlans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
@@ -114,7 +125,6 @@ export const usageStats = pgTable("usage_stats", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// New table for tracking detailed user activities
 export const userActivities = pgTable("user_activities", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -131,7 +141,6 @@ export const userActivities = pgTable("user_activities", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Table for workflow suggestions
 export const workflowSuggestions = pgTable("workflow_suggestions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -150,7 +159,6 @@ export const workflowSuggestions = pgTable("workflow_suggestions", {
   expiresAt: timestamp("expires_at"),
 });
 
-// Add new table for pay-per-use purchases
 export const payPerUseTransactions = pgTable("pay_per_use_transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -161,7 +169,6 @@ export const payPerUseTransactions = pgTable("pay_per_use_transactions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Add new table for add-on subscriptions
 export const addonSubscriptions = pgTable("addon_subscriptions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
@@ -175,7 +182,6 @@ export const addonSubscriptions = pgTable("addon_subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Add new enums for workspace roles and audit actions
 export const workspaceRoles = pgEnum("workspace_role", ["owner", "admin", "member", "viewer"]);
 export const auditActions = pgEnum("audit_action", [
   "valuation_created",
@@ -188,7 +194,6 @@ export const auditActions = pgEnum("audit_action", [
   "compliance_check"
 ]);
 
-// Workspace table
 export const workspaces = pgTable("workspaces", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -206,7 +211,6 @@ export const workspaces = pgTable("workspaces", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Workspace members table
 export const workspaceMembers = pgTable("workspace_members", {
   id: serial("id").primaryKey(),
   workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
@@ -217,7 +221,6 @@ export const workspaceMembers = pgTable("workspace_members", {
   joinedAt: timestamp("joined_at"),
 });
 
-// Valuations table
 export const valuations = pgTable("valuations", {
   id: serial("id").primaryKey(),
   workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
@@ -234,7 +237,6 @@ export const valuations = pgTable("valuations", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Valuation comments
 export const valuationComments = pgTable("valuation_comments", {
   id: serial("id").primaryKey(),
   valuationId: integer("valuation_id").references(() => valuations.id).notNull(),
@@ -251,7 +253,6 @@ export const valuationComments = pgTable("valuation_comments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Audit trail for security and compliance
 export const auditTrail = pgTable("audit_trail", {
   id: serial("id").primaryKey(),
   workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
@@ -262,7 +263,6 @@ export const auditTrail = pgTable("audit_trail", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Create schemas for validation with custom validation rules
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email("Invalid email format"),
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -306,7 +306,6 @@ export const selectPayPerUseTransactionSchema = createSelectSchema(payPerUseTran
 export const insertAddonSubscriptionSchema = createInsertSchema(addonSubscriptions);
 export const selectAddonSubscriptionSchema = createSelectSchema(addonSubscriptions);
 
-// Export types
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
 export type InsertUserProfile = typeof userProfiles.$inferInsert;
@@ -363,14 +362,3 @@ export type InsertLoginAudit = typeof loginAudit.$inferInsert;
 export type SelectLoginAudit = typeof loginAudit.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type SelectPasswordResetToken = typeof passwordResetTokens.$inferSelect;
-
-export const usersRelations = relations(users, ({ one, many }) => ({
-  profile: one(userProfiles, {
-    fields: [users.id],
-    references: [userProfiles.userId],
-  }),
-  subscriptions: many(userSubscriptions),
-  usageStats: many(usageStats),
-  activities: many(userActivities),
-  suggestions: many(workflowSuggestions),
-}));
