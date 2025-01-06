@@ -33,6 +33,7 @@ import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 import AuthPage from "./pages/AuthPage";
+import { DashboardContainer } from "@/components/DashboardContainer";
 
 const baseNavItems = [
   { href: "/", label: "Valuation", description: "Calculate your startup's value", tourId: "valuation", feature: "valuation" },
@@ -293,7 +294,7 @@ function App() {
             </Route>
             <Route path="/dashboard">
               <div className="container mx-auto py-8">
-                <StartupHealthDashboard />
+                <DashboardContainer />
               </div>
             </Route>
             <Route path="/compliance">
