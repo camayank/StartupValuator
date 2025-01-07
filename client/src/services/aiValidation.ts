@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { ValuationFormData } from "@/lib/validations";
+import { type ValuationFormData } from "@/lib/validations";
 import { 
   validateBusinessMetrics, 
   validateRegionCompliance,
