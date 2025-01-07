@@ -8,8 +8,6 @@ import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Link } from "wouter";
-import { ValuationReport } from "@/components/ValuationReport";
-import { ValuationDashboard } from "@/components/dashboards/ValuationDashboard";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -21,8 +19,6 @@ interface ReviewStepProps {
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const [valuationData, setValuationData] = useState<any>(null);
   const isFundraising = data.valuationPurpose === 'fundraising';
 
   // Strict validation logic for all required fields
@@ -47,6 +43,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         .filter(([_, value]) => !value)
         .map(([key]) => key);
 
+      console.log('Missing or invalid fields:', missingFields);
       toast({
         title: "Missing Required Fields",
         description: `Please fill in all required fields: ${missingFields.join(', ')}`,
@@ -65,8 +62,8 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
     try {
       setIsGenerating(true);
 
-      // First, trigger the valuation calculation and AI insights generation
-      const valuationResponse = await fetch('/api/valuation/calculate', {
+      // First, trigger the valuation calculation
+      const valuationResponse = await fetch('/api/valuation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,46 +75,39 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         throw new Error(`Valuation failed: ${await valuationResponse.text()}`);
       }
 
-      const valuationResult = await valuationResponse.json();
+      const valuationData = await valuationResponse.json();
 
-      // Generate AI insights
-      const insightsResponse = await fetch('/api/valuation/insights', {
+      // Then generate the report with the combined data
+      const reportResponse = await fetch('/api/report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...data, ...valuationResult }),
+        body: JSON.stringify({ ...data, ...valuationData }),
       });
 
-      if (!insightsResponse.ok) {
-        throw new Error(`Insights generation failed: ${await insightsResponse.text()}`);
+      if (!reportResponse.ok) {
+        throw new Error(`Report generation failed: ${await reportResponse.text()}`);
       }
 
-      const insightsData = await insightsResponse.json();
-
-      // Combine all data
-      const completeData = {
-        ...data,
-        ...valuationResult,
-        ...insightsData,
-      };
-
-      // Store valuation data for the dashboard
-      setValuationData(completeData);
-
-      // Update the form data with the complete information
-      onUpdate(completeData);
-
-      // Show the report
-      setShowReport(true);
+      // Get the PDF blob and trigger download
+      const blob = await reportResponse.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'startup-valuation-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
       toast({
         title: "Success",
-        description: "Your valuation report has been generated successfully.",
+        description: "Your valuation report has been generated and downloaded.",
       });
 
       // Finally call onSubmit with the complete data
-      onSubmit(completeData as ValuationFormData);
+      onSubmit({ ...data, ...valuationData });
     } catch (error) {
       console.error('Report generation error:', error);
       toast({
@@ -134,21 +124,6 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
   const selectedIndustry = selectedSector?.subsectors[data.industry as keyof typeof selectedSector['subsectors']];
   const selectedStage = data.stage ? businessStages[data.stage] : null;
   const selectedRegion = data.region ? regions[data.region] : null;
-
-  if (showReport && isValidData(data) && valuationData) {
-    return (
-      <div className="space-y-8">
-        <ValuationDashboard 
-          valuation={valuationData.valuation}
-          currency={data.currency}
-          marketSentiment={valuationData.marketSentiment}
-          industry={selectedIndustry || ""}
-          region={selectedRegion?.name || ""}
-        />
-        <ValuationReport data={valuationData} />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

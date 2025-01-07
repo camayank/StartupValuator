@@ -1,4 +1,4 @@
-import { type ValuationFormData, sectors, businessStages } from "./validations";
+import { type ValuationFormData } from "./validations";
 
 // Industry-Specific Metrics Configuration
 export interface SaaSMetrics {
@@ -85,108 +85,56 @@ export interface CapTable {
 }
 
 // Industry-specific valuation functions
-export function calculateIndustryAdjustedValuation(data: ValuationFormData): {
-  value: number;
-  details: {
-    baseValue: number;
-    industryMultiple: number;
-    adjustments: Record<string, number>;
-    metrics: Record<string, number>;
-  };
-} {
-  const sector = sectors[data.sector];
-  const subsector = sector?.subsectors[data.subsector as keyof typeof sector.subsectors];
-  const stage = businessStages[data.stage];
+export function calculateSaaSMetrics(data: ValuationFormData): SaaSMetrics | null {
+  if (data.sector !== 'SaaS') return null;
 
-  if (!subsector || !stage) {
-    throw new Error("Invalid sector/subsector or stage");
-  }
-
-  // Get base multiple from industry benchmarks
-  const baseMultiple = subsector.benchmarks.revenueMultiple[stage.name.toLowerCase() as keyof typeof subsector.benchmarks.revenueMultiple];
-
-  // Calculate industry-specific adjustments
-  const adjustments = calculateIndustryAdjustments(data, subsector.benchmarks);
-
-  // Apply industry-specific metrics
-  const metrics = calculateIndustryMetrics(data);
-
-  // Calculate final multiple
-  const adjustedMultiple = baseMultiple * (1 + Object.values(adjustments).reduce((a, b) => a + b, 0));
-
-  // Calculate base value
-  const baseValue = data.revenue * adjustedMultiple;
+  const mrr = data.revenue ? data.revenue / 12 : 0;
+  const arr = mrr * 12;
+  const cac = data.customerAcquisitionCost || 0;
+  const ltv = calculateCustomerLifetimeValue(data);
+  const churnRate = data.churnRate || 0;
+  const expansionRevenue = data.expansionRevenue || 0;
 
   return {
-    value: baseValue * (1 + Object.values(adjustments).reduce((a, b) => a + b, 0)),
-    details: {
-      baseValue,
-      industryMultiple: adjustedMultiple,
-      adjustments,
-      metrics
-    }
+    arr,
+    mrr,
+    cac,
+    ltv,
+    churnRate,
+    expansionRevenue
   };
 }
 
-function calculateIndustryAdjustments(
-  data: ValuationFormData,
-  benchmarks: Record<string, any>
-): Record<string, number> {
-  const adjustments: Record<string, number> = {};
+export function calculateEcommerceMetrics(data: ValuationFormData): EcommerceMetrics | null {
+  if (data.sector !== 'E-commerce') return null;
 
-  // Growth rate adjustment
-  if (data.growthRate) {
-    const growthDiff = data.growthRate - benchmarks.growthRate;
-    adjustments.growth = growthDiff > 0 ? 0.1 : -0.1;
-  }
+  const gmv = data.grossMerchandiseValue || 0;
+  const aov = calculateAverageOrderValue(data);
+  const inventoryTurnover = calculateInventoryTurnover(data);
+  const repeatPurchaseRate = data.repeatPurchaseRate || 0;
+  const customerLifetimeValue = calculateCustomerLifetimeValue(data);
 
-  // Margins adjustment
-  if (data.margins) {
-    const marginDiff = data.margins - benchmarks.grossMargin;
-    adjustments.margins = marginDiff > 0 ? 0.15 : -0.15;
-  }
-
-  // Market share adjustment
-  if (data.marketShare) {
-    adjustments.marketPosition = data.marketShare > 10 ? 0.2 : 0;
-  }
-
-  return adjustments;
+  return {
+    gmv,
+    aov,
+    inventoryTurnover,
+    repeatPurchaseRate,
+    customerLifetimeValue
+  };
 }
 
-function calculateIndustryMetrics(data: ValuationFormData): Record<string, number> {
-  const metrics: Record<string, number> = {};
+export function calculateEnterpriseMetrics(data: ValuationFormData): EnterpriseMetrics | null {
+  if (data.sector !== 'Enterprise') return null;
 
-  if (data.industryMetrics?.saas) {
-    const saas = data.industryMetrics.saas;
-    metrics.ltv_cac_ratio = saas.ltv / saas.cac;
-    metrics.net_revenue_retention = (saas.arr + saas.expansionRevenue) / saas.arr;
-    metrics.growth_efficiency = (saas.arr * saas.growthRate) / (saas.cac * saas.churnRate);
-  }
-
-  if (data.industryMetrics?.ecommerce) {
-    const ecom = data.industryMetrics.ecommerce;
-    metrics.customer_acquisition_efficiency = ecom.customerLifetimeValue / ecom.aov;
-    metrics.inventory_efficiency = ecom.inventoryTurnover;
-    metrics.repeat_purchase_value = ecom.repeatPurchaseRate * ecom.customerLifetimeValue;
-  }
-
-  if (data.industryMetrics?.enterprise) {
-    const ent = data.industryMetrics.enterprise;
-    metrics.contract_efficiency = ent.tcv / ent.dealCycle;
-    metrics.booking_efficiency = ent.bookings / ent.backlog;
-    metrics.customer_stickiness = ent.contractLength * ent.tcv;
-  }
-
-  return metrics;
+  return {
+    tcv: data.totalContractValue || 0,
+    bookings: data.bookings || 0,
+    backlog: data.backlog || 0,
+    dealCycle: data.averageDealCycle || 0,
+    contractLength: data.averageContractLength || 0
+  };
 }
 
-// Export utility functions
-export const industryValuationUtils = {
-  calculateIndustryAdjustedValuation,
-  calculateIndustryAdjustments,
-  calculateIndustryMetrics,
-};
 // Market comparables analysis
 export function getMarketComparables(data: ValuationFormData): MarketComparable[] {
   // This would typically fetch real-time data from an API
@@ -239,7 +187,7 @@ export function projectCashFlows(data: ValuationFormData, years: number = 5): Ca
   const financingCashFlow = calculateFinancingCashFlows(data, years);
   const workingCapitalChanges = calculateWorkingCapitalChanges(data, years);
 
-  const netCashFlow = periods.map((_, i) =>
+  const netCashFlow = periods.map((_, i) => 
     operatingCashFlow[i] + investingCashFlow[i] + financingCashFlow[i]
   );
 
@@ -268,92 +216,24 @@ export function modelCapTable(data: ValuationFormData): CapTable {
   };
 }
 
-
-// Helper functions for valuation calculations
-function calculateWACC(data: ValuationFormData): number {
-  const riskFreeRate = data.assumptions?.riskFreeRate || 0.035;
-  const beta = data.assumptions?.beta || 1;
-  const marketRiskPremium = data.assumptions?.marketRiskPremium || 0.055;
-  const costOfDebt = data.assumptions?.costOfDebt || 0.05;
-  const taxRate = data.assumptions?.taxRate || 0.25;
-  const debtRatio = data.assumptions?.debtRatio || 0;
-
-  const costOfEquity = riskFreeRate + beta * marketRiskPremium;
-  const afterTaxCostOfDebt = costOfDebt * (1 - taxRate);
-
-  return costOfEquity * (1 - debtRatio) + afterTaxCostOfDebt * debtRatio;
-}
-
-function calculateFreeCashFlows(data: ValuationFormData, years: number): number[] {
-  const baseRevenue = data.revenue;
-  const growthRate = data.growthRate || 0.1;
-  const margins = data.margins || 0.2;
-  const taxRate = data.assumptions?.taxRate || 0.25;
-  const depreciationRate = 0.1;
-  const capexRate = 0.15;
-  const workingCapitalRate = 0.1;
-
-  return Array.from({ length: years }, (_, i) => {
-    const revenue = baseRevenue * Math.pow(1 + growthRate, i);
-    const ebit = revenue * margins;
-    const taxes = ebit * taxRate;
-    const depreciation = revenue * depreciationRate;
-    const capex = revenue * capexRate;
-    const workingCapitalChange = (revenue * workingCapitalRate) -
-      (i > 0 ? baseRevenue * Math.pow(1 + growthRate, i - 1) * workingCapitalRate : 0);
-
-    return ebit * (1 - taxRate) + depreciation - capex - workingCapitalChange;
-  });
-}
-
-function calculateOperatingCashFlows(
-  data: ValuationFormData,
-  years: number,
-  growthRate: number,
-  margins: number
-): number[] {
-  const baseRevenue = data.revenue || 0;
-  return Array.from({ length: years }, (_, i) =>
-    baseRevenue * Math.pow(1 + growthRate, i) * margins
-  );
-}
-
-function calculateInvestingCashFlows(data: ValuationFormData, years: number): number[] {
-  const capexRate = data.capexRate || 0.1;
-  return Array.from({ length: years }, (_, i) =>
-    -(data.revenue || 0) * capexRate * Math.pow(1.1, i)
-  );
-}
-
-function calculateFinancingCashFlows(data: ValuationFormData, years: number): number[] {
-  // Simplified financing cash flows
-  return Array.from({ length: years }, () => 0);
-}
-
-function calculateWorkingCapitalChanges(data: ValuationFormData, years: number): number[] {
-  const workingCapitalRate = data.workingCapitalRate || 0.1;
-  return Array.from({ length: years }, (_, i) =>
-    -(data.revenue || 0) * workingCapitalRate * Math.pow(1.1, i)
-  );
-}
-
+// Helper functions
 function calculateCustomerLifetimeValue(data: ValuationFormData): number {
   const avgRevenuePerCustomer = data.averageRevenuePerCustomer || 0;
   const churnRate = data.churnRate || 0.1;
   const grossMargin = data.margins || 0.7;
-
+  
   return (avgRevenuePerCustomer * grossMargin) / churnRate;
 }
 
 function calculateAverageOrderValue(data: ValuationFormData): number {
-  return data.grossMerchandiseValue && data.totalOrders
-    ? data.grossMerchandiseValue / data.totalOrders
+  return data.grossMerchandiseValue && data.totalOrders 
+    ? data.grossMerchandiseValue / data.totalOrders 
     : 0;
 }
 
 function calculateInventoryTurnover(data: ValuationFormData): number {
-  return data.costOfGoodsSold && data.averageInventory
-    ? data.costOfGoodsSold / data.averageInventory
+  return data.costOfGoodsSold && data.averageInventory 
+    ? data.costOfGoodsSold / data.averageInventory 
     : 0;
 }
 
@@ -367,40 +247,52 @@ function calculateMarketShareGrowth(data: ValuationFormData): number {
 
 function calculateGeographicExpansion(data: ValuationFormData): number {
   // Simplified calculation based on current vs potential markets
-  return data.currentMarkets && data.potentialMarkets
-    ? (data.currentMarkets / data.potentialMarkets) * 100
+  return data.currentMarkets && data.potentialMarkets 
+    ? (data.currentMarkets / data.potentialMarkets) * 100 
     : 0;
 }
 
 function calculateProductExpansion(data: ValuationFormData): number {
   // Simplified calculation based on product portfolio
-  return data.productLines && data.plannedProducts
-    ? (data.productLines / (data.productLines + data.plannedProducts)) * 100
+  return data.productLines && data.plannedProducts 
+    ? (data.productLines / (data.productLines + data.plannedProducts)) * 100 
     : 0;
 }
 
 function calculateCustomerExpansion(data: ValuationFormData): number {
   // Simplified calculation based on customer segments
-  return data.currentCustomerSegments && data.potentialSegments
-    ? (data.currentCustomerSegments / data.potentialSegments) * 100
+  return data.currentCustomerSegments && data.potentialSegments 
+    ? (data.currentCustomerSegments / data.potentialSegments) * 100 
     : 0;
 }
 
-// Export utility functions for use in components
-export const valuationUtils = {
-  calculateWACC,
-  calculateFreeCashFlows,
-  calculateOperatingCashFlows,
-  calculateInvestingCashFlows,
-  calculateFinancingCashFlows,
-  calculateWorkingCapitalChanges,
-  calculateCustomerLifetimeValue,
-  calculateAverageOrderValue,
-  calculateInventoryTurnover,
-  calculateTAMPenetration,
-  calculateMarketShareGrowth,
-  calculateGeographicExpansion,
-  calculateProductExpansion,
-  calculateCustomerExpansion
+function calculateOperatingCashFlows(
+  data: ValuationFormData, 
+  years: number, 
+  growthRate: number,
+  margins: number
+): number[] {
+  const baseRevenue = data.revenue || 0;
+  return Array.from({ length: years }, (_, i) => 
+    baseRevenue * Math.pow(1 + growthRate, i) * margins
+  );
+}
 
-};
+function calculateInvestingCashFlows(data: ValuationFormData, years: number): number[] {
+  const capexRate = data.capexRate || 0.1;
+  return Array.from({ length: years }, (_, i) => 
+    -(data.revenue || 0) * capexRate * Math.pow(1.1, i)
+  );
+}
+
+function calculateFinancingCashFlows(data: ValuationFormData, years: number): number[] {
+  // Simplified financing cash flows
+  return Array.from({ length: years }, () => 0);
+}
+
+function calculateWorkingCapitalChanges(data: ValuationFormData, years: number): number[] {
+  const workingCapitalRate = data.workingCapitalRate || 0.1;
+  return Array.from({ length: years }, (_, i) => 
+    -(data.revenue || 0) * workingCapitalRate * Math.pow(1.1, i)
+  );
+}
