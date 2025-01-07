@@ -14,6 +14,10 @@ function formatCurrency(value: number, currency: string = 'USD'): string {
   }).format(value);
 }
 
+function formatPercentage(value: number): string {
+  return `${value.toFixed(1)}%`;
+}
+
 function formatDate(): string {
   return new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -22,28 +26,29 @@ function formatDate(): string {
   });
 }
 
-async function generateValuationChart(data: {
-  revenue: number;
-  growthRate: number;
-  years: number;
-}): Promise<Buffer> {
-  const canvas = createCanvas(600, 400);
+function generateMetricsChart(data: ValuationFormData): Buffer {
+  const canvas = createCanvas(600, 300);
   const ctx = canvas.getContext('2d');
 
-  const years = Array.from({ length: data.years }, (_, i) => i + 1);
-  const revenues = years.map(year =>
-    data.revenue * Math.pow(1 + (data.growthRate / 100), year)
-  );
-
-  new Chart(ctx, {
-    type: 'line',
+  // Create bar chart for key metrics
+  const chart = new Chart(ctx, {
+    type: 'bar',
     data: {
-      labels: years.map(year => `Year ${year}`),
+      labels: ['Revenue', 'Growth Rate', 'Operating Margins'],
       datasets: [{
-        label: 'Projected Revenue',
-        data: revenues,
-        borderColor: '#2563eb',
-        tension: 0.1
+        label: 'Key Financial Metrics',
+        data: [data.revenue, data.growthRate, data.margins],
+        backgroundColor: [
+          'rgba(37, 99, 235, 0.8)',  // Blue
+          'rgba(34, 197, 94, 0.8)',  // Green
+          'rgba(249, 115, 22, 0.8)', // Orange
+        ],
+        borderColor: [
+          'rgb(37, 99, 235)',
+          'rgb(34, 197, 94)',
+          'rgb(249, 115, 22)',
+        ],
+        borderWidth: 1
       }]
     },
     options: {
@@ -52,12 +57,25 @@ async function generateValuationChart(data: {
         y: {
           beginAtZero: true,
           ticks: {
-            callback: (value) => formatCurrency(Number(value), 'USD')
+            callback: (value) => {
+              if (typeof value === 'number') {
+                if (value > 1000000) {
+                  return `${(value / 1000000).toFixed(1)}M`;
+                } else if (value > 1000) {
+                  return `${(value / 1000).toFixed(1)}K`;
+                }
+                return value;
+              }
+              return '';
+            }
           }
         }
       }
     }
   });
+
+  // Ensure the chart is rendered
+  chart.draw();
 
   return canvas.toBuffer();
 }
@@ -67,7 +85,6 @@ export async function generatePdfReport(data: ValuationFormData): Promise<Buffer
     try {
       console.log('Starting PDF generation with data:', JSON.stringify(data, null, 2));
 
-      // Create a new PDF document with custom font and layout settings
       const doc = new PDFDocument({
         size: 'A4',
         margin: 50,
@@ -80,7 +97,6 @@ export async function generatePdfReport(data: ValuationFormData): Promise<Buffer
         }
       });
 
-      // Collect PDF data chunks
       const chunks: Buffer[] = [];
       doc.on('data', chunk => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -108,6 +124,63 @@ export async function generatePdfReport(data: ValuationFormData): Promise<Buffer
         .text(`Region: ${data.region}`)
         .moveDown(2);
 
+      // Key Financial Metrics Section
+      doc.addPage();
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(20)
+        .text('Key Financial Metrics', { align: 'center' })
+        .moveDown();
+
+      // Create a grid layout for metrics
+      const metrics = [
+        { label: 'Annual Revenue', value: formatCurrency(data.revenue, data.currency) },
+        { label: 'Growth Rate', value: formatPercentage(data.growthRate) },
+        { label: 'Operating Margins', value: formatPercentage(data.margins) }
+      ];
+
+      // Draw metrics in a professional card layout
+      let yPosition = doc.y;
+      metrics.forEach((metric, index) => {
+        const xPosition = 50 + (index * 170);
+
+        // Draw metric card
+        doc
+          .rect(xPosition, yPosition, 150, 80)
+          .fillAndStroke('#f8fafc', '#e2e8f0');
+
+        // Add metric label
+        doc
+          .font('Helvetica')
+          .fontSize(12)
+          .fillColor('#64748b')
+          .text(metric.label, xPosition + 10, yPosition + 15);
+
+        // Add metric value
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(16)
+          .fillColor('#0f172a')
+          .text(metric.value, xPosition + 10, yPosition + 40);
+      });
+
+      // Add metrics visualization
+      try {
+        doc.moveDown(6);
+        const chartBuffer = generateMetricsChart(data);
+        doc.image(chartBuffer, {
+          fit: [500, 250],
+          align: 'center'
+        });
+      } catch (error) {
+        console.error('Error generating metrics chart:', error);
+        doc
+          .font('Helvetica')
+          .fontSize(12)
+          .fillColor('#ef4444')
+          .text('Chart visualization unavailable', { align: 'center' });
+      }
+
       // Add page numbers
       const pages = doc.bufferedPageRange();
       for (let i = 0; i < pages.count; i++) {
@@ -130,7 +203,7 @@ export async function generatePdfReport(data: ValuationFormData): Promise<Buffer
           'This valuation report is generated using advanced financial modeling and market analysis. ' +
           'The results represent an estimate based on provided information and current market conditions. ' +
           'Actual values may vary based on numerous factors including market conditions, negotiation dynamics, and other considerations.',
-          { color: '#666666' }
+          { align: 'justify' }
         );
 
       // Finalize the PDF
