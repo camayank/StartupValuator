@@ -138,10 +138,10 @@ export async function generatePdfReport(data: ValuationFormData & {
         .font('Helvetica-Bold')
         .fontSize(28)
         .fillColor('#2563eb')
-        .text(`Valuation: ${formatCurrency(data.valuation, data.currency)}`, { align: 'center' })
+        .text(`Valuation: ${formatCurrency(data.valuation || 0, data.currency)}`, { align: 'center' })
         .moveDown()
         .fontSize(16)
-        .text(`Revenue Multiple: ${data.multiplier.toFixed(2)}x`, { align: 'center' })
+        .text(`Revenue Multiple: ${(data.multiplier || 0).toFixed(2)}x`, { align: 'center' })
         .fillColor('black')
         .moveDown(2);
 
