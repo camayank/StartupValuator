@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "@db/schema";
 
 if (!process.env.DATABASE_URL) {
@@ -8,13 +8,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create postgres connection with the correct SSL config for Replit
-const client = postgres(process.env.DATABASE_URL, {
-  max: 1, // Use a single connection since we're in a serverless environment
-  ssl: {
-    rejectUnauthorized: false // Required for Replit's PostgreSQL
-  }
-});
+// Create a neon connection
+const sql = neon(process.env.DATABASE_URL);
 
 // Create drizzle database instance
-export const db = drizzle(client, { schema });
+export const db = drizzle(sql, { schema });
+
+// Test the connection
+sql.connect().catch(e => {
+  console.error("Failed to connect to database:", e);
+  process.exit(1);
+});
