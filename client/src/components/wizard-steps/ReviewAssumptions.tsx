@@ -18,14 +18,14 @@ import type { ValuationFormData } from "@/lib/validations";
 
 interface ReviewAssumptionsProps {
   data: ValuationFormData & {
-    assumptions: {
+    assumptions?: {
       discountRate: number;
       growthRate: number;
       terminalGrowthRate: number;
       beta: number;
       marketRiskPremium: number;
     };
-    valuation: number;
+    valuation?: number;
   };
   onUpdate: (data: Partial<ValuationFormData>) => void;
   onRegenerate: () => void;
@@ -34,14 +34,27 @@ interface ReviewAssumptionsProps {
 
 export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: ReviewAssumptionsProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const assumptions = data.assumptions || {
+    discountRate: 0.1,
+    growthRate: 0.05,
+    terminalGrowthRate: 0.02,
+    beta: 1.0,
+    marketRiskPremium: 0.05
+  };
 
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
       ...data,
-      growthRate: data.assumptions.growthRate * 100,
+      growthRate: assumptions.growthRate * 100,
       margins: data.margins || 0,
     },
   });
+
+  // Update handlers with type-safe assumption updates
+  const handleAssumptionUpdate = (field: keyof typeof assumptions, value: number) => {
+    const newAssumptions = { ...assumptions, [field]: value };
+    onUpdate({ assumptions: newAssumptions });
+  };
 
   const handleSubmit = async (values: Partial<ValuationFormData>) => {
     setIsRegenerating(true);
@@ -120,12 +133,12 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
             <div className="space-y-2">
               <FormLabel>Discount Rate</FormLabel>
               <FormDescription>
-                Current value: {(data.assumptions.discountRate * 100).toFixed(1)}%
+                Current value: {(assumptions.discountRate * 100).toFixed(1)}%
               </FormDescription>
               <Slider
-                value={[data.assumptions.discountRate * 100]}
+                value={[assumptions.discountRate * 100]}
                 onValueChange={([value]) => {
-                  onUpdate({ assumptions: { ...data.assumptions, discountRate: value / 100 } });
+                  handleAssumptionUpdate('discountRate', value / 100);
                 }}
                 min={5}
                 max={30}
@@ -136,12 +149,12 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
             <div className="space-y-2">
               <FormLabel>Terminal Growth Rate</FormLabel>
               <FormDescription>
-                Current value: {(data.assumptions.terminalGrowthRate * 100).toFixed(1)}%
+                Current value: {(assumptions.terminalGrowthRate * 100).toFixed(1)}%
               </FormDescription>
               <Slider
-                value={[data.assumptions.terminalGrowthRate * 100]}
+                value={[assumptions.terminalGrowthRate * 100]}
                 onValueChange={([value]) => {
-                  onUpdate({ assumptions: { ...data.assumptions, terminalGrowthRate: value / 100 } });
+                  handleAssumptionUpdate('terminalGrowthRate', value / 100);
                 }}
                 min={1}
                 max={5}
@@ -152,12 +165,12 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
             <div className="space-y-2">
               <FormLabel>Beta (Market Risk)</FormLabel>
               <FormDescription>
-                Current value: {data.assumptions.beta.toFixed(2)}
+                Current value: {assumptions.beta.toFixed(2)}
               </FormDescription>
               <Slider
-                value={[data.assumptions.beta]}
+                value={[assumptions.beta]}
                 onValueChange={([value]) => {
-                  onUpdate({ assumptions: { ...data.assumptions, beta: value } });
+                  handleAssumptionUpdate('beta', value);
                 }}
                 min={0.5}
                 max={2}
@@ -168,12 +181,12 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
             <div className="space-y-2">
               <FormLabel>Market Risk Premium</FormLabel>
               <FormDescription>
-                Current value: {(data.assumptions.marketRiskPremium * 100).toFixed(1)}%
+                Current value: {(assumptions.marketRiskPremium * 100).toFixed(1)}%
               </FormDescription>
               <Slider
-                value={[data.assumptions.marketRiskPremium * 100]}
+                value={[assumptions.marketRiskPremium * 100]}
                 onValueChange={([value]) => {
-                  onUpdate({ assumptions: { ...data.assumptions, marketRiskPremium: value / 100 } });
+                  handleAssumptionUpdate('marketRiskPremium', value / 100);
                 }}
                 min={4}
                 max={8}

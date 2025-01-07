@@ -23,6 +23,20 @@ interface ValuationWizardProps {
   onSubmit: (data: ValuationFormData) => void;
 }
 
+interface StepProps {
+  data: Partial<ValuationFormData>;
+  onUpdate: (data: Partial<ValuationFormData>) => void;
+  onNext: () => void;
+  onBack?: () => void;
+  currentStep: number;
+  totalSteps: number;
+}
+
+interface ReviewStepProps extends Omit<StepProps, 'onNext'> {
+  onSubmit: (data: ValuationFormData) => void;
+  isSubmitting: boolean;
+}
+
 type WizardStep = {
   id: number;
   title: string;
