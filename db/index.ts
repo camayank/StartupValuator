@@ -2,22 +2,22 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "@db/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is required");
-}
-
 // Initialize connection pool with proper configuration
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  host: process.env.PGHOST,
+  port: parseInt(process.env.PGPORT || "5432"),
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  database: process.env.PGDATABASE,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  ssl: process.env.NODE_ENV === "production",
 });
 
 // Initialize Drizzle with schema
 export const db = drizzle(pool, { schema });
 
-// Health check function with enhanced error reporting
+// Health check function
 export async function checkDatabaseHealth() {
   try {
     const startTime = Date.now();
@@ -40,19 +40,11 @@ export async function checkDatabaseHealth() {
   }
 }
 
-// Enhanced cleanup function with timeout
+// Cleanup function
 export async function cleanup() {
   console.log("Initiating database connection cleanup...");
-
   try {
-    const closeTimeout = setTimeout(() => {
-      console.error("Database cleanup timeout exceeded");
-      process.exit(1);
-    }, 5000);
-
     await pool.end();
-    clearTimeout(closeTimeout);
-
     console.log("Database connections closed successfully");
   } catch (error: any) {
     console.error("Error during database cleanup:", {
