@@ -7,6 +7,13 @@ const baseMetricsSchema = z.object({
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
 });
 
+// Risk assessment schema for all industries
+const riskAssessmentSchema = z.object({
+  marketRisk: z.number().min(1).max(10),
+  operationalRisk: z.number().min(1).max(10),
+  regulatoryRisk: z.number().min(1).max(10),
+});
+
 // Business Sectors
 export const businessSectors = {
   technology: {
@@ -14,32 +21,32 @@ export const businessSectors = {
     industries: {
       saas: {
         name: "Software as a Service",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           mrr: z.number().min(0, "MRR must be positive"),
           arr: z.number().min(0, "ARR must be positive"),
           churnRate: z.number().min(0).max(100, "Churn rate must be between 0 and 100"),
           cac: z.number().min(0, "CAC must be positive"),
           ltv: z.number().min(0, "LTV must be positive"),
           retentionRate: z.number().min(0).max(100, "Retention rate must be between 0 and 100"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
       enterprise_software: {
         name: "Enterprise Software",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           contractValue: z.number().min(0, "Contract value must be positive"),
           implementationTime: z.number().min(0, "Implementation time must be positive"),
           customerCount: z.number().min(0, "Customer count must be positive"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
       cloud_services: {
         name: "Cloud Services",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           computeUtilization: z.number().min(0).max(100, "Compute utilization must be between 0 and 100"),
           storageRevenue: z.number().min(0, "Storage revenue must be positive"),
           apiCalls: z.number().min(0, "API calls must be positive"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
     },
@@ -49,22 +56,22 @@ export const businessSectors = {
     industries: {
       d2c: {
         name: "Direct to Consumer",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           aov: z.number().min(0, "Average order value must be positive"),
           conversionRate: z.number().min(0).max(100, "Conversion rate must be between 0 and 100"),
           repeatPurchaseRate: z.number().min(0).max(100, "Repeat purchase rate must be between 0 and 100"),
           cartAbandonmentRate: z.number().min(0).max(100, "Cart abandonment rate must be between 0 and 100"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
       marketplace: {
         name: "Marketplace",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           gmv: z.number().min(0, "GMV must be positive"),
           takeRate: z.number().min(0).max(100, "Take rate must be between 0 and 100"),
           sellerCount: z.number().min(0, "Seller count must be positive"),
           buyerCount: z.number().min(0, "Buyer count must be positive"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
     },
@@ -74,21 +81,21 @@ export const businessSectors = {
     industries: {
       k12: {
         name: "K-12 Education",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           studentCount: z.number().min(0, "Student count must be positive"),
           courseCompletionRate: z.number().min(0).max(100, "Course completion rate must be between 0 and 100"),
           teacherCount: z.number().min(0, "Teacher count must be positive"),
           contentEngagementRate: z.number().min(0).max(100, "Content engagement rate must be between 0 and 100"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
       higher_education: {
         name: "Higher Education",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           enrollmentRate: z.number().min(0).max(100, "Enrollment rate must be between 0 and 100"),
           graduationRate: z.number().min(0).max(100, "Graduation rate must be between 0 and 100"),
           placementRate: z.number().min(0).max(100, "Placement rate must be between 0 and 100"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
     },
@@ -98,32 +105,32 @@ export const businessSectors = {
     industries: {
       payments: {
         name: "Payment Solutions",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           processingVolume: z.number().min(0, "Processing volume must be positive"),
           transactionCount: z.number().min(0, "Transaction count must be positive"),
           avgTransactionValue: z.number().min(0, "Average transaction value must be positive"),
           fraudRate: z.number().min(0).max(100, "Fraud rate must be between 0 and 100"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
       lending: {
         name: "Digital Lending",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           loanVolume: z.number().min(0, "Loan volume must be positive"),
           defaultRate: z.number().min(0).max(100, "Default rate must be between 0 and 100"),
           avgLoanSize: z.number().min(0, "Average loan size must be positive"),
           approvalRate: z.number().min(0).max(100, "Approval rate must be between 0 and 100"),
+          riskAssessment: riskAssessmentSchema,
         }),
       },
       wealthtech: {
         name: "Wealth Management",
-        metrics: z.object({
-          ...baseMetricsSchema.shape,
+        metrics: baseMetricsSchema.extend({
           aum: z.number().min(0, "AUM must be positive"),
           clientCount: z.number().min(0, "Client count must be positive"),
           avgPortfolioSize: z.number().min(0, "Average portfolio size must be positive"),
           returnRate: z.number(), // Can be negative
+          riskAssessment: riskAssessmentSchema,
         }),
       },
     },
@@ -133,13 +140,18 @@ export const businessSectors = {
 
 // Helper function to get metrics schema for a specific sector and industry
 export function getSectorMetricsSchema(sector: string, industry: string) {
-  const sectorData = businessSectors[sector as keyof typeof businessSectors];
-  if (!sectorData) return null;
+  try {
+    const sectorData = businessSectors[sector as keyof typeof businessSectors];
+    if (!sectorData) return null;
 
-  const industryData = sectorData.industries[industry as keyof typeof sectorData.industries];
-  if (!industryData) return null;
+    const industryData = sectorData.industries[industry as keyof typeof sectorData.industries];
+    if (!industryData) return null;
 
-  return industryData.metrics;
+    return industryData.metrics;
+  } catch (error) {
+    console.error('Error getting sector metrics schema:', error);
+    return null;
+  }
 }
 
 // Helper function to get all available sector-industry combinations
@@ -159,7 +171,7 @@ export function getSectorIndustryCombinations() {
   return combinations;
 }
 
-// Type definitions
+// Type definitions for metrics
 export type SectorMetrics = {
   [K in keyof typeof businessSectors]: {
     [I in keyof typeof businessSectors[K]["industries"]]: z.infer<
@@ -167,3 +179,7 @@ export type SectorMetrics = {
     >;
   };
 };
+
+// Export types for type checking
+export type BaseSectorMetrics = z.infer<typeof baseMetricsSchema>;
+export type RiskAssessment = z.infer<typeof riskAssessmentSchema>;
