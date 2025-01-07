@@ -39,12 +39,30 @@ interface BusinessInfoStepProps {
   totalSteps: number;
 }
 
-const complianceStandards = {
-  "409a": "409A Valuation",
-  "ifrs": "IFRS Standards",
-  "ibbi": "IBBI Guidelines",
-  "mca": "MCA Regulations",
-  "none": "No Specific Standard"
+const regionSpecificStandards = {
+  us: {
+    "409a": "409A Valuation",
+    "gaap": "GAAP Standards",
+    "none": "No Specific Standard"
+  },
+  uk: {
+    "ifrs": "IFRS Standards",
+    "frs": "FRS Standards",
+    "none": "No Specific Standard"
+  },
+  eu: {
+    "ifrs": "IFRS Standards",
+    "none": "No Specific Standard"
+  },
+  india: {
+    "ibbi": "IBBI Guidelines",
+    "mca": "MCA Regulations",
+    "none": "No Specific Standard"
+  },
+  other: {
+    "ifrs": "IFRS Standards",
+    "none": "No Specific Standard"
+  }
 };
 
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
@@ -95,13 +113,29 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     onNext();
   };
 
+  const handleRegionChange = (value: string) => {
+    const region = value as keyof typeof regions;
+    form.setValue("region", region);
+    // Reset compliance standard when region changes
+    form.setValue("complianceStandard", "none");
+    onUpdate({
+      region,
+      currency: regions[region].defaultCurrency,
+      complianceStandard: "none"
+    });
+  };
+
+  const getAvailableStandards = () => {
+    const region = form.getValues("region") as keyof typeof regionSpecificStandards;
+    return regionSpecificStandards[region] || regionSpecificStandards.other;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Progress indicator */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
@@ -131,7 +165,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              {/* Business Details Card */}
               <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
@@ -176,50 +209,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="complianceStandard"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        Compliance Standard
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Select the valuation standard that applies to your business
-                          </TooltipContent>
-                        </Tooltip>
-                      </FormLabel>
-                      <FormDescription>
-                        Choose the applicable valuation standard
-                      </FormDescription>
-                      <div className="relative">
-                        <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            onUpdate({ complianceStandard: value });
-                          }}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select compliance standard" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(complianceStandards).map(([key, name]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="valuationPurpose"
@@ -371,15 +360,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
                         <Select
                           value={field.value}
-                          onValueChange={(value) => {
-                            const region = value as keyof typeof regions;
-                            field.onChange(region);
-                            form.setValue("currency", regions[region].defaultCurrency);
-                            onUpdate({
-                              region,
-                              currency: regions[region].defaultCurrency,
-                            });
-                          }}
+                          onValueChange={handleRegionChange}
                         >
                           <SelectTrigger className="pl-8">
                             <SelectValue placeholder="Select region" />
@@ -393,6 +374,41 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           </SelectContent>
                         </Select>
                       </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="complianceStandard"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Compliance Standard</FormLabel>
+                      <FormDescription>
+                        Choose the applicable valuation standard
+                      </FormDescription>
+                      <div className="relative">
+                        <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 z-10" />
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            onUpdate({ complianceStandard: value });
+                          }}
+                        >
+                          <SelectTrigger className="pl-8">
+                            <SelectValue placeholder="Select compliance standard" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(getAvailableStandards()).map(([key, name]) => (
+                              <SelectItem key={key} value={key}>
+                                {name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
