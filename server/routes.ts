@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
 import { db } from "@db";
 import { valuationFormSchema } from "../client/src/lib/validations";
 import { setupCache } from "./lib/cache";
@@ -39,8 +38,8 @@ export function registerRoutes(app: Express): Server {
       const wacc = region.riskFreeRate + marketRiskPremium + stageRiskPremium;
 
       // Get sector-specific metrics
-      const sectorData = sectors[sector];
-      const benchmarks = sectorData.subsectors[validatedData.subsector].benchmarks;
+      const sectorData = sectors[sector].subsectors[validatedData.subsector];
+      const benchmarks = sectorData.benchmarks;
 
       // Calculate revenue multiple based on stage
       const revenueMultiple = benchmarks.revenueMultiple[stage] || 1;
