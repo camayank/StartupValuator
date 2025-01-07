@@ -16,7 +16,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
     },
     {
       title: "Valuation Method",
-      description: "Review and select the recommended valuation approach",
+      description: "Review and select the recommended approach",
       badge: "📊"
     },
     {
