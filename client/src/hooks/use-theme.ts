@@ -13,8 +13,11 @@ export const useTheme = create<ThemeStore>()(
       theme: "system",
       setTheme: (theme) => {
         const root = window.document.documentElement;
+
+        // Remove existing theme classes
         root.classList.remove("light", "dark");
 
+        // Apply the new theme
         if (theme === "system") {
           const systemTheme = getSystemTheme();
           root.classList.add(systemTheme);
@@ -27,19 +30,27 @@ export const useTheme = create<ThemeStore>()(
     }),
     {
       name: "theme",
+      onRehydrateStorage: () => (state) => {
+        // Ensure theme is applied after storage rehydration
+        if (state) {
+          state.setTheme(state.theme);
+        }
+      },
     }
   )
 );
 
-// Initialize theme
+// Initialize theme on mount
 if (typeof window !== "undefined") {
+  // Get the stored theme or default to system
   const theme = useTheme.getState().theme;
   useTheme.getState().setTheme(theme);
 
   // Watch system theme changes
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
   mediaQuery.addEventListener("change", () => {
-    if (theme === "system") {
+    const currentTheme = useTheme.getState().theme;
+    if (currentTheme === "system") {
       useTheme.getState().setTheme("system");
     }
   });
