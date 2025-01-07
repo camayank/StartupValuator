@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { checkDatabaseHealth, cleanup } from "@db";
 
 const app = express();
 
@@ -42,31 +43,54 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = registerRoutes(app);
+  try {
+    // Check database health before starting the server
+    const isHealthy = await checkDatabaseHealth();
+    if (!isHealthy) {
+      throw new Error("Database health check failed");
+    }
 
-  // Error handling middleware
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const server = registerRoutes(app);
 
-    // Don't expose internal error details in production
-    const response = app.get("env") === "production" 
-      ? { message: status === 500 ? "Internal Server Error" : message }
-      : { message, stack: err.stack };
+    // Error handling middleware
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    res.status(status).json(response);
-  });
+      // Don't expose internal error details in production
+      const response = app.get("env") === "production" 
+        ? { message: status === 500 ? "Internal Server Error" : message }
+        : { message, stack: err.stack };
 
-  // Setup vite or serve static files
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+      res.status(status).json(response);
+    });
+
+    // Setup vite or serve static files
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
+
+    // ALWAYS serve the app on port 5000
+    const PORT = 5000;
+    server.listen(PORT, "0.0.0.0", () => {
+      log(`serving on port ${PORT}`);
+    });
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      log('SIGTERM signal received');
+      cleanup().then(() => {
+        server.close(() => {
+          log('Server closed');
+          process.exit(0);
+        });
+      });
+    });
+
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-
-  // ALWAYS serve the app on port 5000
-  const PORT = 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
 })();
