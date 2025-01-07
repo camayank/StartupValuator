@@ -1,0 +1,187 @@
+System Perspective: Key Modules
+1. User Input Module
+Purpose: Gather necessary data in a structured way with minimal effort.
+Key Features:
+Dynamic input fields based on industry, stage, and valuation purpose.
+Default values based on benchmarks for missing data.
+Guided input collection to ensure users provide all necessary details.
+2. Financial Projection Module
+Purpose: Automate the generation of cash flow and financial forecasts.
+Key Features:
+Use AI to project revenue, expenses, and margins.
+Generate multiple scenarios (best-case, base-case, worst-case).
+Real-time adjustments based on user edits.
+3. Valuation Logic Module
+Purpose: Apply the most appropriate valuation methodology based on inputs.
+Key Features:
+Support for DCF, Market Multiples, Precedent Transactions, and Asset-Based approaches.
+Dynamic adjustment of discount rates, growth rates, and risk premiums.
+Region-specific compliance checks (ICAI, IVS, 409A).
+4. Report Generation Module
+Purpose: Create professional, visually appealing reports.
+Key Features:
+Include all assumptions, calculations, and compliance notes.
+Add visual elements like sensitivity curves and financial projections.
+Customization options for branding.
+Sequential Prompts to Build the Best Valuation Report
+1. Initial Setup
+Prompt 1: "Welcome to [Tool Name]! Please log in or sign up to start your valuation journey."
+Prompt 2: "What is the purpose of this valuation? (Options: Fundraising, Exit, ESOP, etc.)"
+Prompt 3: "Select your primary industry. (Dropdown: SaaS, E-commerce, Manufacturing, etc.)"
+Prompt 4: "Which region does your business operate in? (Dropdown: India, US, EU, etc.)"
+2. Business Details
+Prompt 5: "What is the name of your business?"
+Prompt 6: "At what stage is your business? (Options: Idea, Growth, Scaling, Mature)"
+Prompt 7: "Describe your team’s experience in years. (E.g., average years in the industry.)"
+Prompt 8: "What is the size of your current customer base?"
+3. Industry Variables
+Prompt 9: "Enter your Total Addressable Market (TAM) size."
+Prompt 10: "Who are your primary competitors? (Optional)"
+Prompt 11: "How scalable is your business model on a scale of 1 to 10?"
+Prompt 12: "What is your churn rate? (Only for SaaS businesses)"
+4. Financial Inputs
+Prompt 13: "Enter your annual revenue. (E.g., $500,000)"
+Prompt 14: "What is your expected revenue growth rate for the next 5 years?"
+Prompt 15: "What is your operating margin as a percentage of revenue?"
+Prompt 16: "Enter your capital expenditure (CapEx) as a percentage of revenue."
+Prompt 17: "Enter your working capital requirements (in %)."
+5. Valuation Methodology
+Prompt 18: "Select your preferred valuation method. (Options: DCF, Market Multiples, Precedent Transactions, etc.)"
+Prompt 19: "Would you like to let the system recommend a valuation method? (Yes/No)"
+Prompt 20: "Adjust weightages for each valuation method if applicable. (E.g., 50% DCF, 30% Market Multiples, 20% Precedent Transactions.)"
+6. Compliance Adjustments
+Prompt 21: "Does your business comply with ICAI standards (India)? (Yes/No)"
+Prompt 22: "Is your business valuation 409A-compliant (US)? (Yes/No)"
+Prompt 23: "Would you like to include regional adjustments such as GST or VAT in the valuation?"
+7. Scenario Analysis
+Prompt 24: "Would you like to explore sensitivity analysis? (Yes/No)"
+Prompt 25: "Choose variables for sensitivity analysis: Growth rate, Discount rate, Margins, etc."
+Prompt 26: "Select scenarios to include: Best-case, Base-case, Worst-case."
+8. Report Customization
+Prompt 27: "Add your company logo for branding purposes. (Optional)"
+Prompt 28: "Choose the format for your report: PDF, Excel, or Both."
+Prompt 29: "Include or exclude detailed financial projections in the report."
+9. Report Generation
+Prompt 30: "Your valuation report is ready! Download it or share it directly with stakeholders."
+Prompt 31: "Would you like to revisit and edit any inputs? (Yes/No)"
+Prompt 32: "Save this report to your dashboard for future reference."
+Backend Logic for Each Step
+User Inputs: Validate and auto-fill missing values using industry benchmarks.
+Financial Projections:
+AI predicts revenue and expenses using historical data and user inputs.
+Sensitivity analysis adjusts outputs dynamically.
+Valuation Methodology:
+Select and apply the most relevant method based on inputs.
+Adjust for compliance and regional standards.
+Report Generation:
+Modular structure allows dynamic generation.
+Include visuals like bar charts, line graphs, and sensitivity curves.
+Next Steps
+Would you like to refine the input workflows for specific industries or regions?
+Shall we dive into detailed backend calculations for DCF or Market Multiples?
+Should we move to the report design and layout phase?
+Let me know how you'd like to proceed! 🚀
+
+
+
+
+
+You said:
+inline with objective of generating the indepth valuation report
+give me detailed prompt
+ChatGPT said:
+ChatGPT
+Detailed Prompt to Build an In-Depth Valuation Report
+Objective: Create a comprehensive, professional valuation report with minimal user inputs, powered by robust backend logic that aligns with global standards and industry best practices.
+
+Prompt for Generating the Valuation Report
+1. Executive Summary
+"Generate an executive summary for the valuation report, including the following:
+
+Business name, industry, and purpose of valuation.
+Key valuation figure (e.g., fair market value) with date.
+Valuation method(s) applied and their respective weightages.
+Highlight any significant assumptions or findings."
+2. Business Overview
+"Summarize the business details, including:
+
+Industry and business stage (e.g., MVP, Growth, Scaling, Mature).
+Market position and competitive differentiation.
+Key operational metrics such as customer base, team experience, and IP status.
+Scalability potential and regulatory compliance."
+3. Valuation Methodology
+"Detail the valuation methodologies used in this report:
+
+Explain the Discounted Cash Flow (DCF) method, including assumptions for revenue growth, discount rate (WACC), and terminal value.
+Describe Market Multiples (e.g., Revenue, EBITDA) and benchmarks used for comparison.
+Include Precedent Transactions (if applicable) with transaction data and adjustments.
+Explain Asset-Based Valuation if relevant, detailing NAV (Net Asset Value) calculations."
+4. Financial Projections
+"Generate financial projections for the next 3-5 years based on:
+
+Revenue growth rate, operating margins, CapEx, and working capital requirements.
+Dynamic calculations for Free Cash Flow (FCF) and profitability.
+Include sensitivity analysis for key variables (e.g., growth rate, discount rate)."
+5. Assumptions and Adjustments
+"List all assumptions underlying the valuation:
+
+Revenue growth and expense trends.
+Discount rate components, including market risk premium, risk-free rate, and beta.
+Terminal value assumptions (e.g., perpetual growth rate or exit multiple).
+Adjustments for region-specific compliance (e.g., GST for India, 409A for US)."
+6. Sensitivity and Scenario Analysis
+"Provide an in-depth sensitivity analysis:
+
+Show how variations in growth rate, discount rate, or margins impact valuation.
+Include scenario analyses:
+Best-case: Optimistic growth and low risk.
+Base-case: Expected growth and risk.
+Worst-case: Conservative growth and high risk.
+Use visual aids like graphs and tables to illustrate results."
+7. Compliance and Regional Adjustments
+"Ensure compliance with relevant standards:
+
+ICAI Valuation Standards (India).
+IVS or USPAP standards for global compliance.
+Adjust for regional tax rates, inflation, and regulatory requirements."
+8. Report Customization
+"Add customization options to the report:
+
+Include user-provided branding elements such as logos and color schemes.
+Allow users to include or exclude specific sections based on preferences.
+Generate the report in PDF, Excel, or Word formats for easy sharing."
+9. Audit Trail
+"Create a transparent audit trail within the report:
+
+Detail each calculation step, including formulas and inputs.
+List data sources (e.g., APIs, industry benchmarks, user inputs).
+Highlight areas where AI-generated data or assumptions were used."
+10. Appendices
+"Include appendices for additional details:
+
+Financial statements used for projections.
+Comparable company data for market multiples.
+Transaction details for precedent transactions.
+Supporting documents for asset-based valuation."
+Dynamic Backend Workflow for the Report
+User Inputs:
+
+Capture only necessary inputs dynamically based on the industry and valuation purpose.
+Use default values from industry benchmarks to fill gaps.
+Automated Calculations:
+
+DCF: Present value of future cash flows.
+Market Multiples: Industry and region-specific benchmarks.
+Adjust for risk factors dynamically.
+Visual Enhancements:
+
+Add graphs for financial trends and sensitivity analysis.
+Include tables for key metrics and assumptions.
+AI-Driven Adjustments:
+
+Generate financial projections if missing.
+Apply risk adjustments based on qualitative factors (e.g., team experience, market competition).
+Compliance Integration:
+
+Validate reports against ICAI, IVS, or 409A standards.
+Apply regional tax adjustments automatically.
