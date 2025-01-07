@@ -140,6 +140,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
         <ValuationProgress currentStep={currentStep} completedSteps={completedSteps} />
 
+        {/* Step 1: Business Information */}
         <ValuationStepCard
           title="Business Information"
           description="Tell us about your business type and stage"
@@ -214,6 +215,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
+        {/* Step 2: Valuation Method */}
         <ValuationStepCard
           title="Valuation Method"
           description="Review and select the recommended valuation approach"
@@ -223,6 +225,29 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           onComplete={() => handleStepComplete(2)}
         >
           <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="intellectualProperty"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Intellectual Property Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select IP status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="registered">Registered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="marketValidation"
@@ -271,6 +296,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
+        {/* Step 3: Financial Details */}
         <ValuationStepCard
           title="Financial Details"
           description="Provide basic financial information"
@@ -366,69 +392,13 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        <ValuationStepCard
-          title="Market Analysis"
-          description="Industry and competition insights"
-          stepNumber={4}
-          currentStep={currentStep}
-          isCompleted={completedSteps.includes(4)}
-          onComplete={() => handleStepComplete(4)}
-        >
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="scalability"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Scalability Potential</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select potential" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="limited">Limited</SelectItem>
-                      <SelectItem value="moderate">Moderate</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="intellectualProperty"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Intellectual Property Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select IP status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </ValuationStepCard>
-
+        {/* Step 4: Review */}
         <ValuationStepCard
           title="Review"
           description="Review and confirm your information"
-          stepNumber={5}
+          stepNumber={4}
           currentStep={currentStep}
-          isCompleted={completedSteps.includes(5)}
+          isCompleted={completedSteps.includes(4)}
           onComplete={handleSubmit}
         >
           <div className="space-y-4">

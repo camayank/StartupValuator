@@ -21,10 +21,6 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
       description: "Provide basic financial information"
     },
     {
-      title: "Market Analysis",
-      description: "Industry and competition insights"
-    },
-    {
       title: "Review",
       description: "Review and confirm your information"
     }
