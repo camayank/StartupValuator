@@ -78,12 +78,6 @@ export function setupAuth(app: Express) {
           return done(null, false, { message: "Incorrect password." });
         }
 
-        // Update last login timestamp
-        await db
-          .update(users)
-          .set({ lastLoginAt: new Date() })
-          .where(eq(users.id, user.id));
-
         return done(null, user);
       } catch (err) {
         return done(err);
@@ -129,17 +123,6 @@ export function setupAuth(app: Express) {
 
       if (existingUser) {
         return res.status(400).send("Username already exists");
-      }
-
-      // Check if email already exists
-      const [existingEmail] = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-
-      if (existingEmail) {
-        return res.status(400).send("Email already exists");
       }
 
       // Hash the password

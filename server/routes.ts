@@ -14,26 +14,13 @@ import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/
 import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
-import { generateComplianceReport, generateComplianceChecklist } from "./services/compliance-checker";
-
-// Define a schema for the report data
-const reportDataSchema = valuationFormSchema.extend({
-  valuation: z.number(),
-  multiplier: z.number(),
-  details: z.object({
-    adjustments: z.object({
-      marketConditions: z.number(),
-      companySpecific: z.number(),
-      industryTrends: z.number(),
-    }).optional(),
-  }).optional().default({}),
-});
 
 export function registerRoutes(app: Express): Server {
-  const cache = setupCache();
-
-  // Set up authentication routes
+  // Set up authentication routes first
   setupAuth(app);
+
+  // Rest of your routes...
+  const cache = setupCache();
 
   // Activity tracking middleware
   app.use((req, res, next) => {
