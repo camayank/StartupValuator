@@ -23,12 +23,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ValuationSteps } from "@/components/ui/valuation-steps";
 import { ValuationStepCard } from "@/components/ui/valuation-step-card";
-import { valuationFormSchema, type ValuationFormData, currencies, businessStages } from "@/lib/validations";
+import { valuationFormSchema } from "@/lib/validations";
+import type { ValuationFormData } from "@/lib/validations";
 import { ValuationProgress } from "@/components/ui/valuation-progress";
 import { motion } from "framer-motion";
+import { Building2, Calculator, ChartBar, ClipboardCheck } from "lucide-react";
 
 interface ValuationFormProps {
-  onResult: (data: any) => void;
+  onResult: (data: ValuationFormData) => void;
 }
 
 const containerVariants = {
@@ -59,24 +61,24 @@ const itemVariants = {
 
 export function ValuationForm({ onResult }: ValuationFormProps) {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(0); // Start at welcome screen
+  const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
     defaultValues: {
+      businessName: "",
+      valuationPurpose: "fundraising",
       revenue: 0,
       currency: "USD",
       growthRate: 0,
       margins: 0,
       industry: "tech",
-      stage: "ideation_unvalidated",
+      stage: "ideation",
       intellectualProperty: "none",
-      teamExperience: 5,
-      marketValidation: "none",
-      competitiveDifferentiation: "medium",
-      scalability: "moderate",
-      companyName: ""
+      teamExperience: 0,
+      scalability: "low",
+      details: ""
     },
   });
 
@@ -91,8 +93,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+        throw new Error(await response.text());
       }
 
       return response.json();
@@ -120,17 +121,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     setCurrentStep(step + 1);
   };
 
-  const handleSubmit = form.handleSubmit((data) => {
-    const formattedData = {
-      ...data,
-      revenue: Number(data.revenue) || 0,
-      growthRate: Number(data.growthRate) || 0,
-      margins: Number(data.margins) || 0,
-      teamExperience: Number(data.teamExperience) || 0,
-    };
-    mutation.mutate(formattedData);
-  });
-
   // Welcome screen
   if (currentStep === 0) {
     return (
@@ -140,62 +130,69 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
         variants={containerVariants}
         className="max-w-2xl mx-auto"
       >
-        <Card>
-          <CardHeader className="text-center">
+        <Card className="overflow-hidden">
+          <CardHeader className="text-center pb-8">
             <motion.div variants={itemVariants}>
-              <CardTitle className="text-2xl mb-2">Welcome to the Valuation Wizard</CardTitle>
-              <p className="text-gray-500">
+              <CardTitle className="text-3xl font-bold mb-4">Welcome to the Valuation Wizard</CardTitle>
+              <p className="text-lg text-muted-foreground">
                 Let's guide you through the process of valuing your business using our AI-powered platform.
               </p>
             </motion.div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
             <motion.div
               variants={itemVariants}
-              className="grid grid-cols-2 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               {[
                 { 
                   title: "Business Information",
                   desc: "Tell us about your business type and stage",
-                  icon: "🏢"
+                  icon: Building2
                 },
                 { 
                   title: "Valuation Method",
                   desc: "Review and select the recommended valuation approach",
-                  icon: "📊"
+                  icon: Calculator
                 },
                 { 
                   title: "Financial Details",
                   desc: "Provide basic financial information",
-                  icon: "💰"
+                  icon: ChartBar
                 },
                 { 
                   title: "Review",
                   desc: "Review and confirm your information",
-                  icon: "✅"
+                  icon: ClipboardCheck
                 }
               ].map((step, i) => (
                 <motion.div
                   key={i}
                   variants={itemVariants}
                   whileHover={{ scale: 1.02 }}
-                  className="p-4 border rounded-lg bg-gray-50 hover:bg-blue-50/30 hover:border-blue-200 transition-colors duration-200"
+                  className="group"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{step.icon}</span>
-                    <h3 className="font-medium">{step.title}</h3>
-                  </div>
-                  <p className="text-sm text-gray-500">{step.desc}</p>
+                  <Card className="transition-all duration-300 group-hover:shadow-md border-2 group-hover:border-primary/20">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-lg bg-primary/5 text-primary">
+                          <step.icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">{step.title}</h3>
+                          <p className="text-sm text-muted-foreground">{step.desc}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </motion.div>
               ))}
             </motion.div>
-            <motion.div variants={itemVariants}>
+            <motion.div variants={itemVariants} className="pt-4">
               <Button 
                 onClick={() => setCurrentStep(1)} 
-                className="w-full"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="w-full py-6 text-lg"
+                variant="default"
               >
                 Get Started
               </Button>
@@ -208,7 +205,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
+      <form onSubmit={form.handleSubmit(onResult)} className="space-y-6 max-w-4xl mx-auto">
         <ValuationProgress currentStep={currentStep} completedSteps={completedSteps} />
         <ValuationSteps currentStep={currentStep} completedSteps={completedSteps} />
 
@@ -224,10 +221,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           <div className="space-y-4">
             <FormField
               control={form.control}
-              name="companyName"
+              name="businessName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company Name</FormLabel>
+                  <FormLabel>Business Name</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -273,11 +270,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {Object.entries(businessStages).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="ideation">Ideation</SelectItem>
+                      <SelectItem value="mvp">MVP</SelectItem>
+                      <SelectItem value="growth">Growth</SelectItem>
+                      <SelectItem value="scale">Scale</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -299,6 +295,30 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           <div className="space-y-4">
             <FormField
               control={form.control}
+              name="valuationPurpose"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valuation Purpose</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select purpose" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="fundraising">Fundraising</SelectItem>
+                      <SelectItem value="acquisition">Acquisition</SelectItem>
+                      <SelectItem value="internal">Internal Planning</SelectItem>
+                      <SelectItem value="exit_planning">Exit Planning</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="intellectualProperty"
               render={({ field }) => (
                 <FormItem>
@@ -311,8 +331,8 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="registered">Registered</SelectItem>
+                      <SelectItem value="pending">Pending Patents/IP</SelectItem>
+                      <SelectItem value="granted">Granted Patents/IP</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -322,37 +342,14 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
 
             <FormField
               control={form.control}
-              name="marketValidation"
+              name="scalability"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Market Validation</FormLabel>
+                  <FormLabel>Scalability Potential</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select validation level" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="early">Early Traction</SelectItem>
-                      <SelectItem value="proven">Proven</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="competitiveDifferentiation"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Competitive Differentiation</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select level" />
+                        <SelectValue placeholder="Select scalability" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -390,7 +387,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                         type="number"
                         {...field}
                         onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
-                        value={field.value || 0}
                       />
                     </FormControl>
                     <FormMessage />
@@ -411,11 +407,9 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.entries(currencies).map(([code, { name, symbol }]) => (
-                          <SelectItem key={code} value={code}>
-                            {symbol} - {name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="USD">USD - US Dollar</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro</SelectItem>
+                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -435,7 +429,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                       type="number"
                       {...field}
                       onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
-                      value={field.value || 0}
                     />
                   </FormControl>
                   <FormMessage />
@@ -454,7 +447,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                       type="number"
                       {...field}
                       onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
-                      value={field.value || 0}
                     />
                   </FormControl>
                   <FormMessage />
@@ -471,7 +463,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           stepNumber={4}
           currentStep={currentStep}
           isCompleted={completedSteps.includes(4)}
-          onComplete={handleSubmit}
+          onComplete={form.handleSubmit(mutation.mutate)}
         >
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
