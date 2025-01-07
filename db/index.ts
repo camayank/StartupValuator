@@ -1,44 +1,63 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import * as schema from "@db/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+// Ensure all required environment variables are present
+const requiredEnvVars = ['PGHOST', 'PGUSER', 'PGPASSWORD', 'PGDATABASE', 'PGPORT'];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`${envVar} environment variable is required`);
+  }
 }
 
-// Create a postgres connection
-const queryClient = postgres(process.env.DATABASE_URL, {
-  max: 1,
-  ssl: "require",
-  connect_timeout: 10,
+// Initialize connection pool
+const pool = new Pool({
+  host: process.env.PGHOST,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  database: process.env.PGDATABASE,
+  port: parseInt(process.env.PGPORT || '5432'),
+  ssl: true,
 });
 
-// Create drizzle database instance with schema
-export const db = drizzle(queryClient, { schema });
+// Initialize Drizzle with schema
+export const db = drizzle(pool, { schema });
 
-// Health check function with proper error handling
+// Health check function
 export async function checkDatabaseHealth() {
   try {
-    await queryClient`SELECT 1;`;
+    const startTime = Date.now();
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    const duration = Date.now() - startTime;
+    console.log(`Database health check successful (${duration}ms)`);
     return true;
-  } catch (error) {
-    console.error('Database health check failed:', error);
+  } catch (error: any) {
+    console.error("Database health check failed:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
     return false;
   }
 }
 
-// Cleanup function for graceful shutdown
+// Cleanup function
 export async function cleanup() {
   try {
-    await queryClient.end();
-    console.log('Database connections closed');
-  } catch (error) {
-    console.error('Error closing database connections:', error);
+    console.log("Initiating database connection cleanup...");
+    await pool.end();
+    console.log("Database connections closed successfully");
+  } catch (error: any) {
+    console.error("Error during database cleanup:", {
+      message: error.message,
+      code: error.code,
+    });
   }
 }
 
-// Add event listeners for process termination
-process.on('SIGTERM', cleanup);
-process.on('SIGINT', cleanup);
+// Graceful shutdown handlers
+process.once('SIGTERM', cleanup);
+process.once('SIGINT', cleanup);
+process.once('SIGUSR2', cleanup); // For nodemon restart
