@@ -35,7 +35,33 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
     setFormData(prev => ({ ...prev, ...data }));
   };
 
+  const isStepValid = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.sector && formData.industry && formData.stage && formData.valuationPurpose);
+      case 2:
+        return !!(formData.industryMetrics && Object.keys(formData.industryMetrics).length > 0);
+      case 3:
+        return !!(formData.selectedMethods && formData.selectedMethods.length > 0);
+      case 4:
+        return !!(formData.financials && Object.keys(formData.financials).length > 0);
+      case 5:
+        return true; // Review step is always valid as it just shows data
+      default:
+        return false;
+    }
+  };
+
   const handleNext = () => {
+    if (!isStepValid(currentStep)) {
+      toast({
+        title: "Incomplete Step",
+        description: "Please complete all required fields before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep < 5) {
       setCompletedSteps(prev => Array.from(new Set([...prev, currentStep])));
       setCurrentStep(currentStep + 1);

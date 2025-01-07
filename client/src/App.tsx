@@ -387,7 +387,11 @@ function App() {
                 <Profile />
               </Route>
               <Route path="/">
-                <DashboardContainer />
+                <ValuationWizard
+                  onSubmit={(data) => {
+                    console.log('Valuation data submitted:', data);
+                  }}
+                />
               </Route>
               <Route>
                 <NotFound />
