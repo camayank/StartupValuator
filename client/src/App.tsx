@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
 import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
@@ -128,6 +129,7 @@ function App() {
                 <span className="text-xl font-bold">StartupValuator</span>
               </Link>
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Link href="/auth?mode=login">
                   <Button variant="ghost">Sign In</Button>
                 </Link>
@@ -212,12 +214,13 @@ function App() {
         {/* Desktop Sidebar */}
         <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r bg-card lg:block">
           <div className="flex h-full flex-col">
-            <div className="border-b p-4">
+            <div className="border-b p-4 flex items-center justify-between">
               <Link href="/">
                 <span className="text-xl font-bold cursor-pointer hover:text-primary transition-colors">
                   StartupValuator
                 </span>
               </Link>
+              <ThemeToggle />
             </div>
 
             <nav className="flex-1 space-y-6 p-4 overflow-y-auto">
@@ -290,55 +293,58 @@ function App() {
               <span className="text-xl font-bold">StartupValuator</span>
             </Link>
 
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80">
-                <nav className="mt-8 space-y-6">
-                  <div>
-                    <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Main Tools</h2>
-                    {userNavigation.mainTools.map((item) => (
-                      <MobileNavItem key={item.href} {...item} />
-                    ))}
-                  </div>
-
-                  <div>
-                    <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Analytics</h2>
-                    {userNavigation.analytics.map((item) => (
-                      <MobileNavItem key={item.href} {...item} />
-                    ))}
-                  </div>
-
-                  <div>
-                    <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
-                    {resourceLinks.map((item) => (
-                      <MobileNavItem key={item.href} {...item} />
-                    ))}
-                  </div>
-
-                  <div className="border-t pt-6">
-                    <div className="px-4 py-2 text-sm text-muted-foreground">
-                      Signed in as: {user.username}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-80">
+                  <nav className="mt-8 space-y-6">
+                    <div>
+                      <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Main Tools</h2>
+                      {userNavigation.mainTools.map((item) => (
+                        <MobileNavItem key={item.href} {...item} />
+                      ))}
                     </div>
-                    <MobileNavItem
-                      href={`/profile/${user.id}`}
-                      label="Profile Settings"
-                      icon={Settings}
-                    />
-                    <button
-                      className="flex w-full items-center gap-3 px-4 py-2 text-destructive hover:bg-accent"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="h-5 w-5" />
-                      Logout
-                    </button>
-                  </div>
-                </nav>
-              </SheetContent>
-            </Sheet>
+
+                    <div>
+                      <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Analytics</h2>
+                      {userNavigation.analytics.map((item) => (
+                        <MobileNavItem key={item.href} {...item} />
+                      ))}
+                    </div>
+
+                    <div>
+                      <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
+                      {resourceLinks.map((item) => (
+                        <MobileNavItem key={item.href} {...item} />
+                      ))}
+                    </div>
+
+                    <div className="border-t pt-6">
+                      <div className="px-4 py-2 text-sm text-muted-foreground">
+                        Signed in as: {user.username}
+                      </div>
+                      <MobileNavItem
+                        href={`/profile/${user.id}`}
+                        label="Profile Settings"
+                        icon={Settings}
+                      />
+                      <button
+                        className="flex w-full items-center gap-3 px-4 py-2 text-destructive hover:bg-accent"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="h-5 w-5" />
+                        Logout
+                      </button>
+                    </div>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </header>
 
