@@ -15,7 +15,7 @@ import { Info, Building2, TrendingUp, Globe2, DollarSign } from "lucide-react";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
-import { getIndustryMetrics, getMetricRecommendations } from "@/lib/services/openai";
+import { getIndustryMetrics } from "@/lib/services/openai";
 import { useToast } from "@/hooks/use-toast";
 import {
   Card,
@@ -102,7 +102,7 @@ export function IndustryMetricsStep({
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 bg-background min-h-screen md:min-h-0">
         <Skeleton className="h-12 w-full" />
         <div className="grid md:grid-cols-2 gap-6">
           <Skeleton className="h-[200px] w-full" />
@@ -116,14 +116,14 @@ export function IndustryMetricsStep({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
+      className="space-y-6 p-4 bg-background min-h-screen md:min-h-0"
     >
       <div className="mb-8">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
           <span className="text-sm text-muted-foreground">Industry Metrics</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-muted rounded-full h-2">
           <div
             className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -139,30 +139,32 @@ export function IndustryMetricsStep({
         </AlertDescription>
       </Alert>
 
-      <Card className="bg-muted/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe2 className="h-5 w-5" />
-            Market Size Analysis
-          </CardTitle>
-          <CardDescription>
-            Total Addressable Market (TAM) and market metrics for your industry
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <DollarSign className="h-8 w-8 text-primary" />
-            <div>
-              <p className="text-2xl font-bold">
-                ${(metrics.tam / 1000000000).toFixed(2)}B
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Total Addressable Market
-              </p>
+      {metrics && (
+        <Card className="bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe2 className="h-5 w-5" />
+              Market Size Analysis
+            </CardTitle>
+            <CardDescription>
+              Total Addressable Market (TAM) and market metrics for your industry
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <DollarSign className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-2xl font-bold">
+                  ${(metrics.tam / 1000000000).toFixed(2)}B
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total Addressable Market
+                </p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -173,7 +175,7 @@ export function IndustryMetricsStep({
                 control={form.control}
                 name={`industryMetrics.${key}`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="bg-card p-4 rounded-lg">
                     <FormLabel>{key.split(/(?=[A-Z])|_/).map(word => 
                       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                     ).join(" ")}</FormLabel>
@@ -207,8 +209,8 @@ export function IndustryMetricsStep({
             ))}
           </div>
 
-          <div className="flex justify-end space-x-4">
-            <Button variant="outline" onClick={onBack}>
+          <div className="flex justify-end space-x-4 pt-6">
+            <Button variant="outline" onClick={onBack} type="button">
               Back
             </Button>
             <Button type="submit">
