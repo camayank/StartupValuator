@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, TrendingUp, AlertTriangle, Activity } from "lucide-react";
-import { getSectorMetricsSchema, industryRiskFactors } from "@/lib/validation/industryMetrics";
+import { getIndustryMetricsSchema, industryRiskFactors } from "@/lib/validation/industryMetrics";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -35,7 +35,7 @@ export function IndustryMetricsForm({
   currentStep,
   totalSteps 
 }: IndustryMetricsFormProps) {
-  const metricsSchema = getSectorMetricsSchema(industry);
+  const metricsSchema = getIndustryMetricsSchema(industry);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const form = useForm({
@@ -95,8 +95,8 @@ export function IndustryMetricsForm({
                   .filter(([key]) => !['riskAssessment'].includes(key))
                   .map(([fieldName, field]: [string, any]) => {
                     const isPercentage = fieldName.toLowerCase().includes('rate') || 
-                                       fieldName.toLowerCase().includes('margin') ||
-                                       fieldName.toLowerCase().includes('efficiency');
+                                     fieldName.toLowerCase().includes('margin') ||
+                                     fieldName.toLowerCase().includes('efficiency');
 
                     const label = fieldName
                       .split(/(?=[A-Z])|_/)
@@ -138,7 +138,7 @@ export function IndustryMetricsForm({
                               )}
                             </FormControl>
                             <FormDescription>
-                              {field.description || `Enter your ${label.toLowerCase()}`}
+                              Enter your {label.toLowerCase()}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 interface ValuationStepsProps {
   currentStep: number;
   completedSteps: number[];
+  totalSteps?: number;
 }
 
 const cardVariants = {
@@ -27,15 +28,15 @@ const iconVariants = {
   }
 };
 
-export function ValuationSteps({ currentStep, completedSteps }: ValuationStepsProps) {
+export function ValuationSteps({ currentStep, completedSteps, totalSteps = 5 }: ValuationStepsProps) {
   const steps = [
     {
       title: "Business Information",
       description: "Tell us about your business type and stage"
     },
     {
-      title: "Region & Standards",
-      description: "Select your region and applicable standards"
+      title: "Industry Metrics",
+      description: "Enter sector-specific performance metrics"
     },
     {
       title: "Valuation Method",
@@ -52,12 +53,12 @@ export function ValuationSteps({ currentStep, completedSteps }: ValuationStepsPr
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       {steps.map((step, index) => {
         const stepNumber = index + 1;
         const isActive = stepNumber === currentStep;
         const isCompleted = completedSteps.includes(stepNumber);
-        const isLocked = stepNumber > currentStep;
+        const isLocked = stepNumber > currentStep && !isCompleted;
 
         return (
           <motion.div

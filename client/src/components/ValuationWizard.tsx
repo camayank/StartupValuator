@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, CheckCircle2, Circle, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
+import { IndustryMetricsForm } from "./IndustryMetricsForm";
 import { MethodSelectionStep } from "./wizard-steps/MethodSelectionStep";
 import { FinancialDetailsStep } from "./wizard-steps/FinancialDetailsStep";
 import { ReviewStep } from "./wizard-steps/ReviewStep";
@@ -35,8 +36,8 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   };
 
   const handleNext = () => {
-    if (currentStep < 4) {
-      setCompletedSteps(prev => [...new Set([...prev, currentStep])]);
+    if (currentStep < 5) {
+      setCompletedSteps(prev => Array.from(new Set([...prev, currentStep])));
       setCurrentStep(currentStep + 1);
     }
   };
@@ -56,7 +57,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
         duration: 3000,
       });
       await onSubmit(data);
-      setCompletedSteps(prev => [...new Set([...prev, 4])]);
+      setCompletedSteps(prev => Array.from(new Set([...prev, 5])));
     } catch (error) {
       console.error('Submission error:', error);
       toast({
@@ -86,7 +87,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4">
-                {[1, 2, 3, 4].map((step) => (
+                {[1, 2, 3, 4, 5].map((step) => (
                   <motion.div
                     key={step}
                     initial={{ opacity: 0, x: -20 }}
@@ -101,9 +102,10 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                       <h3 className="font-medium">Step {step}</h3>
                       <p className="text-sm text-muted-foreground">
                         {step === 1 && "Tell us about your business type and stage"}
-                        {step === 2 && "Review and select the recommended valuation approach"}
-                        {step === 3 && "Provide basic financial information"}
-                        {step === 4 && "Review and confirm your information"}
+                        {step === 2 && "Enter industry-specific metrics"}
+                        {step === 3 && "Review and select the recommended valuation approach"}
+                        {step === 4 && "Provide basic financial information"}
+                        {step === 5 && "Review and confirm your information"}
                       </p>
                     </div>
                   </motion.div>
@@ -139,13 +141,14 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                 </TooltipProvider>
               </div>
               <Badge variant="outline" className="text-sm">
-                Step {currentStep} of 4
+                Step {currentStep} of 5
               </Badge>
             </div>
 
             <ValuationProgress
               currentStep={currentStep}
               completedSteps={completedSteps}
+              totalSteps={5}
             />
           </CardHeader>
 
@@ -164,10 +167,23 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                     onUpdate={updateFormData}
                     onNext={handleNext}
                     currentStep={currentStep}
-                    totalSteps={4}
+                    totalSteps={5}
                   />
                 )}
-                {currentStep === 2 && (
+                {currentStep === 2 && formData.sector && formData.industry && (
+                  <IndustryMetricsForm
+                    sector={formData.sector}
+                    industry={formData.industry}
+                    onMetricsUpdate={(metrics) => {
+                      updateFormData({ industryMetrics: metrics });
+                      handleNext();
+                    }}
+                    onNext={handleNext}
+                    currentStep={currentStep}
+                    totalSteps={5}
+                  />
+                )}
+                {currentStep === 3 && (
                   <MethodSelectionStep
                     data={formData}
                     onUpdate={updateFormData}
@@ -175,7 +191,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                     onBack={handleBack}
                   />
                 )}
-                {currentStep === 3 && (
+                {currentStep === 4 && (
                   <FinancialDetailsStep
                     data={formData}
                     onUpdate={updateFormData}
@@ -183,7 +199,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                     onBack={handleBack}
                   />
                 )}
-                {currentStep === 4 && (
+                {currentStep === 5 && (
                   <ReviewStep
                     data={formData}
                     onUpdate={updateFormData}

@@ -5,9 +5,10 @@ import { CheckCircle2, CircleIcon } from "lucide-react";
 interface ValuationProgressProps {
   currentStep: number;
   completedSteps: number[];
+  totalSteps: number;
 }
 
-export function ValuationProgress({ currentStep, completedSteps }: ValuationProgressProps) {
+export function ValuationProgress({ currentStep, completedSteps, totalSteps }: ValuationProgressProps) {
   const steps = [
     {
       title: "Business Information",
@@ -15,9 +16,14 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
       badge: "🏢"
     },
     {
+      title: "Industry Metrics",
+      description: "Enter sector-specific metrics",
+      badge: "📊"
+    },
+    {
       title: "Valuation Method",
       description: "Review and select the recommended approach",
-      badge: "📊"
+      badge: "💡"
     },
     {
       title: "Financial Details",
@@ -31,7 +37,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
     }
   ];
 
-  const progress = (Math.max(...completedSteps, 0) / steps.length) * 100;
+  const progress = (Math.max(...completedSteps, 0) / totalSteps) * 100;
 
   return (
     <div className="w-full mb-8">
@@ -90,7 +96,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
               className="text-center"
             >
               <h3 className="text-sm font-medium">{step.title}</h3>
-              <p className="text-xs text-muted-foreground mt-1">{step.description}</p>
+              <p className="text-xs text-muted-foreground mt-1 hidden md:block">{step.description}</p>
             </motion.div>
           </div>
         ))}
