@@ -1,8 +1,11 @@
+import { z } from "zod";
 import type { ValuationFormData } from "./validations";
 import {
   type SaaSMetrics,
   type EcommerceMetrics,
-  type EnterpriseMetrics,
+  type ManufacturingMetrics,
+  type HealthcareMetrics,
+  type FintechMetrics,
   type MarketComparable,
   type GrowthAnalysis,
   type CashFlowProjection,
@@ -15,7 +18,6 @@ import {
   projectCashFlows,
   modelCapTable
 } from "./financialModels";
-
 import {
   validateIndustryMetrics,
   validateMarketComparables,
@@ -28,7 +30,7 @@ import { aiValidationService } from "@/services/aiValidation";
 
 export interface ValuationReport {
   summary: {
-    companyName: string;
+    businessName: string;
     industry: string;
     valuationDate: string;
     valuationRange: {
@@ -40,7 +42,9 @@ export interface ValuationReport {
   industryMetrics: {
     saas?: SaaSMetrics;
     ecommerce?: EcommerceMetrics;
-    enterprise?: EnterpriseMetrics;
+    manufacturing?: ManufacturingMetrics;
+    healthcare?: HealthcareMetrics;
+    fintech?: FintechMetrics;
   };
   marketAnalysis: {
     comparables: MarketComparable[];
@@ -62,7 +66,7 @@ export interface ValuationReport {
   capTable: CapTable;
   validationResults: {
     warnings: Array<{
-      field: keyof ValuationFormData;
+      field: string;
       message: string;
       severity: 'low' | 'medium' | 'high';
       suggestion?: string | number;
@@ -80,16 +84,18 @@ export interface ValuationReport {
 export async function generateValuationReport(data: ValuationFormData): Promise<ValuationReport> {
   // Calculate industry-specific metrics
   const industryMetrics = {
-    saas: data.sector === 'SaaS' ? calculateSaaSMetrics(data) : undefined,
-    ecommerce: data.sector === 'E-commerce' ? calculateEcommerceMetrics(data) : undefined,
-    enterprise: data.sector === 'Enterprise' ? calculateEnterpriseMetrics(data) : undefined
+    saas: isSaaSIndustry(data.sector) ? calculateSaaSMetrics(data) : undefined,
+    ecommerce: isEcommerceIndustry(data.sector) ? calculateEcommerceMetrics(data) : undefined,
+    manufacturing: isManufacturingIndustry(data.sector) ? calculateManufacturingMetrics(data) : undefined,
+    healthcare: isHealthcareIndustry(data.sector) ? calculateHealthcareMetrics(data) : undefined,
+    fintech: isFintechIndustry(data.sector) ? calculateFintechMetrics(data) : undefined,
   };
 
   // Get market comparables and analysis
-  const comparables = getMarketComparables(data);
-  const growthAnalysis = analyzeGrowthPotential(data);
-  const financialProjections = projectCashFlows(data);
-  const capTable = modelCapTable(data);
+  const comparables = await getMarketComparables(data);
+  const growthAnalysis = await analyzeGrowthPotential(data);
+  const financialProjections = await projectCashFlows(data);
+  const capTable = await modelCapTable(data);
 
   // Collect validation results
   const validationWarnings = [
@@ -110,7 +116,7 @@ export async function generateValuationReport(data: ValuationFormData): Promise<
 
   return {
     summary: {
-      companyName: data.companyName || 'Unnamed Company',
+      businessName: data.businessName,
       industry: data.sector,
       valuationDate: new Date().toISOString().split('T')[0],
       valuationRange
@@ -137,6 +143,38 @@ export async function generateValuationReport(data: ValuationFormData): Promise<
   };
 }
 
+// Industry type checks
+function isSaaSIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('saas') || 
+         sector.toLowerCase().includes('software') ||
+         sector.toLowerCase().includes('cloud');
+}
+
+function isEcommerceIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('commerce') || 
+         sector.toLowerCase().includes('retail') ||
+         sector.toLowerCase().includes('marketplace');
+}
+
+function isManufacturingIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('manufacturing') || 
+         sector.toLowerCase().includes('production') ||
+         sector.toLowerCase().includes('industrial');
+}
+
+function isHealthcareIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('healthcare') || 
+         sector.toLowerCase().includes('medical') ||
+         sector.toLowerCase().includes('pharmaceutical');
+}
+
+function isFintechIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('fintech') || 
+         sector.toLowerCase().includes('financial technology') ||
+         sector.toLowerCase().includes('payments');
+}
+
+
 function calculateValuationRange(
   data: ValuationFormData,
   comparables: MarketComparable[],
@@ -145,10 +183,10 @@ function calculateValuationRange(
   // Calculate base valuation using weighted average of different methods
   const dcfValue = calculateDCFValue(projections);
   const marketValue = calculateMarketValue(data, comparables);
-  const assetValue = calculateAssetValue(data);
+  const assetValue = calculateAssetBasedValue(data);
 
   const baseValue = (dcfValue * 0.5) + (marketValue * 0.3) + (assetValue * 0.2);
-  
+
   return {
     low: baseValue * 0.8,
     base: baseValue,
@@ -167,28 +205,30 @@ function calculateDCFValue(projections: CashFlowProjection): number {
 function calculateMarketValue(data: ValuationFormData, comparables: MarketComparable[]): number {
   // Use average multiples from comparables
   const avgMultiple = comparables.reduce((sum, comp) => sum + comp.metrics.evRevenue, 0) / comparables.length;
-  return (data.revenue || 0) * avgMultiple;
+  return data.revenue * avgMultiple;
 }
 
-function calculateAssetValue(data: ValuationFormData): number {
-  // Simplified asset-based valuation
-  return (data.tangibleAssets || 0) + (data.intangibleAssets || 0);
+function calculateAssetBasedValue(data: ValuationFormData): number {
+  // Simplified asset-based valuation considering both tangible and intangible assets
+  return data.assets?.tangible || 0 + data.assets?.intangible || 0;
 }
 
 function generateBenchmarks(data: ValuationFormData, comparables: MarketComparable[]) {
-  return [
-    'revenue',
-    'ebitda',
-    'growthRate',
-    'margins'
-  ].map(metric => {
-    const peerValues = comparables.map(c => c.metrics[metric as keyof typeof c.metrics]);
+  const metrics = [
+    { key: 'revenue', label: 'Revenue' },
+    { key: 'ebitda', label: 'EBITDA' },
+    { key: 'growthRate', label: 'Growth Rate' },
+    { key: 'margins', label: 'Operating Margins' }
+  ];
+
+  return metrics.map(({ key, label }) => {
+    const peerValues = comparables.map(c => c.metrics[key as keyof typeof c.metrics]);
     const peerAverage = peerValues.reduce((a, b) => a + b, 0) / peerValues.length;
-    const value = data[metric as keyof ValuationFormData] as number || 0;
+    const value = data[key as keyof typeof data] as number || 0;
     const percentile = calculatePercentile(value, peerValues);
 
     return {
-      metric,
+      metric: label,
       value,
       peerAverage,
       percentile
@@ -230,7 +270,6 @@ function calculateRiskScore(
   data: ValuationFormData,
   aiValidation: Awaited<ReturnType<typeof aiValidationService.validateInput>>
 ): number {
-  // Simplified risk scoring based on validation results and AI insights
   const baseScore = 0.5;
   const validationImpact = aiValidation.warnings
     .filter(w => w.message.toLowerCase().includes(category.toLowerCase()))
@@ -250,4 +289,17 @@ function findMitigationStrategy(category: string, suggestions: string[]): string
     s.toLowerCase().includes(category.toLowerCase()) && s.toLowerCase().includes('risk')
   );
   return relevantSuggestion || `Develop comprehensive ${category.toLowerCase()} risk management strategy.`;
+}
+
+// Placeholder functions -  Replace with actual implementations
+function calculateManufacturingMetrics(data: ValuationFormData): ManufacturingMetrics | undefined {
+    return undefined; // Replace with actual calculation
+}
+
+function calculateHealthcareMetrics(data: ValuationFormData): HealthcareMetrics | undefined {
+    return undefined; // Replace with actual calculation
+}
+
+function calculateFintechMetrics(data: ValuationFormData): FintechMetrics | undefined {
+    return undefined; // Replace with actual calculation
 }
