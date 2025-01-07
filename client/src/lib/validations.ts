@@ -62,7 +62,7 @@ export const regions = {
   },
 } as const;
 
-// Enhanced business stages with risk premiums and valuation methods
+// Enhanced business stages with risk premiums
 export const businessStages = {
   ideation: {
     name: "Ideation Stage",
@@ -133,11 +133,6 @@ export const sectors = {
           grossMargin: 0.75,
           growthRate: 0.40,
           r_and_d: 0.25,
-        },
-        requiredInputs: {
-          early_revenue: ["arr", "cac", "ltv", "churnRate"],
-          growth: ["arr", "cac", "ltv", "churnRate", "expansionRevenue"],
-          scaling: ["arr", "cac", "ltv", "churnRate", "expansionRevenue", "profitMargins"]
         }
       },
       software_internet: {
@@ -148,11 +143,6 @@ export const sectors = {
           grossMargin: 0.80,
           growthRate: 0.50,
           marketing: 0.30,
-        },
-        requiredInputs: {
-          early_revenue: ["mrr", "userGrowth", "engagementRate"],
-          growth: ["mrr", "userGrowth", "engagementRate", "monetizationRate"],
-          scaling: ["mrr", "userGrowth", "engagementRate", "monetizationRate", "profitMargins"]
         }
       },
       semiconductors: {
@@ -164,11 +154,6 @@ export const sectors = {
           growthRate: 0.25,
           r_and_d: 0.35,
         },
-        requiredInputs: {
-          early_revenue: ["capex", "r_and_d", "patentPortfolio"],
-          growth: ["capex", "r_and_d", "patentPortfolio", "marketShare"],
-          scaling: ["capex", "r_and_d", "patentPortfolio", "marketShare", "profitMargins"]
-        }
       }
     }
   },
@@ -183,11 +168,6 @@ export const sectors = {
           grossMargin: 0.45,
           growthRate: 0.35,
           marketing: 0.25,
-        },
-        requiredInputs: {
-          early_revenue: ["gmv", "aov", "customerRetention"],
-          growth: ["gmv", "aov", "customerRetention", "repeatPurchaseRate"],
-          scaling: ["gmv", "aov", "customerRetention", "repeatPurchaseRate", "profitMargins"]
         }
       },
       digital_content: {
@@ -198,11 +178,6 @@ export const sectors = {
           grossMargin: 0.65,
           growthRate: 0.45,
           content: 0.40,
-        },
-        requiredInputs: {
-          early_revenue: ["subscribers", "contentCosts", "engagement"],
-          growth: ["subscribers", "contentCosts", "engagement", "churnRate"],
-          scaling: ["subscribers", "contentCosts", "engagement", "churnRate", "profitMargins"]
         }
       }
     }
@@ -218,11 +193,6 @@ export const sectors = {
           grossMargin: 0.85,
           growthRate: 0.35,
           sales: 0.30,
-        },
-        requiredInputs: {
-          early_revenue: ["arr", "customerLifetime", "dealSize"],
-          growth: ["arr", "customerLifetime", "dealSize", "customerAcquisitionCost"],
-          scaling: ["arr", "customerLifetime", "dealSize", "customerAcquisitionCost", "profitMargins"]
         }
       },
       cloud_services: {
@@ -233,11 +203,6 @@ export const sectors = {
           grossMargin: 0.70,
           growthRate: 0.40,
           infrastructure: 0.35,
-        },
-        requiredInputs: {
-          early_revenue: ["usage", "serverCosts", "uptime"],
-          growth: ["usage", "serverCosts", "uptime", "customerChurn"],
-          scaling: ["usage", "serverCosts", "uptime", "customerChurn", "profitMargins"]
         }
       }
     }
@@ -356,7 +321,7 @@ export const valuationFormSchema = z.object({
   scalability: z.enum(["limited", "moderate", "high"]),
   complianceStandard: z.enum(["409a", "ivs", "icai", "ifrs", "asc820"] as const),
 
-  // Dynamic industry metrics based on stage and sector
+  // Industry-specific metrics
   industryMetrics: z.object({
     saas: z.object({
       arr: z.number().optional(),
@@ -420,31 +385,6 @@ export const valuationFormSchema = z.object({
   totalAddressableMarket: z.number().min(0),
   marketShare: z.number().min(0).max(100),
   competitors: z.array(z.string()),
-
-  // Valuation assumptions
-  assumptions: z.object({
-    riskFreeRate: z.number(),
-    beta: z.number(),
-    marketRiskPremium: z.number(),
-    costOfDebt: z.number().optional(),
-    taxRate: z.number().optional(),
-    debtRatio: z.number().optional(),
-    terminalGrowthRate: z.number().optional(),
-    revenueMultiple: z.number().optional(),
-  }).optional(),
-
-  // Optional computed fields
-  valuation: z.number().optional(),
-  details: z.object({
-    baseValuation: z.number(),
-    adjustments: z.record(z.string(), z.number()),
-    methodResults: z.array(z.object({
-      method: z.string(),
-      value: z.number(),
-      weight: z.number(),
-      description: z.string()
-    }))
-  }).optional(),
 }).refine((data) => {
   // Get required inputs based on stage and sector
   const stage = data.stage;
@@ -452,12 +392,13 @@ export const valuationFormSchema = z.object({
   const subsector = data.subsector;
 
   const stageRequirements = businessStages[stage].valuation.requiredInputs;
-  const sectorRequirements = sectors[sector].subsectors[subsector]?.requiredInputs?.[stage] || [];
+  const sectorRequirements = sectors[sector].subsectors[subsector]?.metrics || [];
 
   // Verify all required inputs are present
   const hasAllStageInputs = stageRequirements.every(input =>
     data.stageMetrics?.[stage]?.[input] !== undefined
   );
+
   const hasAllSectorInputs = sectorRequirements.every(input =>
     data.industryMetrics?.[sector]?.[input] !== undefined
   );
@@ -467,8 +408,18 @@ export const valuationFormSchema = z.object({
   message: "Missing required inputs for selected stage and industry",
 });
 
+// Export type
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
 
+// Utility function for currency formatting
+export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+    notation: value >= 1000000 ? 'compact' : 'standard'
+  }).format(value);
+}
 
 // Categories for organizing inputs
 export const businessOverviewSchema = z.object({
@@ -531,14 +482,6 @@ export type JurisdictionalCompliance = z.infer<typeof jurisdictionalComplianceSc
 export type QualitativeFactors = z.infer<typeof qualitativeFactorsSchema>;
 
 // Utility functions
-export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-    notation: value >= 1000000 ? 'compact' : 'standard'
-  }).format(value);
-}
 
 // PitchDeck Types and Validation
 export const pitchDeckFormSchema = z.object({

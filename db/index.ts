@@ -1,5 +1,6 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from '@neondatabase/serverless';
+import pkg from 'pg';
+const { Pool } = pkg;
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@db/schema";
 
 if (!process.env.DATABASE_URL) {
@@ -8,17 +9,28 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const sql = neon(process.env.DATABASE_URL);
-export const db = drizzle(sql, { schema });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+export const db = drizzle(pool, { schema });
 
 // Health check function
 export async function checkDatabaseHealth() {
   try {
     const startTime = Date.now();
-    const result = await sql`SELECT NOW()`;
-    const duration = Date.now() - startTime;
-    console.log(`Database health check successful (${duration}ms)`);
-    return true;
+    const client = await pool.connect();
+    try {
+      await client.query('SELECT NOW()');
+      const duration = Date.now() - startTime;
+      console.log(`Database health check successful (${duration}ms)`);
+      return true;
+    } finally {
+      client.release();
+    }
   } catch (error: any) {
     console.error("Database health check failed:", {
       message: error.message,
@@ -32,7 +44,7 @@ export async function checkDatabaseHealth() {
 export async function cleanup() {
   console.log("Initiating database connection cleanup...");
   try {
-    await sql.end();
+    await pool.end();
     console.log("Database connections closed successfully");
   } catch (error: any) {
     console.error("Error during database cleanup:", {
@@ -49,7 +61,7 @@ process.once("SIGINT", cleanup);
 process.once("SIGUSR2", cleanup); // For nodemon restart
 
 // Initial connection test
-sql`SELECT 1`.catch(err => {
+checkDatabaseHealth().catch(err => {
   console.error("Unexpected error on database client", err);
   process.exit(-1);
 });

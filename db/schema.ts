@@ -104,11 +104,12 @@ export const userProfiles = pgTable("user_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const userRelations = relations(users, ({ one }) => ({
+export const userRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
     fields: [users.id],
     references: [userProfiles.userId],
   }),
+  valuations: many(valuations)
 }));
 
 export const profileRelations = relations(userProfiles, ({ one }) => ({
@@ -268,8 +269,7 @@ export const workspaceMembers = pgTable("workspace_members", {
 
 export const valuations = pgTable("valuations", {
   id: serial("id").primaryKey(),
-  workspaceId: integer("workspace_id").references(() => workspaces.id).notNull(),
-  createdBy: integer("created_by").references(() => users.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
   businessName: varchar("business_name", { length: 255 }).notNull(),
   industry: industryVerticals("industry").notNull(),
   stage: valuationStages("stage").notNull(),
@@ -316,18 +316,6 @@ export const valuations = pgTable("valuations", {
       weight: number;
       assumptions: Record<string, any>;
     }>;
-  }>(),
-
-  // AI analysis and insights
-  aiAnalysis: jsonb("ai_analysis").$type<{
-    riskFactors: string[];
-    growthDrivers: string[];
-    competitiveAdvantages: string[];
-    recommendations: string[];
-    marketSentiment: {
-      score: number;
-      factors: string[];
-    };
   }>(),
 
   // Results
@@ -496,7 +484,7 @@ export const selectPayPerUseTransactionSchema = createSelectSchema(payPerUseTran
 export const insertAddonSubscriptionSchema = createInsertSchema(addonSubscriptions);
 export const selectAddonSubscriptionSchema = createSelectSchema(addonSubscriptions);
 export const insertLoginAuditSchema = createInsertSchema(loginAudit);
-export const selectLoginAuditSchema = createInsertSchema(loginAudit);
+export const selectLoginAuditSchema = createSelectSchema(loginAudit);
 export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens);
 export const selectPasswordResetTokenSchema = createSelectSchema(passwordResetTokens);
 
@@ -509,6 +497,48 @@ export const selectRiskAssessmentSchema = createSelectSchema(riskAssessments);
 export const insertAiInsightSchema = createInsertSchema(aiInsights);
 export const selectAiInsightSchema = createSelectSchema(aiInsights);
 
+
+export const valuationFormSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  sector: z.enum(["technology", "healthcare", "finance", "retail", "manufacturing"]),
+  stage: z.enum(["early_revenue", "growth", "scaling", "mature"]),
+  region: z.enum(["us", "eu", "asia", "other"]),
+  currency: z.enum(["USD", "EUR", "GBP"]),
+  valuationPurpose: z.enum(["fundraising", "acquisition", "strategic", "compliance"]),
+
+  // Financial metrics
+  revenue: z.number().min(0),
+  growthRate: z.number().min(-100).max(1000),
+  margins: z.number().min(-100).max(100),
+
+  // Market metrics
+  totalAddressableMarket: z.number().min(0),
+  marketShare: z.number().min(0).max(100),
+  customerBase: z.number().min(0),
+
+  // Risk assessment
+  teamExperience: z.number().min(0).max(10),
+  intellectualProperty: z.enum(["none", "pending", "registered", "multiple"]),
+  competitiveDifferentiation: z.enum(["low", "medium", "high"]),
+  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]),
+  scalability: z.enum(["limited", "moderate", "high"]),
+  complianceStandard: z.enum(["409a", "ifrs", "icai"]),
+
+  // Optional fields populated after valuation
+  valuation: z.object({
+    low: z.number(),
+    base: z.number(),
+    high: z.number(),
+  }).optional(),
+  details: z.record(z.any()).optional(),
+});
+
+export const valuationRelations = relations(valuations, ({ one }) => ({
+  user: one(users, {
+    fields: [valuations.userId],
+    references: [users.id],
+  }),
+}));
 
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
@@ -550,3 +580,4 @@ export type InsertRiskAssessment = typeof riskAssessments.$inferInsert;
 export type SelectRiskAssessment = typeof riskAssessments.$inferSelect;
 export type InsertAiInsight = typeof aiInsights.$inferInsert;
 export type SelectAiInsight = typeof aiInsights.$inferSelect;
+export type ValuationFormData = z.infer<typeof valuationFormSchema>;
