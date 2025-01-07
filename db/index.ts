@@ -9,32 +9,23 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Create a postgres connection with optimized settings for high load
-const client = postgres(process.env.DATABASE_URL, {
+const queryClient = postgres(process.env.DATABASE_URL, {
   max: 20, // Maximum number of connections in pool
   idle_timeout: 30, // Close idle connections after 30 seconds
   connect_timeout: 10, // Try to connect for 10 seconds
   max_lifetime: 60 * 30, // Connection lifetime of 30 minutes
-  prepare: true, // Enable prepared statements
-  ssl: { rejectUnauthorized: false }, // Accept self-signed certificates
-  types: {
-    bigint: postgres.BigInt,
-  },
-  connection: {
-    application_name: 'startup_valuator',
-    statement_timeout: 60000, // 1 minute statement timeout
-    idle_in_transaction_session_timeout: 60000, // 1 minute idle transaction timeout
-  },
-  debug: process.env.NODE_ENV === 'development', // Enable debug logging in development
+  ssl: true,
 });
 
-// Create drizzle database instance
-export const db = drizzle(client, { schema });
+// Create drizzle database instance with schema
+export const db = drizzle(queryClient, { schema });
 
 // Health check function
 export async function checkDatabaseHealth() {
   try {
-    const result = await client`SELECT 1`;
-    return result.length === 1;
+    // Simple query to test connection
+    const [{ result }] = await queryClient`SELECT 1 AS result`;
+    return result === 1;
   } catch (error) {
     console.error('Database health check failed:', error);
     return false;
@@ -44,7 +35,7 @@ export async function checkDatabaseHealth() {
 // Cleanup function for graceful shutdown
 export async function cleanup() {
   try {
-    await client.end();
+    await queryClient.end();
     console.log('Database connections closed');
   } catch (error) {
     console.error('Error closing database connections:', error);
