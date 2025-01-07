@@ -69,6 +69,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     defaultValues: {
       businessName: "",
       region: "global",
+      complianceStandard: "", // Added default value
       valuationPurpose: "fundraising",
       revenue: 0,
       currency: "USD",
@@ -304,8 +305,12 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               name="region"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Region</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Primary Region</FormLabel>
+                  <Select onValueChange={(value) => {
+                    field.onChange(value);
+                    // Reset compliance standard when region changes
+                    form.setValue('complianceStandard', '');
+                  }} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select region" />
@@ -317,6 +322,61 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                       <SelectItem value="uk">United Kingdom</SelectItem>
                       <SelectItem value="india">India</SelectItem>
                       <SelectItem value="global">Global</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="complianceStandard"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Compliance Standard</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                    disabled={!form.watch('region')}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select applicable standard" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {form.watch('region') === 'us' && (
+                        <>
+                          <SelectItem value="aicpa">AICPA Valuation Standards</SelectItem>
+                          <SelectItem value="uspap">USPAP Standards</SelectItem>
+                          <SelectItem value="sec">SEC Guidelines</SelectItem>
+                        </>
+                      )}
+                      {form.watch('region') === 'eu' && (
+                        <>
+                          <SelectItem value="evs">European Valuation Standards (EVS)</SelectItem>
+                          <SelectItem value="ifrs">IFRS Standards</SelectItem>
+                        </>
+                      )}
+                      {form.watch('region') === 'uk' && (
+                        <>
+                          <SelectItem value="rics">RICS Valuation Standards</SelectItem>
+                          <SelectItem value="frs">FRS 102</SelectItem>
+                        </>
+                      )}
+                      {form.watch('region') === 'india' && (
+                        <>
+                          <SelectItem value="icai">ICAI Valuation Standards</SelectItem>
+                          <SelectItem value="sebi">SEBI Guidelines</SelectItem>
+                        </>
+                      )}
+                      {form.watch('region') === 'global' && (
+                        <>
+                          <SelectItem value="ivs">International Valuation Standards (IVS)</SelectItem>
+                          <SelectItem value="ifrs">IFRS Standards</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
