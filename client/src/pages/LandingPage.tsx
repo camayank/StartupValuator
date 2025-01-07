@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useUser } from "@/hooks/use-user";
 import {
   Brain,
   Calculator,
@@ -30,6 +31,17 @@ import {
 } from "react-icons/si";
 
 export function LandingPage() {
+  const [, navigate] = useLocation();
+  const { user } = useUser();
+
+  const handleStartValuation = () => {
+    if (user) {
+      navigate('/valuation/new');
+    } else {
+      navigate('/auth');
+    }
+  };
+
   const valuationFeatures = [
     {
       icon: Brain,
@@ -155,12 +167,14 @@ export function LandingPage() {
               Professional-grade valuations powered by AI. Get accurate, compliant, and actionable insights for your startup in minutes.
             </motion.p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/valuation/new">
-                <Button size="lg" className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90">
-                  Start Valuation
-                  <ArrowUpRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="w-full sm:w-auto gap-2 bg-primary hover:bg-primary/90"
+                onClick={handleStartValuation}
+              >
+                Start Valuation
+                <ArrowUpRight className="h-4 w-4" />
+              </Button>
               <Link href="/demo">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2">
                   Learn More
