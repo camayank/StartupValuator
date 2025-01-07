@@ -34,8 +34,12 @@ export function ValuationSteps({ currentStep, completedSteps }: ValuationStepsPr
       description: "Tell us about your business type and stage"
     },
     {
+      title: "Region & Standards",
+      description: "Select your region and applicable standards"
+    },
+    {
       title: "Valuation Method",
-      description: "Review and select the recommended valuation approach"
+      description: "Review region-specific valuation approaches"
     },
     {
       title: "Financial Details",

@@ -27,7 +27,7 @@ import { valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { ValuationProgress } from "@/components/ui/valuation-progress";
 import { motion } from "framer-motion";
-import { Building2, Calculator, ChartBar, ClipboardCheck } from "lucide-react";
+import { Building2, Calculator, ChartBar, ClipboardCheck, Globe } from "lucide-react";
 
 interface ValuationFormProps {
   onResult: (data: ValuationFormData) => void;
@@ -68,6 +68,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     resolver: zodResolver(valuationFormSchema),
     defaultValues: {
       businessName: "",
+      region: "global",
       valuationPurpose: "fundraising",
       revenue: 0,
       currency: "USD",
@@ -151,8 +152,13 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                   icon: Building2
                 },
                 { 
+                  title: "Region & Standards",
+                  desc: "Select your region and applicable standards",
+                  icon: Globe
+                },
+                { 
                   title: "Valuation Method",
-                  desc: "Review and select the recommended valuation approach",
+                  desc: "Review region-specific valuation approaches",
                   icon: Calculator
                 },
                 { 
@@ -283,14 +289,51 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 2: Valuation Method */}
+        {/* Step 2: Region Selection */}
         <ValuationStepCard
-          title="Valuation Method"
-          description="Review and select the recommended valuation approach"
+          title="Region & Standards"
+          description="Select your region and applicable standards"
           stepNumber={2}
           currentStep={currentStep}
           isCompleted={completedSteps.includes(2)}
           onComplete={() => handleStepComplete(2)}
+        >
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Region</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select region" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="us">United States</SelectItem>
+                      <SelectItem value="eu">European Union</SelectItem>
+                      <SelectItem value="uk">United Kingdom</SelectItem>
+                      <SelectItem value="india">India</SelectItem>
+                      <SelectItem value="global">Global</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </ValuationStepCard>
+
+        {/* Step 3: Valuation Method */}
+        <ValuationStepCard
+          title="Valuation Method"
+          description="Review and select the recommended valuation approach"
+          stepNumber={3}
+          currentStep={currentStep}
+          isCompleted={completedSteps.includes(3)}
+          onComplete={() => handleStepComplete(3)}
         >
           <div className="space-y-4">
             <FormField
@@ -365,14 +408,14 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 3: Financial Details */}
+        {/* Step 4: Financial Details */}
         <ValuationStepCard
           title="Financial Details"
           description="Provide basic financial information"
-          stepNumber={3}
+          stepNumber={4}
           currentStep={currentStep}
-          isCompleted={completedSteps.includes(3)}
-          onComplete={() => handleStepComplete(3)}
+          isCompleted={completedSteps.includes(4)}
+          onComplete={() => handleStepComplete(4)}
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -456,13 +499,13 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 4: Review */}
+        {/* Step 5: Review */}
         <ValuationStepCard
           title="Review"
           description="Review and confirm your information"
-          stepNumber={4}
+          stepNumber={5}
           currentStep={currentStep}
-          isCompleted={completedSteps.includes(4)}
+          isCompleted={completedSteps.includes(5)}
           onComplete={form.handleSubmit(mutation.mutate)}
         >
           <div className="space-y-4">
