@@ -7,6 +7,7 @@ export const saasMetricsSchema = z.object({
   cac: z.number().min(0, "CAC must be positive"),
   arr: z.number().min(0, "ARR must be positive"),
   retentionRate: z.number().min(0).max(100, "Retention rate must be between 0 and 100"),
+  churnRate: z.number().min(0).max(100, "Churn rate must be between 0 and 100").optional(),
 });
 
 export const ecommerceMetricsSchema = z.object({
@@ -14,6 +15,7 @@ export const ecommerceMetricsSchema = z.object({
   inventoryTurnover: z.number().min(0, "Inventory turnover must be positive"),
   conversionRate: z.number().min(0).max(100, "Conversion rate must be between 0 and 100"),
   cartAbandonmentRate: z.number().min(0).max(100, "Cart abandonment rate must be between 0 and 100"),
+  customerAcquisitionCost: z.number().min(0, "Customer acquisition cost must be positive").optional(),
 });
 
 export const manufacturingMetricsSchema = z.object({
@@ -21,6 +23,7 @@ export const manufacturingMetricsSchema = z.object({
   variableCosts: z.number().min(0, "Variable costs must be positive"),
   productionEfficiency: z.number().min(0).max(100, "Production efficiency must be between 0 and 100"),
   inventoryDays: z.number().min(0, "Inventory days must be positive"),
+  capacityUtilization: z.number().min(0).max(100, "Capacity utilization must be between 0 and 100").optional(),
 });
 
 export const healthcareMetricsSchema = z.object({
@@ -31,6 +34,7 @@ export const healthcareMetricsSchema = z.object({
     date: z.string().optional(),
   })),
   pipelineProgress: z.number().min(0).max(100, "Pipeline progress must be between 0 and 100"),
+  clinicalTrialStage: z.enum(["preclinical", "phase1", "phase2", "phase3", "approved"]).optional(),
 });
 
 export const fintechMetricsSchema = z.object({
@@ -38,6 +42,15 @@ export const fintechMetricsSchema = z.object({
   avgTransactionValue: z.number().min(0, "Average transaction value must be positive"),
   userAcquisitionCost: z.number().min(0, "User acquisition cost must be positive"),
   activeUsers: z.number().min(0, "Active users must be positive"),
+  processingFees: z.number().min(0, "Processing fees must be positive").optional(),
+});
+
+// Risk assessment schema
+export const riskAssessmentSchema = z.object({
+  marketRisk: z.number().min(1).max(10, "Risk level must be between 1 and 10"),
+  operationalRisk: z.number().min(1).max(10, "Risk level must be between 1 and 10"),
+  regulatoryRisk: z.number().min(1).max(10, "Risk level must be between 1 and 10"),
+  impact: z.enum(["low", "medium", "high"]),
 });
 
 // Type definitions for industry metrics
@@ -46,6 +59,7 @@ export type EcommerceMetrics = z.infer<typeof ecommerceMetricsSchema>;
 export type ManufacturingMetrics = z.infer<typeof manufacturingMetricsSchema>;
 export type HealthcareMetrics = z.infer<typeof healthcareMetricsSchema>;
 export type FintechMetrics = z.infer<typeof fintechMetricsSchema>;
+export type RiskAssessment = z.infer<typeof riskAssessmentSchema>;
 
 // Industry-specific risk factors
 export const industryRiskFactors = {
