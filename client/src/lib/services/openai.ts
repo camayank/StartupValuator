@@ -28,7 +28,7 @@ export async function getIndustryMetrics(
       messages: [
         {
           role: "system",
-          content: "You are an expert in industry analysis and market sizing. Provide detailed metrics and market size information based on the given sector, industry, and region.",
+          content: "You are an expert in industry analysis and market sizing, with experience from Big 4 consulting firms. Provide detailed metrics and market size information based on the given sector, industry, and region. Focus on delivering high-quality, professional insights while being concise.",
         },
         {
           role: "user",
@@ -36,12 +36,12 @@ export async function getIndustryMetrics(
             Sector: ${sector}
             Industry: ${industry}
             Region: ${region}
-            
+
             Return the following in a JSON format:
-            1. Total Addressable Market (TAM) in USD
-            2. Key industry-specific metrics with reasonable default values
-            3. Industry benchmarks with low, median, and high values
-            
+            1. Total Addressable Market (TAM) in USD based on recent market research
+            2. Key industry-specific metrics with reasonable default values and Big 4 benchmarks
+            3. Industry benchmarks with low, median, and high values based on market leaders
+
             Focus on real-world data patterns and current market conditions.`,
         },
       ],
@@ -52,6 +52,50 @@ export async function getIndustryMetrics(
     return result as IndustryMetricsResponse;
   } catch (error) {
     console.error("Error fetching industry metrics:", error);
+    throw error;
+  }
+}
+
+export async function getValuationReport(
+  businessData: any,
+  metrics: IndustryMetricsResponse,
+  assumptions: any
+): Promise<{
+  executive_summary: string;
+  valuation_analysis: string;
+  risk_factors: string;
+  recommendations: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a senior valuation expert from a Big 4 consulting firm. Generate a comprehensive valuation report following professional standards and best practices. Focus on providing actionable insights and clear analysis.",
+        },
+        {
+          role: "user",
+          content: `Please generate a detailed valuation report for:
+            Business Data: ${JSON.stringify(businessData)}
+            Industry Metrics: ${JSON.stringify(metrics)}
+            Valuation Assumptions: ${JSON.stringify(assumptions)}
+
+            Return a JSON object with the following sections:
+            1. Executive Summary: Clear overview of the valuation
+            2. Valuation Analysis: Detailed breakdown of methods and calculations
+            3. Risk Factors: Key risks and mitigations
+            4. Recommendations: Strategic insights and next steps
+
+            Follow Big 4 consulting standards for professional report writing.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error generating valuation report:", error);
     throw error;
   }
 }
@@ -70,7 +114,7 @@ export async function getMetricRecommendations(
       messages: [
         {
           role: "system",
-          content: "You are an expert in industry analysis and benchmarking. Provide recommendations for specific industry metrics.",
+          content: "You are an expert in industry analysis and benchmarking from a Big 4 consulting firm. Provide recommendations for specific industry metrics based on extensive market research.",
         },
         {
           role: "user",
@@ -78,10 +122,10 @@ export async function getMetricRecommendations(
             Sector: ${sector}
             Industry: ${industry}
             Metric: ${metric}
-            
+
             Return in JSON format:
-            1. A specific recommendation for this metric
-            2. Benchmark values (low, median, high)`,
+            1. A specific recommendation for this metric based on industry best practices
+            2. Benchmark values (low, median, high) from market research`,
         },
       ],
       response_format: { type: "json_object" },
