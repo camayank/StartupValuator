@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
-import { CircleIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import { CheckCircle2, CircleIcon } from "lucide-react";
 
 interface ValuationProgressProps {
   currentStep: number;
@@ -38,7 +38,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
       {/* Progress bar */}
       <div className="relative h-2 bg-gray-200 rounded-full mb-8 overflow-hidden">
         <motion.div
-          className="absolute left-0 top-0 h-full bg-blue-500 rounded-full"
+          className="absolute left-0 top-0 h-full bg-primary rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -51,7 +51,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
             key={index}
             className={cn("flex flex-col items-center relative z-10 w-48", {
               "text-green-600": completedSteps.includes(index + 1),
-              "text-blue-600": currentStep === index + 1,
+              "text-primary": currentStep === index + 1,
               "text-gray-400": currentStep < index + 1
             })}
           >
@@ -61,7 +61,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
                 completedSteps.includes(index + 1)
                   ? "bg-green-100 border-green-500"
                   : currentStep === index + 1
-                  ? "bg-blue-100 border-blue-500"
+                  ? "bg-primary/10 border-primary"
                   : "bg-gray-100 border-gray-300"
               )}
               initial={{ scale: 0.8, opacity: 0 }}
@@ -77,7 +77,11 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
                 }
               }}
             >
-              {step.badge}
+              {completedSteps.includes(index + 1) ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : (
+                <span>{step.badge}</span>
+              )}
             </motion.div>
             <motion.div
               initial={{ y: 10, opacity: 0 }}
@@ -86,7 +90,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
               className="text-center"
             >
               <h3 className="text-sm font-medium">{step.title}</h3>
-              <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">{step.description}</p>
             </motion.div>
           </div>
         ))}
@@ -94,7 +98,7 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
         {/* Connecting line */}
         <div className="absolute top-6 left-0 h-[2px] bg-gray-200 w-full -z-0" />
         <motion.div
-          className="absolute top-6 left-0 h-[2px] bg-green-500 -z-0"
+          className="absolute top-6 left-0 h-[2px] bg-primary -z-0"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
