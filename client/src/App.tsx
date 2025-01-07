@@ -352,15 +352,11 @@ function App() {
         <main className="lg:pl-64">
           <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
             <Switch>
-              <Route path="/">
-                {user && (
-                  <ValuationWizard
-                    onSubmit={(data) => {
-                      console.log('Valuation data submitted:', data);
-                    }}
-                  />
-                )}
-                {!user && <Home />}
+              <Route path="/auth">
+                <AuthPage />
+              </Route>
+              <Route path="/calculator">
+                <ValuationCalculatorPage />
               </Route>
               <Route path="/valuation">
                 <ValuationWizard
@@ -369,7 +365,6 @@ function App() {
                   }}
                 />
               </Route>
-              <Route path="/calculator" component={ValuationCalculatorPage} />
               <Route path="/projections">
                 <ProjectionsWizard />
               </Route>
@@ -391,7 +386,12 @@ function App() {
               <Route path="/profile/:userId">
                 <Profile />
               </Route>
-              <Route component={NotFound} />
+              <Route path="/">
+                <DashboardContainer />
+              </Route>
+              <Route>
+                <NotFound />
+              </Route>
             </Switch>
           </div>
         </main>
