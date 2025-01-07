@@ -24,11 +24,38 @@ import { useToast } from "@/hooks/use-toast";
 import { ValuationSteps } from "@/components/ui/valuation-steps";
 import { ValuationStepCard } from "@/components/ui/valuation-step-card";
 import { valuationFormSchema, type ValuationFormData, currencies, businessStages } from "@/lib/validations";
-import { ValuationProgress } from "@/components/ui/valuation-progress"; // Assuming this component exists
+import { ValuationProgress } from "@/components/ui/valuation-progress";
+import { motion } from "framer-motion";
 
 interface ValuationFormProps {
   onResult: (data: any) => void;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { 
+    opacity: 0,
+    y: 20
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30
+    }
+  }
+};
 
 export function ValuationForm({ onResult }: ValuationFormProps) {
   const { toast } = useToast();
@@ -107,32 +134,75 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
   // Welcome screen
   if (currentStep === 0) {
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl mb-2">Welcome to the Valuation Wizard</CardTitle>
-          <p className="text-gray-500">
-            Let's guide you through the process of valuing your business using our AI-powered platform.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            {[
-              { title: "Business Information", desc: "Tell us about your business type and stage" },
-              { title: "Valuation Method", desc: "Review and select the recommended valuation approach" },
-              { title: "Financial Details", desc: "Provide basic financial information" },
-              { title: "Review", desc: "Review and confirm your information" }
-            ].map((step, i) => (
-              <div key={i} className="p-4 border rounded-lg bg-gray-50">
-                <h3 className="font-medium">{step.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-          <Button onClick={() => setCurrentStep(1)} className="w-full">
-            Get Started
-          </Button>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="max-w-2xl mx-auto"
+      >
+        <Card>
+          <CardHeader className="text-center">
+            <motion.div variants={itemVariants}>
+              <CardTitle className="text-2xl mb-2">Welcome to the Valuation Wizard</CardTitle>
+              <p className="text-gray-500">
+                Let's guide you through the process of valuing your business using our AI-powered platform.
+              </p>
+            </motion.div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <motion.div
+              variants={itemVariants}
+              className="grid grid-cols-2 gap-6"
+            >
+              {[
+                { 
+                  title: "Business Information",
+                  desc: "Tell us about your business type and stage",
+                  icon: "🏢"
+                },
+                { 
+                  title: "Valuation Method",
+                  desc: "Review and select the recommended valuation approach",
+                  icon: "📊"
+                },
+                { 
+                  title: "Financial Details",
+                  desc: "Provide basic financial information",
+                  icon: "💰"
+                },
+                { 
+                  title: "Review",
+                  desc: "Review and confirm your information",
+                  icon: "✅"
+                }
+              ].map((step, i) => (
+                <motion.div
+                  key={i}
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  className="p-4 border rounded-lg bg-gray-50 hover:bg-blue-50/30 hover:border-blue-200 transition-colors duration-200"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">{step.icon}</span>
+                    <h3 className="font-medium">{step.title}</h3>
+                  </div>
+                  <p className="text-sm text-gray-500">{step.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <Button 
+                onClick={() => setCurrentStep(1)} 
+                className="w-full"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Get Started
+              </Button>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
