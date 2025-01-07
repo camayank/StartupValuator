@@ -15,6 +15,29 @@ import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
 
+// Define report data schema for validation
+const reportDataSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  valuationPurpose: z.string(),
+  revenue: z.number().min(0, "Revenue must be non-negative"),
+  currency: z.string(),
+  growthRate: z.number(),
+  margins: z.number(),
+  sector: z.string(),
+  industry: z.string(),
+  stage: z.string(),
+  region: z.string(),
+  valuation: z.number().optional(),
+  multiplier: z.number().optional(),
+  details: z.object({
+    baseValuation: z.number().optional(),
+    adjustments: z.record(z.string(), z.number()).optional()
+  }).optional(),
+  riskAssessment: z.any().optional(),
+  potentialPrediction: z.any().optional(),
+  ecosystemNetwork: z.any().optional()
+});
+
 export function registerRoutes(app: Express): Server {
   // Set up authentication routes first
   setupAuth(app);
