@@ -124,8 +124,71 @@ export async function generatePdfReport(data: ValuationFormData): Promise<Buffer
         .text(`Region: ${data.region}`)
         .moveDown(2);
 
-      // Key Financial Metrics Section
+      // Valuation Summary Section
       doc.addPage();
+
+      // Draw a background rectangle for the valuation amount
+      const pageWidth = doc.page.width - 2 * doc.page.margins.left;
+      const rectHeight = 120;
+      const rectY = doc.y;
+
+      doc
+        .save()
+        .rect(doc.page.margins.left, rectY, pageWidth, rectHeight)
+        .fill('#f8fafc');
+
+      // Display Valuation Amount
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(28)
+        .fillColor('#2563eb')  // Blue color for emphasis
+        .text('Estimated Valuation', {
+          align: 'center',
+          continued: false
+        })
+        .moveDown(0.5)
+        .fontSize(36)
+        .text(formatCurrency(data.valuation || 0, data.currency), {
+          align: 'center'
+        })
+        .restore()
+        .moveDown(2);
+
+      // Revenue Multiple Box
+      const multipleY = doc.y;
+      doc
+        .save()
+        .rect(doc.page.margins.left, multipleY, pageWidth / 2 - 10, 80)
+        .fill('#f1f5f9');
+
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(14)
+        .fillColor('#0f172a')
+        .text('Revenue Multiple', doc.page.margins.left + 20, multipleY + 20)
+        .fontSize(24)
+        .text(`${(data.multiplier || 0).toFixed(2)}x`, doc.page.margins.left + 20, multipleY + 45)
+        .restore();
+
+      // Growth Rate Box
+      doc
+        .save()
+        .rect(doc.page.margins.left + pageWidth / 2 + 10, multipleY, pageWidth / 2 - 10, 80)
+        .fill('#f1f5f9');
+
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(14)
+        .fillColor('#0f172a')
+        .text('Annual Growth Rate', doc.page.margins.left + pageWidth / 2 + 30, multipleY + 20)
+        .fontSize(24)
+        .text(`${data.growthRate}%`, doc.page.margins.left + pageWidth / 2 + 30, multipleY + 45)
+        .restore()
+        .moveDown(4);
+
+
+      // Key Financial Metrics Section
+      doc.addPage(); //Added a new page for Key Financial Metrics
       doc
         .font('Helvetica-Bold')
         .fontSize(20)
