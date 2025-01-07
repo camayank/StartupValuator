@@ -350,6 +350,17 @@ export const valuationPurposes = {
   exit_planning: "Exit Planning",
 } as const;
 
+// Add industry metrics schema
+export const industryMetricsSchema = z.object({
+  tam: z.number().min(0, "TAM must be positive"),
+  metrics: z.record(z.string(), z.number()),
+  benchmarks: z.record(z.string(), z.object({
+    low: z.number(),
+    median: z.number(),
+    high: z.number()
+  }))
+});
+
 export const valuationFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
@@ -361,13 +372,14 @@ export const valuationFormSchema = z.object({
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
-  complianceStandard: z.string().optional(), // Added compliance standard field
+  complianceStandard: z.string().optional(),
   intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
   teamExperience: z.number().min(0).max(20).optional(),
   customerBase: z.number().min(0).optional(),
   competitiveDifferentiation: z.enum(["low", "medium", "high"]).optional(),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
   scalability: z.enum(["limited", "moderate", "high"]).optional(),
+  industryMetrics: industryMetricsSchema.optional(),
   valuation: z.number().optional(),
   multiplier: z.number().optional(),
   details: z.object({
