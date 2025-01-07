@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, Building2, Trophy, Globe2, Users, Shield, Target, Scale, HelpCircle } from "lucide-react";
-import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
+import { sectors, industries, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
@@ -265,7 +265,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                             onValueChange={handleSectorChange}
                           >
                             <SelectTrigger className="pl-8">
-                              <SelectValue placeholder="Select sector" />
+                              <SelectValue placeholder="Select your sector" />
                             </SelectTrigger>
                             <SelectContent>
                               {Object.entries(sectors).map(([key, { name }]) => (
@@ -276,6 +276,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                             </SelectContent>
                           </Select>
                         </div>
+                        <FormDescription>
+                          Choose the primary sector that best describes your business
+                        </FormDescription>
                       </FormItem>
                     )}
                   />
@@ -294,7 +297,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                               onValueChange={handleIndustryChange}
                             >
                               <SelectTrigger className="pl-8">
-                                <SelectValue placeholder="Select industry" />
+                                <SelectValue placeholder="Select industry segment" />
                               </SelectTrigger>
                               <SelectContent>
                                 {Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors)
@@ -306,6 +309,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                               </SelectContent>
                             </Select>
                           </div>
+                          <FormDescription>
+                            Select the specific industry segment within your sector
+                          </FormDescription>
                         </FormItem>
                       )}
                     />
@@ -332,7 +338,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           onValueChange={handleStageChange}
                         >
                           <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select stage" />
+                            <SelectValue placeholder="Select your stage" />
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(businessStages).map(([key, name]) => (
@@ -343,6 +349,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           </SelectContent>
                         </Select>
                       </div>
+                      <FormDescription>
+                        Indicate your company's current stage of development
+                      </FormDescription>
                     </FormItem>
                   )}
                 />

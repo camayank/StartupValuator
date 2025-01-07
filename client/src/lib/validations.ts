@@ -149,25 +149,30 @@ export const fundUtilizationSchema = z.object({
 export const businessStages = {
   // Pre-revenue stages
   ideation_unvalidated: "Ideation Stage (Concept Only)",
-  ideation_validated: "Ideation Stage (Validated Concept)",
+  ideation_validated: "Ideation Stage (Market Validated)",
   mvp_development: "MVP Development",
   mvp_early_traction: "MVP with Early Traction",
+  beta_testing: "Beta Testing",
 
   // Early revenue stages
   revenue_early: "Early Revenue Stage",
   revenue_growing: "Growing Revenue Stage",
   revenue_scaling: "Scaling Revenue Stage",
 
-  // Established stages
-  established_local: "Established (Local Market)",
-  established_regional: "Established (Regional)",
-  established_international: "Established (International)",
+  // Growth stages
+  growth_regional: "Regional Growth",
+  growth_national: "National Expansion",
+  growth_international: "International Expansion",
+
+  // Mature stages
+  mature_stable: "Mature & Stable",
+  mature_expanding: "Mature & Expanding",
 
   // Special situations
   pre_ipo: "Pre-IPO Stage",
   acquisition_target: "Acquisition Target",
   restructuring: "Restructuring",
-  liquidation: "Liquidation",
+  turnaround: "Turnaround Stage"
 } as const;
 
 // Reorganized industry classifications with sector-subsector structure
@@ -175,87 +180,157 @@ export const sectors = {
   technology: {
     name: "Technology",
     subsectors: {
-      software_system: "Software (System & Application)",
-      software_internet: "Software (Internet)",
-      semiconductors: "Semiconductors",
-      computer_hardware: "Computer Hardware",
-      computer_services: "Computer Services",
-      telecom_equipment: "Telecommunications Equipment",
-      telecom_services: "Telecommunications Services",
+      software_enterprise: "Enterprise Software & Solutions",
+      software_consumer: "Consumer Software & Apps",
+      cloud_computing: "Cloud Computing & Services",
+      ai_ml: "AI & Machine Learning",
+      cybersecurity: "Cybersecurity",
+      iot_embedded: "IoT & Embedded Systems",
+      semiconductors: "Semiconductors & Hardware",
+      blockchain: "Blockchain & Crypto",
     }
   },
-  digital: {
-    name: "Digital & E-commerce",
+  healthtech: {
+    name: "Healthcare & Life Sciences",
     subsectors: {
-      ecommerce_retail: "E-Commerce & Digital Retail",
-      digital_content: "Digital Content & Streaming",
-      digital_payments: "Digital Payment Services",
-      digital_platform: "Digital Platforms & Marketplaces",
+      biotech: "Biotechnology",
+      medtech: "Medical Devices & Equipment",
+      healthtech: "Digital Health & Telemedicine",
+      pharma: "Pharmaceuticals",
+      diagnostics: "Diagnostics & Testing",
+      healthcare_services: "Healthcare Services",
+      mental_health: "Mental Health Solutions",
+      wellness: "Wellness & Prevention",
+    }
+  },
+  fintech: {
+    name: "Financial Technology",
+    subsectors: {
+      payments: "Payment Solutions",
+      lending: "Digital Lending",
+      insurtech: "Insurance Technology",
+      wealth_management: "Wealth Management Tech",
+      regtech: "Regulatory Technology",
+      blockchain_finance: "Blockchain Finance",
+      banking_tech: "Banking Technology",
+      personal_finance: "Personal Finance Solutions",
+    }
+  },
+  ecommerce: {
+    name: "E-commerce & Retail",
+    subsectors: {
+      marketplace: "Online Marketplaces",
+      d2c: "Direct-to-Consumer",
+      retail_tech: "Retail Technology",
+      logistics_fulfillment: "Logistics & Fulfillment",
+      subscription_commerce: "Subscription Commerce",
+      social_commerce: "Social Commerce",
+      omnichannel: "Omnichannel Retail",
+      luxury_premium: "Luxury & Premium E-commerce",
     }
   },
   enterprise: {
     name: "Enterprise Solutions",
     subsectors: {
-      enterprise_software: "Enterprise Software",
-      cloud_services: "Cloud Services & Infrastructure",
-      cybersecurity: "Cybersecurity",
-      data_analytics: "Data Analytics & AI",
+      crm_sales: "CRM & Sales Tools",
+      hr_workforce: "HR & Workforce Management",
+      erp_systems: "ERP Systems",
+      collaboration_tools: "Collaboration & Productivity",
+      business_intelligence: "Business Intelligence & Analytics",
+      marketing_automation: "Marketing Automation",
+      supply_chain: "Supply Chain Solutions",
+      customer_service: "Customer Service Solutions",
     }
   },
-  consumer: {
-    name: "Consumer",
+  deeptech: {
+    name: "Deep Technology",
     subsectors: {
-      consumer_discretionary: "Consumer Discretionary",
-      consumer_staples: "Consumer Staples",
-      retail_general: "Retail (General)",
-      retail_special: "Retail (Specialty)",
+      quantum_computing: "Quantum Computing",
+      robotics_automation: "Robotics & Automation",
+      advanced_materials: "Advanced Materials",
+      space_tech: "Space Technology",
+      energy_tech: "Energy Technology",
+      biocomputing: "Biocomputing",
+      nanotech: "Nanotechnology",
+      photonics: "Photonics & Optics",
     }
   },
-  healthcare: {
-    name: "Healthcare & Life Sciences",
-    subsectors: {
-      healthcare_services: "Healthcare Services",
-      medical_equipment: "Medical Equipment",
-      biotechnology: "Biotechnology",
-      pharmaceuticals: "Pharmaceuticals",
-    }
-  },
-  financial: {
-    name: "Financial Services",
-    subsectors: {
-      banking: "Banking",
-      insurance: "Insurance",
-      asset_management: "Asset Management",
-      fintech: "Financial Technology",
-    }
-  },
-  industrial: {
-    name: "Industrial & Manufacturing",
-    subsectors: {
-      industrial_general: "Industrial (General)",
-      aerospace_defense: "Aerospace & Defense",
-      automotive: "Automotive",
-      chemicals: "Chemicals",
-    }
-  },
-  energy: {
-    name: "Energy & Resources",
+  cleantech: {
+    name: "Clean Technology",
     subsectors: {
       renewable_energy: "Renewable Energy",
-      oil_gas: "Oil & Gas",
-      mining: "Mining & Minerals",
-      utilities: "Utilities",
+      energy_storage: "Energy Storage",
+      smart_grid: "Smart Grid & Utilities",
+      carbon_capture: "Carbon Capture & Offset",
+      waste_management: "Waste Management",
+      water_tech: "Water Technology",
+      sustainable_transport: "Sustainable Transportation",
+      green_building: "Green Building Tech",
     }
   },
-  others: {
-    name: "Other Sectors",
+  consumer_digital: {
+    name: "Consumer Digital",
     subsectors: {
-      real_estate: "Real Estate",
-      transportation: "Transportation & Logistics",
-      media_entertainment: "Media & Entertainment",
-      education: "Education Services",
-      professional_services: "Professional Services",
-      agriculture: "Agriculture & Food",
+      social_media: "Social Media & Networks",
+      gaming: "Gaming & Esports",
+      streaming_media: "Streaming & Digital Media",
+      edtech: "Educational Technology",
+      digital_content: "Digital Content & Publishing",
+      mobile_apps: "Mobile Applications",
+      ar_vr: "AR/VR & Metaverse",
+      digital_entertainment: "Digital Entertainment",
+    }
+  },
+  industrial_tech: {
+    name: "Industrial Technology",
+    subsectors: {
+      industry_4_0: "Industry 4.0",
+      smart_manufacturing: "Smart Manufacturing",
+      industrial_iot: "Industrial IoT",
+      predictive_maintenance: "Predictive Maintenance",
+      industrial_automation: "Industrial Automation",
+      quality_control: "Quality Control & Testing",
+      digital_twin: "Digital Twin Technology",
+      industrial_safety: "Industrial Safety & Security",
+    }
+  },
+  agritech: {
+    name: "Agriculture Technology",
+    subsectors: {
+      precision_farming: "Precision Farming",
+      agri_biotech: "Agricultural Biotechnology",
+      smart_farming: "Smart Farming Solutions",
+      vertical_farming: "Vertical & Urban Farming",
+      food_tech: "Food Technology",
+      supply_chain_agri: "Agricultural Supply Chain",
+      farm_management: "Farm Management Systems",
+      sustainable_agri: "Sustainable Agriculture",
+    }
+  },
+  proptech: {
+    name: "Property Technology",
+    subsectors: {
+      real_estate_platforms: "Real Estate Platforms",
+      construction_tech: "Construction Technology",
+      property_management: "Property Management Solutions",
+      smart_buildings: "Smart Buildings",
+      mortgage_tech: "Mortgage Technology",
+      co_living_working: "Co-living & Co-working",
+      facility_management: "Facility Management",
+      real_estate_analytics: "Real Estate Analytics",
+    }
+  },
+  mobility: {
+    name: "Mobility & Transportation",
+    subsectors: {
+      ev_tech: "Electric Vehicle Technology",
+      autonomous_vehicles: "Autonomous Vehicles",
+      mobility_services: "Mobility Services",
+      logistics_tech: "Logistics Technology",
+      fleet_management: "Fleet Management",
+      urban_mobility: "Urban Mobility Solutions",
+      delivery_tech: "Delivery Technology",
+      transport_analytics: "Transportation Analytics",
     }
   }
 } as const;
@@ -264,6 +339,7 @@ export const sectors = {
 export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
   return { ...acc, ...sector.subsectors };
 }, {} as Record<string, string>);
+
 
 export const valuationPurposes = {
   fundraising: "Fundraising",
