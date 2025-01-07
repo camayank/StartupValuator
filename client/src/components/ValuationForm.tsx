@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ValuationSteps } from "@/components/ui/valuation-steps";
 import { ValuationStepCard } from "@/components/ui/valuation-step-card";
 import { valuationFormSchema, type ValuationFormData, currencies, businessStages } from "@/lib/validations";
+import { ValuationProgress } from "@/components/ui/valuation-progress"; // Assuming this component exists
 
 interface ValuationFormProps {
   onResult: (data: any) => void;
@@ -138,6 +139,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
+        <ValuationProgress currentStep={currentStep} completedSteps={completedSteps} />
         <ValuationSteps currentStep={currentStep} completedSteps={completedSteps} />
 
         {/* Step 1: Business Information */}

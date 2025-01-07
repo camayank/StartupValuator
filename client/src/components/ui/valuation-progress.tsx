@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { CircleIcon } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ValuationProgressProps {
   currentStep: number;
@@ -10,24 +11,40 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
   const steps = [
     {
       title: "Business Information",
-      description: "Tell us about your business type and stage"
+      description: "Tell us about your business type and stage",
+      badge: "🏢"
     },
     {
       title: "Valuation Method",
-      description: "Review and select the recommended valuation approach"
+      description: "Review and select the recommended valuation approach",
+      badge: "📊"
     },
     {
       title: "Financial Details",
-      description: "Provide basic financial information"
+      description: "Provide basic financial information",
+      badge: "💰"
     },
     {
       title: "Review",
-      description: "Review and confirm your information"
+      description: "Review and confirm your information",
+      badge: "✅"
     }
   ];
 
+  const progress = (Math.max(...completedSteps, 0) / steps.length) * 100;
+
   return (
     <div className="w-full mb-8">
+      {/* Progress bar */}
+      <div className="relative h-2 bg-gray-200 rounded-full mb-8 overflow-hidden">
+        <motion.div
+          className="absolute left-0 top-0 h-full bg-blue-500 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
+
       <div className="relative flex items-center justify-between">
         {steps.map((step, index) => (
           <div
@@ -38,30 +55,49 @@ export function ValuationProgress({ currentStep, completedSteps }: ValuationProg
               "text-gray-400": currentStep < index + 1
             })}
           >
-            <div
+            <motion.div
               className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center mb-2 border-2",
+                "w-12 h-12 rounded-full flex items-center justify-center mb-2 border-2 text-lg",
                 completedSteps.includes(index + 1)
-                  ? "bg-green-100 border-green-600"
+                  ? "bg-green-100 border-green-500"
                   : currentStep === index + 1
-                  ? "bg-blue-100 border-blue-600"
+                  ? "bg-blue-100 border-blue-500"
                   : "bg-gray-100 border-gray-300"
               )}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ 
+                scale: completedSteps.includes(index + 1) ? [1, 1.1, 1] : 1, 
+                opacity: 1 
+              }}
+              transition={{
+                duration: 0.3,
+                scale: {
+                  duration: 0.5,
+                  times: [0, 0.5, 1]
+                }
+              }}
             >
-              {index + 1}
-            </div>
-            <h3 className="text-sm font-medium text-center">{step.title}</h3>
-            <p className="text-xs text-center mt-1 text-gray-500">{step.description}</p>
+              {step.badge}
+            </motion.div>
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="text-center"
+            >
+              <h3 className="text-sm font-medium">{step.title}</h3>
+              <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+            </motion.div>
           </div>
         ))}
 
-        {/* Progress line */}
-        <div className="absolute top-5 left-0 h-[2px] bg-gray-200 w-full -z-0" />
-        <div
-          className="absolute top-5 left-0 h-[2px] bg-green-500 transition-all duration-300 -z-0"
-          style={{
-            width: `${(Math.max(...completedSteps, 0) / steps.length) * 100}%`,
-          }}
+        {/* Connecting line */}
+        <div className="absolute top-6 left-0 h-[2px] bg-gray-200 w-full -z-0" />
+        <motion.div
+          className="absolute top-6 left-0 h-[2px] bg-green-500 -z-0"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
     </div>
