@@ -56,50 +56,6 @@ export async function getIndustryMetrics(
   }
 }
 
-export async function getValuationReport(
-  businessData: any,
-  metrics: IndustryMetricsResponse,
-  assumptions: any
-): Promise<{
-  executive_summary: string;
-  valuation_analysis: string;
-  risk_factors: string;
-  recommendations: string;
-}> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a senior valuation expert from a Big 4 consulting firm. Generate a comprehensive valuation report following professional standards and best practices. Focus on providing actionable insights and clear analysis.",
-        },
-        {
-          role: "user",
-          content: `Please generate a detailed valuation report for:
-            Business Data: ${JSON.stringify(businessData)}
-            Industry Metrics: ${JSON.stringify(metrics)}
-            Valuation Assumptions: ${JSON.stringify(assumptions)}
-
-            Return a JSON object with the following sections:
-            1. Executive Summary: Clear overview of the valuation
-            2. Valuation Analysis: Detailed breakdown of methods and calculations
-            3. Risk Factors: Key risks and mitigations
-            4. Recommendations: Strategic insights and next steps
-
-            Follow Big 4 consulting standards for professional report writing.`,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    return JSON.parse(response.choices[0].message.content);
-  } catch (error) {
-    console.error("Error generating valuation report:", error);
-    throw error;
-  }
-}
-
 export async function getMetricRecommendations(
   sector: string,
   industry: string,

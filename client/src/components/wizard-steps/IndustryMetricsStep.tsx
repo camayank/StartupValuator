@@ -47,6 +47,7 @@ export function IndustryMetricsStep({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
@@ -58,21 +59,25 @@ export function IndustryMetricsStep({
   useEffect(() => {
     const fetchMetrics = async () => {
       if (!data.sector || !data.industry || !data.region) {
-        toast({
-          title: "Missing Information",
-          description: "Please complete the business information step first.",
-          variant: "destructive",
-        });
-        onBack();
+        setError("Please complete the business information step first with sector, industry, and region.");
+        setIsLoading(false);
         return;
       }
 
       try {
+        setIsLoading(true);
+        setError(null);
+
         const metricsData = await getIndustryMetrics(
           data.sector,
           data.industry,
           data.region
         );
+
+        if (!metricsData) {
+          throw new Error("Failed to fetch industry metrics");
+        }
+
         setMetrics(metricsData);
         form.reset({
           ...data,
@@ -81,7 +86,9 @@ export function IndustryMetricsStep({
             ...metricsData.metrics,
           },
         });
-      } catch (error) {
+      } catch (error: any) {
+        console.error("Error fetching metrics:", error);
+        setError(error.message || "Failed to fetch industry metrics");
         toast({
           title: "Error",
           description: "Failed to fetch industry metrics. Please try again.",
@@ -95,7 +102,16 @@ export function IndustryMetricsStep({
     fetchMetrics();
   }, [data.sector, data.industry, data.region]);
 
-  const handleSubmit = (values: Partial<ValuationFormData>) => {
+  const handleSubmit = async (values: Partial<ValuationFormData>) => {
+    if (!metrics) {
+      toast({
+        title: "Error",
+        description: "Please wait for metrics to load before proceeding",
+        variant: "destructive",
+      });
+      return;
+    }
+
     onUpdate(values);
     onNext();
   };
@@ -103,11 +119,29 @@ export function IndustryMetricsStep({
   if (isLoading) {
     return (
       <div className="space-y-6 p-4 bg-background min-h-screen md:min-h-0">
-        <Skeleton className="h-12 w-full" />
+        <div className="mb-8">
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-2 w-full" />
+        </div>
+        <Skeleton className="h-24 w-full" />
         <div className="grid md:grid-cols-2 gap-6">
           <Skeleton className="h-[200px] w-full" />
           <Skeleton className="h-[200px] w-full" />
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 p-4 bg-background min-h-screen md:min-h-0">
+        <Alert variant="destructive">
+          <Info className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <Button variant="outline" onClick={onBack} className="w-full">
+          Go Back
+        </Button>
       </div>
     );
   }
@@ -213,7 +247,7 @@ export function IndustryMetricsStep({
             <Button variant="outline" onClick={onBack} type="button">
               Back
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={!metrics}>
               Continue
             </Button>
           </div>
