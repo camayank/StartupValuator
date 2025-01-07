@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Link } from "wouter";
+import { calculateValuation } from "@/lib/api";
 
 interface ReviewStepProps {
   data: Partial<ValuationFormData>;
@@ -19,6 +20,7 @@ interface ReviewStepProps {
 export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
   const isFundraising = data.valuationPurpose === 'fundraising';
 
   // Strict validation logic for all required fields
@@ -61,21 +63,22 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
 
     try {
       setIsGenerating(true);
+      setIsCalculating(true);
 
-      // First, trigger the valuation calculation
-      const valuationResponse = await fetch('/api/valuation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!valuationResponse.ok) {
-        throw new Error(`Valuation failed: ${await valuationResponse.text()}`);
+      // First, calculate the valuation if not already done
+      if (!data.valuation || !data.multiplier || !data.details?.baseValuation) {
+        const valuationResult = await calculateValuation(data as ValuationFormData);
+        onUpdate({
+          ...data,
+          valuation: valuationResult.valuation,
+          multiplier: valuationResult.multiplier,
+          details: valuationResult.details,
+          riskAssessment: valuationResult.riskAssessment,
+          potentialPrediction: valuationResult.potentialPrediction,
+          ecosystemNetwork: valuationResult.ecosystemNetwork,
+        });
       }
-
-      const valuationData = await valuationResponse.json();
+      setIsCalculating(false);
 
       // Then generate the report with the combined data
       const reportResponse = await fetch('/api/report', {
@@ -83,7 +86,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...data, ...valuationData }),
+        body: JSON.stringify(data),
       });
 
       if (!reportResponse.ok) {
@@ -107,7 +110,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       });
 
       // Finally call onSubmit with the complete data
-      onSubmit({ ...data, ...valuationData });
+      onSubmit(data as ValuationFormData);
     } catch (error) {
       console.error('Report generation error:', error);
       toast({
@@ -117,6 +120,7 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
       });
     } finally {
       setIsGenerating(false);
+      setIsCalculating(false);
     }
   };
 
@@ -238,9 +242,14 @@ export function ReviewStep({ data, onUpdate, onSubmit, onBack }: ReviewStepProps
           <Button
             onClick={handleSubmit}
             className="px-8 font-medium flex items-center gap-2"
-            disabled={isGenerating}
+            disabled={isGenerating || isCalculating}
           >
-            {isGenerating ? (
+            {isCalculating ? (
+              <>
+                <FileText className="w-4 h-4 animate-spin" />
+                Calculating...
+              </>
+            ) : isGenerating ? (
               <>
                 <FileText className="w-4 h-4 animate-spin" />
                 Generating...
