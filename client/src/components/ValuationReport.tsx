@@ -20,6 +20,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { AlertTriangle, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
 
 interface Props {
   data: ValuationReport;
@@ -28,10 +29,11 @@ interface Props {
 export function ValuationReport({ data }: Props) {
   return (
     <div className="container mx-auto py-8 space-y-8">
-      {/* Summary Section */}
+      {/* Summary Section with Export Button */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl">Valuation Summary</CardTitle>
+          <ExportButton report={data} />
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
