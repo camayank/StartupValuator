@@ -8,24 +8,22 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create a postgres connection with optimized settings for high load
+// Create a postgres connection with production-ready configuration
 const queryClient = postgres(process.env.DATABASE_URL, {
-  max: 20, // Maximum number of connections in pool
-  idle_timeout: 30, // Close idle connections after 30 seconds
-  connect_timeout: 10, // Try to connect for 10 seconds
-  max_lifetime: 60 * 30, // Connection lifetime of 30 minutes
+  max: 10, // Maximum number of connections
+  idle_timeout: 20, // Close idle connections after 20 seconds
+  connect_timeout: 10, // Connection timeout
   ssl: true,
 });
 
 // Create drizzle database instance with schema
 export const db = drizzle(queryClient, { schema });
 
-// Health check function
+// Health check function with proper error handling
 export async function checkDatabaseHealth() {
   try {
-    // Simple query to test connection
-    const [{ result }] = await queryClient`SELECT 1 AS result`;
-    return result === 1;
+    await queryClient`SELECT 1;`;
+    return true;
   } catch (error) {
     console.error('Database health check failed:', error);
     return false;
