@@ -10,8 +10,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,21 +28,82 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    username?: string;
+    email?: string;
+    password?: string;
+  }>({});
 
-  // Password strength calculation
+  // Password strength calculation with feedback
   const calculatePasswordStrength = (password: string) => {
     let strength = 0;
-    if (password.length >= 8) strength += 25;
-    if (password.match(/[A-Z]/)) strength += 25;
-    if (password.match(/[0-9]/)) strength += 25;
-    if (password.match(/[^A-Za-z0-9]/)) strength += 25;
-    return strength;
+    let feedback = [];
+
+    if (password.length >= 8) {
+      strength += 25;
+    } else {
+      feedback.push("Password should be at least 8 characters");
+    }
+    if (password.match(/[A-Z]/)) {
+      strength += 25;
+    } else {
+      feedback.push("Include uppercase letters");
+    }
+    if (password.match(/[0-9]/)) {
+      strength += 25;
+    } else {
+      feedback.push("Include numbers");
+    }
+    if (password.match(/[^A-Za-z0-9]/)) {
+      strength += 25;
+    } else {
+      feedback.push("Include special characters");
+    }
+
+    return { strength, feedback };
   };
 
-  const passwordStrength = calculatePasswordStrength(password);
+  const validateFields = () => {
+    const errors: typeof fieldErrors = {};
+
+    if (!username) {
+      errors.username = "Username is required";
+    } else if (username.length < 3) {
+      errors.username = "Username must be at least 3 characters";
+    }
+
+    if (!isLogin) {
+      if (!email) {
+        errors.email = "Email is required";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = "Please enter a valid email address";
+      }
+    }
+
+    if (!password) {
+      errors.password = "Password is required";
+    } else if (!isLogin && password.length < 8) {
+      errors.password = "Password must be at least 8 characters";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const { strength: passwordStrength, feedback: passwordFeedback } = calculatePasswordStrength(password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateFields()) {
+      toast({
+        title: "Validation Error",
+        description: "Please check the form for errors",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setAuthSuccess(false);
 
@@ -49,30 +111,41 @@ export default function AuthPage() {
       if (isLogin) {
         const result = await login({ username, password });
         if (!result.ok) {
-          throw new Error(result.message);
+          throw new Error(result.message || "Invalid username or password");
         }
       } else {
         const result = await register({ username, password, email, role });
         if (!result.ok) {
-          throw new Error(result.message);
+          throw new Error(result.message || "Registration failed. Please try again.");
         }
       }
-      // Show success animation
       setAuthSuccess(true);
       toast({
         title: isLogin ? "Login Successful" : "Registration Successful",
-        description: isLogin ? "Welcome back!" : "Your account has been created.",
+        description: isLogin ? "Welcome back!" : "Your account has been created successfully.",
       });
+
       // Redirect after successful auth
       setTimeout(() => {
         window.location.href = '/';
       }, 1500);
     } catch (error: any) {
+      // Show error in toast and specific field if applicable
+      const errorMessage = error.message.toLowerCase();
+      if (errorMessage.includes("username")) {
+        setFieldErrors(prev => ({ ...prev, username: error.message }));
+      } else if (errorMessage.includes("password")) {
+        setFieldErrors(prev => ({ ...prev, password: error.message }));
+      } else if (errorMessage.includes("email")) {
+        setFieldErrors(prev => ({ ...prev, email: error.message }));
+      }
+
       toast({
-        title: "Error",
+        title: "Authentication Error",
         description: error.message,
         variant: "destructive",
       });
+
       // Shake animation on error
       const form = document.querySelector('form');
       form?.classList.add('shake');
@@ -106,7 +179,7 @@ export default function AuthPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {isLogin ? "Login" : "Register"}
+                {isLogin ? "Login" : "Create Account"}
                 {authSuccess && (
                   <motion.div
                     initial={{ scale: 0 }}
@@ -119,8 +192,8 @@ export default function AuthPage() {
               </CardTitle>
               <CardDescription>
                 {isLogin
-                  ? "Welcome back! Please login to continue."
-                  : "Create an account to get started."}
+                  ? "Welcome back! Please enter your credentials."
+                  : "Fill in your details to get started."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -134,17 +207,26 @@ export default function AuthPage() {
                       id="username"
                       type="text"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, username: undefined }));
+                      }}
                       className={cn(
                         "pr-8",
-                        username.length > 0 && "border-green-500"
+                        fieldErrors.username ? "border-destructive" : username.length > 0 ? "border-green-500" : ""
                       )}
                       required
                     />
-                    {username.length > 0 && (
+                    {username.length > 0 && !fieldErrors.username && (
                       <Check className="absolute right-2 top-2.5 h-4 w-4 text-green-500" />
                     )}
                   </div>
+                  {fieldErrors.username && (
+                    <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {fieldErrors.username}
+                    </p>
+                  )}
                 </div>
 
                 {!isLogin && (
@@ -157,17 +239,26 @@ export default function AuthPage() {
                         id="email"
                         type="email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setFieldErrors(prev => ({ ...prev, email: undefined }));
+                        }}
                         className={cn(
                           "pr-8",
-                          email.includes('@') && "border-green-500"
+                          fieldErrors.email ? "border-destructive" : email.includes('@') ? "border-green-500" : ""
                         )}
                         required
                       />
-                      {email.includes('@') && (
+                      {email.includes('@') && !fieldErrors.email && (
                         <Check className="absolute right-2 top-2.5 h-4 w-4 text-green-500" />
                       )}
                     </div>
+                    {fieldErrors.email && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {fieldErrors.email}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -180,19 +271,39 @@ export default function AuthPage() {
                       id="password"
                       type="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="mb-1"
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setFieldErrors(prev => ({ ...prev, password: undefined }));
+                      }}
+                      className={cn(
+                        "mb-1",
+                        fieldErrors.password && "border-destructive"
+                      )}
                       required
                     />
+                    {fieldErrors.password && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {fieldErrors.password}
+                      </p>
+                    )}
                     {!isLogin && (
                       <>
-                        <Progress value={passwordStrength} className="h-1" />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {passwordStrength <= 25 && "Weak"}
-                          {passwordStrength > 25 && passwordStrength <= 50 && "Fair"}
-                          {passwordStrength > 50 && passwordStrength <= 75 && "Good"}
-                          {passwordStrength > 75 && "Strong"}
-                        </p>
+                        <Progress value={passwordStrength} className="h-1 mt-2" />
+                        <div className="mt-2">
+                          {passwordStrength < 100 && (
+                            <Alert variant="default" className="bg-muted/50">
+                              <AlertDescription className="text-xs">
+                                Password requirements:
+                                <ul className="list-disc list-inside mt-1">
+                                  {passwordFeedback.map((feedback, index) => (
+                                    <li key={index}>{feedback}</li>
+                                  ))}
+                                </ul>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
                       </>
                     )}
                   </div>
@@ -232,7 +343,7 @@ export default function AuthPage() {
                       {isLogin ? "Logged In" : "Registered"}
                     </>
                   ) : (
-                    isLogin ? "Login" : "Register"
+                    isLogin ? "Login" : "Create Account"
                   )}
                 </Button>
 
@@ -243,10 +354,11 @@ export default function AuthPage() {
                     onClick={() => {
                       setIsLogin(!isLogin);
                       setAuthSuccess(false);
+                      setFieldErrors({});
                     }}
                     className="text-primary hover:underline"
                   >
-                    {isLogin ? "Register" : "Login"}
+                    {isLogin ? "Create Account" : "Login"}
                   </button>
                 </p>
               </form>
