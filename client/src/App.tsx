@@ -5,6 +5,7 @@ import { useUser } from "./hooks/use-user";
 import AuthPage from "./pages/AuthPage";
 import ValuationWizard from "./pages/ValuationWizard";
 import DashboardLayout from "./layouts/DashboardLayout";
+import { LandingPage } from "./pages/LandingPage";
 
 function App() {
   const { user, isLoading } = useUser();
@@ -17,10 +18,17 @@ function App() {
     );
   }
 
+  // If user is not logged in, show landing page by default
   if (!user) {
-    return <AuthPage />;
+    return (
+      <Switch>
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/" component={LandingPage} />
+      </Switch>
+    );
   }
 
+  // If user is logged in, show dashboard layout with valuation wizard
   return (
     <DashboardLayout>
       <Switch>
