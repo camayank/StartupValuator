@@ -11,25 +11,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, TrendingUp, AlertTriangle, Activity } from "lucide-react";
-import { getIndustryMetricsSchema, industryRiskFactors } from "@/lib/validation/industryMetrics";
+import { getSectorMetricsSchema } from "@/lib/validation/sectorMetrics";
 
 interface IndustryMetricsFormProps {
+  sector: string;
   industry: string;
   onMetricsUpdate: (metrics: any) => void;
 }
 
-export function IndustryMetricsForm({ industry, onMetricsUpdate }: IndustryMetricsFormProps) {
-  const metricsSchema = getIndustryMetricsSchema(industry);
+export function IndustryMetricsForm({ sector, industry, onMetricsUpdate }: IndustryMetricsFormProps) {
+  const metricsSchema = getSectorMetricsSchema(sector, industry);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const form = useForm({
@@ -46,7 +40,7 @@ export function IndustryMetricsForm({ industry, onMetricsUpdate }: IndustryMetri
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          No specific metrics available for this industry type.
+          No specific metrics available for this sector and industry combination.
         </AlertDescription>
       </Alert>
     );
@@ -111,99 +105,43 @@ export function IndustryMetricsForm({ industry, onMetricsUpdate }: IndustryMetri
     );
   };
 
-  // Get risk factors for the current industry
-  const riskFactors = industryRiskFactors[industry as keyof typeof industryRiskFactors];
+  // Get schema shape to determine what fields to render
+  const shape = metricsSchema.shape;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
-          {/* SaaS Metrics */}
-          {industry.includes("saas") && (
-            <>
-              <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Revenue Metrics
-                </h3>
-                {renderMetricField("mrr", "Monthly Recurring Revenue", "Current MRR in your selected currency")}
-                {renderMetricField("ltv", "Customer Lifetime Value", "Average LTV per customer")}
-                {renderMetricField("cac", "Customer Acquisition Cost", "Average cost to acquire a customer")}
-                {renderMetricField("retentionRate", "Customer Retention Rate", "Monthly retention rate in percentage")}
+          {Object.entries(shape).map(([fieldName, field]) => {
+            // Convert field name to label (e.g., "mrr" -> "Monthly Recurring Revenue")
+            const label = fieldName
+              .split(/(?=[A-Z])|_/)
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ");
+
+            // Generate description based on field validation rules
+            let description = "";
+            if ("min" in field && "max" in field) {
+              description = `Must be between ${field.min} and ${field.max}`;
+            } else if ("min" in field) {
+              description = `Must be greater than ${field.min}`;
+            }
+
+            return (
+              <div key={fieldName} className="col-span-1">
+                {renderMetricField(fieldName, label, description)}
               </div>
-            </>
-          )}
-
-          {/* E-commerce Metrics */}
-          {industry.includes("commerce") && (
-            <>
-              <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Sales Metrics
-                </h3>
-                {renderMetricField("aov", "Average Order Value", "Average value per order")}
-                {renderMetricField("inventoryTurnover", "Inventory Turnover", "Number of times inventory is sold per year")}
-                {renderMetricField("conversionRate", "Conversion Rate", "Percentage of visitors who make a purchase")}
-                {renderMetricField("cartAbandonmentRate", "Cart Abandonment Rate", "Percentage of abandoned carts")}
-              </div>
-            </>
-          )}
-
-          {/* Healthcare Metrics */}
-          {industry.includes("health") && (
-            <>
-              <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Healthcare Development Metrics
-                </h3>
-                {renderMetricField("rdSpending", "R&D Spending", "Annual R&D expenditure")}
-                {renderMetricField("pipelineProgress", "Pipeline Progress", "Overall progress of product pipeline")}
-              </div>
-            </>
-          )}
-
-          {/* Fintech Metrics */}
-          {industry.includes("fintech") && (
-            <>
-              <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Fintech Metrics
-                </h3>
-                {renderMetricField("transactionVolume", "Transaction Volume", "Monthly transaction volume")}
-                {renderMetricField("avgTransactionValue", "Average Transaction Value", "Average value per transaction")}
-                {renderMetricField("userAcquisitionCost", "User Acquisition Cost", "Cost to acquire new users")}
-              </div>
-            </>
-          )}
-
-          {/* Manufacturing Metrics */}
-          {industry.includes("manufacturing") && (
-            <>
-              <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Manufacturing Metrics
-                </h3>
-                {renderMetricField("fixedCosts", "Fixed Costs", "Monthly fixed operational costs")}
-                {renderMetricField("variableCosts", "Variable Costs", "Average variable costs per unit")}
-                {renderMetricField("productionEfficiency", "Production Efficiency", "Overall equipment effectiveness")}
-              </div>
-            </>
-          )}
-
-
+            );
+          })}
           {/* Risk Assessment Section */}
-          {riskFactors && (
+          {metricsSchema.shape["riskAssessment"] && (
             <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
                 Risk Assessment
               </h3>
               <div className="grid md:grid-cols-3 gap-4">
-                {Object.entries(riskFactors).map(([category, factors]) => (
+                {Object.entries(metricsSchema.shape["riskAssessment"].shape).map(([category, factors]) => (
                   <div key={category} className="space-y-2">
                     <h4 className="font-medium capitalize">{category} Risks</h4>
                     <FormField
