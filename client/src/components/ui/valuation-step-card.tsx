@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronRight, Lock } from "lucide-react";
+import { ChevronRight, Lock, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ValuationStepCardProps {
   title: string;
+  description: string;
   stepNumber: number;
   currentStep: number;
   isCompleted: boolean;
@@ -16,6 +17,7 @@ interface ValuationStepCardProps {
 
 export function ValuationStepCard({
   title,
+  description,
   stepNumber,
   currentStep,
   isCompleted,
@@ -26,13 +28,31 @@ export function ValuationStepCard({
   const isActive = stepNumber === currentStep;
   const isLocked = stepNumber > currentStep;
 
+  if (isLocked) {
+    return (
+      <Card className={cn("relative opacity-50 cursor-not-allowed", className)}>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 text-gray-400">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <CardTitle className="text-xl">{title}</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">{description}</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
-    <Card className={cn("relative", className, {
-      "opacity-50": isLocked,
-      "border-green-500": isCompleted,
-      "border-blue-500": isActive && !isCompleted,
+    <Card className={cn("relative transition-all", className, {
+      "border-green-500 shadow-sm": isCompleted,
+      "border-blue-500 shadow-md": isActive && !isCompleted,
+      "border-gray-200": !isActive && !isCompleted,
     })}>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-8 h-8 rounded-full flex items-center justify-center",
@@ -46,23 +66,23 @@ export function ValuationStepCard({
               <span className="font-semibold">{stepNumber}</span>
             )}
           </div>
-          <CardTitle className="text-xl">{title}</CardTitle>
+          <div>
+            <CardTitle className="text-xl">{title}</CardTitle>
+            <p className="text-sm text-gray-500 mt-1">{description}</p>
+          </div>
         </div>
-        {isLocked && <Lock className="w-5 h-5 text-gray-400" />}
       </CardHeader>
-      {!isLocked && (
-        <CardContent>
-          {children}
-          {isActive && (
-            <div className="mt-6 flex justify-end">
-              <Button onClick={onComplete} className="gap-2">
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      )}
+      <CardContent>
+        {children}
+        {isActive && (
+          <div className="mt-6 flex justify-end">
+            <Button onClick={onComplete} className="gap-2">
+              Continue
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
