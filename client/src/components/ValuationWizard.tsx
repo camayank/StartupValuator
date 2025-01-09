@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, CheckCircle2, Circle, HelpCircle, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2, Brain, Target, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
 import { IndustryMetricsForm } from "./IndustryMetricsForm";
-import { MethodSelectionStep } from "./wizard-steps/MethodSelectionStep";
-import { FinancialDetailsStep } from "./wizard-steps/FinancialDetailsStep";
 import { ReviewStep } from "./wizard-steps/ReviewStep";
 import {
   Tooltip,
@@ -19,6 +17,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import type { ValuationFormData } from "@/lib/validations";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ValuationWizardProps {
   onSubmit: (data: ValuationFormData) => void;
@@ -29,60 +29,50 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
+  // Consolidated steps for efficiency
   const steps = [
     { 
       number: 1, 
-      title: "Business Information",
-      description: "Tell us about your business type and stage"
+      title: "Business Profile",
+      description: "Company information and market position",
+      icon: Target,
+      validationKeys: ['businessName', 'sector', 'industry', 'stage']
     },
     { 
       number: 2, 
-      title: "Industry Metrics",
-      description: "Enter industry-specific metrics"
+      title: "Financial & Metrics",
+      description: "Key metrics and financial data",
+      icon: Brain,
+      validationKeys: ['revenue', 'margins', 'growthRate', 'metrics']
     },
     { 
       number: 3, 
-      title: "Valuation Method",
-      description: "Select the most appropriate valuation approach"
-    },
-    { 
-      number: 4, 
-      title: "Financial Details",
-      description: "Provide key financial information"
-    },
-    { 
-      number: 5, 
-      title: "Review & Submit",
-      description: "Review and confirm your information"
+      title: "Review & Generate",
+      description: "Verify and generate valuation",
+      icon: FileText,
+      validationKeys: ['all']
     }
   ];
 
   const updateFormData = (data: Partial<ValuationFormData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    setFormData(prev => {
+      const updated = { ...prev, ...data };
+      validateStep(currentStep, updated);
+      return updated;
+    });
   };
 
-  const isStepValid = (step: number): boolean => {
-    switch (step) {
-      case 1:
-        return !!(formData.sector && formData.industry && formData.stage && formData.valuationPurpose);
-      case 2:
-        return !!(formData.industryMetrics && Object.keys(formData.industryMetrics).length > 0);
-      case 3:
-        return !!(formData.selectedMethods && formData.selectedMethods.length > 0);
-      case 4:
-        return !!(formData.financials && Object.keys(formData.financials).length > 0);
-      case 5:
-        return true;
-      default:
-        return false;
-    }
+  const validateStep = (step: number, data: Partial<ValuationFormData> = formData): boolean => {
+    const requiredKeys = steps[step - 1].validationKeys;
+    if (requiredKeys[0] === 'all') return true;
+    return requiredKeys.every(key => data[key as keyof ValuationFormData]);
   };
 
   const handleNext = () => {
-    if (!isStepValid(currentStep)) {
+    if (!validateStep(currentStep)) {
       toast({
         title: "Incomplete Information",
         description: "Please complete all required fields before proceeding.",
@@ -108,7 +98,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
       setIsSubmitting(true);
       toast({
         title: "Processing Valuation",
-        description: "Our AI is analyzing your inputs and generating a comprehensive valuation report...",
+        description: "Analyzing inputs and generating comprehensive report...",
         duration: 3000,
       });
       await onSubmit(data);
@@ -122,7 +112,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
       console.error('Submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to generate valuation. Please try again or contact support.",
+        description: "Failed to generate valuation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -130,200 +120,175 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
     }
   };
 
-  return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {showOnboarding ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-        >
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-3xl">
-                <Sparkles className="h-8 w-8 text-primary" />
-                Welcome to AI-Powered Valuation
-              </CardTitle>
-              <CardDescription className="text-lg">
-                Let's guide you through the process of valuing your business using our advanced AI platform.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                {steps.map((step) => (
-                  <motion.div
-                    key={step.number}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: step.number * 0.1 }}
-                    className="flex items-start gap-3 p-4 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
-                  >
-                    <div className="mt-1">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                        <span className="text-sm font-medium text-primary">{step.number}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{step.title}</h3>
-                      <p className="text-muted-foreground">{step.description}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-              <Button
-                onClick={() => setShowOnboarding(false)}
-                className="w-full"
-                size="lg"
-              >
-                Start Valuation Process
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ) : (
-        <Card className="w-full shadow-lg">
-          <CardHeader className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  {steps[currentStep - 1].title}
-                  <Badge variant="secondary" className="ml-2">
-                    Step {currentStep} of {steps.length}
-                  </Badge>
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {steps[currentStep - 1].description}
-                </CardDescription>
-              </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <HelpCircle className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">Need help? Click for detailed guidance on this step.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+  // Preview panel component
+  const ValuationPreview = () => (
+    <ScrollArea className="h-[calc(100vh-4rem)]">
+      <div className="p-6 space-y-6">
+        <h3 className="text-lg font-semibold">Valuation Summary</h3>
+        {formData.businessName && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Company</p>
+            <p className="text-sm text-muted-foreground">{formData.businessName}</p>
+          </div>
+        )}
+        {formData.sector && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Sector & Industry</p>
+            <p className="text-sm text-muted-foreground">
+              {formData.sector} - {formData.industry}
+            </p>
+          </div>
+        )}
+        {formData.stage && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Business Stage</p>
+            <p className="text-sm text-muted-foreground">{formData.stage}</p>
+          </div>
+        )}
+        {formData.revenue !== undefined && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Financial Overview</p>
+            <p className="text-sm text-muted-foreground">
+              Revenue: ${formData.revenue.toLocaleString()}<br />
+              Growth Rate: {formData.growthRate}%<br />
+              Margins: {formData.margins}%
+            </p>
+          </div>
+        )}
+      </div>
+    </ScrollArea>
+  );
 
-            <div className="space-y-2">
-              <div className="flex justify-between mb-2">
-                {steps.map((step, index) => (
-                  <div key={step.number} className="flex flex-col items-center">
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                        currentStep === step.number
-                          ? "bg-primary text-primary-foreground"
-                          : completedSteps.includes(step.number)
-                          ? "bg-primary/20 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {completedSteps.includes(step.number) ? (
-                        <CheckCircle2 className="h-5 w-5" />
-                      ) : (
-                        <span className="text-sm font-medium">{step.number}</span>
-                      )}
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div
-                        className={cn(
-                          "h-1 w-24 mt-4",
-                          completedSteps.includes(step.number)
-                            ? "bg-primary/20"
-                            : "bg-muted"
-                        )}
-                      />
+  return (
+    <div className="space-y-8 max-w-6xl mx-auto">
+      <Card className="w-full shadow-lg">
+        <CardHeader className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl flex items-center gap-2">
+                {steps[currentStep - 1].title}
+                <Badge variant="secondary" className="ml-2">
+                  Step {currentStep} of {steps.length}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-base">
+                {steps[currentStep - 1].description}
+              </CardDescription>
+            </div>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Preview
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+                <ValuationPreview />
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between mb-2">
+              {steps.map((step, index) => (
+                <div key={step.number} className="flex flex-col items-center">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                      currentStep === step.number
+                        ? "bg-primary text-primary-foreground"
+                        : completedSteps.includes(step.number)
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {completedSteps.includes(step.number) ? (
+                      <CheckCircle2 className="h-5 w-5" />
+                    ) : (
+                      <step.icon className="h-5 w-5" />
                     )}
                   </div>
-                ))}
-              </div>
-              <Progress value={(currentStep / steps.length) * 100} className="h-2" />
+                  {index < steps.length - 1 && (
+                    <div
+                      className={cn(
+                        "h-1 w-32 mt-4",
+                        completedSteps.includes(step.number)
+                          ? "bg-primary/20"
+                          : "bg-muted"
+                      )}
+                    />
+                  )}
+                </div>
+              ))}
             </div>
-          </CardHeader>
+            <Progress value={(currentStep / steps.length) * 100} className="h-2" />
+          </div>
+        </CardHeader>
 
-          <CardContent>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="min-h-[400px]"
+        <CardContent>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="min-h-[400px]"
+            >
+              {currentStep === 1 && (
+                <BusinessInfoStep
+                  data={formData}
+                  onUpdate={updateFormData}
+                  onNext={handleNext}
+                  currentStep={currentStep}
+                  totalSteps={steps.length}
+                />
+              )}
+              {currentStep === 2 && formData.sector && formData.industry && (
+                <IndustryMetricsForm
+                  sector={formData.sector}
+                  industry={formData.industry}
+                  onMetricsUpdate={(metrics) => {
+                    updateFormData({ industryMetrics: metrics });
+                    handleNext();
+                  }}
+                  onNext={handleNext}
+                  currentStep={currentStep}
+                  totalSteps={steps.length}
+                />
+              )}
+              {currentStep === 3 && (
+                <ReviewStep
+                  data={formData}
+                  onUpdate={updateFormData}
+                  onSubmit={handleSubmit}
+                  onBack={handleBack}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex justify-between mt-8">
+            {currentStep > 1 && (
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                className="flex items-center gap-2"
               >
-                {currentStep === 1 && (
-                  <BusinessInfoStep
-                    data={formData}
-                    onUpdate={updateFormData}
-                    onNext={handleNext}
-                  />
-                )}
-                {currentStep === 2 && formData.sector && formData.industry && (
-                  <IndustryMetricsForm
-                    sector={formData.sector}
-                    industry={formData.industry}
-                    onMetricsUpdate={(metrics) => {
-                      updateFormData({ industryMetrics: metrics });
-                      handleNext();
-                    }}
-                  />
-                )}
-                {currentStep === 3 && (
-                  <MethodSelectionStep
-                    data={formData}
-                    onUpdate={updateFormData}
-                    onNext={handleNext}
-                    onBack={handleBack}
-                  />
-                )}
-                {currentStep === 4 && (
-                  <FinancialDetailsStep
-                    data={formData}
-                    onUpdate={updateFormData}
-                    onNext={handleNext}
-                    onBack={handleBack}
-                  />
-                )}
-                {currentStep === 5 && (
-                  <ReviewStep
-                    data={formData}
-                    onUpdate={updateFormData}
-                    onSubmit={handleSubmit}
-                    onBack={handleBack}
-                    isSubmitting={isSubmitting}
-                  />
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="flex justify-between mt-8">
-              {currentStep > 1 && (
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" /> Back
-                </Button>
-              )}
-              {currentStep < steps.length && (
-                <Button
-                  onClick={handleNext}
-                  className="ml-auto flex items-center gap-2"
-                >
-                  Next <ArrowRight className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Button>
+            )}
+            {currentStep < steps.length && (
+              <Button
+                onClick={handleNext}
+                className="ml-auto flex items-center gap-2"
+              >
+                Next <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
