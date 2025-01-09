@@ -361,6 +361,36 @@ export const industryMetricsSchema = z.object({
   }))
 });
 
+export const financialsSchema = z.object({
+  revenue: z.number().min(0, "Revenue must be positive"),
+  ebitda: z.number().optional(),
+  netIncome: z.number().optional(),
+  cashFlow: z.number().optional(),
+  assets: z.object({
+    tangible: z.number(),
+    intangible: z.number()
+  }).optional(),
+  liabilities: z.object({
+    shortTerm: z.number(),
+    longTerm: z.number()
+  }).optional()
+});
+
+export const valuationAssumptionsSchema = z.object({
+  discountRate: z.number().min(0).max(1),
+  growthRate: z.number().min(-1).max(10),
+  terminalGrowthRate: z.number().min(-0.1).max(0.1),
+  beta: z.number().min(0).max(3),
+  marketRiskPremium: z.number().min(0).max(0.2)
+});
+
+export const valuationMethodSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  weight: z.number().min(0).max(1),
+  description: z.string().optional()
+});
+
 export const valuationFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
@@ -380,6 +410,9 @@ export const valuationFormSchema = z.object({
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
   scalability: z.enum(["limited", "moderate", "high"]).optional(),
   industryMetrics: industryMetricsSchema.optional(),
+  selectedMethods: z.array(valuationMethodSchema).optional(),
+  financials: financialsSchema.optional(),
+  assumptions: valuationAssumptionsSchema.optional(),
   valuation: z.number().optional(),
   multiplier: z.number().optional(),
   details: z.object({
