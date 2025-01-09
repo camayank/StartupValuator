@@ -12,11 +12,7 @@ export default defineConfig({
   schema: "./db/schema.ts",
   dialect: "postgresql",
   dbCredentials: {
-    host: process.env.PGHOST!,
-    user: process.env.PGUSER,
-    password: process.env.PGPASSWORD,
-    database: process.env.PGDATABASE!,
-    port: parseInt(process.env.PGPORT || "5432"),
+    connectionString: process.env.DATABASE_URL,
   },
   verbose: true,
   strict: true,
