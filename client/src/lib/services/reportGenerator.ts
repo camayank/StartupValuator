@@ -3,7 +3,8 @@ import {
   generateValuationReport,
   generatePeerAnalysis,
   generateRiskAssessment,
-  getIndustryMetrics
+  getIndustryMetrics,
+  getMetricRecommendations
 } from './openai';
 import type { ValuationFormData } from '@/lib/validations';
 
@@ -46,6 +47,13 @@ export interface ValuationReport {
     risk_matrix: string;
     mitigation_strategy: string;
   };
+  metric_recommendations?: Array<{
+    metric: string;
+    current_value: number;
+    recommendation: string;
+    improvement_potential: string;
+    industry_context: string;
+  }>;
 }
 
 export async function generateFullValuationReport(
@@ -98,11 +106,30 @@ export async function generateFullValuationReport(
       }
     );
 
-    // 5. Combine all sections into a comprehensive report
+    // 5. Generate metric-specific recommendations
+    const metricRecommendations = await Promise.all(
+      Object.entries(formData.industryMetrics || {}).map(async ([metric, value]) => {
+        const recommendation = await getMetricRecommendations(
+          formData.sector,
+          formData.industry,
+          metric
+        );
+        return {
+          metric,
+          current_value: value,
+          recommendation: recommendation.recommendation,
+          improvement_potential: `${Math.round((recommendation.benchmark.high - value) / value * 100)}%`,
+          industry_context: `Current value (${value}) compared to industry benchmark: Low (${recommendation.benchmark.low}) - High (${recommendation.benchmark.high})`
+        };
+      })
+    );
+
+    // 6. Combine all sections into a comprehensive report
     return {
       ...mainReport,
       peer_analysis: peerAnalysis,
       risk_matrix: riskAssessment,
+      metric_recommendations: metricRecommendations
     };
   } catch (error) {
     console.error("Error generating full valuation report:", error);
@@ -110,6 +137,7 @@ export async function generateFullValuationReport(
   }
 }
 
+// Format the report for display
 export function formatReport(report: ValuationReport): string {
   // Convert the report object into a properly formatted document
   const sections = [
@@ -157,6 +185,16 @@ export function formatReport(report: ValuationReport): string {
     {
       title: "Recommendations",
       content: report.recommendations,
+    },
+    {
+      title: "Metric Optimization Recommendations",
+      content: report.metric_recommendations?.map(rec => 
+        `### ${rec.metric}\n\n` +
+        `**Current Status**: ${rec.current_value}\n` +
+        `**Recommendation**: ${rec.recommendation}\n` +
+        `**Improvement Potential**: ${rec.improvement_potential}\n` +
+        `**Industry Context**: ${rec.industry_context}\n`
+      ).join('\n\n') || '',
     },
     {
       title: "Appendix",
