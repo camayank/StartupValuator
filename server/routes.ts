@@ -370,6 +370,28 @@ export function registerRoutes(app: Express): Server {
   });
 
 
+  // Add after the existing routes
+  app.post("/api/revenue-model/validate", async (req, res) => {
+    try {
+      const validatedData = z.object({
+        model: z.string(),
+        pricing: z.any(),
+        customerSegments: z.array(z.string()),
+        revenueStreams: z.array(z.string()),
+        industry: z.string(),
+        stage: z.string(),
+      }).parse(req.body);
+
+      const analysis = await validateRevenueModel(validatedData);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Revenue model validation failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to validate revenue model"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

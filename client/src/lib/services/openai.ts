@@ -701,3 +701,73 @@ export async function generateComplianceChecklist(
     throw error;
   }
 }
+
+// Add revenue model validation functionality
+export async function validateRevenueModel(
+  revenueData: {
+    model: string;
+    pricing: any;
+    customerSegments: string[];
+    revenueStreams: string[];
+    industry: string;
+    stage: string;
+  }
+): Promise<{
+  validity_score: number;
+  strengths: string[];
+  weaknesses: string[];
+  optimization_suggestions: string[];
+  industry_fit: string;
+  scalability_assessment: string;
+  pricing_recommendations: {
+    current_analysis: string;
+    suggested_changes: string[];
+    market_positioning: string;
+  };
+  revenue_diversification: string[];
+  risk_factors: string[];
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a revenue model and pricing strategy expert specializing in startup business models. Analyze and validate the provided revenue model and provide actionable recommendations.",
+        },
+        {
+          role: "user",
+          content: `Analyze this revenue model for a ${revenueData.stage} stage startup in ${revenueData.industry}:
+            ${JSON.stringify(revenueData, null, 2)}
+
+            Provide:
+            1. Overall validity score (0-100)
+            2. Model strengths
+            3. Model weaknesses
+            4. Optimization suggestions
+            5. Industry fit assessment
+            6. Scalability analysis
+            7. Pricing strategy recommendations
+            8. Revenue diversification opportunities
+            9. Risk factors
+
+            Focus on:
+            - Market alignment
+            - Competitive positioning
+            - Growth potential
+            - Revenue sustainability
+            - Pricing optimization
+
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error validating revenue model:", error);
+    throw error;
+  }
+}
