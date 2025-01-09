@@ -589,3 +589,115 @@ export async function analyzePitchDeck(slides: Array<{ slideNumber: number; cont
     throw error;
   }
 }
+
+export async function generateComplianceReport(
+  businessData: {
+    industry: string;
+    region: string;
+    stage: string;
+    revenue: number;
+    sector: string;
+  }
+): Promise<{
+  compliance_score: number;
+  risk_areas: Array<{
+    category: string;
+    risk_level: "low" | "medium" | "high";
+    description: string;
+    requirements: string[];
+    recommendations: string[];
+  }>;
+  regulatory_requirements: string[];
+  compliance_roadmap: string;
+  next_steps: string[];
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a compliance and regulatory expert specializing in startup regulations and industry-specific requirements. Provide detailed compliance analysis and recommendations.",
+        },
+        {
+          role: "user",
+          content: `Generate a comprehensive compliance report for:
+            ${JSON.stringify(businessData, null, 2)}
+
+            Include:
+            1. Overall compliance score (0-100)
+            2. Key risk areas with severity levels
+            3. Specific regulatory requirements
+            4. Compliance roadmap
+            5. Actionable next steps
+
+            Focus on ${businessData.industry} industry regulations in ${businessData.region}.
+            Consider the company's stage (${businessData.stage}) and size ($${businessData.revenue} revenue).
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error generating compliance report:", error);
+    throw error;
+  }
+}
+
+export async function generateComplianceChecklist(
+  industry: string,
+  region: string
+): Promise<{
+  checklist: Array<{
+    category: string;
+    items: Array<{
+      requirement: string;
+      priority: "critical" | "high" | "medium" | "low";
+      deadline: string;
+      resources: string[];
+    }>;
+  }>;
+  timeline: string;
+  estimated_costs: Record<string, number>;
+  key_contacts: Array<{
+    role: string;
+    responsibilities: string[];
+  }>;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a compliance consultant specializing in creating practical implementation checklists for startups. Provide actionable compliance guidance.",
+        },
+        {
+          role: "user",
+          content: `Create a detailed compliance checklist for:
+            Industry: ${industry}
+            Region: ${region}
+
+            Include:
+            1. Categorized checklist items with priorities
+            2. Implementation timeline
+            3. Estimated costs for compliance
+            4. Key roles and responsibilities
+
+            Focus on practical, actionable items specific to ${industry} in ${region}.
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error generating compliance checklist:", error);
+    throw error;
+  }
+}
