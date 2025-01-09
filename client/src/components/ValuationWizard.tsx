@@ -2,14 +2,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, BarChart3, Calculator, DollarSign, ClipboardCheck, ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2, Circle, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
-import { IndustryMetricsStep } from "./wizard-steps/IndustryMetricsStep";
+import { IndustryMetricsForm } from "./IndustryMetricsForm";
 import { MethodSelectionStep } from "./wizard-steps/MethodSelectionStep";
 import { FinancialDetailsStep } from "./wizard-steps/FinancialDetailsStep";
 import { ReviewStep } from "./wizard-steps/ReviewStep";
-import { StepCard } from "./wizard-steps/StepCard";
+import { ValuationProgress } from "@/components/ui/valuation-progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import type { ValuationFormData } from "@/lib/validations";
 
@@ -17,39 +23,12 @@ interface ValuationWizardProps {
   onSubmit: (data: ValuationFormData) => void;
 }
 
-const steps = [
-  {
-    title: "Business Information",
-    description: "Tell us about your business type and stage",
-    icon: <Building2 className="h-5 w-5" />,
-  },
-  {
-    title: "Industry Metrics",
-    description: "Enter sector-specific performance metrics",
-    icon: <BarChart3 className="h-5 w-5" />,
-  },
-  {
-    title: "Valuation Method",
-    description: "Choose the most suitable valuation approach",
-    icon: <Calculator className="h-5 w-5" />,
-  },
-  {
-    title: "Financial Details",
-    description: "Input key financial information",
-    icon: <DollarSign className="h-5 w-5" />,
-  },
-  {
-    title: "Review",
-    description: "Review and confirm your information",
-    icon: <ClipboardCheck className="h-5 w-5" />,
-  },
-];
-
 export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const { toast } = useToast();
 
   const updateFormData = (data: Partial<ValuationFormData>) => {
@@ -118,87 +97,147 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="w-full">
-        <CardHeader className="border-b pb-4">
-          <div className="flex items-center justify-between mb-2">
-            <CardTitle>Business Valuation Wizard</CardTitle>
-            <Badge variant="outline" className="text-sm">
-              Step {currentStep} of 5
-            </Badge>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {steps.map((step, index) => (
-              <StepCard
-                key={index}
-                icon={step.icon}
-                title={step.title}
-                description={step.description}
-                isActive={currentStep === index + 1}
-                isComplete={completedSteps.includes(index + 1)}
-                stepNumber={index + 1}
-                totalSteps={5}
-              />
-            ))}
-          </div>
-        </CardHeader>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {showOnboarding ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
+          <Card className="bg-primary/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-2xl">Welcome to the Valuation Wizard</CardTitle>
+              <CardDescription className="text-base">
+                Let's guide you through the process of valuing your business using our AI-powered platform.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4">
+                {[1, 2, 3, 4, 5].map((step) => (
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: step * 0.1 }}
+                    className="flex items-start gap-3"
+                  >
+                    <div className="mt-1">
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Step {step}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {step === 1 && "Tell us about your business type and stage"}
+                        {step === 2 && "Enter industry-specific metrics"}
+                        {step === 3 && "Review and select the recommended valuation approach"}
+                        {step === 4 && "Provide basic financial information"}
+                        {step === 5 && "Review and confirm your information"}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <Button
+                onClick={() => setShowOnboarding(false)}
+                className="w-full"
+                size="lg"
+              >
+                Get Started
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : (
+        <Card className="w-full">
+          <CardHeader>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <CardTitle>Business Valuation Wizard</CardTitle>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">Follow our step-by-step guide to get an accurate valuation for your business.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Badge variant="outline" className="text-sm">
+                Step {currentStep} of 5
+              </Badge>
+            </div>
 
-        <CardContent className="pt-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {currentStep === 1 && (
-                <BusinessInfoStep
-                  data={formData}
-                  onUpdate={updateFormData}
-                  onNext={handleNext}
-                  currentStep={currentStep}
-                  totalSteps={5}
-                />
-              )}
-              {currentStep === 2 && (
-                <IndustryMetricsStep
-                  data={formData}
-                  onUpdate={updateFormData}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  currentStep={currentStep}
-                  totalSteps={5}
-                />
-              )}
-              {currentStep === 3 && (
-                <MethodSelectionStep
-                  data={formData}
-                  onUpdate={updateFormData}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                />
-              )}
-              {currentStep === 4 && (
-                <FinancialDetailsStep
-                  data={formData}
-                  onUpdate={updateFormData}
-                  onNext={handleNext}
-                  onBack={handleBack}
-                />
-              )}
-              {currentStep === 5 && (
-                <ReviewStep
-                  data={formData}
-                  onUpdate={updateFormData}
-                  onSubmit={handleSubmit}
-                  onBack={handleBack}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+            <ValuationProgress
+              currentStep={currentStep}
+              completedSteps={completedSteps}
+              totalSteps={5}
+            />
+          </CardHeader>
+
+          <CardContent>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {currentStep === 1 && (
+                  <BusinessInfoStep
+                    data={formData}
+                    onUpdate={updateFormData}
+                    onNext={handleNext}
+                    currentStep={currentStep}
+                    totalSteps={5}
+                  />
+                )}
+                {currentStep === 2 && formData.sector && formData.industry && (
+                  <IndustryMetricsForm
+                    sector={formData.sector}
+                    industry={formData.industry}
+                    onMetricsUpdate={(metrics) => {
+                      updateFormData({ industryMetrics: metrics });
+                      handleNext();
+                    }}
+                    onNext={handleNext}
+                    currentStep={currentStep}
+                    totalSteps={5}
+                  />
+                )}
+                {currentStep === 3 && (
+                  <MethodSelectionStep
+                    data={formData}
+                    onUpdate={updateFormData}
+                    onNext={handleNext}
+                    onBack={handleBack}
+                  />
+                )}
+                {currentStep === 4 && (
+                  <FinancialDetailsStep
+                    data={formData}
+                    onUpdate={updateFormData}
+                    onNext={handleNext}
+                    onBack={handleBack}
+                  />
+                )}
+                {currentStep === 5 && (
+                  <ReviewStep
+                    data={formData}
+                    onUpdate={updateFormData}
+                    onSubmit={handleSubmit}
+                    onBack={handleBack}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -12,14 +12,19 @@ import {
   type CapTable,
   calculateSaaSMetrics,
   calculateEcommerceMetrics,
-  calculateManufacturingMetrics,
-  calculateHealthcareMetrics,
-  calculateFintechMetrics,
+  calculateEnterpriseMetrics,
   getMarketComparables,
   analyzeGrowthPotential,
   projectCashFlows,
   modelCapTable
 } from "./financialModels";
+import {
+  validateIndustryMetrics,
+  validateMarketComparables,
+  validateGrowthAssumptions,
+  validateCashFlowProjections,
+  validateCapTable
+} from "./validation/financialValidation";
 
 import { aiValidationService } from "@/services/aiValidation";
 
@@ -76,59 +81,14 @@ export interface ValuationReport {
   };
 }
 
-// Validation functions
-function validateValuationData(data: ValuationFormData): Array<{
-  field: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  suggestion?: string | number;
-}> {
-  const warnings: Array<{
-    field: string;
-    message: string;
-    severity: 'low' | 'medium' | 'high';
-    suggestion?: string | number;
-  }> = [];
-
-  // Validate revenue and growth rate
-  if (data.revenue <= 0) {
-    warnings.push({
-      field: 'revenue',
-      message: 'Revenue must be positive for accurate valuation',
-      severity: 'high',
-    });
-  }
-
-  if (data.growthRate < -100 || data.growthRate > 1000) {
-    warnings.push({
-      field: 'growthRate',
-      message: 'Growth rate seems unrealistic',
-      severity: 'medium',
-      suggestion: Math.max(-100, Math.min(1000, data.growthRate))
-    });
-  }
-
-  // Validate margins
-  if (data.margins < -100 || data.margins > 100) {
-    warnings.push({
-      field: 'margins',
-      message: 'Operating margins must be between -100% and 100%',
-      severity: 'high',
-      suggestion: Math.max(-100, Math.min(100, data.margins))
-    });
-  }
-
-  return warnings;
-}
-
 export async function generateValuationReport(data: ValuationFormData): Promise<ValuationReport> {
-  // Calculate industry-specific metrics based on sector
+  // Calculate industry-specific metrics
   const industryMetrics = {
-    saas: calculateSaaSMetrics(data),
-    ecommerce: calculateEcommerceMetrics(data),
-    manufacturing: calculateManufacturingMetrics(data),
-    healthcare: calculateHealthcareMetrics(data),
-    fintech: calculateFintechMetrics(data),
+    saas: isSaaSIndustry(data.sector) ? calculateSaaSMetrics(data) : undefined,
+    ecommerce: isEcommerceIndustry(data.sector) ? calculateEcommerceMetrics(data) : undefined,
+    manufacturing: isManufacturingIndustry(data.sector) ? calculateManufacturingMetrics(data) : undefined,
+    healthcare: isHealthcareIndustry(data.sector) ? calculateHealthcareMetrics(data) : undefined,
+    fintech: isFintechIndustry(data.sector) ? calculateFintechMetrics(data) : undefined,
   };
 
   // Get market comparables and analysis
@@ -138,7 +98,13 @@ export async function generateValuationReport(data: ValuationFormData): Promise<
   const capTable = await modelCapTable(data);
 
   // Collect validation results
-  const validationWarnings = validateValuationData(data);
+  const validationWarnings = [
+    ...validateIndustryMetrics(data),
+    ...validateMarketComparables(data),
+    ...validateGrowthAssumptions(data),
+    ...validateCashFlowProjections(data),
+    ...validateCapTable(data)
+  ];
 
   // Get AI-powered insights
   const aiValidation = await aiValidationService.validateInput(data);
@@ -177,6 +143,38 @@ export async function generateValuationReport(data: ValuationFormData): Promise<
   };
 }
 
+// Industry type checks
+function isSaaSIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('saas') || 
+         sector.toLowerCase().includes('software') ||
+         sector.toLowerCase().includes('cloud');
+}
+
+function isEcommerceIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('commerce') || 
+         sector.toLowerCase().includes('retail') ||
+         sector.toLowerCase().includes('marketplace');
+}
+
+function isManufacturingIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('manufacturing') || 
+         sector.toLowerCase().includes('production') ||
+         sector.toLowerCase().includes('industrial');
+}
+
+function isHealthcareIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('healthcare') || 
+         sector.toLowerCase().includes('medical') ||
+         sector.toLowerCase().includes('pharmaceutical');
+}
+
+function isFintechIndustry(sector: string): boolean {
+  return sector.toLowerCase().includes('fintech') || 
+         sector.toLowerCase().includes('financial technology') ||
+         sector.toLowerCase().includes('payments');
+}
+
+
 function calculateValuationRange(
   data: ValuationFormData,
   comparables: MarketComparable[],
@@ -207,17 +205,18 @@ function calculateDCFValue(projections: CashFlowProjection): number {
 function calculateMarketValue(data: ValuationFormData, comparables: MarketComparable[]): number {
   // Use average multiples from comparables
   const avgMultiple = comparables.reduce((sum, comp) => sum + comp.metrics.evRevenue, 0) / comparables.length;
-  return (data.revenue || 0) * avgMultiple;
+  return data.revenue * avgMultiple;
 }
 
 function calculateAssetBasedValue(data: ValuationFormData): number {
-  // Calculate based on the total value of assets
-  return (data.financials?.assets?.tangible || 0) + (data.financials?.assets?.intangible || 0);
+  // Simplified asset-based valuation considering both tangible and intangible assets
+  return data.assets?.tangible || 0 + data.assets?.intangible || 0;
 }
 
 function generateBenchmarks(data: ValuationFormData, comparables: MarketComparable[]) {
   const metrics = [
     { key: 'revenue', label: 'Revenue' },
+    { key: 'ebitda', label: 'EBITDA' },
     { key: 'growthRate', label: 'Growth Rate' },
     { key: 'margins', label: 'Operating Margins' }
   ];

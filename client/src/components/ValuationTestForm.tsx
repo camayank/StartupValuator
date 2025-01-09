@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { sectors, currencies, businessStages, regions } from "@/lib/validations";
+import { sectors, currencies, businessStages } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,8 +19,6 @@ interface ValuationTestFormProps {
 
 // Default values that match exactly with our validation schema
 const defaultValues: ValuationFormData = {
-  businessName: "Test Business",
-  valuationPurpose: "internal",
   revenue: 1000000,
   currency: "USD",
   growthRate: 35,
@@ -28,13 +26,13 @@ const defaultValues: ValuationFormData = {
   sector: "technology",
   industry: "software_system",
   stage: "revenue_growing",
-  region: "us",
   intellectualProperty: "registered",
   teamExperience: 8,
   customerBase: 1000,
   competitiveDifferentiation: "high",
   regulatoryCompliance: "compliant",
-  scalability: "high"
+  scalability: "high",
+  assetValue: 500000,
 };
 
 export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
@@ -81,14 +79,6 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Business Name</label>
-              <Input
-                value={formData.businessName}
-                onChange={(e) => handleChange('businessName', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
               <label className="text-sm font-medium">Revenue</label>
               <Input
                 type="number"
@@ -132,25 +122,6 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
                 value={formData.margins}
                 onChange={(e) => handleChange('margins', Number(e.target.value))}
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Region</label>
-              <Select
-                value={formData.region}
-                onValueChange={(value) => handleChange('region', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(regions).map(([key, { name }]) => (
-                    <SelectItem key={key} value={key}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">

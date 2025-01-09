@@ -1,4 +1,4 @@
-import { type ValuationFormData, sectors } from "./validations";
+import { type ValuationFormData } from "./validations";
 
 // Industry-Specific Metrics Configuration
 export interface SaaSMetrics {
@@ -18,113 +18,12 @@ export interface EcommerceMetrics {
   customerLifetimeValue: number;
 }
 
-export interface ManufacturingMetrics {
-  capacityUtilization: number;
-  cycleTime: number;
-  defectRate: number;
-  inventoryTurnover: number;
-  operationalEfficiency: number;
-}
-
-export interface HealthcareMetrics {
-  patientVolume: number;
-  averageReimbursementRate: number;
-  operatingMargin: number;
-  patientRetentionRate: number;
-  qualityMetrics: number;
-}
-
-export interface FintechMetrics {
-  transactionVolume: number;
-  processingFeeRate: number;
-  customerAcquisitionCost: number;
-  lifetimeValue: number;
-  fraudRate: number;
-}
-
-// Industry-specific valuation functions
-export function calculateSaaSMetrics(data: ValuationFormData): SaaSMetrics | undefined {
-  if (!data.sector || !sectors[data.sector]?.name?.includes('Technology')) return undefined;
-
-  // Calculate based on available data
-  const monthlyRevenue = (data.revenue || 0) / 12;
-
-  return {
-    arr: (data.revenue || 0),
-    mrr: monthlyRevenue,
-    cac: monthlyRevenue * 0.3, // Estimated CAC based on industry averages
-    ltv: monthlyRevenue * 36, // Estimated 3-year LTV
-    churnRate: 0.08, // Default to 8% annual churn
-    expansionRevenue: monthlyRevenue * 0.15 // Estimated expansion revenue
-  };
-}
-
-export function calculateEcommerceMetrics(data: ValuationFormData): EcommerceMetrics | undefined {
-  if (!data.sector || !sectors[data.sector]?.name?.includes('E-commerce')) return undefined;
-
-  const annualRevenue = data.revenue || 0;
-  const estimatedOrders = annualRevenue / 100; // Average order value assumption
-
-  return {
-    gmv: annualRevenue * 1.2, // Estimated GMV with marketplace fees
-    aov: 100, // Default average order value
-    inventoryTurnover: 4, // Quarterly turnover
-    repeatPurchaseRate: 0.3, // 30% repeat purchase rate
-    customerLifetimeValue: 300 // Estimated LTV
-  };
-}
-
-export function calculateManufacturingMetrics(data: ValuationFormData): ManufacturingMetrics | undefined {
-  if (!data.sector || !sectors[data.sector]?.name?.includes('Industrial')) return undefined;
-
-  return {
-    capacityUtilization: 0.75, // 75% capacity utilization
-    cycleTime: 24, // 24-hour cycle time
-    defectRate: 0.02, // 2% defect rate
-    inventoryTurnover: 6, // Bi-monthly turnover
-    operationalEfficiency: 0.85 // 85% operational efficiency
-  };
-}
-
-export function calculateHealthcareMetrics(data: ValuationFormData): HealthcareMetrics | undefined {
-  if (!data.sector || !sectors[data.sector]?.name?.includes('Healthcare')) return undefined;
-
-  return {
-    patientVolume: (data.revenue || 0) / 1000, // Estimated patient volume
-    averageReimbursementRate: 0.7, // 70% reimbursement rate
-    operatingMargin: data.margins || 0,
-    patientRetentionRate: 0.8, // 80% retention
-    qualityMetrics: 0.9 // 90% quality score
-  };
-}
-
-export function calculateFintechMetrics(data: ValuationFormData): FintechMetrics | undefined {
-  if (!data.sector || !sectors[data.sector]?.name?.includes('Financial')) return undefined;
-
-  return {
-    transactionVolume: (data.revenue || 0) * 20, // Estimated transaction volume
-    processingFeeRate: 0.029, // 2.9% processing fee
-    customerAcquisitionCost: 200, // $200 CAC
-    lifetimeValue: 1000, // $1000 LTV
-    fraudRate: 0.001 // 0.1% fraud rate
-  };
-}
-
-// Market comparables analysis
-export async function getMarketComparables(data: ValuationFormData): Promise<MarketComparable[]> {
-  // This would typically fetch real-time data from an API
-  return [{
-    companyName: "Sample Corp",
-    ticker: "SMPL",
-    metrics: {
-      revenue: 100000000,
-      ebitda: 20000000,
-      growthRate: 30,
-      margins: 20,
-      evRevenue: 5,
-      evEbitda: 15
-    }
-  }];
+export interface EnterpriseMetrics {
+  tcv: number;
+  bookings: number;
+  backlog: number;
+  dealCycle: number;
+  contractLength: number;
 }
 
 // Market Comparables Configuration
@@ -157,27 +56,6 @@ export interface GrowthAnalysis {
   };
 }
 
-// Growth potential analysis
-export async function analyzeGrowthPotential(data: ValuationFormData): Promise<GrowthAnalysis> {
-  const baseGrowthRate = data.growthRate || 0;
-  const baseMargins = data.margins || 0;
-
-  return {
-    tamPenetration: 0.05, // 5% market penetration
-    marketShareGrowth: baseGrowthRate / 100,
-    expansionMetrics: {
-      geographic: 0.3, // 30% geographic expansion potential
-      product: 0.4, // 40% product expansion potential
-      customer: 0.3 // 30% customer segment expansion
-    },
-    growthDrivers: {
-      organic: 0.7,
-      acquisition: 0.2,
-      partnership: 0.1
-    }
-  };
-}
-
 // Detailed Cash Flow Configuration
 export interface CashFlowProjection {
   operatingCashFlow: number[];
@@ -186,36 +64,6 @@ export interface CashFlowProjection {
   netCashFlow: number[];
   workingCapitalChanges: number[];
   periods: string[];
-}
-
-// Cash flow projections
-export async function projectCashFlows(data: ValuationFormData): Promise<CashFlowProjection> {
-  const baseRevenue = data.revenue || 0;
-  const growthRate = (data.growthRate || 0) / 100;
-  const margins = (data.margins || 0) / 100;
-  const periods = Array.from({ length: 5 }, (_, i) => `Year ${i + 1}`);
-
-  const calculateCashFlow = (year: number) => {
-    const revenue = baseRevenue * Math.pow(1 + growthRate, year);
-    return revenue * margins;
-  };
-
-  const operatingCashFlow = periods.map((_, i) => calculateCashFlow(i));
-  const investingCashFlow = periods.map(() => -baseRevenue * 0.1);
-  const financingCashFlow = periods.map(() => 0);
-  const workingCapitalChanges = periods.map(() => -baseRevenue * 0.05);
-  const netCashFlow = periods.map((_, i) =>
-    operatingCashFlow[i] + investingCashFlow[i] + financingCashFlow[i] + workingCapitalChanges[i]
-  );
-
-  return {
-    operatingCashFlow,
-    investingCashFlow,
-    financingCashFlow,
-    netCashFlow,
-    workingCapitalChanges,
-    periods
-  };
 }
 
 // Cap Table Configuration
@@ -236,41 +84,134 @@ export interface CapTable {
   optionPool: number;
 }
 
-// Cap table modeling
-export async function modelCapTable(data: ValuationFormData): Promise<CapTable> {
-  const totalShares = 10000000; // 10M shares
-  const optionPool = totalShares * 0.1; // 10% option pool
+// Industry-specific valuation functions
+export function calculateSaaSMetrics(data: ValuationFormData): SaaSMetrics | null {
+  if (data.sector !== 'SaaS') return null;
 
-  const entries: CapTableEntry[] = [
+  const mrr = data.revenue ? data.revenue / 12 : 0;
+  const arr = mrr * 12;
+  const cac = data.customerAcquisitionCost || 0;
+  const ltv = calculateCustomerLifetimeValue(data);
+  const churnRate = data.churnRate || 0;
+  const expansionRevenue = data.expansionRevenue || 0;
+
+  return {
+    arr,
+    mrr,
+    cac,
+    ltv,
+    churnRate,
+    expansionRevenue
+  };
+}
+
+export function calculateEcommerceMetrics(data: ValuationFormData): EcommerceMetrics | null {
+  if (data.sector !== 'E-commerce') return null;
+
+  const gmv = data.grossMerchandiseValue || 0;
+  const aov = calculateAverageOrderValue(data);
+  const inventoryTurnover = calculateInventoryTurnover(data);
+  const repeatPurchaseRate = data.repeatPurchaseRate || 0;
+  const customerLifetimeValue = calculateCustomerLifetimeValue(data);
+
+  return {
+    gmv,
+    aov,
+    inventoryTurnover,
+    repeatPurchaseRate,
+    customerLifetimeValue
+  };
+}
+
+export function calculateEnterpriseMetrics(data: ValuationFormData): EnterpriseMetrics | null {
+  if (data.sector !== 'Enterprise') return null;
+
+  return {
+    tcv: data.totalContractValue || 0,
+    bookings: data.bookings || 0,
+    backlog: data.backlog || 0,
+    dealCycle: data.averageDealCycle || 0,
+    contractLength: data.averageContractLength || 0
+  };
+}
+
+// Market comparables analysis
+export function getMarketComparables(data: ValuationFormData): MarketComparable[] {
+  // This would typically fetch real-time data from an API
+  // For now, return sample data based on the sector
+  return [
     {
-      investorName: "Founders",
-      shareClass: "Common",
-      sharesOutstanding: totalShares * 0.7,
-      ownershipPercentage: 0.7,
-      valuationAtEntry: data.revenue ? data.revenue * 3 : 0
-    },
-    {
-      investorName: "Option Pool",
-      shareClass: "Common",
-      sharesOutstanding: optionPool,
-      ownershipPercentage: 0.1,
-      valuationAtEntry: 0
-    },
-    {
-      investorName: "Investors",
-      shareClass: "Preferred",
-      sharesOutstanding: totalShares * 0.2,
-      ownershipPercentage: 0.2,
-      valuationAtEntry: data.revenue ? data.revenue * 4 : 0,
-      liquidationPreference: 1,
-      antiDilutionProtection: true
+      companyName: "Sample Corp",
+      ticker: "SMPL",
+      metrics: {
+        revenue: 100000000,
+        ebitda: 20000000,
+        growthRate: 30,
+        margins: 20,
+        evRevenue: 5,
+        evEbitda: 15
+      }
     }
   ];
+}
+
+// Growth potential analysis
+export function analyzeGrowthPotential(data: ValuationFormData): GrowthAnalysis {
+  const tamPenetration = calculateTAMPenetration(data);
+  const marketShareGrowth = calculateMarketShareGrowth(data);
+
+  return {
+    tamPenetration,
+    marketShareGrowth,
+    expansionMetrics: {
+      geographic: calculateGeographicExpansion(data),
+      product: calculateProductExpansion(data),
+      customer: calculateCustomerExpansion(data)
+    },
+    growthDrivers: {
+      organic: 0.7, // Example weights
+      acquisition: 0.2,
+      partnership: 0.1
+    }
+  };
+}
+
+// Cash flow projections
+export function projectCashFlows(data: ValuationFormData, years: number = 5): CashFlowProjection {
+  const periods = Array.from({ length: years }, (_, i) => `Year ${i + 1}`);
+  const growthRate = data.growthRate || 0.1;
+  const margins = data.margins || 0.2;
+
+  const operatingCashFlow = calculateOperatingCashFlows(data, years, growthRate, margins);
+  const investingCashFlow = calculateInvestingCashFlows(data, years);
+  const financingCashFlow = calculateFinancingCashFlows(data, years);
+  const workingCapitalChanges = calculateWorkingCapitalChanges(data, years);
+
+  const netCashFlow = periods.map((_, i) => 
+    operatingCashFlow[i] + investingCashFlow[i] + financingCashFlow[i]
+  );
+
+  return {
+    operatingCashFlow,
+    investingCashFlow,
+    financingCashFlow,
+    netCashFlow,
+    workingCapitalChanges,
+    periods
+  };
+}
+
+// Cap table modeling
+export function modelCapTable(data: ValuationFormData): CapTable {
+  const entries: CapTableEntry[] = data.capTableEntries || [];
+  const totalShares = entries.reduce((sum, entry) => sum + entry.sharesOutstanding, 0);
+  const optionPool = totalShares * 0.1; // Example: 10% option pool
+  const fullyDilutedShares = totalShares + optionPool;
 
   return {
     totalShares,
     entries,
-    fullyDilutedShares: totalShares + optionPool,
+    fullyDilutedShares,
     optionPool
   };
 }
@@ -280,19 +221,19 @@ function calculateCustomerLifetimeValue(data: ValuationFormData): number {
   const avgRevenuePerCustomer = data.averageRevenuePerCustomer || 0;
   const churnRate = data.churnRate || 0.1;
   const grossMargin = data.margins || 0.7;
-
+  
   return (avgRevenuePerCustomer * grossMargin) / churnRate;
 }
 
 function calculateAverageOrderValue(data: ValuationFormData): number {
-  return data.grossMerchandiseValue && data.totalOrders
-    ? data.grossMerchandiseValue / data.totalOrders
+  return data.grossMerchandiseValue && data.totalOrders 
+    ? data.grossMerchandiseValue / data.totalOrders 
     : 0;
 }
 
 function calculateInventoryTurnover(data: ValuationFormData): number {
-  return data.costOfGoodsSold && data.averageInventory
-    ? data.costOfGoodsSold / data.averageInventory
+  return data.costOfGoodsSold && data.averageInventory 
+    ? data.costOfGoodsSold / data.averageInventory 
     : 0;
 }
 
@@ -306,40 +247,40 @@ function calculateMarketShareGrowth(data: ValuationFormData): number {
 
 function calculateGeographicExpansion(data: ValuationFormData): number {
   // Simplified calculation based on current vs potential markets
-  return data.currentMarkets && data.potentialMarkets
-    ? (data.currentMarkets / data.potentialMarkets) * 100
+  return data.currentMarkets && data.potentialMarkets 
+    ? (data.currentMarkets / data.potentialMarkets) * 100 
     : 0;
 }
 
 function calculateProductExpansion(data: ValuationFormData): number {
   // Simplified calculation based on product portfolio
-  return data.productLines && data.plannedProducts
-    ? (data.productLines / (data.productLines + data.plannedProducts)) * 100
+  return data.productLines && data.plannedProducts 
+    ? (data.productLines / (data.productLines + data.plannedProducts)) * 100 
     : 0;
 }
 
 function calculateCustomerExpansion(data: ValuationFormData): number {
   // Simplified calculation based on customer segments
-  return data.currentCustomerSegments && data.potentialSegments
-    ? (data.currentCustomerSegments / data.potentialSegments) * 100
+  return data.currentCustomerSegments && data.potentialSegments 
+    ? (data.currentCustomerSegments / data.potentialSegments) * 100 
     : 0;
 }
 
 function calculateOperatingCashFlows(
-  data: ValuationFormData,
-  years: number,
+  data: ValuationFormData, 
+  years: number, 
   growthRate: number,
   margins: number
 ): number[] {
   const baseRevenue = data.revenue || 0;
-  return Array.from({ length: years }, (_, i) =>
+  return Array.from({ length: years }, (_, i) => 
     baseRevenue * Math.pow(1 + growthRate, i) * margins
   );
 }
 
 function calculateInvestingCashFlows(data: ValuationFormData, years: number): number[] {
   const capexRate = data.capexRate || 0.1;
-  return Array.from({ length: years }, (_, i) =>
+  return Array.from({ length: years }, (_, i) => 
     -(data.revenue || 0) * capexRate * Math.pow(1.1, i)
   );
 }
@@ -351,7 +292,7 @@ function calculateFinancingCashFlows(data: ValuationFormData, years: number): nu
 
 function calculateWorkingCapitalChanges(data: ValuationFormData, years: number): number[] {
   const workingCapitalRate = data.workingCapitalRate || 0.1;
-  return Array.from({ length: years }, (_, i) =>
+  return Array.from({ length: years }, (_, i) => 
     -(data.revenue || 0) * workingCapitalRate * Math.pow(1.1, i)
   );
 }
