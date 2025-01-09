@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Building2, TrendingUp, Globe2, DollarSign } from "lucide-react";
+import { Info, Building2, TrendingUp, Globe2, DollarSign, AlertCircle } from "lucide-react";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { getIndustryMetrics } from "@/lib/services/openai";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -45,9 +45,10 @@ export function IndustryMetricsStep({
   totalSteps,
 }: IndustryMetricsStepProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
@@ -74,8 +75,8 @@ export function IndustryMetricsStep({
           data.region
         );
 
-        if (!metricsData) {
-          throw new Error("Failed to fetch industry metrics");
+        if (!metricsData || !metricsData.benchmarks || Object.keys(metricsData.benchmarks).length === 0) {
+          throw new Error("No metrics available for the selected industry");
         }
 
         setMetrics(metricsData);
@@ -100,7 +101,7 @@ export function IndustryMetricsStep({
     };
 
     fetchMetrics();
-  }, [data.sector, data.industry, data.region]);
+  }, [data.sector, data.industry, data.region, retryCount]);
 
   const handleSubmit = async (values: Partial<ValuationFormData>) => {
     if (!metrics) {
@@ -116,17 +117,25 @@ export function IndustryMetricsStep({
     onNext();
   };
 
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-6 p-4 bg-background min-h-screen md:min-h-0">
+      <div className="space-y-6 p-4 bg-background min-h-[calc(100vh-4rem)] md:min-h-0">
         <div className="mb-8">
-          <Skeleton className="h-8 w-48 mb-2" />
+          <div className="flex justify-between items-center mb-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-32" />
+          </div>
           <Skeleton className="h-2 w-full" />
         </div>
         <Skeleton className="h-24 w-full" />
         <div className="grid md:grid-cols-2 gap-6">
-          <Skeleton className="h-[200px] w-full" />
-          <Skeleton className="h-[200px] w-full" />
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[200px] w-full" />
+          ))}
         </div>
       </div>
     );
@@ -134,14 +143,19 @@ export function IndustryMetricsStep({
 
   if (error) {
     return (
-      <div className="space-y-6 p-4 bg-background min-h-screen md:min-h-0">
+      <div className="space-y-6 p-4 bg-background min-h-[calc(100vh-4rem)] md:min-h-0">
         <Alert variant="destructive">
-          <Info className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-        <Button variant="outline" onClick={onBack} className="w-full">
-          Go Back
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-end">
+          <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
+            Go Back
+          </Button>
+          <Button onClick={handleRetry} className="w-full sm:w-auto">
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -150,19 +164,17 @@ export function IndustryMetricsStep({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 p-4 bg-background min-h-screen md:min-h-0"
+      className="space-y-6 p-4 bg-background min-h-[calc(100vh-4rem)] md:min-h-0"
     >
       <div className="mb-8">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
           <span className="text-sm text-muted-foreground">Industry Metrics</span>
         </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div
-            className="bg-primary h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
-        </div>
+        <Progress
+          value={(currentStep / totalSteps) * 100}
+          className="h-2"
+        />
       </div>
 
       <Alert>
@@ -173,86 +185,101 @@ export function IndustryMetricsStep({
         </AlertDescription>
       </Alert>
 
-      {metrics && (
-        <Card className="bg-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe2 className="h-5 w-5" />
-              Market Size Analysis
-            </CardTitle>
-            <CardDescription>
-              Total Addressable Market (TAM) and market metrics for your industry
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <DollarSign className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-2xl font-bold">
-                  ${(metrics.tam / 1000000000).toFixed(2)}B
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Total Addressable Market
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <AnimatePresence>
+        {metrics && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <Card className="bg-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe2 className="h-5 w-5" />
+                  Market Size Analysis
+                </CardTitle>
+                <CardDescription>
+                  Total Addressable Market (TAM) and key metrics for your industry
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <DollarSign className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="text-2xl font-bold">
+                      ${(metrics.tam / 1000000000).toFixed(2)}B
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Addressable Market
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            {metrics && Object.entries(metrics.benchmarks).map(([key, benchmark]: [string, any]) => (
-              <FormField
-                key={key}
-                control={form.control}
-                name={`industryMetrics.${key}`}
-                render={({ field }) => (
-                  <FormItem className="bg-card p-4 rounded-lg">
-                    <FormLabel>{key.split(/(?=[A-Z])|_/).map(word => 
-                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                    ).join(" ")}</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Low: {benchmark.low}</span>
-                            <span>Median: {benchmark.median}</span>
-                            <span>High: {benchmark.high}</span>
-                          </div>
-                          <Progress 
-                            value={((field.value || benchmark.median) - benchmark.low) / 
-                              (benchmark.high - benchmark.low) * 100} 
-                          />
-                        </div>
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Industry benchmark: {benchmark.median} (median)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 mt-6">
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {metrics && Object.entries(metrics.benchmarks).map(([key, benchmark]: [string, any]) => (
+                    <motion.div
+                      key={key}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <FormField
+                        control={form.control}
+                        name={`industryMetrics.${key}`}
+                        render={({ field }) => (
+                          <FormItem className="bg-card p-4 rounded-lg">
+                            <FormLabel className="text-base">{key.split(/(?=[A-Z])|_/).map(word => 
+                              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                            ).join(" ")}</FormLabel>
+                            <FormControl>
+                              <div className="space-y-2">
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(Number(e.target.value))}
+                                  className="text-right"
+                                />
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>Low: {benchmark.low}</span>
+                                    <span>Median: {benchmark.median}</span>
+                                    <span>High: {benchmark.high}</span>
+                                  </div>
+                                  <Progress 
+                                    value={((field.value || benchmark.median) - benchmark.low) / 
+                                      (benchmark.high - benchmark.low) * 100} 
+                                  />
+                                </div>
+                              </div>
+                            </FormControl>
+                            <FormDescription>
+                              Industry benchmark: {benchmark.median} (median)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
 
-          <div className="flex justify-end space-x-4 pt-6">
-            <Button variant="outline" onClick={onBack} type="button">
-              Back
-            </Button>
-            <Button type="submit" disabled={!metrics}>
-              Continue
-            </Button>
-          </div>
-        </form>
-      </Form>
+                <div className="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4 pt-6">
+                  <Button variant="outline" onClick={onBack} type="button" className="w-full sm:w-auto">
+                    Back
+                  </Button>
+                  <Button type="submit" disabled={!metrics} className="w-full sm:w-auto">
+                    Continue
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
