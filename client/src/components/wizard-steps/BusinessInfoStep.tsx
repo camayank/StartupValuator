@@ -14,10 +14,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Building2, Trophy, Globe2, HelpCircle, ArrowRight } from "lucide-react";
+import { Info, Building2, Trophy, Globe2, Scale, Shield, HelpCircle, ArrowRight } from "lucide-react";
 import { sectors, industries, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
