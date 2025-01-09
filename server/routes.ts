@@ -14,28 +14,17 @@ import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/
 import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
+import { analyzePitchDeck } from "../client/src/lib/services/openai";
 
-// Define report data schema for validation
-const reportDataSchema = z.object({
-  businessName: z.string().min(1, "Business name is required"),
-  valuationPurpose: z.string(),
-  revenue: z.number().min(0, "Revenue must be non-negative"),
-  currency: z.string(),
-  growthRate: z.number(),
-  margins: z.number(),
-  sector: z.string(),
-  industry: z.string(),
-  stage: z.string(),
-  region: z.string(),
-  valuation: z.number().optional(),
-  multiplier: z.number().optional(),
-  details: z.object({
-    baseValuation: z.number().optional(),
-    adjustments: z.record(z.string(), z.number()).optional()
-  }).optional(),
-  riskAssessment: z.any().optional(),
-  potentialPrediction: z.any().optional(),
-  ecosystemNetwork: z.any().optional()
+// Define pitch deck data schema for validation
+const pitchDeckSlideSchema = z.object({
+  slideNumber: z.number(),
+  content: z.string(),
+  type: z.string(),
+});
+
+const pitchDeckAnalysisRequestSchema = z.object({
+  slides: z.array(pitchDeckSlideSchema),
 });
 
 export function registerRoutes(app: Express): Server {
@@ -70,6 +59,36 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Failed to track activity:", error);
       res.status(500).json({ message: "Failed to track activity" });
+    }
+  });
+
+  // Add pitch deck analysis endpoint
+  app.post("/api/analyze-pitch-deck", async (req, res) => {
+    try {
+      console.log('Received pitch deck analysis request:', req.body);
+
+      // Validate request data
+      const { slides } = pitchDeckAnalysisRequestSchema.parse(req.body);
+      console.log('Validated slides:', slides);
+
+      // Analyze pitch deck using OpenAI
+      const analysis = await analyzePitchDeck(slides);
+      console.log('Analysis completed successfully');
+
+      res.json(analysis);
+    } catch (error) {
+      console.error('Pitch deck analysis failed:', error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Invalid pitch deck data provided',
+          errors: error.errors,
+        });
+      }
+
+      res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to analyze pitch deck'
+      });
     }
   });
 
@@ -219,7 +238,7 @@ export function registerRoutes(app: Express): Server {
         });
       }
 
-      res.status(500).json({ 
+      res.status(500).json({
         message: error instanceof Error ? error.message : 'Failed to generate report'
       });
     }

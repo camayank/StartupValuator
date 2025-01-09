@@ -536,3 +536,56 @@ export async function getMetricRecommendations(
     throw error;
   }
 }
+
+// Add this after the existing functions
+
+export async function analyzePitchDeck(slides: Array<{ slideNumber: number; content: string; type: string }>): Promise<{
+  overallScore: number;
+  sections: Array<{
+    name: string;
+    score: number;
+    feedback: string;
+    suggestions: string[];
+  }>;
+  keyStrengths: string[];
+  improvementAreas: string[];
+  marketAnalysis: string;
+  competitiveAdvantage: string;
+  presentationStyle: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert pitch deck analyst with extensive experience in startup valuations and venture capital. Analyze the provided pitch deck slides and provide comprehensive feedback.",
+        },
+        {
+          role: "user",
+          content: `Analyze this pitch deck:
+            ${JSON.stringify(slides, null, 2)}
+
+            Provide:
+            1. Overall score (0-100)
+            2. Section-by-section analysis with scores and specific suggestions
+            3. Key strengths
+            4. Areas for improvement
+            5. Market analysis insights
+            6. Competitive advantage assessment
+            7. Presentation style feedback
+
+            Focus on actionable improvements and industry best practices.
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error analyzing pitch deck:", error);
+    throw error;
+  }
+}
