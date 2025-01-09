@@ -126,21 +126,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Workflow suggestion routes
-  app.get("/api/suggestions", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
-    try {
-      await WorkflowSuggestionEngine.generateSuggestions(req.user!.id);
-      const suggestions = await WorkflowSuggestionEngine.getUserSuggestions(req.user!.id);
-      res.json(suggestions);
-    } catch (error) {
-      console.error("Failed to get suggestions:", error);
-      res.status(500).json({ message: "Failed to get suggestions" });
-    }
-  });
 
   // Enhanced report generation route with better error handling
   app.post("/api/report", async (req, res) => {

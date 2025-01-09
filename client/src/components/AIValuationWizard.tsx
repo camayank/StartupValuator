@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ReportGenerationProgress } from "./ReportGenerationProgress";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Brain, ChartBar, FileText, Globe, Lightning, Target } from "lucide-react";
+import { Brain, ChartBar, FileText, Globe, ActivitySquare, Target } from "lucide-react";
 import type { ValuationFormData } from "@/lib/validations";
 
 interface AIValuationWizardProps {
@@ -37,7 +37,7 @@ const analysisSteps = [
     id: "risks",
     title: "Risk Assessment",
     description: "Identifying and analyzing potential risks",
-    icon: Lightning,
+    icon: ActivitySquare,
     aiPrompt: "Evaluating business risks and mitigation strategies...",
   },
   {

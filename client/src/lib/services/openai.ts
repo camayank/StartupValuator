@@ -6,6 +6,19 @@ const openai = new OpenAI({ apiKey: process.env.VITE_OPENAI_API_KEY });
 // Cache for industry metrics to reduce API calls
 const metricsCache = new Map<string, any>();
 
+// Add these helper functions at the top of the file after imports
+const parseOpenAIResponse = (content: string | null): any => {
+  if (!content) {
+    throw new Error("Empty response from OpenAI API");
+  }
+  try {
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("Error parsing OpenAI response:", error);
+    throw new Error("Invalid response format from OpenAI API");
+  }
+};
+
 interface IndustryMetricsResponse {
   tam: number;
   metrics: {
@@ -70,7 +83,7 @@ export async function getIndustryMetrics(
       temperature: 0.3, // Lower temperature for more consistent outputs
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const result = parseOpenAIResponse(response.choices[0].message.content);
 
     // Validate and normalize the response
     const normalizedResponse: IndustryMetricsResponse = {
@@ -163,11 +176,16 @@ export async function generateValuationReport(
       temperature: 0.2, // Lower temperature for professional consistency
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error generating valuation report:", error);
     throw error;
   }
+}
+
+interface ValidateMetricsResponse {
+  validations: Record<string, { isValid: boolean; suggestion: string }>;
+  insights: string[];
 }
 
 // Real-time metric validation and suggestions
@@ -175,10 +193,7 @@ export async function validateMetrics(
   metrics: Record<string, number>,
   industry: string,
   region: string
-): Promise<{
-  validations: Record<string, { isValid: boolean; suggestion: string }>;
-  insights: string[];
-}> {
+): Promise<ValidateMetricsResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -205,24 +220,26 @@ export async function validateMetrics(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error validating metrics:", error);
     throw error;
   }
 }
 
-// Business model strength assessment
-export async function assessBusinessModel(
-  businessModel: any,
-  industry: string
-): Promise<{
+interface AssessBusinessModelResponse {
   overall_score: number;
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
   competitive_advantages: string[];
-}> {
+}
+
+// Business model strength assessment
+export async function assessBusinessModel(
+  businessModel: any,
+  industry: string
+): Promise<AssessBusinessModelResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -251,24 +268,26 @@ export async function assessBusinessModel(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error assessing business model:", error);
     throw error;
   }
 }
 
-// Team expertise evaluation
-export async function evaluateTeamExpertise(
-  team: any[],
-  industry: string
-): Promise<{
+interface EvaluateTeamExpertiseResponse {
   team_score: number;
   key_strengths: string[];
   skill_gaps: string[];
   recommendations: string[];
   industry_fit: string;
-}> {
+}
+
+// Team expertise evaluation
+export async function evaluateTeamExpertise(
+  team: any[],
+  industry: string
+): Promise<EvaluateTeamExpertiseResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -297,24 +316,26 @@ export async function evaluateTeamExpertise(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error evaluating team expertise:", error);
     throw error;
   }
 }
 
-// Patent and IP value assessment
-export async function assessIntellectualProperty(
-  ip: any[],
-  industry: string
-): Promise<{
+interface AssessIntellectualPropertyResponse {
   ip_value_score: number;
   key_assets: any[];
   risk_factors: string[];
   protection_strategy: string;
   monetization_opportunities: string[];
-}> {
+}
+
+// Patent and IP value assessment
+export async function assessIntellectualProperty(
+  ip: any[],
+  industry: string
+): Promise<AssessIntellectualPropertyResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -343,24 +364,26 @@ export async function assessIntellectualProperty(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error assessing intellectual property:", error);
     throw error;
   }
 }
 
-// Market sentiment analysis
-export async function analyzeMarketSentiment(
-  company: string,
-  industry: string
-): Promise<{
+interface AnalyzeMarketSentimentResponse {
   sentiment_score: number;
   positive_factors: string[];
   negative_factors: string[];
   trends: string[];
   recommendations: string[];
-}> {
+}
+
+// Market sentiment analysis
+export async function analyzeMarketSentiment(
+  company: string,
+  industry: string
+): Promise<AnalyzeMarketSentimentResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -388,19 +411,14 @@ export async function analyzeMarketSentiment(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error analyzing market sentiment:", error);
     throw error;
   }
 }
 
-export async function generatePeerAnalysis(
-  sector: string,
-  industry: string,
-  region: string,
-  metrics: any
-): Promise<{
+interface GeneratePeerAnalysisResponse {
   comparable_companies: Array<{
     name: string;
     description: string;
@@ -409,7 +427,15 @@ export async function generatePeerAnalysis(
   }>;
   analysis: string;
   recommendations: string;
-}> {
+}
+
+
+export async function generatePeerAnalysis(
+  sector: string,
+  industry: string,
+  region: string,
+  metrics: any
+): Promise<GeneratePeerAnalysisResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -438,18 +464,14 @@ export async function generatePeerAnalysis(
       response_format: { type: "json_object" },
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error generating peer analysis:", error);
     throw error;
   }
 }
 
-export async function generateRiskAssessment(
-  businessData: any,
-  industryMetrics: any,
-  financials: any
-): Promise<{
+interface GenerateRiskAssessmentResponse {
   key_risks: Array<{
     category: string;
     description: string;
@@ -459,7 +481,13 @@ export async function generateRiskAssessment(
   }>;
   risk_matrix: string;
   mitigation_strategy: string;
-}> {
+}
+
+export async function generateRiskAssessment(
+  businessData: any,
+  industryMetrics: any,
+  financials: any
+): Promise<GenerateRiskAssessmentResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -487,21 +515,23 @@ export async function generateRiskAssessment(
       response_format: { type: "json_object" },
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error generating risk assessment:", error);
     throw error;
   }
 }
 
+interface GetMetricRecommendationsResponse {
+  recommendation: string;
+  benchmark: { low: number; median: number; high: number };
+}
+
 export async function getMetricRecommendations(
   sector: string,
   industry: string,
   metric: string
-): Promise<{
-  recommendation: string;
-  benchmark: { low: number; median: number; high: number };
-}> {
+): Promise<GetMetricRecommendationsResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -530,7 +560,7 @@ export async function getMetricRecommendations(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error fetching metric recommendations:", error);
     throw error;
@@ -539,7 +569,7 @@ export async function getMetricRecommendations(
 
 // Add this after the existing functions
 
-export async function analyzePitchDeck(slides: Array<{ slideNumber: number; content: string; type: string }>): Promise<{
+interface AnalyzePitchDeckResponse {
   overallScore: number;
   sections: Array<{
     name: string;
@@ -552,7 +582,9 @@ export async function analyzePitchDeck(slides: Array<{ slideNumber: number; cont
   marketAnalysis: string;
   competitiveAdvantage: string;
   presentationStyle: string;
-}> {
+}
+
+export async function analyzePitchDeck(slides: Array<{ slideNumber: number; content: string; type: string }>): Promise<AnalyzePitchDeckResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -583,22 +615,14 @@ export async function analyzePitchDeck(slides: Array<{ slideNumber: number; cont
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error analyzing pitch deck:", error);
     throw error;
   }
 }
 
-export async function generateComplianceReport(
-  businessData: {
-    industry: string;
-    region: string;
-    stage: string;
-    revenue: number;
-    sector: string;
-  }
-): Promise<{
+interface GenerateComplianceReportResponse {
   compliance_score: number;
   risk_areas: Array<{
     category: string;
@@ -610,7 +634,17 @@ export async function generateComplianceReport(
   regulatory_requirements: string[];
   compliance_roadmap: string;
   next_steps: string[];
-}> {
+}
+
+export async function generateComplianceReport(
+  businessData: {
+    industry: string;
+    region: string;
+    stage: string;
+    revenue: number;
+    sector: string;
+  }
+): Promise<GenerateComplianceReportResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -640,17 +674,14 @@ export async function generateComplianceReport(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error generating compliance report:", error);
     throw error;
   }
 }
 
-export async function generateComplianceChecklist(
-  industry: string,
-  region: string
-): Promise<{
+interface GenerateComplianceChecklistResponse {
   checklist: Array<{
     category: string;
     items: Array<{
@@ -666,7 +697,12 @@ export async function generateComplianceChecklist(
     role: string;
     responsibilities: string[];
   }>;
-}> {
+}
+
+export async function generateComplianceChecklist(
+  industry: string,
+  region: string
+): Promise<GenerateComplianceChecklistResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -695,7 +731,7 @@ export async function generateComplianceChecklist(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error generating compliance checklist:", error);
     throw error;
@@ -703,16 +739,7 @@ export async function generateComplianceChecklist(
 }
 
 // Add revenue model validation functionality
-export async function validateRevenueModel(
-  revenueData: {
-    model: string;
-    pricing: any;
-    customerSegments: string[];
-    revenueStreams: string[];
-    industry: string;
-    stage: string;
-  }
-): Promise<{
+interface ValidateRevenueModelResponse {
   validity_score: number;
   strengths: string[];
   weaknesses: string[];
@@ -726,7 +753,18 @@ export async function validateRevenueModel(
   };
   revenue_diversification: string[];
   risk_factors: string[];
-}> {
+}
+
+export async function validateRevenueModel(
+  revenueData: {
+    model: string;
+    pricing: any;
+    customerSegments: string[];
+    revenueStreams: string[];
+    industry: string;
+    stage: string;
+  }
+): Promise<ValidateRevenueModelResponse> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -765,7 +803,7 @@ export async function validateRevenueModel(
       temperature: 0.3,
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    return parseOpenAIResponse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error validating revenue model:", error);
     throw error;
