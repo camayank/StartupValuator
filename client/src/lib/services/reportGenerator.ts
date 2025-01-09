@@ -1,10 +1,11 @@
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 import {
   generateValuationReport,
-  generatePeerAnalysis,
-  generateRiskAssessment,
-  getIndustryMetrics,
-  getMetricRecommendations
+  validateMetrics,
+  assessBusinessModel,
+  evaluateTeamExpertise,
+  assessIntellectualProperty,
+  analyzeMarketSentiment
 } from './openai';
 import type { ValuationFormData } from '@/lib/validations';
 
@@ -26,51 +27,84 @@ export interface ValuationReport {
     comparable_companies: string;
     methodology_details: string;
   };
-  peer_analysis?: {
-    comparable_companies: Array<{
-      name: string;
-      description: string;
-      key_metrics: Record<string, number>;
-      valuation_multiples: Record<string, number>;
-    }>;
-    analysis: string;
-    recommendations: string;
+  business_model_assessment?: {
+    overall_score: number;
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: string[];
+    competitive_advantages: string[];
   };
-  risk_matrix?: {
-    key_risks: Array<{
-      category: string;
-      description: string;
-      impact: string;
-      mitigation: string;
-      severity: "low" | "medium" | "high";
-    }>;
-    risk_matrix: string;
-    mitigation_strategy: string;
+  team_evaluation?: {
+    team_score: number;
+    key_strengths: string[];
+    skill_gaps: string[];
+    recommendations: string[];
+    industry_fit: string;
   };
-  metric_recommendations?: Array<{
-    metric: string;
-    current_value: number;
-    recommendation: string;
-    improvement_potential: string;
-    industry_context: string;
-  }>;
+  ip_assessment?: {
+    ip_value_score: number;
+    key_assets: any[];
+    risk_factors: string[];
+    protection_strategy: string;
+    monetization_opportunities: string[];
+  };
+  market_sentiment?: {
+    sentiment_score: number;
+    positive_factors: string[];
+    negative_factors: string[];
+    trends: string[];
+    recommendations: string[];
+  };
+  metric_validations?: {
+    validations: Record<string, { isValid: boolean; suggestion: string }>;
+    insights: string[];
+  };
 }
 
 export async function generateFullValuationReport(
   formData: ValuationFormData
 ): Promise<ValuationReport> {
   try {
-    // 1. Get industry metrics first
-    const industryMetrics = await getIndustryMetrics(
-      formData.sector,
+    // 1. Validate metrics first
+    const metricValidations = await validateMetrics(
+      formData.industryMetrics || {},
       formData.industry,
       formData.region
     );
 
-    // 2. Generate the main valuation report
+    // 2. Assess business model
+    const businessModelAssessment = await assessBusinessModel(
+      {
+        stage: formData.stage,
+        revenue: formData.revenue,
+        margins: formData.margins,
+        growthRate: formData.growthRate,
+      },
+      formData.industry
+    );
+
+    // 3. Evaluate team expertise
+    const teamEvaluation = await evaluateTeamExpertise(
+      formData.teamExperience || [],
+      formData.industry
+    );
+
+    // 4. Assess intellectual property
+    const ipAssessment = await assessIntellectualProperty(
+      formData.intellectualProperty || [],
+      formData.industry
+    );
+
+    // 5. Analyze market sentiment
+    const marketSentiment = await analyzeMarketSentiment(
+      formData.businessName,
+      formData.industry
+    );
+
+    // 6. Generate the main valuation report
     const mainReport = await generateValuationReport(
       formData,
-      industryMetrics,
+      formData.industryMetrics,
       {
         revenue: formData.revenue,
         margins: formData.margins,
@@ -80,56 +114,19 @@ export async function generateFullValuationReport(
         stage: formData.stage,
         intellectualProperty: formData.intellectualProperty,
         teamExperience: formData.teamExperience,
-        customerBase: formData.customerBase,
-        competitiveDifferentiation: formData.competitiveDifferentiation,
-        regulatoryCompliance: formData.regulatoryCompliance,
-        scalability: formData.scalability,
+        businessModel: businessModelAssessment,
+        marketSentiment: marketSentiment,
       }
     );
 
-    // 3. Generate peer analysis
-    const peerAnalysis = await generatePeerAnalysis(
-      formData.sector,
-      formData.industry,
-      formData.region,
-      formData.industryMetrics
-    );
-
-    // 4. Generate risk assessment
-    const riskAssessment = await generateRiskAssessment(
-      formData,
-      industryMetrics,
-      {
-        revenue: formData.revenue,
-        margins: formData.margins,
-        growthRate: formData.growthRate,
-      }
-    );
-
-    // 5. Generate metric-specific recommendations
-    const metricRecommendations = await Promise.all(
-      Object.entries(formData.industryMetrics || {}).map(async ([metric, value]) => {
-        const recommendation = await getMetricRecommendations(
-          formData.sector,
-          formData.industry,
-          metric
-        );
-        return {
-          metric,
-          current_value: value,
-          recommendation: recommendation.recommendation,
-          improvement_potential: `${Math.round((recommendation.benchmark.high - value) / value * 100)}%`,
-          industry_context: `Current value (${value}) compared to industry benchmark: Low (${recommendation.benchmark.low}) - High (${recommendation.benchmark.high})`
-        };
-      })
-    );
-
-    // 6. Combine all sections into a comprehensive report
+    // 7. Combine all sections into a comprehensive report
     return {
       ...mainReport,
-      peer_analysis: peerAnalysis,
-      risk_matrix: riskAssessment,
-      metric_recommendations: metricRecommendations
+      business_model_assessment: businessModelAssessment,
+      team_evaluation: teamEvaluation,
+      ip_assessment: ipAssessment,
+      market_sentiment: marketSentiment,
+      metric_validations: metricValidations,
     };
   } catch (error) {
     console.error("Error generating full valuation report:", error);
@@ -152,6 +149,76 @@ export function formatReport(report: ValuationReport): string {
     {
       title: "Financial Analysis",
       content: report.financial_analysis,
+    },
+    {
+      title: "Business Model Assessment",
+      content: report.business_model_assessment ? `
+        Overall Score: ${report.business_model_assessment.overall_score}/100
+
+        Key Strengths:
+        ${report.business_model_assessment.strengths.map(s => `• ${s}`).join('\n')}
+
+        Areas for Improvement:
+        ${report.business_model_assessment.weaknesses.map(w => `• ${w}`).join('\n')}
+
+        Competitive Advantages:
+        ${report.business_model_assessment.competitive_advantages.map(a => `• ${a}`).join('\n')}
+
+        Recommendations:
+        ${report.business_model_assessment.recommendations.map(r => `• ${r}`).join('\n')}
+      ` : '',
+    },
+    {
+      title: "Team Expertise Evaluation",
+      content: report.team_evaluation ? `
+        Team Score: ${report.team_evaluation.team_score}/100
+        Industry Fit: ${report.team_evaluation.industry_fit}
+
+        Key Strengths:
+        ${report.team_evaluation.key_strengths.map(s => `• ${s}`).join('\n')}
+
+        Skill Gaps:
+        ${report.team_evaluation.skill_gaps.map(g => `• ${g}`).join('\n')}
+
+        Recommendations:
+        ${report.team_evaluation.recommendations.map(r => `• ${r}`).join('\n')}
+      ` : '',
+    },
+    {
+      title: "Intellectual Property Assessment",
+      content: report.ip_assessment ? `
+        IP Value Score: ${report.ip_assessment.ip_value_score}/100
+
+        Key Assets:
+        ${report.ip_assessment.key_assets.map(a => `• ${a}`).join('\n')}
+
+        Risk Factors:
+        ${report.ip_assessment.risk_factors.map(r => `• ${r}`).join('\n')}
+
+        Protection Strategy:
+        ${report.ip_assessment.protection_strategy}
+
+        Monetization Opportunities:
+        ${report.ip_assessment.monetization_opportunities.map(o => `• ${o}`).join('\n')}
+      ` : '',
+    },
+    {
+      title: "Market Sentiment Analysis",
+      content: report.market_sentiment ? `
+        Sentiment Score: ${report.market_sentiment.sentiment_score}
+
+        Positive Factors:
+        ${report.market_sentiment.positive_factors.map(f => `• ${f}`).join('\n')}
+
+        Negative Factors:
+        ${report.market_sentiment.negative_factors.map(f => `• ${f}`).join('\n')}
+
+        Current Trends:
+        ${report.market_sentiment.trends.map(t => `• ${t}`).join('\n')}
+
+        Recommendations:
+        ${report.market_sentiment.recommendations.map(r => `• ${r}`).join('\n')}
+      ` : '',
     },
     {
       title: "Valuation Methods",
@@ -183,18 +250,22 @@ export function formatReport(report: ValuationReport): string {
       content: report.sensitivity_analysis,
     },
     {
-      title: "Recommendations",
-      content: report.recommendations,
+      title: "Key Metrics Validation",
+      content: report.metric_validations ? `
+        Insights:
+        ${report.metric_validations.insights.map(i => `• ${i}`).join('\n')}
+
+        Metric-Specific Validations:
+        ${Object.entries(report.metric_validations.validations)
+          .map(([metric, validation]) => 
+            `${metric}:\n${validation.isValid ? '✓' : '⚠'} ${validation.suggestion}`
+          )
+          .join('\n\n')}
+      ` : '',
     },
     {
-      title: "Metric Optimization Recommendations",
-      content: report.metric_recommendations?.map(rec => 
-        `### ${rec.metric}\n\n` +
-        `**Current Status**: ${rec.current_value}\n` +
-        `**Recommendation**: ${rec.recommendation}\n` +
-        `**Improvement Potential**: ${rec.improvement_potential}\n` +
-        `**Industry Context**: ${rec.industry_context}\n`
-      ).join('\n\n') || '',
+      title: "Recommendations",
+      content: report.recommendations,
     },
     {
       title: "Appendix",
@@ -218,6 +289,10 @@ export function formatReport(report: ValuationReport): string {
   // Format the document with proper sections and styling
   return sections
     .map((section) => {
+      if (!section.content && (!section.subsections || section.subsections.length === 0)) {
+        return '';
+      }
+
       if (section.subsections) {
         return `# ${section.title}\n\n${section.subsections
           .map((sub) => `## ${sub.title}\n\n${sub.content}`)
@@ -225,5 +300,6 @@ export function formatReport(report: ValuationReport): string {
       }
       return `# ${section.title}\n\n${section.content}`;
     })
+    .filter(Boolean)
     .join("\n\n");
 }

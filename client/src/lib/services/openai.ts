@@ -89,13 +89,33 @@ export async function getIndustryMetrics(
   }
 }
 
-// Optimized valuation report generation with focused prompting
+interface ValuationReport {
+  executive_summary: string;
+  industry_analysis: string;
+  financial_analysis: string;
+  valuation_methods: {
+    dcf_analysis: string;
+    market_approach: string;
+    precedent_transactions: string;
+  };
+  risk_assessment: string;
+  growth_projections: string;
+  sensitivity_analysis: string;
+  recommendations: string;
+  appendix: {
+    financial_tables: string;
+    comparable_companies: string;
+    methodology_details: string;
+  };
+}
+
+// Enhanced valuation report generation with focused prompting
 export async function generateValuationReport(
   businessData: any,
   industryMetrics: any,
   financials: any,
   assumptions: any
-): Promise<any> {
+): Promise<ValuationReport> {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -106,7 +126,7 @@ export async function generateValuationReport(
         },
         {
           role: "user",
-          content: `Generate a comprehensive 10-12 page valuation report for:
+          content: `Generate a comprehensive valuation report for:
 
             Business Profile:
             ${JSON.stringify(businessData, null, 2)}
@@ -146,6 +166,231 @@ export async function generateValuationReport(
     return JSON.parse(response.choices[0].message.content);
   } catch (error) {
     console.error("Error generating valuation report:", error);
+    throw error;
+  }
+}
+
+// Real-time metric validation and suggestions
+export async function validateMetrics(
+  metrics: Record<string, number>,
+  industry: string,
+  region: string
+): Promise<{
+  validations: Record<string, { isValid: boolean; suggestion: string }>;
+  insights: string[];
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a financial metrics validation expert. Analyze the provided metrics and provide real-time feedback and suggestions.",
+        },
+        {
+          role: "user",
+          content: `Validate these metrics for ${industry} in ${region}:
+            ${JSON.stringify(metrics, null, 2)}
+
+            For each metric:
+            1. Check if it's within reasonable range
+            2. Provide specific improvement suggestions
+            3. Highlight any potential red flags
+            4. Suggest industry-specific optimizations
+
+            Return in JSON format with validations and insights arrays.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error validating metrics:", error);
+    throw error;
+  }
+}
+
+// Business model strength assessment
+export async function assessBusinessModel(
+  businessModel: any,
+  industry: string
+): Promise<{
+  overall_score: number;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  competitive_advantages: string[];
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a business model analysis expert. Assess the provided business model and provide detailed insights.",
+        },
+        {
+          role: "user",
+          content: `Analyze this business model for ${industry}:
+            ${JSON.stringify(businessModel, null, 2)}
+
+            Provide:
+            1. Overall score (0-100)
+            2. Key strengths
+            3. Areas for improvement
+            4. Specific recommendations
+            5. Competitive advantages
+
+            Focus on actionable insights and industry-specific factors.
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error assessing business model:", error);
+    throw error;
+  }
+}
+
+// Team expertise evaluation
+export async function evaluateTeamExpertise(
+  team: any[],
+  industry: string
+): Promise<{
+  team_score: number;
+  key_strengths: string[];
+  skill_gaps: string[];
+  recommendations: string[];
+  industry_fit: string;
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert in team evaluation and organizational development. Assess the team's expertise and provide insights.",
+        },
+        {
+          role: "user",
+          content: `Evaluate this team for ${industry}:
+            ${JSON.stringify(team, null, 2)}
+
+            Provide:
+            1. Overall team score (0-100)
+            2. Key strengths
+            3. Skill gaps
+            4. Development recommendations
+            5. Industry fit assessment
+
+            Focus on industry-specific requirements and team dynamics.
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error evaluating team expertise:", error);
+    throw error;
+  }
+}
+
+// Patent and IP value assessment
+export async function assessIntellectualProperty(
+  ip: any[],
+  industry: string
+): Promise<{
+  ip_value_score: number;
+  key_assets: any[];
+  risk_factors: string[];
+  protection_strategy: string;
+  monetization_opportunities: string[];
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an intellectual property valuation expert. Assess the provided IP portfolio and provide detailed insights.",
+        },
+        {
+          role: "user",
+          content: `Assess this IP portfolio for ${industry}:
+            ${JSON.stringify(ip, null, 2)}
+
+            Provide:
+            1. IP value score (0-100)
+            2. Key IP assets analysis
+            3. Risk factors
+            4. Protection strategy
+            5. Monetization opportunities
+
+            Focus on industry-specific value drivers and protection needs.
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error assessing intellectual property:", error);
+    throw error;
+  }
+}
+
+// Market sentiment analysis
+export async function analyzeMarketSentiment(
+  company: string,
+  industry: string
+): Promise<{
+  sentiment_score: number;
+  positive_factors: string[];
+  negative_factors: string[];
+  trends: string[];
+  recommendations: string[];
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a market sentiment analysis expert. Analyze market perception and provide detailed insights.",
+        },
+        {
+          role: "user",
+          content: `Analyze market sentiment for ${company} in ${industry}:
+
+            Provide:
+            1. Overall sentiment score (-100 to 100)
+            2. Positive factors
+            3. Negative factors
+            4. Current trends
+            5. Recommendations
+
+            Focus on market perception and sentiment drivers.
+            Return in JSON format.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Error analyzing market sentiment:", error);
     throw error;
   }
 }
