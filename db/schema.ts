@@ -1,6 +1,6 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, varchar, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
-import { relations, type Relations } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // Define user roles enum
@@ -24,17 +24,8 @@ export const activityTypes = pgEnum("activity_type", [
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: varchar("email", { length: 255 }).unique().notNull(),
-  username: varchar("username", { length: 255 }).unique().notNull(),
+  username: text("username").unique().notNull(),
   password: text("password").notNull(),
-  role: userRoles("role").notNull(),
-  subscriptionTier: subscriptionTiers("subscription_tier").default("free").notNull(),
-  subscriptionStatus: planStatus("subscription_status").default("active"),
-  trialEndsAt: timestamp("trial_ends_at"),
-  phoneNumber: varchar("phone_number", { length: 20 }),
-  companyName: varchar("company_name", { length: 255 }),
-  isEmailVerified: boolean("is_email_verified").default(false),
-  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -188,24 +179,18 @@ export const suggestionRelations = relations(workflowSuggestions, ({ one }) => (
 
 // Create schemas for validation with custom validation rules
 export const insertUserSchema = createInsertSchema(users, {
-  email: z.string().email("Invalid email format"),
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["startup", "investor", "valuer", "consultant"]),
 }).omit({
   id: true,
-  subscriptionTier: true,
-  subscriptionStatus: true,
-  trialEndsAt: true,
-  phoneNumber: true,
-  companyName: true,
-  isEmailVerified: true,
-  lastLoginAt: true,
   createdAt: true,
   updatedAt: true
 });
 
 export const selectUserSchema = createSelectSchema(users);
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+
 export const insertUserProfileSchema = createInsertSchema(userProfiles);
 export const selectUserProfileSchema = createSelectSchema(userProfiles);
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans);
@@ -220,8 +205,6 @@ export const insertWorkflowSuggestionSchema = createInsertSchema(workflowSuggest
 export const selectWorkflowSuggestionSchema = createSelectSchema(workflowSuggestions);
 
 // Export types
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
 export type InsertUserProfile = typeof userProfiles.$inferInsert;
 export type SelectUserProfile = typeof userProfiles.$inferSelect;
 export type InsertSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
@@ -273,3 +256,5 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   activities: many(userActivities),
   suggestions: many(workflowSuggestions),
 }));
+
+import { varchar, jsonb, pgEnum } from "drizzle-orm/pg-core";

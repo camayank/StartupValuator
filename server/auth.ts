@@ -43,7 +43,10 @@ export function setupAuth(app: Express) {
     secret: process.env.REPL_ID || "your-secret-key",
     resave: false,
     saveUninitialized: false,
-    cookie: {},
+    cookie: {
+      maxAge: 86400000, // 24 hours
+      secure: app.get("env") === "production"
+    },
     store: new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     }),
@@ -51,9 +54,6 @@ export function setupAuth(app: Express) {
 
   if (app.get("env") === "production") {
     app.set("trust proxy", 1);
-    sessionSettings.cookie = {
-      secure: true,
-    };
   }
 
   app.use(session(sessionSettings));
@@ -80,6 +80,7 @@ export function setupAuth(app: Express) {
 
         return done(null, user);
       } catch (err) {
+        console.error("Authentication error:", err);
         return done(err);
       }
     })
@@ -98,6 +99,7 @@ export function setupAuth(app: Express) {
         .limit(1);
       done(null, user);
     } catch (err) {
+      console.error("Deserialization error:", err);
       done(err);
     }
   });
@@ -109,10 +111,13 @@ export function setupAuth(app: Express) {
       if (!result.success) {
         return res
           .status(400)
-          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+          .json({ 
+            error: "Invalid input", 
+            details: result.error.issues.map(i => i.message)
+          });
       }
 
-      const { username, password, email, role } = result.data;
+      const { username, password } = result.data;
 
       // Check if user already exists
       const [existingUser] = await db
@@ -122,7 +127,7 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (existingUser) {
-        return res.status(400).send("Username already exists");
+        return res.status(400).json({ error: "Username already exists" });
       }
 
       // Hash the password
@@ -134,12 +139,6 @@ export function setupAuth(app: Express) {
         .values({
           username,
           password: hashedPassword,
-          email,
-          role,
-          subscriptionTier: "free",
-          subscriptionStatus: "active",
-          isEmailVerified: false,
-          lastLoginAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -155,9 +154,6 @@ export function setupAuth(app: Express) {
           user: {
             id: newUser.id,
             username: newUser.username,
-            email: newUser.email,
-            role: newUser.role,
-            subscriptionTier: newUser.subscriptionTier,
           },
         });
       });
@@ -170,10 +166,11 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: Express.User | false, info: IVerifyOptions) => {
       if (err) {
+        console.error("Login error:", err);
         return next(err);
       }
       if (!user) {
-        return res.status(400).send(info.message ?? "Login failed");
+        return res.status(400).json({ error: info.message ?? "Login failed" });
       }
 
       req.logIn(user, (err) => {
@@ -186,9 +183,6 @@ export function setupAuth(app: Express) {
           user: {
             id: user.id,
             username: user.username,
-            email: user.email,
-            role: user.role,
-            subscriptionTier: user.subscriptionTier,
           },
         });
       });
@@ -198,7 +192,7 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res) => {
     req.logout((err) => {
       if (err) {
-        return res.status(500).send("Logout failed");
+        return res.status(500).json({ error: "Logout failed" });
       }
       res.json({ message: "Logout successful" });
     });
@@ -208,6 +202,6 @@ export function setupAuth(app: Express) {
     if (req.isAuthenticated()) {
       return res.json(req.user);
     }
-    res.status(401).send("Not logged in");
+    res.status(401).json({ error: "Not logged in" });
   });
 }
