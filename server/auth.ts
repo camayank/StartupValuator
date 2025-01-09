@@ -63,6 +63,14 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        // First check if database is accessible
+        try {
+          await db.select().from(users).limit(1);
+        } catch (dbError) {
+          console.error('Database connection error:', dbError);
+          return done(new Error('Database connection error. Please try again later.'));
+        }
+
         const [user] = await db
           .select()
           .from(users)
@@ -70,16 +78,17 @@ export function setupAuth(app: Express) {
           .limit(1);
 
         if (!user) {
-          return done(null, false, { message: "Incorrect username." });
+          return done(null, false, { message: "Incorrect username or password." });
         }
 
         const isMatch = await crypto.compare(password, user.password);
         if (!isMatch) {
-          return done(null, false, { message: "Incorrect password." });
+          return done(null, false, { message: "Incorrect username or password." });
         }
 
         return done(null, user);
       } catch (err) {
+        console.error('Authentication error:', err);
         return done(err);
       }
     })
@@ -98,6 +107,7 @@ export function setupAuth(app: Express) {
         .limit(1);
       done(null, user);
     } catch (err) {
+      console.error('Session deserialization error:', err);
       done(err);
     }
   });
@@ -109,7 +119,10 @@ export function setupAuth(app: Express) {
       if (!result.success) {
         return res
           .status(400)
-          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+          .json({ 
+            message: "Invalid input", 
+            errors: result.error.issues.map(i => i.message)
+          });
       }
 
       const { username, password, email, role } = result.data;
@@ -122,7 +135,7 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (existingUser) {
-        return res.status(400).send("Username already exists");
+        return res.status(400).json({ message: "Username already exists" });
       }
 
       // Hash the password
@@ -163,6 +176,9 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       console.error('Registration error:', error);
+      if (error.code === 'CONNECTION_ERROR') {
+        return res.status(503).json({ message: "Service temporarily unavailable. Please try again later." });
+      }
       next(error);
     }
   });
@@ -170,10 +186,13 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: Express.User | false, info: IVerifyOptions) => {
       if (err) {
-        return next(err);
+        console.error('Login error:', err);
+        return res.status(503).json({ 
+          message: err.message || "Service temporarily unavailable. Please try again later."
+        });
       }
       if (!user) {
-        return res.status(400).send(info.message ?? "Login failed");
+        return res.status(401).json({ message: info.message ?? "Login failed" });
       }
 
       req.logIn(user, (err) => {
@@ -198,7 +217,7 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res) => {
     req.logout((err) => {
       if (err) {
-        return res.status(500).send("Logout failed");
+        return res.status(500).json({ message: "Logout failed" });
       }
       res.json({ message: "Logout successful" });
     });
@@ -208,6 +227,6 @@ export function setupAuth(app: Express) {
     if (req.isAuthenticated()) {
       return res.json(req.user);
     }
-    res.status(401).send("Not logged in");
+    res.status(401).json({ message: "Not logged in" });
   });
 }
