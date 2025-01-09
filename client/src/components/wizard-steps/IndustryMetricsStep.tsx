@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { getIndustryMetrics } from "@/lib/services/openai";
 import { useToast } from "@/hooks/use-toast";
+import { MarketAnalyzer } from "@/components/MarketAnalyzer";
 import {
   Card,
   CardContent,
@@ -49,6 +50,7 @@ export function IndustryMetricsStep({
   const [metrics, setMetrics] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
 
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
@@ -68,6 +70,7 @@ export function IndustryMetricsStep({
       try {
         setIsLoading(true);
         setError(null);
+        setShowAnalyzer(true);
 
         const metricsData = await getIndustryMetrics(
           data.sector,
@@ -97,6 +100,7 @@ export function IndustryMetricsStep({
         });
       } finally {
         setIsLoading(false);
+        setShowAnalyzer(false);
       }
     };
 
@@ -120,6 +124,35 @@ export function IndustryMetricsStep({
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
   };
+
+  if (showAnalyzer) {
+    return (
+      <div className="space-y-6 p-4 bg-background min-h-[calc(100vh-4rem)] md:min-h-0">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium">Step {currentStep} of {totalSteps}</span>
+            <span className="text-sm text-muted-foreground">Industry Analysis</span>
+          </div>
+          <Progress value={(currentStep / totalSteps) * 100} className="h-2" />
+        </div>
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Based on your selection of {data.sector} ({data.industry}) in {data.region},
+            we're analyzing the market. Please wait...
+          </AlertDescription>
+        </Alert>
+        <MarketAnalyzer
+          sector={data.sector!}
+          industry={data.industry!}
+          region={data.region!}
+          onAnalysisComplete={(analysisData) => {
+            setMetrics(analysisData);
+          }}
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -180,7 +213,7 @@ export function IndustryMetricsStep({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Based on your selection of {data.sector} ({data.industry}) in {data.region}, 
+          Based on your selection of {data.sector} ({data.industry}) in {data.region},
           we've calculated the following metrics and market size information.
         </AlertDescription>
       </Alert>
@@ -232,7 +265,7 @@ export function IndustryMetricsStep({
                         name={`industryMetrics.${key}`}
                         render={({ field }) => (
                           <FormItem className="bg-card p-4 rounded-lg">
-                            <FormLabel className="text-base">{key.split(/(?=[A-Z])|_/).map(word => 
+                            <FormLabel className="text-base">{key.split(/(?=[A-Z])|_/).map(word =>
                               word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
                             ).join(" ")}</FormLabel>
                             <FormControl>
@@ -249,9 +282,9 @@ export function IndustryMetricsStep({
                                     <span>Median: {benchmark.median}</span>
                                     <span>High: {benchmark.high}</span>
                                   </div>
-                                  <Progress 
-                                    value={((field.value || benchmark.median) - benchmark.low) / 
-                                      (benchmark.high - benchmark.low) * 100} 
+                                  <Progress
+                                    value={((field.value || benchmark.median) - benchmark.low) /
+                                      (benchmark.high - benchmark.low) * 100}
                                   />
                                 </div>
                               </div>
