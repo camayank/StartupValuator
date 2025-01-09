@@ -23,13 +23,6 @@ import { Info, Building2, Trophy, Globe2, Scale, Shield, HelpCircle, ArrowRight 
 import { sectors, industries, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
-import { motion } from "framer-motion";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Card,
   CardContent,
@@ -38,8 +31,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { valuationFormSchema } from "@/lib/validations";
 
 interface BusinessInfoStepProps {
   data: Partial<ValuationFormData>;
@@ -55,7 +46,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const [autoAdvance, setAutoAdvance] = useState(true);
 
   const form = useForm<Partial<ValuationFormData>>({
-    resolver: zodResolver(valuationFormSchema),
     defaultValues: {
       businessName: data.businessName || "",
       valuationPurpose: data.valuationPurpose || "fundraising",
@@ -83,6 +73,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
         form.setValue("industry", firstIndustry);
         form.setValue("stage", stage);
+        form.setValue("sector", selectedSector);
 
         // Auto-update parent
         onUpdate({
@@ -90,11 +81,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
           industry: firstIndustry,
           stage
         });
-
-        // Auto-advance if all required fields are filled
-        if (autoAdvance && form.getValues("businessName") && form.getValues("valuationPurpose")) {
-          onNext();
-        }
       }
     }
   }, [selectedSector]);
@@ -116,11 +102,20 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSectorChange = (value: string) => {
     setSelectedSector(value);
-    form.setValue("sector", value as keyof typeof sectors);
   };
 
-  const handleSubmit = (values: Partial<ValuationFormData>) => {
-    onUpdate(values);
+  const handleSubmit = async (values: Partial<ValuationFormData>) => {
+    // Ensure required fields are present
+    const requiredFields = ['businessName', 'sector', 'industry', 'stage'];
+    const missingFields = requiredFields.filter(field => !values[field as keyof ValuationFormData]);
+
+    if (missingFields.length > 0) {
+      const errorMessage = `Please fill in the following required fields: ${missingFields.join(', ')}`;
+      form.setError('businessName', { message: errorMessage });
+      return;
+    }
+
+    await onUpdate(values);
     onNext();
   };
 
@@ -136,8 +131,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   };
 
   const handleStageChange = (value: string) => {
-    form.setValue("stage", value);
-    onUpdate({ stage: value });
+    form.setValue("stage", value as keyof typeof businessStages);
+    onUpdate({ stage: value as keyof typeof businessStages });
   };
 
   const handleIndustryChange = (value: string) => {
@@ -177,7 +172,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 name="businessName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Business Name</FormLabel>
+                    <FormLabel>Business Name *</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -189,6 +184,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           )}
                           onFocus={() => setFocusedField("businessName")}
                           onBlur={() => setFocusedField(null)}
+                          required
                         />
                         <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       </div>
@@ -198,136 +194,198 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 )}
               />
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sector"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Sector *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Select
+                            value={selectedSector}
+                            onValueChange={handleSectorChange}
+                          >
+                            <SelectTrigger className="pl-8">
+                              <SelectValue placeholder="Select your sector" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(sectors).map(([key, { name }]) => (
+                                <SelectItem key={key} value={key}>
+                                  {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="valuationPurpose"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Purpose of Valuation *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              onUpdate({ valuationPurpose: value as ValuationFormData['valuationPurpose'] });
+                            }}
+                          >
+                            <SelectTrigger className="pl-8">
+                              <SelectValue placeholder="Select purpose" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(valuationPurposes).map(([key, name]) => (
+                                <SelectItem key={key} value={key}>
+                                  {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Trophy className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="stage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Stage *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Select
+                            value={field.value}
+                            onValueChange={handleStageChange}
+                          >
+                            <SelectTrigger className="pl-8">
+                              <SelectValue placeholder="Select your stage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(businessStages).map(([key, name]) => (
+                                <SelectItem key={key} value={key}>
+                                  {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Scale className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Indicate your company's current stage of development
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="region"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Primary Region *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Select
+                            value={field.value}
+                            onValueChange={handleRegionChange}
+                          >
+                            <SelectTrigger className="pl-8">
+                              <SelectValue placeholder="Select region" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(regions).map(([key, { name }]) => (
+                                <SelectItem key={key} value={key}>
+                                  {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="intellectualProperty"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IP Protection Status</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              onUpdate({ intellectualProperty: value as ValuationFormData['intellectualProperty'] });
+                            }}
+                          >
+                            <SelectTrigger className="pl-8">
+                              <SelectValue placeholder="Select IP status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No IP Protection</SelectItem>
+                              <SelectItem value="pending">Patents Pending</SelectItem>
+                              <SelectItem value="registered">Registered Patents/IP</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Not showing all fields initially for a cleaner UX */}
+              </div>
               <FormField
                 control={form.control}
-                name="valuationPurpose"
+                name="industry"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Purpose of Valuation</FormLabel>
+                    <FormLabel>Industry *</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Select
                           value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            onUpdate({ valuationPurpose: value as ValuationFormData['valuationPurpose'] });
-                          }}
+                          onValueChange={handleIndustryChange}
                         >
                           <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select purpose" />
+                            <SelectValue placeholder="Select your industry" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.entries(valuationPurposes).map(([key, name]) => (
+                            {Object.entries(industries).map(([key, name]) => (
                               <SelectItem key={key} value={key}>
                                 {name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <Trophy className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                       </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="sector"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Sector</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={selectedSector}
-                          onValueChange={handleSectorChange}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select your sector" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(sectors).map(([key, { name }]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Stage</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={field.value}
-                          onValueChange={handleStageChange}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select your stage" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(businessStages).map(([key, name]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Scale className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Indicate your company's current stage of development
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="region"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primary Region</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={field.value}
-                          onValueChange={handleRegionChange}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select region" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(regions).map(([key, { name }]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="complianceStandard"
@@ -389,37 +447,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="intellectualProperty"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>IP Protection Status</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            onUpdate({ intellectualProperty: value as ValuationFormData['intellectualProperty'] });
-                          }}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select IP status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No IP Protection</SelectItem>
-                            <SelectItem value="pending">Patents Pending</SelectItem>
-                            <SelectItem value="registered">Registered Patents/IP</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="customerBase"
