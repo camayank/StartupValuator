@@ -14,7 +14,18 @@ import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/
 import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
-import { analyzePitchDeck } from "../client/src/lib/services/openai";
+import { 
+  analyzePitchDeck,
+  validateMetrics,
+  assessBusinessModel,
+  generateComplianceReport,
+  generateComplianceChecklist,
+  analyzeMarketSentiment,
+  assessIntellectualProperty,
+  evaluateTeamExpertise,
+  validateRevenueModel,
+  generateValuationReport
+} from "../client/src/lib/services/openai";
 
 // Define pitch deck data schema for validation
 const pitchDeckSlideSchema = z.object({
@@ -25,6 +36,29 @@ const pitchDeckSlideSchema = z.object({
 
 const pitchDeckAnalysisRequestSchema = z.object({
   slides: z.array(pitchDeckSlideSchema),
+});
+
+// Define report data schema for validation
+const reportDataSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  valuationPurpose: z.string(),
+  revenue: z.number().min(0, "Revenue must be non-negative"),
+  currency: z.string(),
+  growthRate: z.number(),
+  margins: z.number(),
+  sector: z.string(),
+  industry: z.string(),
+  stage: z.string(),
+  region: z.string(),
+  valuation: z.number().optional(),
+  multiplier: z.number().optional(),
+  details: z.object({
+    baseValuation: z.number().optional(),
+    adjustments: z.record(z.string(), z.number()).optional()
+  }).optional(),
+  riskAssessment: z.any().optional(),
+  potentialPrediction: z.any().optional(),
+  ecosystemNetwork: z.any().optional()
 });
 
 export function registerRoutes(app: Express): Server {
@@ -108,56 +142,150 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/suggestions/:id/shown", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
+  // Enhanced report generation route with better error handling
+  app.post("/api/report", async (req, res) => {
     try {
-      await WorkflowSuggestionEngine.markSuggestionAsShown(parseInt(req.params.id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Failed to mark suggestion as shown:", error);
-      res.status(500).json({ message: "Failed to update suggestion" });
-    }
-  });
+      console.log('Received report generation request:', JSON.stringify(req.body, null, 2));
 
-  app.post("/api/suggestions/:id/clicked", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
+      // Validate request data
+      const validatedData = reportDataSchema.parse(req.body);
+      console.log('Validated data:', JSON.stringify(validatedData, null, 2));
 
-    try {
-      await WorkflowSuggestionEngine.markSuggestionAsClicked(parseInt(req.params.id));
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Failed to mark suggestion as clicked:", error);
-      res.status(500).json({ message: "Failed to update suggestion" });
-    }
-  });
+      // Generate PDF report
+      const pdfBuffer = await generatePdfReport(validatedData);
+      console.log('PDF buffer generated successfully');
 
-  // Pitch deck personalization routes
-  app.post("/api/pitch-deck/personalize", async (req, res) => {
-    try {
-      const suggestions = await generatePersonalizedSuggestions(req.body);
-      res.json(suggestions);
+      // Set appropriate headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="startup-valuation-report.pdf"');
+      res.send(pdfBuffer);
     } catch (error) {
-      console.error("Pitch deck personalization failed:", error);
+      console.error('Report generation failed:', error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Invalid data provided',
+          errors: error.errors,
+        });
+      }
+
       res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate personalized suggestions"
+        message: error instanceof Error ? error.message : 'Failed to generate report'
       });
     }
   });
 
-  app.post("/api/pitch-deck/industry-analysis", async (req, res) => {
+  // Compliance checking routes
+  app.post("/api/compliance/check", async (req, res) => {
     try {
-      const { industry, businessModel } = req.body;
-      const analysis = await analyzeIndustryFit(industry, businessModel);
+      const report = await generateComplianceReport(req.body);
+      res.json(report);
+    } catch (error) {
+      console.error("Compliance check failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate compliance report"
+      });
+    }
+  });
+
+  app.post("/api/compliance/checklist", async (req, res) => {
+    try {
+      const { industry, region } = req.body;
+      const checklist = await generateComplianceChecklist(industry, region);
+      res.json(checklist);
+    } catch (error) {
+      console.error("Checklist generation failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to generate compliance checklist"
+      });
+    }
+  });
+
+  // Business model and team assessment routes
+  app.post("/api/business-model/assess", async (req, res) => {
+    try {
+      const assessment = await assessBusinessModel(req.body, req.body.industry);
+      res.json(assessment);
+    } catch (error) {
+      console.error("Business model assessment failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to assess business model"
+      });
+    }
+  });
+
+  app.post("/api/team/evaluate", async (req, res) => {
+    try {
+      const evaluation = await evaluateTeamExpertise(req.body.team, req.body.industry);
+      res.json(evaluation);
+    } catch (error) {
+      console.error("Team evaluation failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to evaluate team"
+      });
+    }
+  });
+
+  // Market and IP assessment routes
+  app.post("/api/market/sentiment", async (req, res) => {
+    try {
+      const sentiment = await analyzeMarketSentiment(req.body.company, req.body.industry);
+      res.json(sentiment);
+    } catch (error) {
+      console.error("Market sentiment analysis failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to analyze market sentiment"
+      });
+    }
+  });
+
+  app.post("/api/ip/assess", async (req, res) => {
+    try {
+      const assessment = await assessIntellectualProperty(req.body.ip, req.body.industry);
+      res.json(assessment);
+    } catch (error) {
+      console.error("IP assessment failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to assess IP"
+      });
+    }
+  });
+
+  // Metrics validation route
+  app.post("/api/metrics/validate", async (req, res) => {
+    try {
+      const validation = await validateMetrics(
+        req.body.metrics,
+        req.body.industry,
+        req.body.region
+      );
+      res.json(validation);
+    } catch (error) {
+      console.error("Metrics validation failed:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to validate metrics"
+      });
+    }
+  });
+
+  // Revenue model validation route
+  app.post("/api/revenue-model/validate", async (req, res) => {
+    try {
+      const validatedData = z.object({
+        model: z.string(),
+        pricing: z.any(),
+        customerSegments: z.array(z.string()),
+        revenueStreams: z.array(z.string()),
+        industry: z.string(),
+        stage: z.string(),
+      }).parse(req.body);
+
+      const analysis = await validateRevenueModel(validatedData);
       res.json(analysis);
     } catch (error) {
-      console.error("Industry analysis failed:", error);
+      console.error("Revenue model validation failed:", error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to analyze industry fit"
+        message: error instanceof Error ? error.message : "Failed to validate revenue model"
       });
     }
   });
@@ -208,39 +336,6 @@ export function registerRoutes(app: Express): Server {
       res.json(result[0]);
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  // Enhanced report generation route with better error handling
-  app.post("/api/report", async (req, res) => {
-    try {
-      console.log('Received report generation request:', JSON.stringify(req.body, null, 2));
-
-      // Validate request data
-      const validatedData = reportDataSchema.parse(req.body);
-      console.log('Validated data:', JSON.stringify(validatedData, null, 2));
-
-      // Generate PDF report
-      const pdfBuffer = await generatePdfReport(validatedData);
-      console.log('PDF buffer generated successfully');
-
-      // Set appropriate headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="startup-valuation-report.pdf"');
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error('Report generation failed:', error);
-
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Invalid data provided',
-          errors: error.errors,
-        });
-      }
-
-      res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to generate report'
-      });
     }
   });
 
@@ -343,54 +438,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Compliance checking routes
-  app.post("/api/compliance/check", async (req, res) => {
-    try {
-      const report = await generateComplianceReport(req.body);
-      res.json(report);
-    } catch (error) {
-      console.error("Compliance check failed:", error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate compliance report"
-      });
-    }
-  });
-
-  app.post("/api/compliance/checklist", async (req, res) => {
-    try {
-      const { industry, region } = req.body;
-      const checklist = await generateComplianceChecklist(industry, region);
-      res.json(checklist);
-    } catch (error) {
-      console.error("Checklist generation failed:", error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to generate compliance checklist"
-      });
-    }
-  });
-
-
-  // Add after the existing routes
-  app.post("/api/revenue-model/validate", async (req, res) => {
-    try {
-      const validatedData = z.object({
-        model: z.string(),
-        pricing: z.any(),
-        customerSegments: z.array(z.string()),
-        revenueStreams: z.array(z.string()),
-        industry: z.string(),
-        stage: z.string(),
-      }).parse(req.body);
-
-      const analysis = await validateRevenueModel(validatedData);
-      res.json(analysis);
-    } catch (error) {
-      console.error("Revenue model validation failed:", error);
-      res.status(500).json({
-        message: error instanceof Error ? error.message : "Failed to validate revenue model"
-      });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
