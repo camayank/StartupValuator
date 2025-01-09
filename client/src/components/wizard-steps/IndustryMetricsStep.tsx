@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Globe2, DollarSign, AlertCircle } from "lucide-react";
+import { Info, Building2, TrendingUp, Globe2, DollarSign, AlertCircle } from "lucide-react";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
@@ -231,14 +232,9 @@ export function IndustryMetricsStep({
                         name={`industryMetrics.${key}`}
                         render={({ field }) => (
                           <FormItem className="bg-card p-4 rounded-lg">
-                            <FormLabel className="text-base flex justify-between">
-                              <span>{key.split(/(?=[A-Z])|_/).map(word => 
-                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                              ).join(" ")}</span>
-                              <span className="text-muted-foreground">
-                                Median: {benchmark.median}
-                              </span>
-                            </FormLabel>
+                            <FormLabel className="text-base">{key.split(/(?=[A-Z])|_/).map(word => 
+                              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                            ).join(" ")}</FormLabel>
                             <FormControl>
                               <div className="space-y-2">
                                 <Input
@@ -250,6 +246,7 @@ export function IndustryMetricsStep({
                                 <div className="space-y-1">
                                   <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Low: {benchmark.low}</span>
+                                    <span>Median: {benchmark.median}</span>
                                     <span>High: {benchmark.high}</span>
                                   </div>
                                   <Progress 
@@ -259,6 +256,9 @@ export function IndustryMetricsStep({
                                 </div>
                               </div>
                             </FormControl>
+                            <FormDescription>
+                              Industry benchmark: {benchmark.median} (median)
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
