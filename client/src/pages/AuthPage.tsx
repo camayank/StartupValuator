@@ -8,18 +8,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, AlertCircle } from "lucide-react";
+import { Loader2, Check, AlertCircle, ArrowRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AuthPage() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const defaultMode = searchParams.get('mode') === 'signup' ? false : true;
-  const [isLogin, setIsLogin] = useState(defaultMode);
+  // Always start with login view regardless of URL params
+  const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -171,15 +171,18 @@ export default function AuthPage() {
       </style>
       <AnimatePresence mode="wait">
         <motion.div
+          key={isLogin ? "login" : "register"}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           className="w-full max-w-md"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {isLogin ? "Login" : "Create Account"}
+          <Card className="relative overflow-hidden">
+            <CardHeader className="space-y-1">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-2xl">
+                  {isLogin ? "Welcome back" : "Create account"}
+                </CardTitle>
                 {authSuccess && (
                   <motion.div
                     initial={{ scale: 0 }}
@@ -189,11 +192,11 @@ export default function AuthPage() {
                     <Check className="h-5 w-5" />
                   </motion.div>
                 )}
-              </CardTitle>
-              <CardDescription>
+              </div>
+              <CardDescription className="text-sm text-muted-foreground">
                 {isLogin
-                  ? "Welcome back! Please enter your credentials."
-                  : "Fill in your details to get started."}
+                  ? "Enter your credentials to access your account"
+                  : "Create your account to get started"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -312,7 +315,7 @@ export default function AuthPage() {
                 {!isLogin && (
                   <div>
                     <label htmlFor="role" className="text-sm font-medium block mb-1">
-                      Role
+                      I am a...
                     </label>
                     <select
                       id="role"
@@ -321,9 +324,9 @@ export default function AuthPage() {
                       onChange={(e) => setRole(e.target.value as any)}
                       required
                     >
-                      <option value="startup">Startup</option>
+                      <option value="startup">Startup Founder</option>
                       <option value="investor">Investor</option>
-                      <option value="valuer">Valuer</option>
+                      <option value="valuer">Valuation Expert</option>
                       <option value="consultant">Consultant</option>
                     </select>
                   </div>
@@ -343,26 +346,37 @@ export default function AuthPage() {
                       {isLogin ? "Logged In" : "Registered"}
                     </>
                   ) : (
-                    isLogin ? "Login" : "Create Account"
+                    <>
+                      {isLogin ? "Sign In" : "Create Account"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
                   )}
                 </Button>
-
-                <p className="text-center text-sm">
-                  {isLogin ? "Don't have an account? " : "Already have an account? "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setAuthSuccess(false);
-                      setFieldErrors({});
-                    }}
-                    className="text-primary hover:underline"
-                  >
-                    {isLogin ? "Create Account" : "Login"}
-                  </button>
-                </p>
               </form>
             </CardContent>
+            <CardFooter className="flex flex-col space-y-4 mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    {isLogin ? "New to StartupValuator?" : "Already have an account?"}
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setAuthSuccess(false);
+                  setFieldErrors({});
+                }}
+                className="w-full"
+              >
+                {isLogin ? "Create an Account" : "Sign In"}
+              </Button>
+            </CardFooter>
           </Card>
         </motion.div>
       </AnimatePresence>
