@@ -52,9 +52,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     defaultValues: {
       businessName: data.businessName || "",
       valuationPurpose: data.valuationPurpose || "fundraising",
-      sector: data.sector as ValuationFormData["sector"],
-      industry: data.industry as ValuationFormData["industry"],
-      stage: data.stage as ValuationFormData["stage"],
+      sector: data.sector || undefined,
+      industry: data.industry || undefined,
+      stage: data.stage || "ideation_validated",
       region: data.region || "us",
       complianceStandard: data.complianceStandard || undefined,
       teamExperience: data.teamExperience || 0,
@@ -71,9 +71,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   });
 
   useEffect(() => {
-    if (selectedSector) {
+    if (selectedSector && sectors[selectedSector as keyof typeof sectors]) {
       const sectorData = sectors[selectedSector as keyof typeof sectors];
-      if (sectorData) {
+      if (sectorData && Object.keys(sectorData.subsectors).length > 0) {
         const firstIndustry = Object.keys(sectorData.subsectors)[0];
         const stage = getRecommendedStage(selectedSector);
 
@@ -132,28 +132,39 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   };
 
   const handleSectorChange = (value: string) => {
-    setSelectedSector(value);
+    if (value && sectors[value as keyof typeof sectors]) {
+      setSelectedSector(value);
+    }
   };
 
   const handleRegionChange = (value: string) => {
-    const region = value as keyof typeof regions;
-    form.setValue("region", region);
-    form.setValue("complianceStandard", undefined);
-    onUpdate({
-      region,
-      currency: regions[region].defaultCurrency,
-      complianceStandard: undefined
-    });
+    if (value && regions[value as keyof typeof regions]) {
+      const region = value as keyof typeof regions;
+      form.setValue("region", region);
+      form.setValue("complianceStandard", undefined);
+      onUpdate({
+        region,
+        currency: regions[region].defaultCurrency,
+        complianceStandard: undefined
+      });
+    }
   };
 
   const handleStageChange = (value: string) => {
-    form.setValue("stage", value as ValuationFormData["stage"]);
-    onUpdate({ stage: value as ValuationFormData["stage"] });
+    if (value && businessStages[value as keyof typeof businessStages]) {
+      form.setValue("stage", value as ValuationFormData["stage"]);
+      onUpdate({ stage: value as ValuationFormData["stage"] });
+    }
   };
 
   const handleIndustryChange = (value: string) => {
-    form.setValue("industry", value);
-    onUpdate({ industry: value });
+    if (value && selectedSector) {
+      const sectorData = sectors[selectedSector as keyof typeof sectors];
+      if (sectorData && value in sectorData.subsectors) {
+        form.setValue("industry", value);
+        onUpdate({ industry: value });
+      }
+    }
   };
 
   return (
@@ -270,6 +281,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="stage"
@@ -303,6 +315,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="region"
@@ -333,6 +346,44 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Select
+                            value={field.value}
+                            onValueChange={handleIndustryChange}
+                            disabled={!selectedSector}
+                          >
+                            <SelectTrigger className="pl-8">
+                              <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedSector && sectors[selectedSector as keyof typeof sectors] && 
+                                Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors).map(([key, name]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {name}
+                                  </SelectItem>
+                                ))
+                              }
+                            </SelectContent>
+                          </Select>
+                          <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Select your specific industry within the chosen sector
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="intellectualProperty"
@@ -365,69 +416,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={field.value}
-                          onValueChange={handleIndustryChange}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select your industry" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(industries).map(([key, name]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="complianceStandard"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Compliance Standard</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            onUpdate({ complianceStandard: value });
-                          }}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select compliance standard" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(regions[form.getValues("region") as keyof typeof regions] ? regions[form.getValues("region") as keyof typeof regions].complianceStandards : regions.other.complianceStandards).map(([key, name]) => (
-                              <SelectItem key={key} value={key}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="teamExperience"
@@ -479,6 +468,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="competitiveDifferentiation"
@@ -505,6 +495,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="regulatoryCompliance"
@@ -531,6 +522,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="scalability"
@@ -570,29 +562,3 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     </div>
   );
 }
-
-const regionSpecificStandards = {
-  us: {
-    "409a": "409A Valuation",
-    "gaap": "GAAP Standards",
-    "none": "No Specific Standard"
-  },
-  uk: {
-    "ifrs": "IFRS Standards",
-    "frs": "FRS Standards",
-    "none": "No Specific Standard"
-  },
-  eu: {
-    "ifrs": "IFRS Standards",
-    "none": "No Specific Standard"
-  },
-  india: {
-    "ibbi": "IBBI Guidelines",
-    "mca": "MCA Regulations",
-    "none": "No Specific Standard"
-  },
-  other: {
-    "ifrs": "IFRS Standards",
-    "none": "No Specific Standard"
-  }
-};
