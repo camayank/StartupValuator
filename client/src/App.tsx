@@ -46,7 +46,7 @@ import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 import { LandingPage } from "./pages/LandingPage";
 
-// Navigation configuration with improved structure and icons
+// Update navigation configuration
 const navigationConfig = {
   startup: {
     mainTools: [
@@ -64,38 +64,31 @@ const navigationConfig = {
       { href: "/valuation", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
       { href: "/calculator", label: "Interactive Calculator", description: "Quick valuation estimates", icon: Calculator },
       { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", icon: PieChart },
-      { href: "/deal-flow", label: "Deal Flow", description: "Track and analyze potential investments", icon: BarChart3 },
     ],
     analytics: [
       { href: "/dashboard", label: "Investment Dashboard", description: "Monitor your portfolio performance", icon: PieChart },
       { href: "/market-analysis", label: "Market Analysis", description: "Analyze market trends", icon: BarChart3 },
     ]
   },
-  valuer: {
+  default: {
     mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Professional valuation tools", icon: Calculator },
-      { href: "/calculator", label: "Interactive Calculator", description: "Quick scenario analysis", icon: Calculator },
-      { href: "/methodology", label: "Methodology", description: "Manage valuation methodologies", icon: BookOpen },
-      { href: "/clients", label: "Clients", description: "Manage client relationships", icon: Users },
+      { href: "/valuation", label: "Full Valuation", description: "Access valuation tools", icon: Calculator },
+      { href: "/calculator", label: "Quick Calculator", description: "Basic valuation calculator", icon: Calculator },
     ],
     analytics: [
-      { href: "/dashboard", label: "Valuation Dashboard", description: "Track valuation projects", icon: PieChart },
-      { href: "/benchmarks", label: "Benchmark Analysis", description: "Industry comparisons", icon: BarChart3 },
-    ]
-  },
-  consultant: {
-    mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Advisory focused tools", icon: Calculator },
-      { href: "/calculator", label: "Interactive Calculator", description: "Client scenario modeling", icon: Calculator },
-      { href: "/clients", label: "Clients", description: "Manage client relationships", icon: Users },
-      { href: "/reports", label: "Reports", description: "Generate and manage reports", icon: FileText },
-    ],
-    analytics: [
-      { href: "/dashboard", label: "Advisory Dashboard", description: "Track client projects", icon: PieChart },
-      { href: "/resources", label: "Resource Library", description: "Access knowledge base", icon: BookOpen },
+      { href: "/dashboard", label: "Dashboard", description: "View your analytics", icon: PieChart },
     ]
   }
-};
+} as const;
+
+type UserRole = keyof typeof navigationConfig | string;
+
+function getNavigation(role: UserRole) {
+  if (role in navigationConfig) {
+    return navigationConfig[role as keyof typeof navigationConfig];
+  }
+  return navigationConfig.default;
+}
 
 const resourceLinks = [
   { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
@@ -154,7 +147,8 @@ function App() {
   // If we get here, user must be logged in
   if (!user) return null;
 
-  const userNavigation = navigationConfig[user.role as keyof typeof navigationConfig];
+  // Get navigation config based on user role with fallback
+  const userNavigation = user ? getNavigation(user.role) : navigationConfig.default;
 
   const handleLogout = async () => {
     try {
