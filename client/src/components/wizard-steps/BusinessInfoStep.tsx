@@ -19,10 +19,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Building2, Trophy, Globe2, Scale, Shield, HelpCircle, ArrowRight } from "lucide-react";
-import { sectors, industries, businessStages, regions, valuationPurposes } from "@/lib/validations";
+import { Info, Building2, Trophy, Globe2, Scale, Shield, ArrowRight } from "lucide-react";
+import { sectors, industries, businessStages, regions, valuationPurposes, valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Card,
   CardContent,
@@ -31,6 +32,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface BusinessInfoStepProps {
   data: Partial<ValuationFormData>;
@@ -43,27 +45,31 @@ interface BusinessInfoStepProps {
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [autoAdvance, setAutoAdvance] = useState(true);
+  const { toast } = useToast();
 
-  const form = useForm<Partial<ValuationFormData>>({
+  const form = useForm<ValuationFormData>({
+    resolver: zodResolver(valuationFormSchema),
     defaultValues: {
       businessName: data.businessName || "",
       valuationPurpose: data.valuationPurpose || "fundraising",
-      sector: data.sector || "technology",
-      industry: data.industry || "",
-      stage: data.stage || "ideation_unvalidated",
+      sector: data.sector as ValuationFormData["sector"],
+      industry: data.industry as ValuationFormData["industry"],
+      stage: data.stage as ValuationFormData["stage"],
       region: data.region || "us",
-      complianceStandard: data.complianceStandard || "none",
+      complianceStandard: data.complianceStandard || undefined,
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
       intellectualProperty: data.intellectualProperty || "none",
       competitiveDifferentiation: data.competitiveDifferentiation || "low",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "limited",
+      currency: "USD",
+      revenue: 0,
+      margins: 0,
+      growthRate: 0
     },
   });
 
-  // Smart defaults based on sector selection
   useEffect(() => {
     if (selectedSector) {
       const sectorData = sectors[selectedSector as keyof typeof sectors];
@@ -73,9 +79,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
         form.setValue("industry", firstIndustry);
         form.setValue("stage", stage);
-        form.setValue("sector", selectedSector);
+        form.setValue("sector", selectedSector as ValuationFormData["sector"]);
 
-        // Auto-update parent
         onUpdate({
           sector: selectedSector as keyof typeof sectors,
           industry: firstIndustry,
@@ -83,10 +88,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
         });
       }
     }
-  }, [selectedSector]);
+  }, [selectedSector, form]);
 
   const getRecommendedStage = (sector: string): keyof typeof businessStages => {
-    // Smart logic to recommend stage based on sector
     switch (sector) {
       case "technology":
       case "fintech":
@@ -100,49 +104,56 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     }
   };
 
-  const handleSectorChange = (value: string) => {
-    setSelectedSector(value);
+  const handleSubmit = async (values: ValuationFormData) => {
+    try {
+      const requiredFields = ['businessName', 'sector', 'industry', 'stage', 'valuationPurpose', 'region'] as const;
+      const missingFields = requiredFields.filter(field => !values[field]);
+
+      if (missingFields.length > 0) {
+        const fieldNames = missingFields.map(field => field.replace(/([A-Z])/g, ' $1').toLowerCase());
+        toast({
+          title: "Required Fields Missing",
+          description: `Please fill in: ${fieldNames.join(', ')}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await onUpdate(values);
+      onNext();
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save business information. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSubmit = async (values: Partial<ValuationFormData>) => {
-    // Ensure required fields are present
-    const requiredFields = ['businessName', 'sector', 'industry', 'stage'];
-    const missingFields = requiredFields.filter(field => !values[field as keyof ValuationFormData]);
-
-    if (missingFields.length > 0) {
-      const errorMessage = `Please fill in the following required fields: ${missingFields.join(', ')}`;
-      form.setError('businessName', { message: errorMessage });
-      return;
-    }
-
-    await onUpdate(values);
-    onNext();
+  const handleSectorChange = (value: string) => {
+    setSelectedSector(value);
   };
 
   const handleRegionChange = (value: string) => {
     const region = value as keyof typeof regions;
     form.setValue("region", region);
-    form.setValue("complianceStandard", "none");
+    form.setValue("complianceStandard", undefined);
     onUpdate({
       region,
       currency: regions[region].defaultCurrency,
-      complianceStandard: "none"
+      complianceStandard: undefined
     });
   };
 
   const handleStageChange = (value: string) => {
-    form.setValue("stage", value as keyof typeof businessStages);
-    onUpdate({ stage: value as keyof typeof businessStages });
+    form.setValue("stage", value as ValuationFormData["stage"]);
+    onUpdate({ stage: value as ValuationFormData["stage"] });
   };
 
   const handleIndustryChange = (value: string) => {
     form.setValue("industry", value);
     onUpdate({ industry: value });
-  };
-
-  const getAvailableStandards = () => {
-    const region = form.getValues("region") as keyof typeof regionSpecificStandards;
-    return regionSpecificStandards[region] || regionSpecificStandards.other;
   };
 
   return (
@@ -353,8 +364,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
-
-                {/* Not showing all fields initially for a cleaner UX */}
               </div>
               <FormField
                 control={form.control}
@@ -405,7 +414,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                             <SelectValue placeholder="Select compliance standard" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.entries(getAvailableStandards()).map(([key, name]) => (
+                            {Object.entries(regions[form.getValues("region") as keyof typeof regions] ? regions[form.getValues("region") as keyof typeof regions].complianceStandards : regions.other.complianceStandards).map(([key, name]) => (
                               <SelectItem key={key} value={key}>
                                 {name}
                               </SelectItem>
