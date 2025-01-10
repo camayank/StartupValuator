@@ -350,10 +350,33 @@ export const valuationPurposes = {
   exit_planning: "Exit Planning",
 } as const;
 
-// Industry-specific metrics configuration
+// Core metrics that apply to all industries
+export const coreMetrics = {
+  financial: {
+    revenue: { label: "Revenue", type: "currency" },
+    growthRate: { label: "Growth Rate", type: "percentage" },
+    operatingMargin: { label: "Operating Margin", type: "percentage" },
+    cashFlow: { label: "Cash Flow", type: "currency" },
+    burnRate: { label: "Burn Rate", type: "currency" }
+  },
+  market: {
+    tam: { label: "Total Addressable Market", type: "currency" },
+    marketShare: { label: "Market Share", type: "percentage" },
+    competitorCount: { label: "Number of Direct Competitors", type: "number" }
+  },
+  operational: {
+    customerBase: { label: "Active Customer Base", type: "number" },
+    retention: { label: "Customer Retention Rate", type: "percentage" },
+    acquisitionCost: { label: "Customer Acquisition Cost", type: "currency" }
+  }
+} as const;
+
+// Enhanced industry metrics with flexible categorization
 export const industryMetrics = {
   saas: {
     name: "SaaS",
+    description: "Software as a Service businesses",
+    relatedSectors: ["enterprise", "technology", "fintech"],
     metrics: {
       mrr: { label: "Monthly Recurring Revenue (MRR)", type: "currency" },
       arr: { label: "Annual Recurring Revenue (ARR)", type: "currency" },
@@ -365,6 +388,8 @@ export const industryMetrics = {
   },
   ecommerce: {
     name: "E-commerce",
+    description: "E-commerce businesses",
+    relatedSectors: ["retail"],
     metrics: {
       gmv: { label: "Gross Merchandise Value (GMV)", type: "currency" },
       aov: { label: "Average Order Value (AOV)", type: "currency" },
@@ -375,6 +400,8 @@ export const industryMetrics = {
   },
   manufacturing: {
     name: "Manufacturing",
+    description: "Manufacturing businesses",
+    relatedSectors: ["industrial_tech"],
     metrics: {
       assetUtilization: { label: "Asset Utilization", type: "percentage" },
       operatingMargin: { label: "Operating Margin", type: "percentage" },
@@ -385,6 +412,8 @@ export const industryMetrics = {
   },
   healthcare: {
     name: "Healthcare",
+    description: "Healthcare businesses",
+    relatedSectors: ["healthtech"],
     metrics: {
       patientLtv: { label: "Patient Lifetime Value", type: "currency" },
       revenuePerPatient: { label: "Revenue per Patient", type: "currency" },
@@ -395,6 +424,8 @@ export const industryMetrics = {
   },
   fintech: {
     name: "Financial Technology",
+    description: "Financial Technology businesses",
+    relatedSectors: ["technology", "enterprise"],
     metrics: {
       transactionVolume: { label: "Transaction Volume", type: "currency" },
       arpu: { label: "Average Revenue per User (ARPU)", type: "currency" },
@@ -405,16 +436,74 @@ export const industryMetrics = {
   }
 } as const;
 
-// Add to existing industry metrics schema
+// Dynamic industry questionnaire schema
+export const industryQuestionnaireSchema = z.object({
+  revenueModel: z.enum([
+    "subscription",
+    "transactional",
+    "advertising",
+    "licensing",
+    "hybrid",
+    "other"
+  ]),
+  customerMetrics: z.object({
+    acquisitionChannel: z.string(),
+    lifetimeValue: z.number().optional(),
+    engagementMetric: z.string()
+  }),
+  operationalMetrics: z.object({
+    costStructure: z.string(),
+    scalabilityFactors: z.array(z.string()),
+    keyResources: z.array(z.string())
+  }),
+  industryTrends: z.array(z.object({
+    name: z.string(),
+    impact: z.enum(["low", "medium", "high"]),
+    description: z.string()
+  }))
+});
+
+// Hybrid metrics schema for industries that combine multiple sectors
+export const hybridMetricsSchema = z.object({
+  primarySector: z.enum(Object.keys(industryMetrics) as [keyof typeof industryMetrics, ...Array<keyof typeof industryMetrics>]),
+  secondarySectors: z.array(z.enum(Object.keys(industryMetrics) as [keyof typeof industryMetrics, ...Array<keyof typeof industryMetrics>])),
+  customMetrics: z.array(z.object({
+    name: z.string(),
+    value: z.number(),
+    type: z.enum(["currency", "percentage", "number", "ratio"]),
+    description: z.string()
+  })),
+  weights: z.record(z.string(), z.number()), // For weighted average calculations
+  notes: z.string().optional()
+});
+
+// Update the existing industry metrics schema to support flexible categorization
 export const industryMetricsSchema = z.object({
-  tam: z.number().min(0, "TAM must be positive"),
-  metrics: z.record(z.string(), z.number()),
+  // Core metrics that apply to all industries
+  coreMetrics: z.record(z.string(), z.number()),
+
+  // Industry-specific metrics
+  industrySpecificMetrics: z.record(z.string(), z.number()),
+
+  // Optional hybrid metrics for cross-sector industries
+  hybridMetrics: hybridMetricsSchema.optional(),
+
+  // Dynamic questionnaire responses for undefined industries
+  questionnaireResponses: industryQuestionnaireSchema.optional(),
+
+  // Qualitative factors
+  qualitativeFactors: z.array(z.object({
+    factor: z.string(),
+    impact: z.enum(["positive", "negative", "neutral"]),
+    description: z.string()
+  })).optional(),
+
+  // Benchmarking data
   benchmarks: z.record(z.string(), z.object({
     low: z.number(),
     median: z.number(),
     high: z.number()
-  })),
-  industrySpecificMetrics: z.record(z.string(), z.number()).optional()
+  }))
 });
 
 export const valuationFormSchema = z.object({
