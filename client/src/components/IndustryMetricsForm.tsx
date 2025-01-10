@@ -14,9 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, TrendingUp, AlertTriangle, Activity } from "lucide-react";
-import { getIndustryMetricsSchema, industryRiskFactors } from "@/lib/validation/industryMetrics";
+import { industryMetrics, industryMetricsSchema } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { formatCurrency } from "@/lib/validations";
 
 interface IndustryMetricsFormProps {
   sector: string;
@@ -35,12 +36,33 @@ export function IndustryMetricsForm({
   currentStep,
   totalSteps 
 }: IndustryMetricsFormProps) {
-  const metricsSchema = getIndustryMetricsSchema(industry);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
+  // Determine which metrics to show based on the sector/industry
+  const getIndustryMetrics = () => {
+    // Map the sector to the corresponding metrics
+    const sectorMapping: Record<string, keyof typeof industryMetrics> = {
+      technology: "saas",
+      fintech: "fintech",
+      enterprise: "saas",
+      ecommerce: "ecommerce",
+      healthtech: "healthcare",
+      industrial_tech: "manufacturing"
+    };
+
+    return industryMetrics[sectorMapping[sector] || "saas"];
+  };
+
+  const selectedMetrics = getIndustryMetrics();
+
   const form = useForm({
-    resolver: zodResolver(metricsSchema || {}),
-    defaultValues: {},
+    resolver: zodResolver(industryMetricsSchema),
+    defaultValues: {
+      tam: 0,
+      metrics: {},
+      benchmarks: {},
+      industrySpecificMetrics: {}
+    },
   });
 
   const onSubmit = (data: any) => {
@@ -48,7 +70,7 @@ export function IndustryMetricsForm({
     onNext();
   };
 
-  if (!metricsSchema) {
+  if (!selectedMetrics) {
     return (
       <Alert>
         <Info className="h-4 w-4" />
@@ -58,9 +80,6 @@ export function IndustryMetricsForm({
       </Alert>
     );
   }
-
-  // Get risk factors for the current sector
-  const riskFactors = industryRiskFactors[sector as keyof typeof industryRiskFactors] || {};
 
   return (
     <motion.div
@@ -88,109 +107,61 @@ export function IndustryMetricsForm({
             <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                Core Performance Metrics
+                {selectedMetrics.name} Metrics
               </h3>
               <div className="grid md:grid-cols-2 gap-4">
-                {Object.entries(metricsSchema.shape)
-                  .filter(([key]) => !['riskAssessment'].includes(key))
-                  .map(([fieldName, field]: [string, any]) => {
-                    const isPercentage = fieldName.toLowerCase().includes('rate') || 
-                                     fieldName.toLowerCase().includes('margin') ||
-                                     fieldName.toLowerCase().includes('efficiency');
+                {Object.entries(selectedMetrics.metrics).map(([key, metric]) => {
+                  const isPercentage = metric.type === 'percentage';
+                  const isCurrency = metric.type === 'currency';
 
-                    const label = fieldName
-                      .split(/(?=[A-Z])|_/)
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(" ");
-
-                    return (
-                      <FormField
-                        key={fieldName}
-                        control={form.control}
-                        name={fieldName}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{label}</FormLabel>
-                            <FormControl>
-                              {isPercentage ? (
-                                <div className="pt-2">
-                                  <Slider
-                                    value={[field.value || 0]}
-                                    onValueChange={([value]) => field.onChange(value)}
-                                    max={100}
-                                    step={1}
-                                    className="pt-2"
-                                  />
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {field.value || 0}%
-                                  </p>
-                                </div>
-                              ) : (
-                                <Input
-                                  {...field}
-                                  type="number"
-                                  className={`transition-all duration-200 ${
-                                    focusedField === fieldName ? "ring-2 ring-primary" : ""
-                                  }`}
-                                  onFocus={() => setFocusedField(fieldName)}
-                                  onBlur={() => setFocusedField(null)}
-                                />
-                              )}
-                            </FormControl>
-                            <FormDescription>
-                              Enter your {label.toLowerCase()}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    );
-                })}
-              </div>
-            </div>
-
-            {/* Risk Assessment Section */}
-            <div className="col-span-2 p-6 bg-card rounded-lg border shadow-sm space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Risk Assessment
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                {Object.entries(riskFactors).map(([category, factors]) => (
-                  <div key={category} className="space-y-2">
-                    <h4 className="font-medium capitalize">{category} Risks</h4>
+                  return (
                     <FormField
+                      key={key}
                       control={form.control}
-                      name={`riskAssessment.${category}Risk`}
+                      name={`industrySpecificMetrics.${key}`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormDescription>
-                            Rate the impact level (1-10)
-                          </FormDescription>
+                          <FormLabel>{metric.label}</FormLabel>
                           <FormControl>
-                            <div className="pt-2">
-                              <Slider
-                                value={[field.value || 1]}
-                                onValueChange={([value]) => field.onChange(value)}
-                                max={10}
-                                step={1}
-                                className="pt-2"
+                            {isPercentage ? (
+                              <div className="pt-2">
+                                <Slider
+                                  value={[field.value || 0]}
+                                  onValueChange={([value]) => field.onChange(value)}
+                                  max={100}
+                                  step={1}
+                                  className="pt-2"
+                                />
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {field.value || 0}%
+                                </p>
+                              </div>
+                            ) : (
+                              <Input
+                                {...field}
+                                type="number"
+                                className={`transition-all duration-200 ${
+                                  focusedField === key ? "ring-2 ring-primary" : ""
+                                }`}
+                                onFocus={() => setFocusedField(key)}
+                                onBlur={() => setFocusedField(null)}
+                                onChange={(e) => {
+                                  const value = Number(e.target.value);
+                                  field.onChange(value);
+                                }}
+                                placeholder={isCurrency ? "0.00" : "0"}
                               />
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Level: {field.value || 1}
-                              </p>
-                            </div>
+                            )}
                           </FormControl>
-                          <ul className="list-disc list-inside text-sm text-muted-foreground mt-2">
-                            {(factors as string[]).map((factor) => (
-                              <li key={factor}>{factor}</li>
-                            ))}
-                          </ul>
+                          <FormDescription>
+                            {isCurrency && field.value ? formatCurrency(field.value) : "Enter value"}
+                          </FormDescription>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

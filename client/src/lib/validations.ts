@@ -350,7 +350,62 @@ export const valuationPurposes = {
   exit_planning: "Exit Planning",
 } as const;
 
-// Add industry metrics schema
+// Industry-specific metrics configuration
+export const industryMetrics = {
+  saas: {
+    name: "SaaS",
+    metrics: {
+      mrr: { label: "Monthly Recurring Revenue (MRR)", type: "currency" },
+      arr: { label: "Annual Recurring Revenue (ARR)", type: "currency" },
+      cac: { label: "Customer Acquisition Cost (CAC)", type: "currency" },
+      ltv: { label: "Customer Lifetime Value (LTV)", type: "currency" },
+      churnRate: { label: "Churn Rate", type: "percentage" },
+      grossRetention: { label: "Gross Retention Rate", type: "percentage" }
+    }
+  },
+  ecommerce: {
+    name: "E-commerce",
+    metrics: {
+      gmv: { label: "Gross Merchandise Value (GMV)", type: "currency" },
+      aov: { label: "Average Order Value (AOV)", type: "currency" },
+      customerRetention: { label: "Customer Retention Rate", type: "percentage" },
+      inventoryTurnover: { label: "Inventory Turnover", type: "number" },
+      returnRate: { label: "Return Rate", type: "percentage" }
+    }
+  },
+  manufacturing: {
+    name: "Manufacturing",
+    metrics: {
+      assetUtilization: { label: "Asset Utilization", type: "percentage" },
+      operatingMargin: { label: "Operating Margin", type: "percentage" },
+      workingCapital: { label: "Working Capital Efficiency", type: "ratio" },
+      roic: { label: "Return on Invested Capital (ROIC)", type: "percentage" },
+      capacityUtilization: { label: "Capacity Utilization", type: "percentage" }
+    }
+  },
+  healthcare: {
+    name: "Healthcare",
+    metrics: {
+      patientLtv: { label: "Patient Lifetime Value", type: "currency" },
+      revenuePerPatient: { label: "Revenue per Patient", type: "currency" },
+      regulatoryCompliance: { label: "Regulatory Compliance Costs", type: "currency" },
+      treatmentCost: { label: "Average Treatment Cost", type: "currency" },
+      operatingMargins: { label: "Operating Margins", type: "percentage" }
+    }
+  },
+  fintech: {
+    name: "Financial Technology",
+    metrics: {
+      transactionVolume: { label: "Transaction Volume", type: "currency" },
+      arpu: { label: "Average Revenue per User (ARPU)", type: "currency" },
+      cac: { label: "Customer Acquisition Cost (CAC)", type: "currency" },
+      retentionRate: { label: "Retention Rate", type: "percentage" },
+      tpv: { label: "Total Payment Value (TPV)", type: "currency" }
+    }
+  }
+} as const;
+
+// Add to existing industry metrics schema
 export const industryMetricsSchema = z.object({
   tam: z.number().min(0, "TAM must be positive"),
   metrics: z.record(z.string(), z.number()),
@@ -358,7 +413,8 @@ export const industryMetricsSchema = z.object({
     low: z.number(),
     median: z.number(),
     high: z.number()
-  }))
+  })),
+  industrySpecificMetrics: z.record(z.string(), z.number()).optional()
 });
 
 export const valuationFormSchema = z.object({
