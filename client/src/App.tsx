@@ -45,12 +45,17 @@ import { useState } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 import { LandingPage } from "./pages/LandingPage";
+import { IntegratedWorkflowController } from "@/components/IntegratedWorkflowController";
+import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
+
 
 // Update navigation configuration
 const navigationConfig = {
   startup: {
     mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Comprehensive startup valuation", icon: Calculator },
+      { href: "/integrated-workflow", label: "Start Business Journey", description: "Complete business planning and valuation", icon: Calculator },
+      { href: "/valuation", label: "Valuation Only", description: "Comprehensive startup valuation", icon: Calculator },
+      { href: "/business-plan", label: "Business Plan Only", description: "Generate detailed business plan", icon: FileText },
       { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", icon: FileText },
     ],
@@ -379,6 +384,12 @@ function App() {
               </Route>
               <Route path="/profile/:userId">
                 <Profile />
+              </Route>
+              <Route path="/integrated-workflow">
+                <IntegratedWorkflowController />
+              </Route>
+              <Route path="/business-plan">
+                <BusinessPlanWizard />
               </Route>
               <Route path="/">
                 <ValuationWizard
