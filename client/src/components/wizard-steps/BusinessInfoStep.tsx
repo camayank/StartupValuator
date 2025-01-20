@@ -48,13 +48,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const validationContext = {
-    sector: selectedSector,
-    stage: data.stage,
-  };
-
-  const { validateField, isFieldRequired } = useFieldValidation(validationContext);
-
   const form = useForm<ValuationFormData>({
     defaultValues: {
       businessName: data.businessName || "",
@@ -72,25 +65,39 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Validate required fields
+      // Track which required fields are missing
+      const missingFields = [];
+
       if (!values.businessName?.trim()) {
-        toast({
-          title: "Business Name Required",
-          description: "Please enter your business name to continue",
-          variant: "destructive",
-        });
-        return;
+        missingFields.push("Business Name");
       }
-
       if (!values.sector) {
+        missingFields.push("Business Sector");
+      }
+      if (!values.industry) {
+        missingFields.push("Industry");
+      }
+      if (!values.stage) {
+        missingFields.push("Business Stage");
+      }
+      if (!values.intellectualProperty) {
+        missingFields.push("IP Protection Status");
+      }
+      if (!values.competitiveDifferentiation) {
+        missingFields.push("Competitive Differentiation");
+      }
+      if (!values.scalability) {
+        missingFields.push("Business Scalability");
+      }
+
+      if (missingFields.length > 0) {
         toast({
-          title: "Sector Selection Required",
-          description: "Please select your business sector to continue",
+          title: "Required Fields Missing",
+          description: `Please fill in the following fields: ${missingFields.join(", ")}`,
           variant: "destructive",
         });
         return;
       }
-
 
       await onUpdate(values);
       onNext();
