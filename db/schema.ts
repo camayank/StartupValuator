@@ -22,6 +22,10 @@ export const activityTypes = pgEnum("activity_type", [
   "feature_interaction"
 ]);
 
+// New enums for valuation-specific functionality
+export const valuationStatus = pgEnum("valuation_status", ["draft", "completed", "archived"]);
+export const reportFormat = pgEnum("report_format", ["pdf", "excel", "both"]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
@@ -141,6 +145,53 @@ export const workflowSuggestions = pgTable("workflow_suggestions", {
   expiresAt: timestamp("expires_at"),
 });
 
+
+// Valuation records table
+export const valuationRecords = pgTable("valuation_records", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  businessName: varchar("business_name", { length: 255 }).notNull(),
+  industry: varchar("industry", { length: 100 }).notNull(),
+  stage: varchar("stage", { length: 50 }).notNull(),
+  status: valuationStatus("status").default("draft").notNull(),
+  metrics: jsonb("metrics").$type<{
+    financial: Record<string, number>;
+    industry: Record<string, number>;
+    custom: Array<{ name: string; value: number; type: string }>;
+  }>(),
+  calculations: jsonb("calculations").$type<{
+    methodologies: Record<string, number>;
+    weightedAverage: number;
+    adjustments: Record<string, number>;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Industry benchmarks table
+export const industryBenchmarks = pgTable("industry_benchmarks", {
+  id: serial("id").primaryKey(),
+  industry: varchar("industry", { length: 100 }).notNull(),
+  stage: varchar("stage", { length: 50 }).notNull(),
+  metrics: jsonb("metrics").$type<{
+    financial: Record<string, { min: number; median: number; max: number }>;
+    valuation: Record<string, { min: number; median: number; max: number }>;
+  }>().notNull(),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+// Generated reports table
+export const generatedReports = pgTable("generated_reports", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").references(() => valuationRecords.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  format: reportFormat("format").notNull(),
+  content: jsonb("content"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  downloadUrl: varchar("download_url", { length: 255 }),
+  expiresAt: timestamp("expires_at"),
+});
+
 // Define relations
 export const userToProfileRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -185,6 +236,23 @@ export const suggestionRelations = relations(workflowSuggestions, ({ one }) => (
   }),
 }));
 
+export const valuationRelations = relations(valuationRecords, ({ one }) => ({
+  user: one(users, {
+    fields: [valuationRecords.userId],
+    references: [users.id],
+  }),
+}));
+
+export const reportRelations = relations(generatedReports, ({ one }) => ({
+  valuation: one(valuationRecords, {
+    fields: [generatedReports.valuationId],
+    references: [valuationRecords.id],
+  }),
+  user: one(users, {
+    fields: [generatedReports.userId],
+    references: [users.id],
+  }),
+}));
 
 // Create schemas for validation with custom validation rules
 export const insertUserSchema = createInsertSchema(users, {
@@ -219,6 +287,13 @@ export const selectUserActivitySchema = createSelectSchema(userActivities);
 export const insertWorkflowSuggestionSchema = createInsertSchema(workflowSuggestions);
 export const selectWorkflowSuggestionSchema = createSelectSchema(workflowSuggestions);
 
+export const insertValuationRecordSchema = createInsertSchema(valuationRecords);
+export const selectValuationRecordSchema = createSelectSchema(valuationRecords);
+export const insertIndustryBenchmarkSchema = createInsertSchema(industryBenchmarks);
+export const selectIndustryBenchmarkSchema = createSelectSchema(industryBenchmarks);
+export const insertGeneratedReportSchema = createInsertSchema(generatedReports);
+export const selectGeneratedReportSchema = createSelectSchema(generatedReports);
+
 // Export types
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;
@@ -234,6 +309,12 @@ export type InsertUserActivity = typeof userActivities.$inferInsert;
 export type SelectUserActivity = typeof userActivities.$inferSelect;
 export type InsertWorkflowSuggestion = typeof workflowSuggestions.$inferInsert;
 export type SelectWorkflowSuggestion = typeof workflowSuggestions.$inferSelect;
+export type InsertValuationRecord = typeof valuationRecords.$inferInsert;
+export type SelectValuationRecord = typeof valuationRecords.$inferSelect;
+export type InsertIndustryBenchmark = typeof industryBenchmarks.$inferInsert;
+export type SelectIndustryBenchmark = typeof industryBenchmarks.$inferSelect;
+export type InsertGeneratedReport = typeof generatedReports.$inferInsert;
+export type SelectGeneratedReport = typeof generatedReports.$inferSelect;
 
 export const loginAudit = pgTable("login_audit", {
   id: serial("id").primaryKey(),
@@ -272,4 +353,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   usageStats: many(usageStats),
   activities: many(userActivities),
   suggestions: many(workflowSuggestions),
+  valuations: many(valuationRecords),
+  reports: many(generatedReports),
 }));

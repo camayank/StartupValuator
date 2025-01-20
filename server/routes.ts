@@ -26,6 +26,7 @@ import {
   validateRevenueModel,
   generateValuationReport
 } from "../client/src/lib/services/openai";
+import valuationRoutes from "./routes/valuation";
 
 // Define pitch deck data schema for validation
 const pitchDeckSlideSchema = z.object({
@@ -65,8 +66,8 @@ export function registerRoutes(app: Express): Server {
   // Set up authentication routes first
   setupAuth(app);
 
-  // Rest of your routes...
-  const cache = setupCache();
+  // Register valuation routes
+  app.use(valuationRoutes);
 
   // Activity tracking middleware
   app.use((req, res, next) => {
