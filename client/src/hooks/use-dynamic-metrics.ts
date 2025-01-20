@@ -5,12 +5,14 @@ import { getCombinedMetrics, createMetricSchema, type Metric } from "@/lib/metri
 
 export function useDynamicMetrics(industry: string, stage: string) {
   const metrics = getCombinedMetrics(industry, stage);
-  
+
   // Create dynamic validation schema based on metrics
   const validationSchema = z.object(
     metrics.reduce((acc, metric) => ({
       ...acc,
-      [metric.id]: createMetricSchema(metric)
+      [metric.id]: metric.required 
+        ? createMetricSchema(metric)
+        : createMetricSchema(metric).optional()
     }), {})
   );
 
@@ -19,20 +21,26 @@ export function useDynamicMetrics(industry: string, stage: string) {
   // Create form with dynamic validation
   const form = useForm<ValidationSchema>({
     resolver: zodResolver(validationSchema),
+    mode: "onChange",
     defaultValues: metrics.reduce((acc, metric) => ({
       ...acc,
-      [metric.id]: metric.defaultValue || 0
-    }), {})
+      [metric.id]: metric.defaultValue || undefined
+    }), {}),
   });
 
-  // Helper function to check if a metric should be shown
+  // Helper function to check if a metric should be shown based on business rules
   const shouldShowMetric = (metric: Metric) => {
-    return true; // Can be extended with more complex logic
+    // Add any conditional logic here, for example:
+    if (metric.id === "marketShare" && !stage.includes("scaling")) {
+      return false;
+    }
+    return true;
   };
 
   return {
-    metrics,
+    metrics: metrics.filter(shouldShowMetric),
     form,
     shouldShowMetric,
+    validationSchema,
   };
 }
