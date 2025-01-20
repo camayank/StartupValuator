@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useFieldValidation } from "@/hooks/use-field-validation";
 
 interface BusinessInfoStepProps {
   data: Partial<ValuationFormData>;
@@ -51,8 +50,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const form = useForm<ValuationFormData>({
     defaultValues: {
       businessName: data.businessName || "",
-      sector: data.sector || undefined,
-      industry: data.industry || undefined,
+      sector: data.sector || "",
+      industry: data.industry || "",
       stage: data.stage || "ideation_validated",
       intellectualProperty: data.intellectualProperty || "none",
       teamExperience: data.teamExperience || 0,
@@ -60,40 +59,40 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "moderate",
+      revenue: data.revenue || 0,
+      currency: data.currency || "USD",
+      growthRate: data.growthRate || 0,
+      margins: data.margins || 0
     },
   });
 
+  const validateRequiredFields = (values: ValuationFormData) => {
+    const requiredFields = [
+      { field: 'businessName', label: 'Business Name' },
+      { field: 'sector', label: 'Business Sector' },
+      { field: 'industry', label: 'Industry' },
+      { field: 'stage', label: 'Business Stage' },
+      { field: 'intellectualProperty', label: 'IP Protection Status' },
+      { field: 'competitiveDifferentiation', label: 'Competitive Differentiation' },
+      { field: 'scalability', label: 'Business Scalability' }
+    ];
+
+    const missingFields = requiredFields.filter(({ field }) => {
+      const value = values[field as keyof ValuationFormData];
+      return !value || (typeof value === 'string' && !value.trim());
+    });
+
+    return missingFields;
+  };
+
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Track which required fields are missing
-      const missingFields = [];
-
-      if (!values.businessName?.trim()) {
-        missingFields.push("Business Name");
-      }
-      if (!values.sector) {
-        missingFields.push("Business Sector");
-      }
-      if (!values.industry) {
-        missingFields.push("Industry");
-      }
-      if (!values.stage) {
-        missingFields.push("Business Stage");
-      }
-      if (!values.intellectualProperty) {
-        missingFields.push("IP Protection Status");
-      }
-      if (!values.competitiveDifferentiation) {
-        missingFields.push("Competitive Differentiation");
-      }
-      if (!values.scalability) {
-        missingFields.push("Business Scalability");
-      }
+      const missingFields = validateRequiredFields(values);
 
       if (missingFields.length > 0) {
         toast({
           title: "Required Fields Missing",
-          description: `Please fill in the following fields: ${missingFields.join(", ")}`,
+          description: `Please fill in the following fields: ${missingFields.map(f => f.label).join(", ")}`,
           variant: "destructive",
         });
         return;
@@ -112,52 +111,17 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   };
 
   const handleSectorChange = (value: string) => {
-    if (value && sectors[value as keyof typeof sectors]) {
-      setSelectedSector(value);
-    }
+    setSelectedSector(value);
+    form.setValue("sector", value);
+    form.setValue("industry", ""); // Reset industry when sector changes
   };
-
-  const handleRegionChange = (value: string) => {
-    if (value && regions[value as keyof typeof regions]) {
-      const region = value as keyof typeof regions;
-      form.setValue("region", region);
-      form.setValue("complianceStandard", undefined);
-      onUpdate({
-        region,
-        currency: regions[region].defaultCurrency,
-        complianceStandard: undefined
-      });
-    }
-  };
-
-  const handleStageChange = (value: string) => {
-    if (value && businessStages[value as keyof typeof businessStages]) {
-      form.setValue("stage", value as ValuationFormData["stage"]);
-      onUpdate({ stage: value as ValuationFormData["stage"] });
-    }
-  };
-
-  const handleIndustryChange = (value: string) => {
-    if (value && selectedSector) {
-      const sectorData = sectors[selectedSector as keyof typeof sectors];
-      if (sectorData && value in sectorData.subsectors) {
-        form.setValue("industry", value);
-        onUpdate({ industry: value });
-      }
-    }
-  };
-
-  useEffect(() => {
-    const stage = form.getValues("stage");
-    //Removed suggestion logic as it's not relevant to the edit.
-  }, [selectedSector, form.watch("stage")]);
 
   return (
     <div className="space-y-6">
       <Alert className="bg-primary/5 border-primary/10">
         <Info className="h-4 w-4 text-primary" />
         <AlertDescription className="text-primary/90">
-          Start by entering your basic business information. You can add more details in the next steps.
+          Fill in your business information below. All fields marked with * are required.
         </AlertDescription>
       </Alert>
 
@@ -180,9 +144,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Business Name *</FormLabel>
-                    <FormDescription>
-                      Enter the legal or trading name of your business
-                    </FormDescription>
                     <FormControl>
                       <Input
                         {...field}
@@ -197,27 +158,82 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 )}
               />
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sector"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Sector *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={handleSectorChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your sector" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(sectors).map(([key, { name }]) => (
+                            <SelectItem key={key} value={key}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          form.setValue("industry", value);
+                        }}
+                        disabled={!selectedSector}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedSector && sectors[selectedSector as keyof typeof sectors] &&
+                            Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors).map(([key, name]) => (
+                              <SelectItem key={key} value={key}>
+                                {name}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="sector"
+                name="stage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Business Sector *</FormLabel>
-                    <FormDescription>
-                      Choose the primary sector that best describes your business
-                    </FormDescription>
+                    <FormLabel>Business Stage *</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
-                        field.onChange(value);
-                        handleSectorChange(value);
+                        form.setValue("stage", value);
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select your sector" />
+                        <SelectValue placeholder="Select your stage" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(sectors).map(([key, { name }]) => (
+                        {Object.entries(businessStages).map(([key, name]) => (
                           <SelectItem key={key} value={key}>
                             {name}
                           </SelectItem>
@@ -232,6 +248,85 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="intellectualProperty"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IP Protection Status *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          form.setValue("intellectualProperty", value);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select IP status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No IP Protection</SelectItem>
+                          <SelectItem value="pending">Patents Pending</SelectItem>
+                          <SelectItem value="registered">Registered Patents/IP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="competitiveDifferentiation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Competitive Differentiation *</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          form.setValue("competitiveDifferentiation", value);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select competitive position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Limited Differentiation</SelectItem>
+                          <SelectItem value="medium">Moderate Advantage</SelectItem>
+                          <SelectItem value="high">Strong Market Position</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="scalability"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Scalability *</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        form.setValue("scalability", value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select scalability potential" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="limited">Limited Scale Potential</SelectItem>
+                        <SelectItem value="moderate">Moderate Scalability</SelectItem>
+                        <SelectItem value="high">Highly Scalable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="valuationPurpose"
                   render={({ field }) => (
                     <FormItem>
@@ -241,8 +336,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           <Select
                             value={field.value}
                             onValueChange={(value) => {
-                              field.onChange(value);
-                              onUpdate({ valuationPurpose: value as ValuationFormData['valuationPurpose'] });
+                              form.setValue("valuationPurpose", value);
                             }}
                           >
                             <SelectTrigger className="pl-8">
@@ -265,42 +359,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 />
                 <FormField
                   control={form.control}
-                  name="stage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Business Stage *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Select
-                            value={field.value}
-                            onValueChange={handleStageChange}
-                          >
-                            <SelectTrigger className="pl-8">
-                              <SelectValue placeholder="Select your stage" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(businessStages).map(([key, name]) => (
-                                <SelectItem key={key} value={key}>
-                                  {name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Scale className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Indicate your company's current stage of development
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
                   name="region"
                   render={({ field }) => (
                     <FormItem>
@@ -309,7 +367,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         <div className="relative">
                           <Select
                             value={field.value}
-                            onValueChange={handleRegionChange}
+                            onValueChange={(value) => {
+                              form.setValue("region", value);
+                            }}
                           >
                             <SelectTrigger className="pl-8">
                               <SelectValue placeholder="Select region" />
@@ -329,79 +389,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="industry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Industry *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Select
-                            value={field.value}
-                            onValueChange={handleIndustryChange}
-                            disabled={!selectedSector}
-                          >
-                            <SelectTrigger className="pl-8">
-                              <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {selectedSector && sectors[selectedSector as keyof typeof sectors] &&
-                                Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors).map(([key, name]) => (
-                                  <SelectItem key={key} value={key}>
-                                    {name}
-                                  </SelectItem>
-                                ))
-                              }
-                            </SelectContent>
-                          </Select>
-                          <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Select your specific industry within the chosen sector
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="intellectualProperty"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IP Protection Status *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              onUpdate({ intellectualProperty: value as ValuationFormData['intellectualProperty'] });
-                            }}
-                          >
-                            <SelectTrigger className="pl-8">
-                              <SelectValue placeholder="Select IP status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No IP Protection</SelectItem>
-                              <SelectItem value="pending">Patents Pending</SelectItem>
-                              <SelectItem value="registered">Registered Patents/IP</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                        </div>
-                      </FormControl>
-                      <FormDescription>
-                        Current status of your intellectual property protection
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="teamExperience"
@@ -415,8 +404,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         <Slider
                           value={[field.value || 0]}
                           onValueChange={([value]) => {
-                            field.onChange(value);
-                            onUpdate({ teamExperience: value });
+                            form.setValue("teamExperience", value);
                           }}
                           max={20}
                           step={1}
@@ -430,119 +418,28 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="customerBase"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Customer Base</FormLabel>
+                      <FormDescription>
+                        Number of active customers/users
+                      </FormDescription>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          form.setValue("customerBase", value);
+                        }}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-
-              <FormField
-                control={form.control}
-                name="customerBase"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Customer Base</FormLabel>
-                    <FormDescription>
-                      Number of active customers/users
-                    </FormDescription>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => {
-                        const value = Number(e.target.value);
-                        field.onChange(value);
-                        onUpdate({ customerBase: value });
-                      }}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="competitiveDifferentiation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Competitive Differentiation *</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        onUpdate({ competitiveDifferentiation: value as ValuationFormData['competitiveDifferentiation'] });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select competitive position" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Limited Differentiation</SelectItem>
-                        <SelectItem value="medium">Moderate Advantage</SelectItem>
-                        <SelectItem value="high">Strong Market Position</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="regulatoryCompliance"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Regulatory Compliance Status</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        onUpdate({ regulatoryCompliance: value as ValuationFormData['regulatoryCompliance'] });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select compliance status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="notRequired">Not Required</SelectItem>
-                        <SelectItem value="inProgress">In Progress</SelectItem>
-                        <SelectItem value="compliant">Fully Compliant</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="scalability"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Scalability *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            onUpdate({ scalability: value as ValuationFormData['scalability'] });
-                          }}
-                        >
-                          <SelectTrigger className="pl-8">
-                            <SelectValue placeholder="Select scalability potential" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="limited">Limited Scale Potential</SelectItem>
-                            <SelectItem value="moderate">Moderate Scalability</SelectItem>
-                            <SelectItem value="high">Highly Scalable</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Scale className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Assess your business's potential for growth and expansion
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
 
