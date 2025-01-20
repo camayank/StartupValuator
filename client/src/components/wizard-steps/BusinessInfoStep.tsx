@@ -59,10 +59,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       complianceStandard: data.complianceStandard || undefined,
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
-      intellectualProperty: data.intellectualProperty || "none",
-      competitiveDifferentiation: data.competitiveDifferentiation || "low",
+      intellectualProperty: data.intellectualProperty || "pending",
+      competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
-      scalability: data.scalability || "limited",
+      scalability: data.scalability || "moderate",
       currency: "USD",
       revenue: 0,
       margins: 0,
@@ -106,11 +106,24 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      const requiredFields = ['businessName', 'sector', 'industry', 'stage', 'valuationPurpose', 'region'] as const;
+      const requiredFields = [
+        'businessName',
+        'sector',
+        'industry',
+        'stage',
+        'valuationPurpose',
+        'region',
+        'intellectualProperty',
+        'scalability',
+        'competitiveDifferentiation'
+      ] as const;
+
       const missingFields = requiredFields.filter(field => !values[field]);
 
       if (missingFields.length > 0) {
-        const fieldNames = missingFields.map(field => field.replace(/([A-Z])/g, ' $1').toLowerCase());
+        const fieldNames = missingFields.map(field =>
+          field.replace(/([A-Z])/g, ' $1').toLowerCase()
+        );
         toast({
           title: "Required Fields Missing",
           description: `Please fill in: ${fieldNames.join(', ')}`,
@@ -172,7 +185,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       <Alert className="bg-primary/5 border-primary/10">
         <Info className="h-4 w-4 text-primary" />
         <AlertDescription className="text-primary/90">
-          Enter your core business information. We'll auto-suggest relevant options based on your inputs.
+          Enter your core business information. Required fields are marked with an asterisk (*).
         </AlertDescription>
       </Alert>
 
@@ -364,7 +377,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                               <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
                             </SelectTrigger>
                             <SelectContent>
-                              {selectedSector && sectors[selectedSector as keyof typeof sectors] && 
+                              {selectedSector && sectors[selectedSector as keyof typeof sectors] &&
                                 Object.entries(sectors[selectedSector as keyof typeof sectors].subsectors).map(([key, name]) => (
                                   <SelectItem key={key} value={key}>
                                     {name}
@@ -383,13 +396,12 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="intellectualProperty"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>IP Protection Status</FormLabel>
+                      <FormLabel>IP Protection Status *</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Select
@@ -411,6 +423,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           <Shield className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                         </div>
                       </FormControl>
+                      <FormDescription>
+                        Current status of your intellectual property protection
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -474,7 +489,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 name="competitiveDifferentiation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Competitive Differentiation</FormLabel>
+                    <FormLabel>Competitive Differentiation *</FormLabel>
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
@@ -528,23 +543,31 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 name="scalability"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Business Scalability</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        onUpdate({ scalability: value as ValuationFormData['scalability'] });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select scalability potential" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="limited">Limited Scale Potential</SelectItem>
-                        <SelectItem value="moderate">Moderate Scalability</SelectItem>
-                        <SelectItem value="high">Highly Scalable</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Business Scalability *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            onUpdate({ scalability: value as ValuationFormData['scalability'] });
+                          }}
+                        >
+                          <SelectTrigger className="pl-8">
+                            <SelectValue placeholder="Select scalability potential" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="limited">Limited Scale Potential</SelectItem>
+                            <SelectItem value="moderate">Moderate Scalability</SelectItem>
+                            <SelectItem value="high">Highly Scalable</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Scale className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Assess your business's potential for growth and expansion
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
