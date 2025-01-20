@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { db } from "@db";
 import { WorkflowSuggestionEngine } from "./services/workflowSuggestion";
 import { ActivityTracker } from "./services/activityTracker";
+import subscriptionRoutes from "./routes/subscription";
+import valuationRoutes from "./routes/valuation";
 import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
@@ -14,7 +16,7 @@ import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/
 import { Parser } from "json2csv";
 import * as XLSX from 'xlsx';
 import { setupAuth } from "./auth";
-import { 
+import {
   analyzePitchDeck,
   validateMetrics,
   assessBusinessModel,
@@ -26,7 +28,7 @@ import {
   validateRevenueModel,
   generateValuationReport
 } from "../client/src/lib/services/openai";
-import valuationRoutes from "./routes/valuation";
+
 
 // Define pitch deck data schema for validation
 const pitchDeckSlideSchema = z.object({
@@ -63,10 +65,14 @@ const reportDataSchema = z.object({
 });
 
 export function registerRoutes(app: Express): Server {
-  // Set up authentication routes first
+  // Set up authentication first
   setupAuth(app);
 
-  // Register valuation routes
+  // Set up cache
+  const cache = setupCache();
+
+  // Register all routes
+  app.use(subscriptionRoutes);
   app.use(valuationRoutes);
 
   // Activity tracking middleware
