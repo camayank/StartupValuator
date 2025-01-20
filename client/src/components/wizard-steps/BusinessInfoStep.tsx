@@ -24,7 +24,6 @@ import { Info, Building2, Trophy, Globe2, Scale, Shield, ArrowRight } from "luci
 import { sectors, industries, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Card,
   CardContent,
@@ -34,6 +33,15 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useFieldValidation } from "@/hooks/use-field-validation";
+
+interface BusinessInfoStepProps {
+  data: Partial<ValuationFormData>;
+  onUpdate: (data: Partial<ValuationFormData>) => void;
+  onNext: () => void;
+  currentStep: number;
+  totalSteps: number;
+}
 
 // Business intelligence suggestions based on sector and stage
 const getBusinessSuggestions = (sector: string, stage: string) => {
@@ -58,22 +66,20 @@ const getBusinessSuggestions = (sector: string, stage: string) => {
   };
 };
 
-interface BusinessInfoStepProps {
-  data: Partial<ValuationFormData>;
-  onUpdate: (data: Partial<ValuationFormData>) => void;
-  onNext: () => void;
-  currentStep: number;
-  totalSteps: number;
-}
-
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const { toast } = useToast();
   const [suggestions, setSuggestions] = useState(getBusinessSuggestions("", ""));
+  const { toast } = useToast();
+
+  const validationContext = {
+    sector: selectedSector,
+    stage: data.stage,
+  };
+
+  const { validateField, isFieldRequired } = useFieldValidation(validationContext);
 
   const form = useForm<ValuationFormData>({
-    //resolver: zodResolver(valuationFormSchema), 
     defaultValues: {
       businessName: data.businessName || "",
       sector: data.sector || undefined,
@@ -100,7 +106,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Core validation
+      // Validate required fields
       if (!values.businessName?.trim()) {
         toast({
           title: "Business Name Required",
@@ -110,31 +116,18 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
         return;
       }
 
-      if (!values.sector) {
-        toast({
-          title: "Sector Selection Required",
-          description: "Please select your business sector to proceed",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Stage-appropriate validation
-      if (values.stage.includes("revenue") && !values.revenue) {
-        toast({
-          title: "Revenue Information Needed",
-          description: "Please provide revenue information for your selected stage",
-          variant: "warning",
-        });
-      }
-
-      // Industry-specific validation
-      if (values.sector === "healthtech" && values.regulatoryCompliance === "notRequired") {
-        toast({
-          title: "Regulatory Compliance",
-          description: "Consider updating your regulatory compliance status for healthcare sector",
-          variant: "warning",
-        });
+      // Validate other fields using our validation system
+      const fields = ['businessName', 'sector', 'industry', 'stage'] as const;
+      for (const field of fields) {
+        const isValid = validateField(field, values[field]);
+        if (!isValid) {
+          toast({
+            title: "Validation Error",
+            description: `Please check the ${field} field.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
 
       await onUpdate(values);
