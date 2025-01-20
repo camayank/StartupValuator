@@ -14,11 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, TrendingUp, AlertTriangle, Activity, Plus, Lightbulb } from "lucide-react";
-import { 
-  industryMetrics, 
-  coreMetrics, 
+import {
+  industryMetrics,
+  coreMetrics,
   industryMetricsSchema,
-  type IndustryMetricsData 
+  type IndustryMetricsData
 } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -76,13 +76,13 @@ const ideationMetrics = {
   },
 };
 
-export function IndustryMetricsForm({ 
-  sector, 
-  industry, 
-  onMetricsUpdate, 
+export function IndustryMetricsForm({
+  sector,
+  industry,
+  onMetricsUpdate,
   onNext,
   currentStep,
-  totalSteps 
+  totalSteps
 }: IndustryMetricsFormProps) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showCustomMetrics, setShowCustomMetrics] = useState(false);
@@ -155,8 +155,8 @@ export function IndustryMetricsForm({
             )}
             <FormControl>
               {isText ? (
-                <Textarea 
-                  {...field} 
+                <Textarea
+                  {...field}
                   placeholder="Enter your analysis here..."
                   className="min-h-[100px]"
                 />
@@ -197,6 +197,31 @@ export function IndustryMetricsForm({
     );
   };
 
+  const handleSubmit = (data: IndustryMetricsData) => {
+    // Prepare the data based on startup stage
+    const formattedData = {
+      ...data,
+      stage: startupStage,
+      // Only include relevant metrics based on stage
+      ...(startupStage === "ideation" ? {
+        ideationMetrics: data.ideationMetrics,
+        // Clear other metrics for ideation stage
+        coreMetrics: undefined,
+        industrySpecificMetrics: undefined,
+      } : {
+        // Include regular metrics for other stages
+        coreMetrics: data.coreMetrics,
+        industrySpecificMetrics: data.industrySpecificMetrics,
+        // Clear ideation metrics for other stages
+        ideationMetrics: undefined,
+      }),
+      // Always include custom metrics if any
+      customMetrics: customMetrics.length > 0 ? data.customMetrics : undefined,
+    };
+
+    onMetricsUpdate(formattedData);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -217,7 +242,7 @@ export function IndustryMetricsForm({
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onMetricsUpdate)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           {/* Startup Stage Selector */}
           <div className="p-6 bg-card rounded-lg border shadow-sm space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -286,7 +311,7 @@ export function IndustryMetricsForm({
                   Core Business Metrics
                 </h3>
                 <div className="grid md:grid-cols-2 gap-4">
-                  {Object.entries(coreMetrics.financial).map(([key, metric]) => 
+                  {Object.entries(coreMetrics.financial).map(([key, metric]) =>
                     renderMetricField(key, metric, "coreMetrics")
                   )}
                 </div>

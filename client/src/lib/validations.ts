@@ -480,22 +480,31 @@ export const hybridMetricsSchema = z.object({
 // Update the existing industry metrics schema to support flexible categorization
 export const industryMetricsSchema = z.object({
   // Core metrics that apply to all industries
-  coreMetrics: z.record(z.string(), z.number()),
+  coreMetrics: z.record(z.string(), z.number()).optional(),
 
   // Industry-specific metrics
-  industrySpecificMetrics: z.record(z.string(), z.number()),
+  industrySpecificMetrics: z.record(z.string(), z.number()).optional(),
 
   // Optional hybrid metrics for cross-sector industries
   hybridMetrics: hybridMetricsSchema.optional(),
 
-  // Dynamic questionnaire responses for undefined industries
-  questionnaireResponses: industryQuestionnaireSchema.optional(),
+  // Stage information
+  stage: z.string(),
 
-  // Qualitative factors
-  qualitativeFactors: z.array(z.object({
-    factor: z.string(),
-    impact: z.enum(["positive", "negative", "neutral"]),
-    description: z.string()
+  // Ideation stage metrics
+  ideationMetrics: z.object({
+    marketResearch: z.number().min(0).max(100).optional(),
+    problemValidation: z.number().min(0).max(100).optional(),
+    solutionReadiness: z.number().min(0).max(100).optional(),
+    potentialMarketSize: z.number().min(0).optional(),
+    competitorAnalysis: z.string().optional(),
+  }).optional(),
+
+  // Custom metrics
+  customMetrics: z.array(z.object({
+    name: z.string(),
+    value: z.number(),
+    type: z.enum(["currency", "percentage", "number", "ratio"]),
   })).optional(),
 
   // Benchmarking data
@@ -503,8 +512,10 @@ export const industryMetricsSchema = z.object({
     low: z.number(),
     median: z.number(),
     high: z.number()
-  }))
+  })).optional()
 });
+
+export type IndustryMetricsData = z.infer<typeof industryMetricsSchema>;
 
 export const valuationFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
