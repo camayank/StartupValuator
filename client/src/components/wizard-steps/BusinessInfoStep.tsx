@@ -76,19 +76,37 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       if (sectorData && Object.keys(sectorData.subsectors).length > 0) {
         const firstIndustry = Object.keys(sectorData.subsectors)[0];
         const stage = getRecommendedStage(selectedSector);
+        const defaults = getSmartDefaults(selectedSector);
 
         form.setValue("industry", firstIndustry);
         form.setValue("stage", stage);
         form.setValue("sector", selectedSector as ValuationFormData["sector"]);
 
+        // Apply smart defaults
+        Object.entries(defaults).forEach(([key, value]) => {
+          form.setValue(key as keyof ValuationFormData, value);
+        });
+
         onUpdate({
           sector: selectedSector as keyof typeof sectors,
           industry: firstIndustry,
-          stage
+          stage,
+          ...defaults
         });
       }
     }
   }, [selectedSector, form]);
+
+  const getSmartDefaults = (sector: string) => {
+    // Define smart defaults based on sector
+    const defaults: Partial<ValuationFormData> = {
+      intellectualProperty: sector === "technology" || sector === "deeptech" ? "pending" : "none",
+      scalability: sector === "technology" || sector === "fintech" ? "high" : "moderate",
+      competitiveDifferentiation: sector === "deeptech" ? "high" : "medium",
+    };
+
+    return defaults;
+  };
 
   const getRecommendedStage = (sector: string): keyof typeof businessStages => {
     switch (sector) {
@@ -106,36 +124,26 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Only check for business name, sector, and industry as required
-      const requiredFields = [
-        'businessName',
-        'sector',
-        'industry'
-      ] as const;
-
-      const missingFields = requiredFields.filter(field => !values[field]);
-
-      if (missingFields.length > 0) {
-        const fieldNames = missingFields.map(field =>
-          field.replace(/([A-Z])/g, ' $1').toLowerCase()
-        );
+      // Only check for business name and sector as required
+      if (!values.businessName?.trim()) {
         toast({
-          title: "Required Fields Missing",
-          description: `Please fill in: ${fieldNames.join(', ')}`,
+          title: "Required Field Missing",
+          description: "Please enter your business name",
           variant: "destructive",
         });
         return;
       }
 
-      // Ensure default values are set for other fields
-      const formData = {
-        ...values,
-        intellectualProperty: values.intellectualProperty || "none",
-        competitiveDifferentiation: values.competitiveDifferentiation || "medium",
-        scalability: values.scalability || "moderate",
-      };
+      if (!values.sector) {
+        toast({
+          title: "Required Field Missing",
+          description: "Please select your business sector",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      await onUpdate(formData);
+      await onUpdate(values);
       onNext();
     } catch (error) {
       console.error('Submit error:', error);
