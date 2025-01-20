@@ -95,40 +95,27 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     },
   });
 
-  // Update suggestions when sector or stage changes
-  useEffect(() => {
-    const stage = form.getValues("stage");
-    if (selectedSector && stage) {
-      const newSuggestions = getBusinessSuggestions(selectedSector, stage);
-      setSuggestions(newSuggestions);
-    }
-  }, [selectedSector, form.watch("stage")]);
-
   const handleSubmit = async (values: ValuationFormData) => {
     try {
       // Validate required fields
       if (!values.businessName?.trim()) {
         toast({
           title: "Business Name Required",
-          description: "Please enter your business name to proceed",
+          description: "Please enter your business name to continue",
           variant: "destructive",
         });
         return;
       }
 
-      // Validate other fields using our validation system
-      const fields = ['businessName', 'sector', 'industry', 'stage'] as const;
-      for (const field of fields) {
-        const isValid = validateField(field, values[field]);
-        if (!isValid) {
-          toast({
-            title: "Validation Error",
-            description: `Please check the ${field} field.`,
-            variant: "destructive",
-          });
-          return;
-        }
+      if (!values.sector) {
+        toast({
+          title: "Sector Selection Required",
+          description: "Please select your business sector to continue",
+          variant: "destructive",
+        });
+        return;
       }
+
 
       await onUpdate(values);
       onNext();
@@ -178,18 +165,25 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     }
   };
 
+  useEffect(() => {
+    const stage = form.getValues("stage");
+    if (selectedSector && stage) {
+      const newSuggestions = getBusinessSuggestions(selectedSector, stage);
+      setSuggestions(newSuggestions);
+    }
+  }, [selectedSector, form.watch("stage")]);
+
   return (
     <div className="space-y-6">
       <Alert className="bg-primary/5 border-primary/10">
         <Info className="h-4 w-4 text-primary" />
         <AlertDescription className="text-primary/90">
-          {suggestions.competitorTip}
+          Start by entering your basic business information. You can add more details in the next steps.
         </AlertDescription>
       </Alert>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          {/* Form fields remain the same but with enhanced descriptions */}
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-medium flex items-center gap-2">
@@ -197,33 +191,60 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 Core Business Information
               </CardTitle>
               <CardDescription>
-                Start with your company's essential details
+                Let's start with your company's essential details
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Existing form fields with enhanced descriptions */}
               <FormField
                 control={form.control}
                 name="businessName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Business Name *</FormLabel>
+                    <FormDescription>
+                      Enter the legal or trading name of your business
+                    </FormDescription>
                     <FormControl>
-                      <div className="relative">
-                        <Input
-                          placeholder="e.g., TechStart Solutions"
-                          {...field}
-                          className={cn(
-                            "pl-8",
-                            focusedField === "businessName" && "ring-2 ring-primary"
-                          )}
-                          onFocus={() => setFocusedField("businessName")}
-                          onBlur={() => setFocusedField(null)}
-                          required
-                        />
-                        <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      </div>
+                      <Input
+                        {...field}
+                        placeholder="e.g., TechStart Solutions"
+                        className={cn(focusedField === "businessName" && "ring-2 ring-primary")}
+                        onFocus={() => setFocusedField("businessName")}
+                        onBlur={() => setFocusedField(null)}
+                      />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sector"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Sector *</FormLabel>
+                    <FormDescription>
+                      Choose the primary sector that best describes your business
+                    </FormDescription>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handleSectorChange(value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your sector" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(sectors).map(([key, { name }]) => (
+                          <SelectItem key={key} value={key}>
+                            {name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -234,13 +255,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 name="competitorAnalysis"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Competitor Analysis</FormLabel>
+                    <FormLabel>Competitor Analysis (Optional)</FormLabel>
                     <FormDescription>
-                      {suggestions.metricsTip}
+                      Briefly describe your competitive landscape. You can provide more details in later steps.
                     </FormDescription>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe your competitive landscape..."
+                        placeholder="e.g., Our main competitors are... Our unique advantage is..."
                         className="min-h-[100px]"
                         {...field}
                       />
@@ -251,37 +272,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="sector"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Business Sector *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Select
-                            value={selectedSector}
-                            onValueChange={handleSectorChange}
-                          >
-                            <SelectTrigger className="pl-8">
-                              <SelectValue placeholder="Select your sector" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(sectors).map(([key, { name }]) => (
-                                <SelectItem key={key} value={key}>
-                                  {name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="valuationPurpose"
@@ -315,10 +305,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
-              </div>
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="stage"
@@ -352,7 +338,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="region"
@@ -383,9 +371,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="industry"
@@ -422,6 +407,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="intellectualProperty"
@@ -456,36 +444,35 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="teamExperience"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team Experience (years)</FormLabel>
+                      <FormDescription>
+                        Average relevant industry experience
+                      </FormDescription>
+                      <div className="pt-2">
+                        <Slider
+                          value={[field.value || 0]}
+                          onValueChange={([value]) => {
+                            field.onChange(value);
+                            onUpdate({ teamExperience: value });
+                          }}
+                          max={20}
+                          step={1}
+                          className="pt-2"
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {field.value} years
+                        </p>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-
-              <FormField
-                control={form.control}
-                name="teamExperience"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Experience (years)</FormLabel>
-                    <FormDescription>
-                      Average relevant industry experience
-                    </FormDescription>
-                    <div className="pt-2">
-                      <Slider
-                        value={[field.value || 0]}
-                        onValueChange={([value]) => {
-                          field.onChange(value);
-                          onUpdate({ teamExperience: value });
-                        }}
-                        max={20}
-                        step={1}
-                        className="pt-2"
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {field.value} years
-                      </p>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

@@ -33,11 +33,11 @@ export const fieldValidations: Record<string, ValidationRule> = {
     required: true,
     rules: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
     dependencies: ["industry"],
-    businessLogic: "Determines available industries and default validation rules"
+    businessLogic: "Required to proceed with industry selection"
   },
 
   industry: {
-    required: true,
+    required: false, 
     rules: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
     dependencies: ["sector"],
     businessLogic: "Must be within selected sector's subsectors"
@@ -48,17 +48,18 @@ export const fieldValidations: Record<string, ValidationRule> = {
     rules: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
     dependencies: ["revenue", "customerBase", "teamExperience"],
     businessLogic: "Determines validation requirements and field dependencies",
-    defaultValue: "ideation_validated",
+    defaultValue: "ideation_validated"
+  },
+
+  competitorAnalysis: {
+    required: false, 
+    rules: z.string().optional(), 
+    dependencies: ["sector", "stage"],
+    businessLogic: "Can be filled in later stages",
     stageSpecificRules: {
       "revenue_growing": {
-        required: true,
-        minimumValue: 10000,
-        warning: "Growing stage requires significant revenue metrics"
-      },
-      "revenue_scaling": {
-        required: true,
-        minimumValue: 100000,
-        warning: "Scaling stage requires substantial revenue and growth metrics"
+        minLength: 100,
+        focusAreas: ["direct competitors", "market positioning", "competitive advantage"]
       }
     }
   },
@@ -68,38 +69,15 @@ export const fieldValidations: Record<string, ValidationRule> = {
     rules: z.enum(["none", "pending", "registered"]),
     dependencies: ["sector"],
     businessLogic: "IP protection requirements vary by sector",
-    defaultValue: "none",
-    sectorSpecificRules: {
-      "deeptech": {
-        recommendedValue: "pending",
-        warning: "IP protection is highly recommended for deep tech startups"
-      },
-      "technology": {
-        recommendedValue: "pending"
-      }
-    }
+    defaultValue: "none"
   },
 
   revenue: {
     required: false,
-    rules: z.number().min(0),
+    rules: z.number().min(0).optional(),
     dependencies: ["stage"],
     businessLogic: "Revenue requirements increase with business stage",
-    defaultValue: 0,
-    stageSpecificRules: {
-      "revenue_early": {
-        required: true,
-        minimumValue: 1000
-      },
-      "revenue_growing": {
-        required: true,
-        minimumValue: 10000
-      },
-      "revenue_scaling": {
-        required: true,
-        minimumValue: 100000
-      }
-    }
+    defaultValue: 0
   },
 
   customerBase: {
@@ -119,24 +97,6 @@ export const fieldValidations: Record<string, ValidationRule> = {
       }
     }
   },
-
-  competitorAnalysis: {
-    required: true,
-    rules: z.string().min(50, "Please provide a detailed competitor analysis"),
-    dependencies: ["sector", "stage"],
-    businessLogic: "Competitive analysis depth increases with business maturity",
-    stageSpecificRules: {
-      "ideation_unvalidated": {
-        minLength: 30,
-        focusAreas: ["potential competitors", "market gaps"]
-      },
-      "revenue_growing": {
-        minLength: 100,
-        focusAreas: ["direct competitors", "market positioning", "competitive advantage"]
-      }
-    }
-  },
-
   regulatoryCompliance: {
     required: false,
     rules: z.enum(["notRequired", "inProgress", "compliant"]),
@@ -170,6 +130,14 @@ export type ValidationContext = {
 // Validation helper function
 export const validateField = (fieldName: keyof typeof fieldValidations, value: any, context: ValidationContext) => {
   const validation = fieldValidations[fieldName];
+  if (!validation) {
+    return { isValid: true, warnings: [] };
+  }
+
+  // For optional fields that are empty
+  if (!validation.required && (value === undefined || value === "")) {
+    return { isValid: true, warnings: [] };
+  }
 
   // Basic validation
   const basicValidation = validation.rules.safeParse(value);
