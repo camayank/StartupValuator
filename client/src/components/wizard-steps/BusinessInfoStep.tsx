@@ -59,7 +59,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       complianceStandard: data.complianceStandard || undefined,
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
-      // Set default values for required fields
       intellectualProperty: data.intellectualProperty || "none",
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
@@ -107,16 +106,11 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
+      // Only check for business name, sector, and industry as required
       const requiredFields = [
         'businessName',
         'sector',
-        'industry',
-        'stage',
-        'valuationPurpose',
-        'region',
-        'intellectualProperty', 
-        'scalability', 
-        'competitiveDifferentiation'
+        'industry'
       ] as const;
 
       const missingFields = requiredFields.filter(field => !values[field]);
@@ -133,7 +127,15 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
         return;
       }
 
-      await onUpdate(values);
+      // Ensure default values are set for other fields
+      const formData = {
+        ...values,
+        intellectualProperty: values.intellectualProperty || "none",
+        competitiveDifferentiation: values.competitiveDifferentiation || "medium",
+        scalability: values.scalability || "moderate",
+      };
+
+      await onUpdate(formData);
       onNext();
     } catch (error) {
       console.error('Submit error:', error);
