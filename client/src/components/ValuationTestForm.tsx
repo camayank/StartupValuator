@@ -17,22 +17,22 @@ interface ValuationTestFormProps {
   onSubmit: (data: ValuationFormData) => void;
 }
 
-// Default values that match exactly with our validation schema
+// Update default values to match exactly with our validation schema
 const defaultValues: ValuationFormData = {
-  revenue: 1000000,
-  currency: "USD",
-  growthRate: 35,
-  margins: 25,
-  sector: "technology",
+  businessName: "",
   industry: "software_system",
   stage: "revenue_growing",
+  sector: "technology",
   intellectualProperty: "registered",
+  revenue: 1000000,
   teamExperience: 8,
   customerBase: 1000,
   competitiveDifferentiation: "high",
   regulatoryCompliance: "compliant",
   scalability: "high",
-  assetValue: 500000,
+  growthRate: 35,
+  margins: 25,
+  currency: "USD"
 };
 
 export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
@@ -73,7 +73,7 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Quick Test Valuation Form</CardTitle>
+        <CardTitle>Valuation Form</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -84,6 +84,7 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
                 type="number"
                 value={formData.revenue}
                 onChange={(e) => handleChange('revenue', Number(e.target.value))}
+                required
               />
             </div>
 
@@ -112,6 +113,7 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
                 type="number"
                 value={formData.growthRate}
                 onChange={(e) => handleChange('growthRate', Number(e.target.value))}
+                required
               />
             </div>
 
@@ -121,6 +123,7 @@ export function ValuationTestForm({ onSubmit }: ValuationTestFormProps) {
                 type="number"
                 value={formData.margins}
                 onChange={(e) => handleChange('margins', Number(e.target.value))}
+                required
               />
             </div>
 

@@ -477,7 +477,7 @@ export const hybridMetricsSchema = z.object({
   notes: z.string().optional()
 });
 
-// Update the existing industry metrics schema to support flexible categorization
+// Update existing schema
 export const industryMetricsSchema = z.object({
   // Core metrics that apply to all industries
   coreMetrics: z.record(z.string(), z.number()).optional(),
@@ -497,7 +497,6 @@ export const industryMetricsSchema = z.object({
     problemValidation: z.number().min(0).max(100).optional(),
     solutionReadiness: z.number().min(0).max(100).optional(),
     potentialMarketSize: z.number().min(0).optional(),
-    competitorAnalysis: z.string().optional(),
   }).optional(),
 
   // Custom metrics
@@ -547,21 +546,16 @@ const getIndustryValidations = (industry: string) => {
 export const valuationFormSchema = z.object({
   // Core required fields - these must be filled
   businessName: z.string().min(1, "Business name is required"),
-  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
-  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
+  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>], {
+    required_error: "Sector is required"
+  }),
+  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>], {
+    required_error: "Industry is required"
+  }),
 
   // Stage-based validations
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>])
-    .default("ideation_validated")
-    .superRefine((val, ctx) => {
-      if (val === "revenue_growing" || val === "revenue_scaling") {
-        ctx.addIssue({
-          code: "custom",
-          message: "Revenue and customer metrics are required for growth/scaling stages",
-          path: ["revenue"]
-        });
-      }
-    }),
+    .default("ideation_validated"),
 
   // Smart defaults with business logic
   intellectualProperty: z.enum(["none", "pending", "registered"])
@@ -586,19 +580,6 @@ export const valuationFormSchema = z.object({
           code: "custom",
           message: "Revenue is required for growth stage companies",
           path: ["revenue"]
-        });
-      }
-    }),
-
-  // Market validation fields
-  competitorAnalysis: z.string()
-    .min(1, "Competitor analysis is required")
-    .superRefine((val, ctx) => {
-      if (val.length < 50 && ctx.parent.stage !== "ideation_unvalidated") {
-        ctx.addIssue({
-          code: "custom",
-          message: "Please provide a more detailed competitor analysis",
-          path: ["competitorAnalysis"]
         });
       }
     }),

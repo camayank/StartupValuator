@@ -45,7 +45,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
   const form = useForm<Partial<ValuationFormData>>({
     defaultValues: {
       ...data,
-      growthRate: assumptions.growthRate * 100,
+      growthRate: data.growthRate || 0,
       margins: data.margins || 0,
     },
   });
@@ -97,6 +97,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                         field.onChange(value);
                         onUpdate({ growthRate: value });
                       }}
+                      required
                     />
                   </FormControl>
                   <FormMessage />
@@ -123,6 +124,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                         field.onChange(value);
                         onUpdate({ margins: value });
                       }}
+                      required
                     />
                   </FormControl>
                   <FormMessage />
@@ -131,7 +133,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
             />
 
             <div className="space-y-2">
-              <FormLabel>Discount Rate</FormLabel>
+              <FormLabel>Discount Rate (%)</FormLabel>
               <FormDescription>
                 Current value: {(assumptions.discountRate * 100).toFixed(1)}%
               </FormDescription>
@@ -143,11 +145,12 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={5}
                 max={30}
                 step={0.5}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <FormLabel>Terminal Growth Rate</FormLabel>
+              <FormLabel>Terminal Growth Rate (%)</FormLabel>
               <FormDescription>
                 Current value: {(assumptions.terminalGrowthRate * 100).toFixed(1)}%
               </FormDescription>
@@ -159,6 +162,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={1}
                 max={5}
                 step={0.1}
+                required
               />
             </div>
 
@@ -175,11 +179,12 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={0.5}
                 max={2}
                 step={0.1}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <FormLabel>Market Risk Premium</FormLabel>
+              <FormLabel>Market Risk Premium (%)</FormLabel>
               <FormDescription>
                 Current value: {(assumptions.marketRiskPremium * 100).toFixed(1)}%
               </FormDescription>
@@ -191,6 +196,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={4}
                 max={8}
                 step={0.1}
+                required
               />
             </div>
           </div>

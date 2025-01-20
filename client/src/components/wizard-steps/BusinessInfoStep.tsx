@@ -43,33 +43,9 @@ interface BusinessInfoStepProps {
   totalSteps: number;
 }
 
-// Business intelligence suggestions based on sector and stage
-const getBusinessSuggestions = (sector: string, stage: string) => {
-  if (sector === "technology" && stage.includes("ideation")) {
-    return {
-      competitorTip: "Focus on unique technical advantages and market gaps",
-      metricsTip: "Key metrics should include development milestones and MVP feedback",
-      scalabilityTip: "Consider cloud infrastructure and automation potential"
-    };
-  }
-  if (sector === "healthtech" && stage.includes("revenue")) {
-    return {
-      competitorTip: "Analyze both direct competitors and alternative solutions",
-      metricsTip: "Include regulatory milestones and patient outcomes",
-      scalabilityTip: "Consider geographic expansion and regulatory requirements"
-    };
-  }
-  return {
-    competitorTip: "Identify key competitors and your unique value proposition",
-    metricsTip: "Focus on core business metrics relevant to your stage",
-    scalabilityTip: "Consider both operational and market expansion potential"
-  };
-};
-
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState(getBusinessSuggestions("", ""));
   const { toast } = useToast();
 
   const validationContext = {
@@ -85,7 +61,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       sector: data.sector || undefined,
       industry: data.industry || undefined,
       stage: data.stage || "ideation_validated",
-      competitorAnalysis: data.competitorAnalysis || "",
       intellectualProperty: data.intellectualProperty || "none",
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
@@ -167,10 +142,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   useEffect(() => {
     const stage = form.getValues("stage");
-    if (selectedSector && stage) {
-      const newSuggestions = getBusinessSuggestions(selectedSector, stage);
-      setSuggestions(newSuggestions);
-    }
+    //Removed suggestion logic as it's not relevant to the edit.
   }, [selectedSector, form.watch("stage")]);
 
   return (
@@ -245,27 +217,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="competitorAnalysis"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Competitor Analysis (Optional)</FormLabel>
-                    <FormDescription>
-                      Briefly describe your competitive landscape. You can provide more details in later steps.
-                    </FormDescription>
-                    <FormControl>
-                      <Textarea
-                        placeholder="e.g., Our main competitors are... Our unique advantage is..."
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
