@@ -59,7 +59,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       complianceStandard: data.complianceStandard || undefined,
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
-      intellectualProperty: data.intellectualProperty || "pending",
+      // Set default values for required fields
+      intellectualProperty: data.intellectualProperty || "none",
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "moderate",
@@ -113,8 +114,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
         'stage',
         'valuationPurpose',
         'region',
-        'intellectualProperty',
-        'scalability',
+        'intellectualProperty', 
+        'scalability', 
         'competitiveDifferentiation'
       ] as const;
 

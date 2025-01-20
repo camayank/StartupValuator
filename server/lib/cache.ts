@@ -5,20 +5,21 @@ interface CacheItem<T> {
 }
 
 interface Cache {
-  get: <T>(key: string, prefix?: string) => T | null;
-  set: <T>(key: string, value: T, ttl?: number, prefix?: string) => void;
-  clear: (prefix?: string) => void;
+  get: <T>(key: string, prefix?: string) => Promise<T | null>;
+  set: <T>(key: string, value: T, ttl?: number, prefix?: string) => Promise<void>;
+  clear: (prefix?: string) => Promise<void>;
 }
 
-export function setupCache(): Cache {
+export const setupCache = (): Cache => {
   const cache = new Map<string, CacheItem<any>>();
   const DEFAULT_TTL = 1000 * 60 * 60; // 1 hour
+  const AI_ANALYSIS_TTL = 1000 * 60 * 30; // 30 minutes for AI responses
 
   const getFullKey = (key: string, prefix?: string) => 
     prefix ? `${prefix}:${key}` : key;
 
   return {
-    get: <T>(key: string, prefix?: string): T | null => {
+    get: async <T>(key: string, prefix?: string): Promise<T | null> => {
       const fullKey = getFullKey(key, prefix);
       const item = cache.get(fullKey);
       if (!item) return null;
@@ -31,17 +32,19 @@ export function setupCache(): Cache {
 
       return value as T;
     },
-    set: <T>(key: string, value: T, ttl = DEFAULT_TTL, prefix?: string): void => {
+
+    set: async <T>(key: string, value: T, ttl = DEFAULT_TTL, prefix?: string): Promise<void> => {
       const fullKey = getFullKey(key, prefix);
       cache.set(fullKey, {
         value,
         timestamp: Date.now(),
-        ttl,
+        ttl: prefix?.startsWith('ai-analysis') ? AI_ANALYSIS_TTL : ttl,
       });
     },
-    clear: (prefix?: string): void => {
+
+    clear: async (prefix?: string): Promise<void> => {
       if (prefix) {
-        for (const key of cache.keys()) {
+        for (const key of Array.from(cache.keys())) {
           if (key.startsWith(`${prefix}:`)) {
             cache.delete(key);
           }
@@ -51,4 +54,7 @@ export function setupCache(): Cache {
       }
     },
   };
-}
+};
+
+// Create and export the cache instance
+export const cache = setupCache();

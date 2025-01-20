@@ -520,21 +520,30 @@ export type IndustryMetricsData = z.infer<typeof industryMetricsSchema>;
 export const valuationFormSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>]),
-  revenue: z.number().min(0, "Revenue must be positive"),
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
-  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
-  margins: z.number().min(-100).max(100, "Margins must be between -100 and 100"),
   sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
   region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>]),
   complianceStandard: z.string().optional(),
-  intellectualProperty: z.enum(["none", "pending", "registered"]).optional(),
+  intellectualProperty: z.enum(["none", "pending", "registered"], {
+    required_error: "Please select your IP protection status",
+    invalid_type_error: "Please select a valid IP protection status"
+  }),
   teamExperience: z.number().min(0).max(20).optional(),
   customerBase: z.number().min(0).optional(),
-  competitiveDifferentiation: z.enum(["low", "medium", "high"]).optional(),
+  competitiveDifferentiation: z.enum(["low", "medium", "high"], {
+    required_error: "Please select your competitive position",
+    invalid_type_error: "Please select a valid competitive position"
+  }),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"]).optional(),
-  scalability: z.enum(["limited", "moderate", "high"]).optional(),
+  scalability: z.enum(["limited", "moderate", "high"], {
+    required_error: "Please select your business scalability",
+    invalid_type_error: "Please select a valid scalability level"
+  }),
+  revenue: z.number().min(0, "Revenue must be positive"),
+  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>]),
+  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
+  margins: z.number().min(-100).max(100, "Margins must be between -100 and 100"),
   industryMetrics: industryMetricsSchema.optional(),
   valuation: z.number().optional(),
   multiplier: z.number().optional(),
