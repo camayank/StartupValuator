@@ -517,35 +517,117 @@ export const industryMetricsSchema = z.object({
 
 export type IndustryMetricsData = z.infer<typeof industryMetricsSchema>;
 
+// Industry-specific validation rules
+const getIndustryValidations = (industry: string) => {
+  switch (industry) {
+    case 'software_enterprise':
+    case 'software_consumer':
+      return {
+        minRevenue: 0,
+        minCustomers: 0,
+        requiredMetrics: ['mrr', 'cac', 'churnRate'],
+      };
+    case 'biotech':
+    case 'medtech':
+      return {
+        minRevenue: 0,
+        minCustomers: 0,
+        requiredMetrics: ['rd_investment', 'regulatory_stage'],
+      };
+    default:
+      return {
+        minRevenue: 0,
+        minCustomers: 0,
+        requiredMetrics: [],
+      };
+  }
+};
+
+// Update existing schema
 export const valuationFormSchema = z.object({
-  // Core required fields
+  // Core required fields - these must be filled
   businessName: z.string().min(1, "Business name is required"),
   sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
   industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
 
-  // Optional fields with defaults
-  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>])
-    .default("fundraising"),
+  // Stage-based validations
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>])
-    .default("ideation_validated"),
-  region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>])
-    .default("us"),
-  complianceStandard: z.string().optional(),
+    .default("ideation_validated")
+    .superRefine((val, ctx) => {
+      if (val === "revenue_growing" || val === "revenue_scaling") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Revenue and customer metrics are required for growth/scaling stages",
+          path: ["revenue"]
+        });
+      }
+    }),
 
-  // Business characteristics with defaults
+  // Smart defaults with business logic
   intellectualProperty: z.enum(["none", "pending", "registered"])
-    .default("none"),
+    .default("none")
+    .superRefine((val, ctx) => {
+      if (val === "none" && ctx.parent.sector === "deeptech") {
+        ctx.addIssue({
+          code: "custom",
+          message: "IP protection is highly recommended for deep tech startups",
+          path: ["intellectualProperty"]
+        });
+      }
+    }),
+
+  // Financial metrics with stage-appropriate validation
+  revenue: z.number().min(0)
+    .default(0)
+    .superRefine((val, ctx) => {
+      const stage = ctx.parent.stage;
+      if (stage === "revenue_growing" && val === 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Revenue is required for growth stage companies",
+          path: ["revenue"]
+        });
+      }
+    }),
+
+  // Market validation fields
+  competitorAnalysis: z.string()
+    .min(1, "Competitor analysis is required")
+    .superRefine((val, ctx) => {
+      if (val.length < 50 && ctx.parent.stage !== "ideation_unvalidated") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Please provide a more detailed competitor analysis",
+          path: ["competitorAnalysis"]
+        });
+      }
+    }),
+
+  // Optional but encouraged fields
   teamExperience: z.number().min(0).max(20).default(0),
   customerBase: z.number().min(0).default(0),
   competitiveDifferentiation: z.enum(["low", "medium", "high"])
     .default("medium"),
+
+  // Compliance and regulatory fields
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"])
-    .default("notRequired"),
+    .default("notRequired")
+    .superRefine((val, ctx) => {
+      const sector = ctx.parent.sector;
+      if ((sector === "healthtech" || sector === "fintech") && val === "notRequired") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Regulatory compliance is typically required in this sector",
+          path: ["regulatoryCompliance"]
+        });
+      }
+    }),
+
+  // Growth potential indicators
   scalability: z.enum(["limited", "moderate", "high"])
     .default("moderate"),
 
-  // Financial metrics with defaults
-  revenue: z.number().min(0, "Revenue must be positive").default(0),
+  // Financial settings
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>])
     .default("USD"),
   growthRate: z.number().min(-100).max(1000).default(0),
@@ -553,15 +635,20 @@ export const valuationFormSchema = z.object({
 
   // Optional advanced fields
   industryMetrics: industryMetricsSchema.optional(),
-  valuation: z.number().optional(),
-  multiplier: z.number().optional(),
-  details: z.object({
-    baseValuation: z.number(),
-    adjustments: z.record(z.string(), z.number())
-  }).optional(),
-  riskAssessment: z.any().optional(),
-  potentialPrediction: z.any().optional(),
-  ecosystemNetwork: z.any().optional()
+  customMetrics: z.array(z.object({
+    name: z.string(),
+    value: z.number(),
+    description: z.string()
+  })).optional(),
+}).refine((data) => {
+  const validations = getIndustryValidations(data.industry);
+  if (data.revenue < validations.minRevenue) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Industry-specific validation failed",
+  path: ["industry"]
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;

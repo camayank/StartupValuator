@@ -17,10 +17,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, Building2, Trophy, Globe2, Scale, Shield, ArrowRight } from "lucide-react";
-import { sectors, industries, businessStages, regions, valuationPurposes, valuationFormSchema } from "@/lib/validations";
+import { sectors, industries, businessStages, regions, valuationPurposes } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,6 +35,29 @@ import {
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
+// Business intelligence suggestions based on sector and stage
+const getBusinessSuggestions = (sector: string, stage: string) => {
+  if (sector === "technology" && stage.includes("ideation")) {
+    return {
+      competitorTip: "Focus on unique technical advantages and market gaps",
+      metricsTip: "Key metrics should include development milestones and MVP feedback",
+      scalabilityTip: "Consider cloud infrastructure and automation potential"
+    };
+  }
+  if (sector === "healthtech" && stage.includes("revenue")) {
+    return {
+      competitorTip: "Analyze both direct competitors and alternative solutions",
+      metricsTip: "Include regulatory milestones and patient outcomes",
+      scalabilityTip: "Consider geographic expansion and regulatory requirements"
+    };
+  }
+  return {
+    competitorTip: "Identify key competitors and your unique value proposition",
+    metricsTip: "Focus on core business metrics relevant to your stage",
+    scalabilityTip: "Consider both operational and market expansion potential"
+  };
+};
+
 interface BusinessInfoStepProps {
   data: Partial<ValuationFormData>;
   onUpdate: (data: Partial<ValuationFormData>) => void;
@@ -46,89 +70,41 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const { toast } = useToast();
+  const [suggestions, setSuggestions] = useState(getBusinessSuggestions("", ""));
 
   const form = useForm<ValuationFormData>({
-    resolver: zodResolver(valuationFormSchema),
+    //resolver: zodResolver(valuationFormSchema), 
     defaultValues: {
       businessName: data.businessName || "",
-      valuationPurpose: data.valuationPurpose || "fundraising",
       sector: data.sector || undefined,
       industry: data.industry || undefined,
       stage: data.stage || "ideation_validated",
-      region: data.region || "us",
-      complianceStandard: data.complianceStandard || undefined,
+      competitorAnalysis: data.competitorAnalysis || "",
+      intellectualProperty: data.intellectualProperty || "none",
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
-      intellectualProperty: data.intellectualProperty || "none",
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "moderate",
-      currency: "USD",
-      revenue: 0,
-      margins: 0,
-      growthRate: 0
     },
   });
 
+  // Update suggestions when sector or stage changes
   useEffect(() => {
-    if (selectedSector && sectors[selectedSector as keyof typeof sectors]) {
-      const sectorData = sectors[selectedSector as keyof typeof sectors];
-      if (sectorData && Object.keys(sectorData.subsectors).length > 0) {
-        const firstIndustry = Object.keys(sectorData.subsectors)[0];
-        const stage = getRecommendedStage(selectedSector);
-        const defaults = getSmartDefaults(selectedSector);
-
-        form.setValue("industry", firstIndustry);
-        form.setValue("stage", stage);
-        form.setValue("sector", selectedSector as ValuationFormData["sector"]);
-
-        // Apply smart defaults
-        Object.entries(defaults).forEach(([key, value]) => {
-          form.setValue(key as keyof ValuationFormData, value);
-        });
-
-        onUpdate({
-          sector: selectedSector as keyof typeof sectors,
-          industry: firstIndustry,
-          stage,
-          ...defaults
-        });
-      }
+    const stage = form.getValues("stage");
+    if (selectedSector && stage) {
+      const newSuggestions = getBusinessSuggestions(selectedSector, stage);
+      setSuggestions(newSuggestions);
     }
-  }, [selectedSector, form]);
-
-  const getSmartDefaults = (sector: string) => {
-    // Define smart defaults based on sector
-    const defaults: Partial<ValuationFormData> = {
-      intellectualProperty: sector === "technology" || sector === "deeptech" ? "pending" : "none",
-      scalability: sector === "technology" || sector === "fintech" ? "high" : "moderate",
-      competitiveDifferentiation: sector === "deeptech" ? "high" : "medium",
-    };
-
-    return defaults;
-  };
-
-  const getRecommendedStage = (sector: string): keyof typeof businessStages => {
-    switch (sector) {
-      case "technology":
-      case "fintech":
-        return "mvp_development";
-      case "healthtech":
-        return "beta_testing";
-      case "enterprise":
-        return "revenue_early";
-      default:
-        return "ideation_validated";
-    }
-  };
+  }, [selectedSector, form.watch("stage")]);
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Only check for business name and sector as required
+      // Core validation
       if (!values.businessName?.trim()) {
         toast({
-          title: "Required Field Missing",
-          description: "Please enter your business name",
+          title: "Business Name Required",
+          description: "Please enter your business name to proceed",
           variant: "destructive",
         });
         return;
@@ -136,11 +112,29 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
       if (!values.sector) {
         toast({
-          title: "Required Field Missing",
-          description: "Please select your business sector",
+          title: "Sector Selection Required",
+          description: "Please select your business sector to proceed",
           variant: "destructive",
         });
         return;
+      }
+
+      // Stage-appropriate validation
+      if (values.stage.includes("revenue") && !values.revenue) {
+        toast({
+          title: "Revenue Information Needed",
+          description: "Please provide revenue information for your selected stage",
+          variant: "warning",
+        });
+      }
+
+      // Industry-specific validation
+      if (values.sector === "healthtech" && values.regulatoryCompliance === "notRequired") {
+        toast({
+          title: "Regulatory Compliance",
+          description: "Consider updating your regulatory compliance status for healthcare sector",
+          variant: "warning",
+        });
       }
 
       await onUpdate(values);
@@ -196,23 +190,25 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       <Alert className="bg-primary/5 border-primary/10">
         <Info className="h-4 w-4 text-primary" />
         <AlertDescription className="text-primary/90">
-          Enter your core business information. Required fields are marked with an asterisk (*).
+          {suggestions.competitorTip}
         </AlertDescription>
       </Alert>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          {/* Form fields remain the same but with enhanced descriptions */}
           <Card className="shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-medium flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-primary" />
-                Basic Information
+                Core Business Information
               </CardTitle>
               <CardDescription>
-                Start with your company's core details
+                Start with your company's essential details
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Existing form fields with enhanced descriptions */}
               <FormField
                 control={form.control}
                 name="businessName"
@@ -234,6 +230,27 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                         />
                         <Building2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="competitorAnalysis"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Competitor Analysis</FormLabel>
+                    <FormDescription>
+                      {suggestions.metricsTip}
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe your competitive landscape..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -305,7 +322,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+              </div>
 
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="stage"
@@ -370,7 +390,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="industry"
@@ -586,7 +608,20 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.reset();
+                toast({
+                  title: "Form Reset",
+                  description: "All fields have been reset to their default values",
+                });
+              }}
+            >
+              Reset
+            </Button>
             <Button type="submit" className="gap-2">
               Continue <ArrowRight className="h-4 w-4" />
             </Button>
