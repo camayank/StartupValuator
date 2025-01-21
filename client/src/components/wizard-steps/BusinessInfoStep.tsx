@@ -43,6 +43,7 @@ import type { ValuationFormData } from "@/lib/validations";
 import { sectors, businessStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import DebugHelper from "@/lib/debug-helper";
 
 // Create validation schema with proper industry validation
 const createFormSchema = (selectedSector: string) => z.object({
@@ -137,10 +138,18 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const hasErrors = Object.keys(formErrors).length > 0;
 
   const handleSectorChange = (value: string) => {
+    const prevState = form.getValues();
     setSelectedSector(value);
     form.setValue("sector", value, { shouldValidate: true });
     // Reset industry when sector changes
     form.setValue("industry", "", { shouldValidate: true });
+
+    // Track state changes
+    DebugHelper.trackStateChange(prevState, {
+      ...prevState,
+      sector: value,
+      industry: ""
+    });
   };
 
   const validateField = (name: string, value: any) => {
@@ -178,10 +187,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
         return;
       }
 
-      // Attempt to update with retry mechanism
-      const result = await callApiWithRetry(
-        () => onUpdate(values),
-        { maxRetries: 3, baseDelay: 1000 }
+      // Track API call with DebugHelper
+      const result = await DebugHelper.trackAPICall(
+        async () => await callApiWithRetry(
+          () => onUpdate(values),
+          { maxRetries: 3, baseDelay: 1000 }
+        ),
+        'Update Business Info'
       );
 
       if (result !== null) {
