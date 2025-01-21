@@ -6,19 +6,33 @@ const openai = new OpenAI({
 });
 
 interface ValuationInsights {
-  valuation: {
-    range: { low: number; high: number };
-    justification: string[];
-  };
-  growth: {
-    drivers: string[];
+  market: {
+    opportunities: string[];
     risks: string[];
+    growth: {
+      drivers: string[];
+      barriers: string[];
+    };
   };
-  benchmarks: {
-    industry: Record<string, number>;
-    metrics: Record<string, { low: number; median: number; high: number }>;
+  technology: {
+    innovations: string[];
+    risks: string[];
+    scalability: {
+      factors: string[];
+      score: number;
+    };
   };
-  recommendations: string[];
+  recommendations: {
+    strategic: string[];
+    operational: string[];
+    financial: string[];
+    timeline: Array<{
+      phase: string;
+      actions: string[];
+      timeline: string;
+      impact: string;
+    }>;
+  };
 }
 
 export class AIService {
@@ -29,36 +43,51 @@ export class AIService {
       Company Info:
       - Industry: ${data.basicInfo.industry}
       - Stage: ${data.basicInfo.stage}
-      - Market Size: TAM $${data.marketMetrics.marketSize.tam}
+      - Market Size: TAM $${data.marketMetrics?.marketSize?.tam}
       - Team Size: ${data.basicInfo.teamSize}
-      - Market Growth: ${data.marketMetrics.marketGrowth}%
+      - Market Growth: ${data.marketMetrics?.marketGrowth}%
 
       Financials:
-      - Projected Revenue: $${data.financials.projectedRevenue}
-      - Burn Rate: $${data.financials.burnRate}
-      - Runway: ${data.financials.runwayMonths} months
+      - Revenue: $${data.financials?.revenue || 0}
+      - Growth Rate: ${data.financials?.growthRate || 0}%
+      - Burn Rate: $${data.financials?.burnRate || 0}
+      - Runway: ${data.financials?.runwayMonths || 0} months
 
       Please provide:
-      1. Valuation range with detailed justification
-      2. Key growth drivers and risks
-      3. Industry benchmarks including key metrics
-      4. Strategic recommendations
+      1. Market analysis with opportunities and risks
+      2. Technology assessment including innovation potential
+      3. Comprehensive recommendations with timeline
+      4. Growth drivers and barriers
 
       Format the response as a JSON object with the following structure:
       {
-        "valuation": {
-          "range": { "low": number, "high": number },
-          "justification": string[]
+        "market": {
+          "opportunities": string[],
+          "risks": string[],
+          "growth": {
+            "drivers": string[],
+            "barriers": string[]
+          }
         },
-        "growth": {
-          "drivers": string[],
-          "risks": string[]
+        "technology": {
+          "innovations": string[],
+          "risks": string[],
+          "scalability": {
+            "factors": string[],
+            "score": number
+          }
         },
-        "benchmarks": {
-          "industry": Record<string, number>,
-          "metrics": Record<string, { low: number, median: number, high: number }>
-        },
-        "recommendations": string[]
+        "recommendations": {
+          "strategic": string[],
+          "operational": string[],
+          "financial": string[],
+          "timeline": Array<{
+            phase: string,
+            actions: string[],
+            timeline: string,
+            impact: string
+          }>
+        }
       }
     `;
 
@@ -68,7 +97,7 @@ export class AIService {
         messages: [
           {
             role: "system",
-            content: "You are an expert startup valuation analyst. Provide detailed, data-driven analysis in JSON format."
+            content: "You are an expert startup valuation analyst with deep expertise in market analysis, technology assessment, and strategic planning. Provide detailed, data-driven analysis in JSON format."
           },
           {
             role: "user",
@@ -83,44 +112,47 @@ export class AIService {
       }
 
       const response = JSON.parse(completion.choices[0].message.content);
-      return this.validateResponse(response);
-    } catch (error) {
+      return this.validateAIResponse(response);
+    } catch (error: any) {
       console.error('AI Analysis Error:', error);
-      throw new Error('Failed to generate AI insights');
+      throw new Error(`Failed to generate AI insights: ${error.message}`);
     }
   }
 
-  private static validateResponse(response: any): ValuationInsights {
-    // Validate valuation range
-    if (!response.valuation?.range?.low || !response.valuation?.range?.high) {
-      throw new Error('Invalid valuation range in AI response');
+  private static validateAIResponse(response: any): ValuationInsights {
+    // Validate market section
+    if (!response.market?.opportunities || !Array.isArray(response.market.opportunities) ||
+        !response.market?.risks || !Array.isArray(response.market.risks) ||
+        !response.market?.growth?.drivers || !Array.isArray(response.market.growth.drivers) ||
+        !response.market?.growth?.barriers || !Array.isArray(response.market.growth.barriers)) {
+      throw new Error('Invalid market analysis structure in AI response');
     }
 
-    // Validate arrays
-    if (!Array.isArray(response.valuation.justification) ||
-        !Array.isArray(response.growth?.drivers) ||
-        !Array.isArray(response.growth?.risks) ||
-        !Array.isArray(response.recommendations)) {
-      throw new Error('Invalid array data in AI response');
+    // Validate technology section
+    if (!response.technology?.innovations || !Array.isArray(response.technology.innovations) ||
+        !response.technology?.risks || !Array.isArray(response.technology.risks) ||
+        !response.technology?.scalability?.factors || !Array.isArray(response.technology.scalability.factors) ||
+        typeof response.technology?.scalability?.score !== 'number') {
+      throw new Error('Invalid technology assessment structure in AI response');
     }
 
-    // Validate benchmarks
-    if (typeof response.benchmarks?.industry !== 'object' ||
-        typeof response.benchmarks?.metrics !== 'object') {
-      throw new Error('Invalid benchmark data in AI response');
+    // Validate recommendations section
+    if (!response.recommendations?.strategic || !Array.isArray(response.recommendations.strategic) ||
+        !response.recommendations?.operational || !Array.isArray(response.recommendations.operational) ||
+        !response.recommendations?.financial || !Array.isArray(response.recommendations.financial) ||
+        !response.recommendations?.timeline || !Array.isArray(response.recommendations.timeline)) {
+      throw new Error('Invalid recommendations structure in AI response');
     }
 
-    // Ensure numeric values are valid
-    const validateNumber = (n: number) => !isNaN(n) && isFinite(n);
-    if (!validateNumber(response.valuation.range.low) ||
-        !validateNumber(response.valuation.range.high)) {
-      throw new Error('Invalid numeric values in valuation range');
-    }
-
-    // Ensure range makes sense
-    if (response.valuation.range.low > response.valuation.range.high) {
-      throw new Error('Invalid valuation range: low value exceeds high value');
-    }
+    // Validate timeline entries
+    response.recommendations.timeline.forEach((entry: any, index: number) => {
+      if (!entry.phase || typeof entry.phase !== 'string' ||
+          !entry.actions || !Array.isArray(entry.actions) ||
+          !entry.timeline || typeof entry.timeline !== 'string' ||
+          !entry.impact || typeof entry.impact !== 'string') {
+        throw new Error(`Invalid timeline entry at index ${index}`);
+      }
+    });
 
     return response as ValuationInsights;
   }

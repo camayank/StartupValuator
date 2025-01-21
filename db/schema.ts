@@ -26,6 +26,191 @@ export const activityTypes = pgEnum("activity_type", [
 export const valuationStatus = pgEnum("valuation_status", ["draft", "completed", "archived"]);
 export const reportFormat = pgEnum("report_format", ["pdf", "excel", "both"]);
 
+// Define market size types enum
+export const marketSizeTypes = pgEnum("market_size_type", ["tam", "sam", "som"]);
+export const productStages = pgEnum("product_stage", ["concept", "mvp", "beta", "production"]);
+export const riskLevels = pgEnum("risk_level", ["low", "medium", "high", "critical"]);
+export const reportTypes = pgEnum("report_type", ["summary", "detailed", "comprehensive"]);
+export const valuationMethods = pgEnum("valuation_method", ["dcf", "comparable", "scorecard", "risk_adjusted", "ai_adjusted"]);
+
+// Market Analysis Table
+export const marketAnalysis = pgTable("market_analysis", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").notNull(),
+  marketType: marketSizeTypes("market_type").notNull(),
+  size: integer("size").notNull(),
+  growthRate: integer("growth_rate"),
+  captureRate: integer("capture_rate"),
+  competitorCount: integer("competitor_count"),
+  barriers: jsonb("barriers").$type<string[]>(),
+  opportunities: jsonb("opportunities").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Product Analysis Table
+export const productAnalysis = pgTable("product_analysis", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").notNull(),
+  stage: productStages("stage").notNull(),
+  maturityScore: integer("maturity_score").notNull(),
+  features: jsonb("features").$type<string[]>(),
+  technology: jsonb("technology").$type<{
+    stack: string[];
+    scalability: number;
+    uniqueness: number;
+  }>(),
+  metrics: jsonb("metrics").$type<{
+    userGrowth: number;
+    engagement: number;
+    retention: number;
+  }>(),
+  roadmap: jsonb("roadmap").$type<Array<{
+    milestone: string;
+    timeline: string;
+    impact: string;
+  }>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Risk Assessment Table
+export const riskAssessment = pgTable("risk_assessment", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").notNull(),
+  category: text("category").notNull(),
+  level: riskLevels("level").notNull(),
+  impact: text("impact").notNull(),
+  probability: integer("probability").notNull(),
+  mitigation: text("mitigation").notNull(),
+  contingency: text("contingency"),
+  monitoringMetrics: jsonb("monitoring_metrics").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Investment Requirements Table
+export const investmentRequirements = pgTable("investment_requirements", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").notNull(),
+  amount: integer("amount").notNull(),
+  purpose: text("purpose").notNull(),
+  timeline: jsonb("timeline").$type<{
+    start: string;
+    milestones: Array<{
+      description: string;
+      date: string;
+      amount: number;
+    }>;
+  }>(),
+  useOfFunds: jsonb("use_of_funds").$type<Array<{
+    category: string;
+    amount: number;
+    description: string;
+  }>>(),
+  expectedReturn: jsonb("expected_return").$type<{
+    roi: number;
+    paybackPeriod: number;
+    irr: number;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Extend the existing valuationRecords table
+export const valuationRecords = pgTable("valuation_records", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  businessName: varchar("business_name", { length: 255 }).notNull(),
+  industry: varchar("industry", { length: 100 }).notNull(),
+  stage: varchar("stage", { length: 50 }).notNull(),
+  metrics: jsonb("metrics").$type<{
+    financial: {
+      revenue: number;
+      margins: number;
+      growthRate: number;
+      burnRate: number;
+      runwayMonths: number;
+    };
+    market: {
+      size: number;
+      share: number;
+      growth: number;
+    };
+    team: {
+      size: number;
+      experience: number;
+      keyRoles: string[];
+    };
+    product: {
+      stage: string;
+      features: string[];
+      traction: {
+        users: number;
+        growth: number;
+        engagement: number;
+      };
+    };
+  }>(),
+  calculations: jsonb("calculations").$type<{
+    methodologies: Record<string, number>;
+    weightedAverage: number;
+    confidenceScore: number;
+    adjustments: Record<string, number>;
+  }>(),
+  insights: jsonb("insights").$type<{
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+    recommendations: string[];
+  }>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Report Generation Table
+export const valuationReports = pgTable("valuation_reports", {
+  id: serial("id").primaryKey(),
+  valuationId: integer("valuation_id").notNull(),
+  type: reportTypes("type").notNull(),
+  content: jsonb("content").$type<{
+    executiveSummary: string;
+    marketAnalysis: any;
+    financialAnalysis: any;
+    riskAssessment: any;
+    recommendations: string[];
+    appendices: any[];
+  }>(),
+  format: text("format").notNull(),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
+// Create schemas for validation
+export const insertMarketAnalysisSchema = createInsertSchema(marketAnalysis);
+export const selectMarketAnalysisSchema = createSelectSchema(marketAnalysis);
+
+export const insertProductAnalysisSchema = createInsertSchema(productAnalysis);
+export const selectProductAnalysisSchema = createSelectSchema(productAnalysis);
+
+export const insertRiskAssessmentSchema = createInsertSchema(riskAssessment);
+export const selectRiskAssessmentSchema = createSelectSchema(riskAssessment);
+
+export const insertInvestmentRequirementsSchema = createInsertSchema(investmentRequirements);
+export const selectInvestmentRequirementsSchema = createSelectSchema(investmentRequirements);
+
+export const insertValuationReportSchema = createInsertSchema(valuationReports);
+export const selectValuationReportSchema = createSelectSchema(valuationReports);
+
+// Export types
+export type MarketAnalysis = typeof marketAnalysis.$inferSelect;
+export type ProductAnalysis = typeof productAnalysis.$inferSelect;
+export type RiskAssessment = typeof riskAssessment.$inferSelect;
+export type InvestmentRequirements = typeof investmentRequirements.$inferSelect;
+export type ValuationReport = typeof valuationReports.$inferSelect;
+
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
@@ -146,28 +331,6 @@ export const workflowSuggestions = pgTable("workflow_suggestions", {
 });
 
 
-// Valuation records table
-export const valuationRecords = pgTable("valuation_records", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  businessName: varchar("business_name", { length: 255 }).notNull(),
-  industry: varchar("industry", { length: 100 }).notNull(),
-  stage: varchar("stage", { length: 50 }).notNull(),
-  status: valuationStatus("status").default("draft").notNull(),
-  metrics: jsonb("metrics").$type<{
-    financial: Record<string, number>;
-    industry: Record<string, number>;
-    custom: Array<{ name: string; value: number; type: string }>;
-  }>(),
-  calculations: jsonb("calculations").$type<{
-    methodologies: Record<string, number>;
-    weightedAverage: number;
-    adjustments: Record<string, number>;
-  }>(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // Industry benchmarks table
 export const industryBenchmarks = pgTable("industry_benchmarks", {
   id: serial("id").primaryKey(),
@@ -202,6 +365,8 @@ export const userToProfileRelations = relations(users, ({ one, many }) => ({
   usageStats: many(usageStats),
   activities: many(userActivities),
   suggestions: many(workflowSuggestions),
+  valuations: many(valuationRecords),
+  reports: many(generatedReports),
 }));
 
 export const profileToUserRelations = relations(userProfiles, ({ one }) => ({
