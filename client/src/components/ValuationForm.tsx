@@ -38,7 +38,7 @@ const formSections = [
     description: "Basic information about your company and its operations",
     fields: [
       { 
-        name: "businessName", 
+        name: "businessInfo.name", 
         label: "Business Name", 
         type: "text", 
         required: true,
@@ -46,7 +46,7 @@ const formSections = [
         placeholder: "e.g., TechStart Solutions Inc."
       },
       { 
-        name: "sector", 
+        name: "businessInfo.sector", 
         label: "Business Sector", 
         type: "dropdown", 
         required: true,
@@ -54,7 +54,7 @@ const formSections = [
         help: "Choose the sector that best represents your core business activities"
       },
       { 
-        name: "industry", 
+        name: "businessInfo.industry", 
         label: "Industry", 
         type: "dropdown", 
         required: true,
@@ -62,7 +62,7 @@ const formSections = [
         help: "Select the specific industry that matches your business model"
       },
       {
-        name: "businessModel",
+        name: "businessInfo.businessModel",
         label: "Business Model",
         type: "dropdown",
         required: true,
@@ -78,7 +78,7 @@ const formSections = [
     description: "Details about your target market and competitive landscape",
     fields: [
       { 
-        name: "totalAddressableMarket", 
+        name: "marketData.tam", 
         label: "Total Addressable Market (TAM)", 
         type: "number", 
         required: true,
@@ -86,7 +86,7 @@ const formSections = [
         help: "The total market demand for your product/service category"
       },
       { 
-        name: "serviceableMarket", 
+        name: "marketData.sam", 
         label: "Serviceable Addressable Market (SAM)", 
         type: "number", 
         required: true,
@@ -94,7 +94,7 @@ const formSections = [
         help: "The segment of TAM that your business can actually reach"
       },
       { 
-        name: "targetMarket", 
+        name: "marketData.som", 
         label: "Serviceable Obtainable Market (SOM)", 
         type: "number", 
         required: true,
@@ -102,7 +102,7 @@ const formSections = [
         help: "Realistic portion of SAM you can capture in 3-5 years"
       },
       { 
-        name: "marketGrowthRate", 
+        name: "marketData.growthRate", 
         label: "Market Growth Rate (%)", 
         type: "number", 
         required: true,
@@ -118,7 +118,7 @@ const formSections = [
     description: "Current financial performance and metrics",
     fields: [
       { 
-        name: "monthlyRevenue", 
+        name: "financialData.revenue", 
         label: "Monthly Revenue", 
         type: "number", 
         required: true,
@@ -126,7 +126,7 @@ const formSections = [
         help: "Average monthly revenue from the last 3 months"
       },
       { 
-        name: "customerAcquisitionCost", 
+        name: "financialData.cac", 
         label: "Customer Acquisition Cost (CAC)", 
         type: "number", 
         required: true,
@@ -134,7 +134,7 @@ const formSections = [
         help: "Total sales & marketing costs divided by new customers"
       },
       { 
-        name: "customerLifetimeValue", 
+        name: "financialData.ltv", 
         label: "Customer Lifetime Value (LTV)", 
         type: "number", 
         required: true,
@@ -142,7 +142,7 @@ const formSections = [
         help: "Expected total revenue from a typical customer"
       },
       { 
-        name: "burnRate", 
+        name: "financialData.burnRate", 
         label: "Monthly Burn Rate", 
         type: "number", 
         required: true,
@@ -158,7 +158,7 @@ const formSections = [
     description: "Technical and operational aspects of your product",
     fields: [
       { 
-        name: "productStage", 
+        name: "productDetails.maturity", 
         label: "Product Stage", 
         type: "dropdown", 
         required: true,
@@ -166,7 +166,7 @@ const formSections = [
         options: Object.entries(productStages)
       },
       { 
-        name: "technologyStack", 
+        name: "productDetails.technologyStack", 
         label: "Technology Stack", 
         type: "multiselect", 
         required: true,
@@ -174,7 +174,7 @@ const formSections = [
         help: "Select all major technologies/frameworks used"
       },
       { 
-        name: "intellectualProperty", 
+        name: "productDetails.intellectualProperty", 
         label: "Intellectual Property", 
         type: "dropdown", 
         required: false,
@@ -190,7 +190,7 @@ const formSections = [
     description: "Assessment of business risks and growth potential",
     fields: [
       { 
-        name: "keyRisks", 
+        name: "risksAndOpportunities.risks", 
         label: "Key Business Risks", 
         type: "multiselect", 
         required: true,
@@ -198,7 +198,7 @@ const formSections = [
         help: "Select all significant risks to your business"
       },
       { 
-        name: "mitigationStrategies", 
+        name: "risksAndOpportunities.mitigationStrategies", 
         label: "Risk Mitigation Strategies", 
         type: "textarea", 
         required: true,
@@ -206,7 +206,7 @@ const formSections = [
         help: "Describe how you plan to address each major risk"
       },
       { 
-        name: "growthOpportunities", 
+        name: "risksAndOpportunities.opportunities", 
         label: "Growth Opportunities", 
         type: "multiselect", 
         required: true,
@@ -222,7 +222,7 @@ const formSections = [
     description: "Factors affecting the final valuation",
     fields: [
       { 
-        name: "targetValuation", 
+        name: "valuationInputs.targetValuation", 
         label: "Target Valuation", 
         type: "number", 
         required: false,
@@ -230,7 +230,7 @@ const formSections = [
         help: "Your estimated company valuation (if any)"
       },
       { 
-        name: "fundingRequired", 
+        name: "valuationInputs.fundingRequired", 
         label: "Funding Required", 
         type: "number", 
         required: true,
@@ -238,7 +238,7 @@ const formSections = [
         help: "How much funding are you looking to raise?"
       },
       { 
-        name: "useOfFunds", 
+        name: "valuationInputs.expectedROI", 
         label: "Use of Funds", 
         type: "multiselect", 
         required: true,
@@ -251,6 +251,46 @@ const formSections = [
 
 const AUTOSAVE_DELAY = 1000; // 1 second
 
+const defaultValues: ValuationFormData = {
+  businessInfo: {
+    name: "",
+    sector: "",
+    industry: "",
+    location: "",
+    productStage: "concept",
+    businessModel: "subscription"
+  },
+  marketData: {
+    tam: 0,
+    sam: 0,
+    som: 0,
+    growthRate: 0,
+    competitors: []
+  },
+  financialData: {
+    revenue: 0,
+    cac: 0,
+    ltv: 0,
+    burnRate: 0,
+    runway: 0
+  },
+  productDetails: {
+    maturity: "",
+    roadmap: "",
+    technologyStack: "",
+    differentiators: ""
+  },
+  risksAndOpportunities: {
+    risks: [],
+    opportunities: []
+  },
+  valuationInputs: {
+    targetValuation: 0,
+    fundingRequired: 0,
+    expectedROI: 0
+  }
+};
+
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -261,16 +301,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
-    defaultValues: {
-      businessName: "",
-      sector: "",
-      industry: "",
-      revenueModel: "subscription",
-      geographicMarkets: [],
-      productStage: "concept",
-      intellectualProperty: "none",
-      regulatoryCompliance: "notRequired",
-    }
+    defaultValues: defaultValues,
   });
 
   // Load saved form data on mount
@@ -279,7 +310,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     if (savedData) {
       const parsedData = JSON.parse(savedData);
       form.reset(parsedData);
-      setSelectedSector(parsedData.sector || null);
+      setSelectedSector(parsedData.businessInfo?.sector || null);
     }
   }, [form]);
 
@@ -451,9 +482,9 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                   <Select
                                     onValueChange={(value) => {
                                       formField.onChange(value);
-                                      if (field.name === 'sector') {
+                                      if (field.name === 'businessInfo.sector') {
                                         setSelectedSector(value);
-                                        form.setValue('industry', '');
+                                        form.setValue('businessInfo.industry', '');
                                       }
                                     }}
                                     defaultValue={formField.value}

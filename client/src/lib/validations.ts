@@ -589,94 +589,65 @@ export const regionSchema = z.object({
     .default("fundraising")
 });
 
-// Update valuationFormSchema to include region fields
 export const valuationFormSchema = z.object({
-  // Core required fields - these must be filled
-  businessName: z.string().min(1, "Business name is required"),
-  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>], {
-    required_error: "Sector is required"
+  // Business Information
+  businessInfo: z.object({
+    name: z.string().min(1, "Business name is required"),
+    sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>], {
+      required_error: "Sector is required"
+    }),
+    industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>], {
+      required_error: "Industry is required"
+    }),
+    location: z.string().min(1, "Location is required"),
+    productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
+    businessModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>])
   }),
-  industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>], {
-    required_error: "Industry is required"
+
+  // Market Data
+  marketData: z.object({
+    tam: z.number().min(0, "TAM must be a positive number"),
+    sam: z.number().min(0, "SAM must be a positive number"),
+    som: z.number().min(0, "SOM must be a positive number"),
+    growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
+    competitors: z.array(z.string())
+  }).refine((data) => data.tam >= data.sam && data.sam >= data.som, {
+    message: "Market sizes must follow TAM ≥ SAM ≥ SOM",
+    path: ["marketData"]
   }),
 
-  // Region and compliance
-  ...regionSchema.shape,
+  // Financial Data
+  financialData: z.object({
+    revenue: z.number().min(0, "Revenue must be a positive number"),
+    cac: z.number().min(0, "CAC must be a positive number"),
+    ltv: z.number().min(0, "LTV must be a positive number"),
+    burnRate: z.number().min(0, "Burn rate must be a positive number"),
+    runway: z.number().min(0, "Runway must be a positive number")
+  }).refine((data) => data.ltv > data.cac, {
+    message: "LTV should be greater than CAC for a sustainable business model",
+    path: ["financialData"]
+  }),
 
-  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>])
-    .default("ideation_validated"),
+  // Product Details
+  productDetails: z.object({
+    maturity: z.string().min(1, "Product maturity level is required"),
+    roadmap: z.string().min(1, "Product roadmap is required"),
+    technologyStack: z.string().min(1, "Technology stack is required"),
+    differentiators: z.string().min(1, "Product differentiators are required")
+  }),
 
-  employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
-  fundingHistory: z.object({
-    rounds: z.array(z.string()),
-    totalRaised: z.number().optional(),
-    lastRound: z.string().optional()
-  }).optional(),
-  revenueModel: z.enum([...Object.keys(revenueModels)] as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
-  geographicMarkets: z.array(
-    z.enum([...Object.keys(geographicMarkets)] as [keyof typeof geographicMarkets, ...Array<keyof typeof geographicMarkets>])
-  ),
-  productStage: z.enum([...Object.keys(productStages)] as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
+  // Risks and Opportunities
+  risksAndOpportunities: z.object({
+    risks: z.array(z.string()).min(1, "At least one risk must be identified"),
+    opportunities: z.array(z.string()).min(1, "At least one opportunity must be identified")
+  }),
 
-  intellectualProperty: z.enum(["none", "pending", "registered"])
-    .default("none")
-    .refine((val) => {
-      if (val === "none") {
-        return false;
-      }
-      return true;
-    }, {
-      message: "IP protection is highly recommended for deep tech startups",
-      path: ["intellectualProperty"]
-    }),
-
-  revenue: z.coerce.number().min(0)
-    .default(0)
-    .refine((val, ctx) => {
-      const stage = (ctx as any).parent?.stage;
-      if (stage === "revenue_growing" && val === 0) {
-        return false;
-      }
-      return true;
-    }, {
-      message: "Revenue is required for growth stage companies",
-      path: ["revenue"]
-    }),
-
-  teamExperience: z.coerce.number().min(0).max(20).default(0),
-  customerBase: z.coerce.number().min(0).default(0),
-  competitiveDifferentiation: z.enum(["low", "medium", "high"])
-    .default("medium"),
-
-  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"])
-    .default("notRequired")
-    .refine((val, ctx) => {
-      const sector = (ctx as any).parent?.sector;
-      if ((sector === "healthtech" || sector === "fintech") && val === "notRequired") {
-        return false;
-      }
-      return true;
-    }, {
-      message: "Regulatory compliance is typically required in this sector",
-      path: ["regulatoryCompliance"]
-    }),
-
-  scalability: z.enum([...Object.keys(scalabilityOptions)] as [keyof typeof scalabilityOptions, ...Array<keyof typeof scalabilityOptions>])
-    .default("moderate"),
-
-  currency: z.enum([...Object.keys(currencies)] as [keyof typeof currencies, ...Array<keyof typeof currencies>])
-    .default("USD"),
-  growthRate: z.coerce.number().min(-100).max(1000).default(0),
-  margins: z.coerce.number().min(-100).max(100).default(0),
-}).refine((data) => {
-  const validations = getIndustryValidations(data.industry);
-  if (data.revenue < validations.minRevenue) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Industry-specific validation failed",
-  path: ["industry"]
+  // Valuation Inputs
+  valuationInputs: z.object({
+    targetValuation: z.number().min(0, "Target valuation must be a positive number"),
+    fundingRequired: z.number().min(0, "Funding required must be a positive number"),
+    expectedROI: z.number().min(0, "Expected ROI must be a positive number")
+  })
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
