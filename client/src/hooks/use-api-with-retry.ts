@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ErrorHandler from '@/lib/error-handler';
 
 interface RetryConfig {
   maxRetries?: number;
@@ -26,12 +27,27 @@ export function useApiWithRetry() {
         return result;
       } catch (err) {
         retries++;
+        const error = err instanceof Error ? err : new Error('An unknown error occurred');
+
+        // Log the error with retry context
+        await ErrorHandler.logError(error, {
+          attempt: retries,
+          maxRetries,
+          context: 'API Retry'
+        });
+
         if (retries === maxRetries) {
-          const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-          setError(errorMessage);
+          const errorResult = ErrorHandler.handleAPIError({
+            message: error.message,
+            canRetry: false
+          });
+
+          setError(errorResult.message);
+          errorResult.toast();
           setIsLoading(false);
           return null;
         }
+
         // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, retries - 1)));
       }
