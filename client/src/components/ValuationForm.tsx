@@ -26,44 +26,61 @@ import type { ValuationFormData } from "@/lib/validations";
 import { useFormAutoSave } from "@/hooks/use-form-autosave";
 import { ErrorDisplay } from "@/components/ui/error-display";
 import { ProgressFeedback } from "@/components/ui/progress-feedback";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Building2, Calculator, ChartBar, ClipboardCheck, Globe } from "lucide-react";
 import SmartSlider from "@/components/ui/smart-slider";
+import { BusinessRulesEngine, ValidationResult } from "@/lib/business-rules-engine";
 
 interface ValuationFormProps {
   onResult: (data: ValuationFormData) => void;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
+// Navigation utilities
+const TOTAL_STEPS = 5;
 
-const itemVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30
+function useNavigation() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+
+  const canGoBack = currentStep > 1;
+  const canGoForward = currentStep < TOTAL_STEPS;
+  const isLastStep = currentStep === TOTAL_STEPS;
+
+  const handleNext = () => {
+    if (canGoForward) {
+      setCurrentStep(prev => prev + 1);
     }
-  }
-};
+  };
+
+  const handleBack = () => {
+    if (canGoBack) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const markStepComplete = (step: number) => {
+    if (!completedSteps.includes(step)) {
+      setCompletedSteps(prev => [...prev, step]);
+    }
+    handleNext();
+  };
+
+  return {
+    currentStep,
+    completedSteps,
+    canGoBack,
+    canGoForward,
+    isLastStep,
+    handleNext,
+    handleBack,
+    markStepComplete,
+  };
+}
 
 export function ValuationForm({ onResult }: ValuationFormProps) {
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const navigation = useNavigation();
+  const [validations, setValidations] = useState<Map<string, ValidationResult>>(new Map());
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
@@ -85,8 +102,15 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     },
   });
 
+  // Watch form values for validation
+  const formValues = form.watch();
+  useEffect(() => {
+    const validationResults = BusinessRulesEngine.validateForm(formValues);
+    setValidations(validationResults);
+  }, [formValues]);
+
   // Initialize auto-save functionality
-  const { loadSavedData, clearSavedData } = useFormAutoSave(form.watch());
+  const { loadSavedData, clearSavedData } = useFormAutoSave(formValues);
 
   // Load saved data on mount
   useEffect(() => {
@@ -115,11 +139,11 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
       return response.json();
     },
     onSuccess: (data) => {
-      clearSavedData(); // Clear saved data after successful submission
+      clearSavedData();
       onResult(data);
       toast({
-        title: "Valuation calculated",
-        description: "Your startup valuation has been updated.",
+        title: "Success",
+        description: "Your startup valuation has been calculated.",
       });
     },
     onError: (error) => {
@@ -131,21 +155,35 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     },
   });
 
-  const handleStepComplete = (step: number) => {
-    if (!completedSteps.includes(step)) {
-      setCompletedSteps([...completedSteps, step]);
-    }
-    setCurrentStep(step + 1);
-  };
+  const handleStepSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleStepBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    // For non-final steps, just validate and proceed
+    if (!navigation.isLastStep) {
+      navigation.markStepComplete(navigation.currentStep);
+      return;
+    }
+
+    // For final step, submit the form
+    try {
+      const isValid = await form.trigger();
+      if (!isValid) {
+        toast({
+          title: "Validation Error",
+          description: "Please check the form for errors",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await mutation.mutateAsync(form.getValues());
+    } catch (error) {
+      console.error('Form submission error:', error);
     }
   };
 
   // Welcome screen
-  if (currentStep === 0) {
+  if (navigation.currentStep === 0) {
     return (
       <motion.div
         initial="hidden"
@@ -218,7 +256,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             </motion.div>
             <motion.div variants={itemVariants} className="pt-2 md:pt-4">
               <Button
-                onClick={() => setCurrentStep(1)}
+                onClick={() => navigation.handleNext()}
                 className="w-full py-4 md:py-6 text-base md:text-lg"
                 variant="default"
               >
@@ -233,10 +271,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-4 md:space-y-6 max-w-4xl mx-auto px-4 md:px-0">
+      <form onSubmit={handleStepSubmit} className="space-y-4 md:space-y-6 max-w-4xl mx-auto px-4 md:px-0">
         <ProgressFeedback
-          currentStep={currentStep}
-          totalSteps={5}
+          currentStep={navigation.currentStep}
+          totalSteps={TOTAL_STEPS}
           stepTitles={[
             "Business Information",
             "Region & Standards",
@@ -247,6 +285,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           className="hidden md:block"
         />
 
+        <ErrorDisplay
+          validations={validations}
+          onDismiss={() => setValidations(new Map())}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <FormField
@@ -309,31 +351,14 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             )}
           />
         </div>
-        <div className="mt-6">
-          {currentStep > 1 && (
-            <Button
-              onClick={handleStepBack}
-              variant="outline"
-              className="w-full md:w-auto"
-            >
-              Back
-            </Button>
-          )}
-          <Button
-            onClick={() => handleStepComplete(currentStep)}
-            className="mt-4 w-full md:w-auto"
-          >
-            {currentStep === 5 ? "Submit" : "Continue"}
-          </Button>
-        </div>
         <ValuationStepCard
           title="Region & Standards"
           description="Select your region and applicable standards"
           stepNumber={2}
-          currentStep={currentStep}
-          isCompleted={completedSteps.includes(2)}
-          onComplete={() => handleStepComplete(2)}
-          onBack={handleStepBack}
+          currentStep={navigation.currentStep}
+          isCompleted={navigation.completedSteps.includes(2)}
+          onComplete={() => navigation.markStepComplete(2)}
+          onBack={navigation.handleBack}
         >
           <div className="space-y-4">
             <FormField
@@ -425,10 +450,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           title="Valuation Method"
           description="Review and select the recommended valuation approach"
           stepNumber={3}
-          currentStep={currentStep}
-          isCompleted={completedSteps.includes(3)}
-          onComplete={() => handleStepComplete(3)}
-          onBack={handleStepBack}
+          currentStep={navigation.currentStep}
+          isCompleted={navigation.completedSteps.includes(3)}
+          onComplete={() => navigation.markStepComplete(3)}
+          onBack={navigation.handleBack}
         >
           <div className="space-y-4">
             <FormField
@@ -506,10 +531,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           title="Financial Details"
           description="Provide basic financial information"
           stepNumber={4}
-          currentStep={currentStep}
-          isCompleted={completedSteps.includes(4)}
-          onComplete={() => handleStepComplete(4)}
-          onBack={handleStepBack}
+          currentStep={navigation.currentStep}
+          isCompleted={navigation.completedSteps.includes(4)}
+          onComplete={() => navigation.markStepComplete(4)}
+          onBack={navigation.handleBack}
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -647,10 +672,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           title="Review"
           description="Review and confirm your information"
           stepNumber={5}
-          currentStep={currentStep}
-          isCompleted={completedSteps.includes(5)}
+          currentStep={navigation.currentStep}
+          isCompleted={navigation.completedSteps.includes(5)}
           onComplete={form.handleSubmit(mutation.mutate)}
-          onBack={handleStepBack}
+          onBack={navigation.handleBack}
         >
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
@@ -665,7 +690,58 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             </Button>
           </div>
         </ValuationStepCard>
+        <div className="flex justify-between mt-6">
+          {navigation.canGoBack && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={navigation.handleBack}
+              className="w-full md:w-auto"
+            >
+              Back
+            </Button>
+          )}
+          <Button
+            type="submit"
+            className={`w-full md:w-auto ${!navigation.canGoBack ? 'ml-auto' : ''}`}
+            disabled={mutation.isPending}
+          >
+            {navigation.isLastStep ? (
+              mutation.isPending ? "Calculating..." : "Calculate Valuation"
+            ) : (
+              "Continue"
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: {
+    opacity: 0,
+    y: 20
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 30
+    }
+  }
+};
+
+export default ValuationForm;
