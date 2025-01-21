@@ -55,37 +55,35 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
     }
   });
 
-  const validateRequiredFields = (values: ValuationFormData) => {
-    const requiredFields = [
-      { field: "businessName", label: "Business Name" },
-      { field: "sector", label: "Business Sector" },
-      { field: "industry", label: "Industry" },
-      { field: "stage", label: "Business Stage" },
-      { field: "intellectualProperty", label: "IP Protection Status" },
-      { field: "competitiveDifferentiation", label: "Competitive Differentiation" },
-      { field: "scalability", label: "Business Scalability" },
-      { field: "valuationPurpose", label: "Purpose of Valuation" },
-      { field: "region", label: "Primary Region" }
-    ];
-
-    const missingFields = requiredFields.filter(({ field }) => {
-      const value = values[field as keyof ValuationFormData];
-      return !value || (typeof value === "string" && value.trim() === "");
-    });
-
-    return {
-      isValid: missingFields.length === 0,
-      missingFields: missingFields.map(f => f.label)
-    };
+  const handleSectorChange = (value: string) => {
+    setSelectedSector(value);
+    form.setValue("sector", value);
+    form.setValue("industry", ""); // Reset industry when sector changes
   };
 
   const handleSubmit = async (values: ValuationFormData) => {
-    const validation = validateRequiredFields(values);
+    // Basic required field validation
+    const requiredFields = [
+      'businessName',
+      'sector',
+      'industry',
+      'stage',
+      'intellectualProperty',
+      'competitiveDifferentiation',
+      'scalability',
+      'valuationPurpose',
+      'region'
+    ];
 
-    if (!validation.isValid) {
+    const missingFields = requiredFields.filter(field => {
+      const value = values[field as keyof ValuationFormData];
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
+
+    if (missingFields.length > 0) {
       toast({
         title: "Required Fields Missing",
-        description: `Please fill in: ${validation.missingFields.join(", ")}`,
+        description: `Please fill in all required fields marked with *`,
         variant: "destructive",
       });
       return;
@@ -104,17 +102,11 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
     }
   };
 
-  const handleSectorChange = (value: string) => {
-    setSelectedSector(value);
-    form.setValue("sector", value);
-    form.setValue("industry", ""); // Reset industry when sector changes
-  };
-
   return (
     <div className="space-y-6">
-      <Alert className="bg-primary/5 border-primary/10">
-        <Info className="h-4 w-4 text-primary" />
-        <AlertDescription className="text-primary/90">
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
           Fill in your business information below. All fields marked with * are required.
         </AlertDescription>
       </Alert>
@@ -216,6 +208,80 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
+                name="intellectualProperty"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>IP Protection Status *</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => form.setValue("intellectualProperty", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select IP status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No IP Protection</SelectItem>
+                        <SelectItem value="pending">Patents Pending</SelectItem>
+                        <SelectItem value="registered">Registered Patents/IP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="competitiveDifferentiation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Competitive Differentiation *</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => form.setValue("competitiveDifferentiation", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select competitive position" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Limited Differentiation</SelectItem>
+                        <SelectItem value="medium">Moderate Advantage</SelectItem>
+                        <SelectItem value="high">Strong Market Position</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="scalability"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Scalability *</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => form.setValue("scalability", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select scalability potential" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="limited">Limited Scale Potential</SelectItem>
+                      <SelectItem value="moderate">Moderate Scalability</SelectItem>
+                      <SelectItem value="high">Highly Scalable</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="valuationPurpose"
                 render={({ field }) => (
                   <FormItem>
@@ -265,7 +331,52 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="teamExperience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team Experience (years)</FormLabel>
+                    <FormDescription>Average relevant industry experience</FormDescription>
+                    <div className="pt-2">
+                      <Slider
+                        value={[field.value || 0]}
+                        onValueChange={([value]) => form.setValue("teamExperience", value)}
+                        max={20}
+                        step={1}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {field.value} years
+                      </p>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="customerBase"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Customer Base</FormLabel>
+                    <FormDescription>Number of active customers/users</FormDescription>
+                    <Input
+                      type="number"
+                      {...field}
+                      onChange={(e) => form.setValue("customerBase", Number(e.target.value))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <div className="flex justify-end space-x-4">
+              <Button variant="outline" type="button" onClick={() => form.reset()}>
+                Reset
+              </Button>
               <Button type="submit">Continue</Button>
             </div>
           </div>
