@@ -1,25 +1,21 @@
 import { useState } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CollapsibleSectionProps {
   title: string;
-  description?: string;
   children: React.ReactNode;
-  defaultOpen?: boolean;
   className?: string;
 }
 
 export function CollapsibleSection({
   title,
-  description,
   children,
-  defaultOpen = false,
   className,
 }: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <Card className={cn("mb-4", className)}>
@@ -28,19 +24,16 @@ export function CollapsibleSection({
         onClick={() => setIsOpen(!isOpen)}
       >
         <div>
-          <h3 className="text-lg font-semibold">{title}</h3>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
+          <h3 className="text-lg font-medium">{title}</h3>
         </div>
         <motion.div
-          animate={{ rotate: isOpen ? 90 : 0 }}
+          animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronDown className="h-5 w-5" />
         </motion.div>
       </CardHeader>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -20,132 +20,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { valuationFormSchema, sectors, revenueModels, productStages, geographicMarkets } from "@/lib/validations";
+import { valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
-import { useFormAutoSave } from "@/hooks/use-form-autosave";
-import { ErrorDisplay } from "@/components/ui/error-display";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import BusinessRulesEngine from "@/lib/business-rules-engine";
 
-// Define form sections with field configurations
+// Define sections for grouping exactly as provided
 const formSections = [
   {
     title: "Basic Information",
-    description: "Core details about your business",
     fields: [
       { name: "businessName", label: "Business Name", type: "text", required: true },
-      { name: "sector", label: "Business Sector", type: "dropdown", required: true, options: Object.entries(sectors).map(([key, value]) => ({ value: key, label: value.name })) },
-      { name: "industry", label: "Industry", type: "dropdown", required: true, depends: "sector", getOptions: (sector: string) => 
-        Object.entries(sectors[sector]?.subsectors || {}).map(([key, label]) => ({ value: key, label }))
-      }
+      { name: "sector", label: "Business Sector", type: "dropdown", required: true },
+      { name: "industry", label: "Industry", type: "dropdown", required: true }
     ]
   },
   {
     title: "Market Information",
-    description: "Your market presence and business model",
     fields: [
-      { 
-        name: "geographicMarkets", 
-        label: "Geographic Markets", 
-        type: "dropdown", 
-        required: true,
-        options: Object.entries(geographicMarkets).map(([key, label]) => ({ value: key, label }))
-      },
-      { 
-        name: "revenueModel", 
-        label: "Revenue Model", 
-        type: "dropdown", 
-        required: true,
-        options: Object.entries(revenueModels).map(([key, label]) => ({ value: key, label }))
-      },
-      { 
-        name: "productStage", 
-        label: "Product Stage", 
-        type: "dropdown", 
-        required: true,
-        options: Object.entries(productStages).map(([key, label]) => ({ value: key, label }))
-      }
+      { name: "geographicMarkets", label: "Geographic Markets", type: "dropdown", required: true },
+      { name: "revenueModel", label: "Revenue Model", type: "dropdown", required: true },
+      { name: "productStage", label: "Product Stage", type: "dropdown", required: true }
     ]
   },
   {
     title: "Team and Operations",
-    description: "Details about your team and operational scale",
     fields: [
-      { name: "employeeCount", label: "Number of Employees", type: "number", required: true, min: 1 },
-      { name: "teamExperience", label: "Team Experience", type: "slider", required: true }
+      { name: "numberOfEmployees", label: "Number of Employees", type: "number", required: true },
+      { name: "teamExperience", label: "Team Experience (years)", type: "number", required: true }
     ]
   },
   {
-    title: "Financial Metrics",
-    description: "Key financial indicators",
+    title: "Additional Information",
     fields: [
-      { name: "revenue", label: "Annual Revenue", type: "number", required: true, min: 0 },
-      { name: "growthRate", label: "Growth Rate", type: "slider", required: true },
-      { name: "margins", label: "Profit Margins", type: "slider", required: true }
+      { name: "businessScalability", label: "Business Scalability", type: "dropdown", required: false },
+      { name: "currentCustomerBase", label: "Current Customer Base", type: "number", required: false },
+      { name: "regulatoryCompliance", label: "Regulatory Compliance", type: "dropdown", required: false },
+      { name: "ipProtectionStatus", label: "IP Protection Status", type: "dropdown", required: false }
     ]
   }
 ];
 
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
-  const [validations, setValidations] = useState<Map<string, BusinessRulesEngine.ValidationResult>>(new Map());
-
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
     defaultValues: {
       businessName: "",
-      sector: "technology",
-      industry: "software_enterprise",
-      stage: "ideation_validated",
-      employeeCount: 1,
-      fundingHistory: {
-        rounds: [],
-        totalRaised: 0
-      },
-      revenueModel: "subscription",
-      geographicMarkets: ["local"],
-      productStage: "concept",
-      intellectualProperty: "none",
-      revenue: 0,
+      sector: "",
+      industry: "",
+      numberOfEmployees: 0,
       teamExperience: 0,
-      customerBase: 0,
-      competitiveDifferentiation: "medium",
+      currentCustomerBase: 0,
+      businessScalability: "moderate",
       regulatoryCompliance: "notRequired",
-      scalability: "moderate",
-      currency: "USD",
-      growthRate: 0,
-      margins: 0,
-      region: "global",
-      valuationPurpose: "fundraising",
-      complianceStandard: "",
-    },
-  });
-
-  // Watch form values for validation
-  const formValues = form.watch();
-  useEffect(() => {
-    const validationResults = BusinessRulesEngine.validateForm(formValues);
-    setValidations(validationResults);
-  }, [formValues]);
-
-  // Initialize auto-save functionality
-  const { loadSavedData, clearSavedData } = useFormAutoSave(formValues);
-
-  // Load saved data on mount
-  useEffect(() => {
-    const savedData = loadSavedData();
-    if (savedData) {
-      try {
-        const parsedData = valuationFormSchema.parse(savedData);
-        Object.keys(parsedData).forEach((key) => {
-          form.setValue(key as keyof ValuationFormData, parsedData[key as keyof ValuationFormData]);
-        });
-      } catch (error) {
-        console.error('Invalid saved form data:', error);
-        clearSavedData();
-      }
+      ipProtectionStatus: "none"
     }
-  }, []);
+  });
 
   const mutation = useMutation({
     mutationFn: async (data: ValuationFormData) => {
@@ -165,11 +95,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       return response.json();
     },
     onSuccess: (data) => {
-      clearSavedData();
       onResult(data);
       toast({
         title: "Success",
-        description: "Your startup valuation has been calculated.",
+        description: "Valuation has been calculated.",
       });
     },
     onError: (error) => {
@@ -182,7 +111,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   });
 
   // Render field based on its type
-  const renderField = (field: any) => {
+  const renderField = (field: typeof formSections[0]['fields'][0]) => {
     return (
       <FormField
         key={field.name}
@@ -193,45 +122,83 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
             <FormLabel>{field.label}</FormLabel>
             <FormControl>
               {field.type === "text" && (
-                <Input {...formField} />
+                <Input {...formField} required={field.required} />
               )}
               {field.type === "number" && (
                 <Input
                   type="number"
                   {...formField}
+                  required={field.required}
                   onChange={(e) => formField.onChange(e.target.value ? Number(e.target.value) : 0)}
-                  min={field.min}
                 />
               )}
               {field.type === "dropdown" && (
                 <Select
                   onValueChange={formField.onChange}
                   defaultValue={formField.value}
+                  required={field.required}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                      <SelectValue placeholder={`Select ${field.label}`} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {field.options?.map((option: any) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                    {/* Add dropdown options based on field name */}
+                    {field.name === "sector" && (
+                      <>
+                        <SelectItem value="technology">Technology</SelectItem>
+                        <SelectItem value="healthcare">Healthcare</SelectItem>
+                        <SelectItem value="finance">Finance</SelectItem>
+                      </>
+                    )}
+                    {field.name === "businessScalability" && (
+                      <>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="moderate">Moderate</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </>
+                    )}
+                    {field.name === "regulatoryCompliance" && (
+                      <>
+                        <SelectItem value="notRequired">Not Required</SelectItem>
+                        <SelectItem value="required">Required</SelectItem>
+                      </>
+                    )}
+                    {field.name === "ipProtectionStatus" && (
+                      <>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="patentPending">Patent Pending</SelectItem>
+                        <SelectItem value="patented">Patented</SelectItem>
+                      </>
+                    )}
+                    {field.name === "geographicMarkets" && (
+                      <>
+                        <SelectItem value="local">Local</SelectItem>
+                        <SelectItem value="regional">Regional</SelectItem>
+                        <SelectItem value="national">National</SelectItem>
+                        <SelectItem value="international">International</SelectItem>
+                      </>
+                    )}
+                    {field.name === "revenueModel" && (
+                      <>
+                        <SelectItem value="subscription">Subscription</SelectItem>
+                        <SelectItem value="oneTime">One-Time</SelectItem>
+                        <SelectItem value="freemium">Freemium</SelectItem>
+                      </>
+                    )}
+                    {field.name === "productStage" && (
+                      <>
+                        <SelectItem value="concept">Concept</SelectItem>
+                        <SelectItem value="prototype">Prototype</SelectItem>
+                        <SelectItem value="mvp">MVP</SelectItem>
+                        <SelectItem value="production">Production</SelectItem>
+                      </>
+                    )}
+
+
                   </SelectContent>
                 </Select>
-              )}
-              {field.type === "slider" && (
-                <SmartSlider
-                  label={field.label}
-                  value={formField.value}
-                  onChange={value => formField.onChange(value)}
-                  min={field.name === "growthRate" ? 0 : -50}
-                  max={field.name === "growthRate" ? 200 : 100}
-                  step={5}
-                  className="mb-6"
-                />
               )}
             </FormControl>
             <FormMessage />
@@ -243,17 +210,11 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-4 max-w-4xl mx-auto">
-        <ErrorDisplay
-          validations={validations}
-          onDismiss={() => setValidations(new Map())}
-        />
-
+      <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-6 max-w-4xl mx-auto">
         {formSections.map((section) => (
           <CollapsibleSection
             key={section.title}
             title={section.title}
-            description={section.description}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {section.fields.map(renderField)}
@@ -261,7 +222,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           </CollapsibleSection>
         ))}
 
-        <div className="flex justify-end gap-4 mt-6">
+        <div className="flex justify-end mt-6">
           <Button
             type="submit"
             disabled={mutation.isPending}
@@ -276,29 +237,3 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 }
 
 export default ValuationForm;
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
-};
-
-const itemVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30
-    }
-  }
-};
