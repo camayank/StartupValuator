@@ -1,6 +1,10 @@
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import Redis from 'redis';
 
+if (!process.env.REDIS_URL) {
+  throw new Error('REDIS_URL environment variable is required for rate limiting');
+}
+
 const redisClient = Redis.createClient({
   url: process.env.REDIS_URL,
   enable_offline_queue: false
