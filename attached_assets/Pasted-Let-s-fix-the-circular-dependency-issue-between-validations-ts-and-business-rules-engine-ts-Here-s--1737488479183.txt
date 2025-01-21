@@ -1,0 +1,216 @@
+Let's fix the circular dependency issue between validations.ts and business-rules-engine.ts. Here's a clean solution:
+
+1. First, create a shared types file:
+
+```typescript
+// types/shared.ts
+export interface ValidationRule {
+  field: string;
+  type: string;
+  message: string;
+  validate: (value: any) => boolean;
+}
+
+export interface BusinessRule {
+  id: string;
+  condition: (data: any) => boolean;
+  message: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+```
+
+2. Separate the core validation logic:
+
+```typescript
+// utils/validation-core.ts
+import { ValidationRule, ValidationResult } from '../types/shared';
+
+export class ValidationCore {
+  static validateValue(value: any, rule: ValidationRule): boolean {
+    return rule.validate(value);
+  }
+
+  static formatError(rule: ValidationRule, value: any): string {
+    return `${rule.field}: ${rule.message}`;
+  }
+}
+```
+
+3. Update the validations file:
+
+```typescript
+// validations.ts
+import { ValidationRule, ValidationResult } from './types/shared';
+import { ValidationCore } from './utils/validation-core';
+
+export class Validations {
+  private static rules: ValidationRule[] = [
+    {
+      field: 'marketSize',
+      type: 'number',
+      message: 'Market size must be greater than 0',
+      validate: (value: number) => value > 0
+    },
+    {
+      field: 'competitorAnalysis',
+      type: 'string',
+      message: 'Competitor analysis must be at least 50 characters',
+      validate: (value: string) => value?.length >= 50
+    }
+    // Add more validation rules
+  ];
+
+  static validateField(field: string, value: any): ValidationResult {
+    const rule = this.rules.find(r => r.field === field);
+    if (!rule) return { isValid: true, errors: [] };
+
+    const isValid = ValidationCore.validateValue(value, rule);
+    return {
+      isValid,
+      errors: isValid ? [] : [ValidationCore.formatError(rule, value)]
+    };
+  }
+
+  static validateForm(data: any): ValidationResult {
+    const errors: string[] = [];
+
+    this.rules.forEach(rule => {
+      if (!ValidationCore.validateValue(data[rule.field], rule)) {
+        errors.push(ValidationCore.formatError(rule, data[rule.field]));
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+}
+```
+
+4. Update the business rules engine:
+
+```typescript
+// business-rules-engine.ts
+import { BusinessRule, ValidationResult } from './types/shared';
+
+export class BusinessRulesEngine {
+  private static rules: BusinessRule[] = [
+    {
+      id: 'revenue_validation',
+      condition: (data: any) => {
+        return data.stage === 'growth' ? data.revenue > 0 : true;
+      },
+      message: 'Growth stage companies must have revenue'
+    },
+    // Add more business rules
+  ];
+
+  static evaluateRules(data: any): ValidationResult {
+    const errors: string[] = [];
+
+    this.rules.forEach(rule => {
+      if (!rule.condition(data)) {
+        errors.push(rule.message);
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+}
+```
+
+5. Create a validation service that uses both:
+
+```typescript
+// services/validation-service.ts
+import { ValidationResult } from '../types/shared';
+import { Validations } from '../validations';
+import { BusinessRulesEngine } from '../business-rules-engine';
+
+export class ValidationService {
+  static validateAll(data: any): ValidationResult {
+    // First run basic validations
+    const validationResult = Validations.validateForm(data);
+    if (!validationResult.isValid) {
+      return validationResult;
+    }
+
+    // Then run business rules
+    const businessRulesResult = BusinessRulesEngine.evaluateRules(data);
+    
+    return {
+      isValid: businessRulesResult.isValid,
+      errors: [...validationResult.errors, ...businessRulesResult.errors]
+    };
+  }
+
+  static validateField(field: string, value: any, data: any): ValidationResult {
+    // Run field validation
+    const validationResult = Validations.validateField(field, value);
+    if (!validationResult.isValid) {
+      return validationResult;
+    }
+
+    // Run business rules that might affect this field
+    const businessRulesResult = BusinessRulesEngine.evaluateRules({
+      ...data,
+      [field]: value
+    });
+
+    return {
+      isValid: businessRulesResult.isValid,
+      errors: [...validationResult.errors, ...businessRulesResult.errors]
+    };
+  }
+}
+```
+
+6. Usage example:
+
+```typescript
+// components/form.ts
+import { ValidationService } from '../services/validation-service';
+
+const handleSubmit = async (formData: any) => {
+  const validationResult = ValidationService.validateAll(formData);
+  
+  if (!validationResult.isValid) {
+    setErrors(validationResult.errors);
+    return;
+  }
+
+  // Proceed with form submission
+};
+
+const handleFieldChange = (field: string, value: any) => {
+  const validationResult = ValidationService.validateField(field, value, formData);
+  
+  if (!validationResult.isValid) {
+    setFieldError(field, validationResult.errors[0]);
+  } else {
+    clearFieldError(field);
+  }
+};
+```
+
+This structure:
+1. Eliminates circular dependencies
+2. Separates concerns
+3. Makes the code more maintainable
+4. Allows for easy extension
+
+Would you like me to:
+1. Add more validation rules?
+2. Add more business rules?
+3. Enhance the error handling?
+4. Add test cases?
+
+Let me know what aspect needs more detail!

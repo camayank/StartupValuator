@@ -1,18 +1,36 @@
-```typescript
 import { z } from "zod";
 
-// Shared business information schema
+// Core validation interfaces
+export interface ValidationRule {
+  field: string;
+  type: string;
+  message: string;
+  validate: (value: any) => boolean;
+}
+
+export interface BusinessRule {
+  id: string;
+  condition: (data: any) => boolean;
+  message: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  severity: 'info' | 'warning' | 'error';
+  message?: string;
+  suggestions?: string[];
+  impact?: 'low' | 'medium' | 'high';
+}
+
+// Core business information schema
 export const businessInfoSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   industry: z.string(),
   sector: z.string(),
   stage: z.string(),
   foundingDate: z.string().optional(),
-  description: z.string(),
-  mission: z.string(),
-  vision: z.string(),
-  location: z.string(),
-  teamSize: z.number().min(1),
+  description: z.string().min(1, "Description is required"),
+  teamSize: z.number().min(1)
 });
 
 // Financial data schema
@@ -94,4 +112,3 @@ export type FinancialData = z.infer<typeof financialDataSchema>;
 export type MarketAnalysis = z.infer<typeof marketAnalysisSchema>;
 export type BusinessModel = z.infer<typeof businessModelSchema>;
 export type ProjectData = z.infer<typeof projectDataSchema>;
-```
