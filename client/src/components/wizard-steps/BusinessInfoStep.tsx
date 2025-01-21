@@ -42,8 +42,8 @@ import { sectors, businessStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-// Enhanced validation schema with detailed messages
-const formSchema = z.object({
+// Create validation schema with proper industry validation
+const createFormSchema = (selectedSector: string) => z.object({
   businessName: z.string()
     .min(1, "Business name is required")
     .max(100, "Business name must be less than 100 characters")
@@ -56,9 +56,8 @@ const formSchema = z.object({
   industry: z.string()
     .min(1, "Please select an industry")
     .refine((val) => {
-      // Dynamic validation based on selected sector
-      const selectedSector = sectors[formData?.sector as keyof typeof sectors];
-      return selectedSector?.subsectors && Object.keys(selectedSector.subsectors).includes(val);
+      const sector = sectors[selectedSector as keyof typeof sectors];
+      return sector?.subsectors && Object.keys(sector.subsectors).includes(val);
     }, "Invalid industry for selected sector"),
 
   stage: z.string()
@@ -107,10 +106,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { callApiWithRetry } = useApiWithRetry();
 
-  // Enhanced form with real-time validation
+  // Create form with dynamic schema based on selected sector
   const form = useForm<ValuationFormData>({
-    resolver: zodResolver(formSchema),
-    mode: "onChange", // Enable real-time validation
+    resolver: zodResolver(createFormSchema(selectedSector)),
+    mode: "onChange",
     defaultValues: {
       businessName: data.businessName || "",
       sector: data.sector || "",
