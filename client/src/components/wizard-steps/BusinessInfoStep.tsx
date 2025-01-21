@@ -46,7 +46,7 @@ import { z } from "zod";
 import DebugHelper from "@/lib/debug-helper";
 
 const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
-  // Existing fields
+  // Existing fields remain unchanged
   businessName: z.string()
     .min(1, "Business name is required")
     .max(100, "Business name must be less than 100 characters")
@@ -63,48 +63,35 @@ const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
 
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
 
-  // New fields
-  foundingDate: z.string()
-    .min(1, "Founding date is required")
-    .refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
+  // Updated date field
+  foundingDate: z.string().min(1, "Founding date is required"),
 
-  employeeCount: z.number()
-    .min(1, "Employee count must be at least 1")
-    .max(1000000, "Employee count seems unusually high"),
+  // Rest of the fields with corrected types
+  employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
 
   fundingHistory: z.object({
     rounds: z.array(z.string()),
     totalRaised: z.number().optional(),
-    lastRound: z.string().optional(),
+    lastRound: z.string().optional()
   }).optional(),
 
-  revenueModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
+  revenueModel: z.enum([...Object.keys(revenueModels)] as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
 
   geographicMarkets: z.array(
-    z.enum(Object.keys(geographicMarkets) as [keyof typeof geographicMarkets, ...Array<keyof typeof geographicMarkets>])
+    z.enum([...Object.keys(geographicMarkets)] as [keyof typeof geographicMarkets, ...Array<keyof typeof geographicMarkets>])
   ),
 
-  productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
+  productStage: z.enum([...Object.keys(productStages)] as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
 
-  // Existing fields continued
-  intellectualProperty: z.enum(['none', 'pending', 'registered']),
+  // Remaining fields with proper enums
+  intellectualProperty: z.enum(["none", "pending", "registered"] as const),
+  competitiveDifferentiation: z.enum(["low", "medium", "high"] as const),
+  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"] as const),
+  scalability: z.enum(["limited", "moderate", "high"] as const),
 
-  teamExperience: z.number()
-    .min(0, "Team experience cannot be negative")
-    .max(50, "Team experience seems unusually high")
-    .optional()
-    .transform(val => val === undefined ? 0 : val),
-
-  customerBase: z.number()
-    .min(0, "Customer base cannot be negative")
-    .optional()
-    .transform(val => val === undefined ? 0 : val),
-
-  competitiveDifferentiation: z.enum(['low', 'medium', 'high']),
-
-  regulatoryCompliance: z.enum(['notRequired', 'inProgress', 'compliant']),
-
-  scalability: z.enum(['limited', 'moderate', 'high'])
+  // Numeric fields
+  teamExperience: z.number().min(0).max(50).optional(),
+  customerBase: z.number().min(0).optional(),
 });
 
 // Validation rules for ValidationEngine
@@ -347,6 +334,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           <Input
                             type="date"
                             {...field}
+                            value={field.value || ''} // Ensure empty string fallback
                             className="max-w-md"
                           />
                         </FormControl>

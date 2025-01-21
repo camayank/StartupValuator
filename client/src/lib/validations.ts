@@ -596,7 +596,21 @@ export const valuationFormSchema = z.object({
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>])
     .default("ideation_validated"),
 
-  // Smart defaults with business logic
+  // New fields with proper types
+  foundingDate: z.coerce.date(), // Using coerce for string to date conversion
+  employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
+  fundingHistory: z.object({
+    rounds: z.array(z.string()),
+    totalRaised: z.number().optional(),
+    lastRound: z.string().optional()
+  }).optional(),
+  revenueModel: z.enum([...Object.keys(revenueModels)] as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
+  geographicMarkets: z.array(
+    z.enum([...Object.keys(geographicMarkets)] as [keyof typeof geographicMarkets, ...Array<keyof typeof geographicMarkets>])
+  ),
+  productStage: z.enum([...Object.keys(productStages)] as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
+
+  // Rest of the fields remain unchanged
   intellectualProperty: z.enum(["none", "pending", "registered"])
     .default("none")
     .superRefine((val, ctx) => {
@@ -660,14 +674,6 @@ export const valuationFormSchema = z.object({
     value: z.number(),
     description: z.string()
   })).optional(),
-
-  foundingDate: z.date(), // Added
-  employeeCount: z.number().min(0), // Added
-  fundingHistory: z.array(z.string()), // Added
-  revenueModel: z.enum(Object.keys(revenueModels) as (keyof typeof revenueModels)[]), // Added
-  geographicMarkets: z.array(z.enum(Object.keys(geographicMarkets) as (keyof typeof geographicMarkets)[])), // Added
-  productStage: z.enum(Object.keys(productStages) as (keyof typeof productStages)[]), // Added
-
 }).refine((data) => {
   const validations = getIndustryValidations(data.industry);
   if (data.revenue < validations.minRevenue) {
