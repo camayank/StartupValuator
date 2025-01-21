@@ -28,6 +28,7 @@ import { ErrorDisplay } from "@/components/ui/error-display";
 import { ProgressFeedback } from "@/components/ui/progress-feedback";
 import { motion } from "framer-motion";
 import { Building2, Calculator, ChartBar, ClipboardCheck, Globe } from "lucide-react";
+import SmartSlider from "@/components/SmartSlider"; // Assuming this import is correct
 
 interface ValuationFormProps {
   onResult: (data: ValuationFormData) => void;
@@ -554,14 +555,25 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               name="growthRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Annual Growth Rate (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
-                    />
-                  </FormControl>
+                  <SmartSlider
+                    label="Annual Growth Rate (%)"
+                    value={field.value}
+                    onChange={value => field.onChange(value)}
+                    min={0}
+                    max={200}
+                    step={5}
+                    benchmarks={[
+                      { value: 20, label: "Steady", description: "Stable, sustainable growth" },
+                      { value: 50, label: "Fast", description: "Rapid expansion phase" },
+                      { value: 100, label: "Hyper", description: "Exponential growth" },
+                      { value: 200, label: "Unicorn", description: "Exceptional performance" }
+                    ]}
+                    tooltip={{
+                      title: "Growth Rate",
+                      description: "Annual revenue growth as a percentage. Industry standards vary by sector and stage."
+                    }}
+                    className="mb-6"
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -572,14 +584,53 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               name="margins"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Profit Margins (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(e.target.value ? Number(e.target.value) : 0)}
-                    />
-                  </FormControl>
+                  <SmartSlider
+                    label="Profit Margins (%)"
+                    value={field.value}
+                    onChange={value => field.onChange(value)}
+                    min={-50}
+                    max={100}
+                    step={5}
+                    benchmarks={[
+                      { value: 0, label: "Break-even", description: "Revenue equals costs" },
+                      { value: 20, label: "Healthy", description: "Sustainable profitability" },
+                      { value: 50, label: "Premium", description: "High-margin business" },
+                      { value: 80, label: "Elite", description: "Industry-leading efficiency" }
+                    ]}
+                    tooltip={{
+                      title: "Profit Margins",
+                      description: "Net profit as a percentage of revenue. Higher margins often indicate stronger business models."
+                    }}
+                    className="mb-6"
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="teamExperience"
+              render={({ field }) => (
+                <FormItem>
+                  <SmartSlider
+                    label="Team Experience Level"
+                    value={field.value}
+                    onChange={value => field.onChange(value)}
+                    min={0}
+                    max={100}
+                    step={10}
+                    benchmarks={[
+                      { value: 25, label: "Early", description: "Growing expertise" },
+                      { value: 50, label: "Mid", description: "Established track record" },
+                      { value: 75, label: "Senior", description: "Industry veterans" },
+                      { value: 100, label: "Expert", description: "World-class leadership" }
+                    ]}
+                    tooltip={{
+                      title: "Team Experience",
+                      description: "Combined expertise and industry experience of the core team."
+                    }}
+                    className="mb-6"
+                  />
                   <FormMessage />
                 </FormItem>
               )}
