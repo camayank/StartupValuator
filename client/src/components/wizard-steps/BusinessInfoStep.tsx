@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Form,
   FormControl,
   FormDescription,
@@ -23,7 +16,7 @@ import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import type { ValuationFormData } from "@/lib/validations";
-import { sectors, businessStages, regions, valuationPurposes } from "@/lib/validations";
+import { sectors, businessStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -39,12 +32,7 @@ const formSchema = z.object({
   customerBase: z.number().optional(),
   competitiveDifferentiation: z.string().optional(),
   regulatoryCompliance: z.string().optional(),
-  scalability: z.string().optional(),
-  valuationPurpose: z.string().optional(),
-  region: z.string().optional(),
-  revenue: z.number().optional(),
-  growthRate: z.number().optional(),
-  margins: z.number().optional()
+  scalability: z.string().optional()
 });
 
 interface BusinessInfoStepProps {
@@ -56,10 +44,11 @@ interface BusinessInfoStepProps {
 export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(formSchema),
-    mode: "onChange",
+    mode: "onSubmit",
     defaultValues: {
       businessName: data.businessName || "",
       sector: data.sector || "",
@@ -70,36 +59,33 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
       customerBase: data.customerBase || 0,
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "",
-      scalability: data.scalability || "moderate",
-      valuationPurpose: data.valuationPurpose || "",
-      region: data.region || "",
-      revenue: data.revenue || 0,
-      growthRate: data.growthRate || 0,
-      margins: data.margins || 0
+      scalability: data.scalability || "moderate"
     }
   });
 
   const handleSectorChange = (value: string) => {
     setSelectedSector(value);
-    form.setValue("sector", value, { shouldValidate: true });
-    form.setValue("industry", "", { shouldValidate: true }); // Reset industry when sector changes
+    form.setValue("sector", value);
+    form.setValue("industry", ""); 
   };
 
   const handleSubmit = async (values: ValuationFormData) => {
-    // Log form state for debugging
-    console.log("Form state:", form.formState);
-    console.log("Form values:", values);
+    if (isSubmitting) return;
 
+    setIsSubmitting(true);
     try {
-      // Check if there are any validation errors
-      if (!form.formState.isValid) {
-        console.log("Validation errors:", form.formState.errors);
+      // Check required fields
+      if (!values.businessName?.trim() || !values.sector?.trim() || 
+          !values.industry?.trim() || !values.stage?.trim()) {
+        toast({
+          title: "Required Fields Missing",
+          description: "Please fill in all required fields marked with *",
+          variant: "destructive",
+        });
         return;
       }
 
-      // Update the form data
       await onUpdate(values);
-      // If successful, move to next step
       onNext();
     } catch (error) {
       console.error('Submit error:', error);
@@ -108,6 +94,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
         description: "Failed to save business information. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -116,7 +104,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Fill in your business information below. All fields marked with * are required.
+          Fill in your business information below. Fields marked with * are required.
         </AlertDescription>
       </Alert>
 
@@ -170,7 +158,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     <FormLabel>Industry *</FormLabel>
                     <Select
                       value={field.value}
-                      onValueChange={(value) => form.setValue("industry", value, { shouldValidate: true })}
+                      onValueChange={(value) => form.setValue("industry", value)}
                       disabled={!selectedSector}
                     >
                       <SelectTrigger>
@@ -198,7 +186,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                   <FormLabel>Business Stage *</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={(value) => form.setValue("stage", value, { shouldValidate: true })}
+                    onValueChange={(value) => form.setValue("stage", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your stage" />
@@ -220,10 +208,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 name="intellectualProperty"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>IP Protection Status *</FormLabel>
+                    <FormLabel>IP Protection Status</FormLabel>
                     <Select
                       value={field.value}
-                      onValueChange={(value) => form.setValue("intellectualProperty", value, { shouldValidate: true })}
+                      onValueChange={(value) => form.setValue("intellectualProperty", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select IP status" />
@@ -244,10 +232,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                 name="competitiveDifferentiation"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Competitive Differentiation *</FormLabel>
+                    <FormLabel>Competitive Differentiation</FormLabel>
                     <Select
                       value={field.value}
-                      onValueChange={(value) => form.setValue("competitiveDifferentiation", value, { shouldValidate: true })}
+                      onValueChange={(value) => form.setValue("competitiveDifferentiation", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select competitive position" />
@@ -269,10 +257,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
               name="scalability"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Business Scalability *</FormLabel>
+                  <FormLabel>Business Scalability</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={(value) => form.setValue("scalability", value, { shouldValidate: true })}
+                    onValueChange={(value) => form.setValue("scalability", value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select scalability potential" />
@@ -291,58 +279,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="valuationPurpose"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Purpose of Valuation *</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => form.setValue("valuationPurpose", value, { shouldValidate: true })}
-                    >
-                      <SelectTrigger className="pl-8">
-                        <SelectValue placeholder="Select purpose" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(valuationPurposes).map(([key, name]) => (
-                          <SelectItem key={key} value={key}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Trophy className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="region"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primary Region *</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => form.setValue("region", value, { shouldValidate: true })}
-                    >
-                      <SelectTrigger className="pl-8">
-                        <SelectValue placeholder="Select region" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(regions).map(([key, { name }]) => (
-                          <SelectItem key={key} value={key}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Globe2 className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
                 name="teamExperience"
                 render={({ field }) => (
                   <FormItem>
@@ -351,7 +287,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     <div className="pt-2">
                       <Slider
                         value={[field.value || 0]}
-                        onValueChange={([value]) => form.setValue("teamExperience", value, { shouldValidate: true })}
+                        onValueChange={([value]) => form.setValue("teamExperience", value)}
                         max={20}
                         step={1}
                       />
@@ -374,7 +310,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     <Input
                       type="number"
                       {...field}
-                      onChange={(e) => form.setValue("customerBase", Number(e.target.value), { shouldValidate: true })}
+                      onChange={(e) => form.setValue("customerBase", Number(e.target.value))}
                     />
                     <FormMessage />
                   </FormItem>
@@ -386,7 +322,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
               <Button variant="outline" type="button" onClick={() => form.reset()}>
                 Reset
               </Button>
-              <Button type="submit">Continue</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Continue"}
+              </Button>
             </div>
           </div>
         </form>
