@@ -46,7 +46,6 @@ import { z } from "zod";
 import DebugHelper from "@/lib/debug-helper";
 
 const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
-  // Existing fields remain unchanged
   businessName: z.string()
     .min(1, "Business name is required")
     .max(100, "Business name must be less than 100 characters")
@@ -63,10 +62,6 @@ const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
 
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
 
-  // Updated date field
-  foundingDate: z.string().min(1, "Founding date is required"),
-
-  // Rest of the fields with corrected types
   employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
 
   fundingHistory: z.object({
@@ -83,13 +78,11 @@ const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
 
   productStage: z.enum([...Object.keys(productStages)] as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
 
-  // Remaining fields with proper enums
   intellectualProperty: z.enum(["none", "pending", "registered"] as const),
   competitiveDifferentiation: z.enum(["low", "medium", "high"] as const),
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"] as const),
   scalability: z.enum(["limited", "moderate", "high"] as const),
 
-  // Numeric fields
   teamExperience: z.number().min(0).max(50).optional(),
   customerBase: z.number().min(0).optional(),
 });
@@ -116,12 +109,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { callApiWithRetry } = useApiWithRetry();
 
-  // Create form with dynamic schema based on selected sector
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(createFormSchema(selectedSector)),
     mode: "onChange",
     defaultValues: {
-      // Existing fields
       businessName: data.businessName || "",
       sector: data.sector as keyof typeof sectors || Object.keys(sectors)[0],
       industry: data.industry || Object.keys(sectors[selectedSector]?.subsectors || {})[0] || "",
@@ -132,9 +123,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "moderate",
-
-      // New fields
-      foundingDate: data.foundingDate || new Date().toISOString().split('T')[0],
       employeeCount: data.employeeCount || 1,
       fundingHistory: data.fundingHistory || { rounds: [], totalRaised: 0, lastRound: undefined },
       revenueModel: data.revenueModel || Object.keys(revenueModels)[0],
@@ -143,7 +131,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     }
   });
 
-  // Track form errors for better error message display
   const formErrors = form.formState.errors;
   const hasErrors = Object.keys(formErrors).length > 0;
 
@@ -151,11 +138,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     const prevState = form.getValues();
     setSelectedSector(value);
     form.setValue("sector", value, { shouldValidate: true });
-    // Reset industry when sector changes to first industry in new sector
     const firstIndustry = Object.keys(sectors[value]?.subsectors || {})[0] || "";
     form.setValue("industry", firstIndustry, { shouldValidate: true });
 
-    // Track state changes
     DebugHelper.trackStateChange(prevState, {
       ...prevState,
       sector: value,
@@ -181,7 +166,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     setIsSubmitting(true);
 
     try {
-      // Additional validation using ValidationEngine
       const validationErrors: string[] = [];
       Object.entries(values).forEach(([field, value]) => {
         if (!validateField(field, value)) {
@@ -190,15 +174,13 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       });
 
       if (validationErrors.length > 0) {
-        const error = ErrorHandler.handleValidationError({
+        ErrorHandler.handleValidationError({
           message: validationErrors.join(', '),
           suggestions: ['Check the input values', 'Ensure all required fields are filled']
-        });
-        error.toast();
+        }).toast();
         return;
       }
 
-      // Track API call with DebugHelper
       const result = await DebugHelper.trackAPICall(
         async () => await callApiWithRetry(
           () => onUpdate(values),
@@ -233,7 +215,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     }
   };
 
-  // Error summary component
   const ErrorSummary = () => {
     if (!hasErrors) return null;
 
@@ -256,7 +237,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   const progressPercentage = (currentStep / totalSteps) * 100;
 
-  // Helper components
   const FieldTooltip = ({ content }: { content: string }) => (
     <TooltipProvider>
       <Tooltip>
@@ -272,7 +252,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Progress Bar */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Step {currentStep} of {totalSteps}</span>
@@ -298,7 +277,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Basic Information</h3>
 
-                  {/* Business Name Field */}
                   <FormField
                     control={form.control}
                     name="businessName"
@@ -319,29 +297,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                       </FormItem>
                     )}
                   />
-
-                  {/* Founding Date Field */}
-                  <FormField
-                    control={form.control}
-                    name="foundingDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <FormLabel>Founding Date *</FormLabel>
-                          <FieldTooltip content="When was your company founded?" />
-                        </div>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            value={field.value || ''} // Ensure empty string fallback
-                            className="max-w-md"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 {/* Market Information Section */}
@@ -349,7 +304,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   <h3 className="text-lg font-semibold">Market Information</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Existing Sector and Industry fields */}
                     <FormField
                       control={form.control}
                       name="sector"
@@ -410,7 +364,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     />
                   </div>
 
-                  {/* Geographic Markets Field */}
                   <FormField
                     control={form.control}
                     name="geographicMarkets"
@@ -443,7 +396,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Business Model</h3>
 
-                  {/* Revenue Model Field */}
                   <FormField
                     control={form.control}
                     name="revenueModel"
@@ -471,7 +423,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     )}
                   />
 
-                  {/* Product Stage Field */}
                   <FormField
                     control={form.control}
                     name="productStage"
@@ -504,7 +455,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Team and Operations</h3>
 
-                  {/* Employee Count Field */}
                   <FormField
                     control={form.control}
                     name="employeeCount"
@@ -528,7 +478,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     )}
                   />
 
-                  {/* Existing Team Experience Field */}
                   <FormField
                     control={form.control}
                     name="teamExperience"
@@ -556,137 +505,127 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   />
                 </div>
 
+                {/* Additional Information Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Additional Information</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="intellectualProperty"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <FormLabel>IP Protection Status</FormLabel>
-                          <FieldTooltip content="Specify the status of your intellectual property protection" />
-                        </div>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("intellectualProperty", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select IP status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No IP Protection</SelectItem>
-                            <SelectItem value="pending">Patents Pending</SelectItem>
-                            <SelectItem value="registered">Registered Patents/IP</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="scalability"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center">
+                            <FormLabel>Business Scalability</FormLabel>
+                            <FieldTooltip content="Evaluate your business's potential for growth and expansion" />
+                          </div>
+                          <FormDescription>
+                            Assess your business's ability to grow and handle increased demand
+                          </FormDescription>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => form.setValue("scalability", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select scalability potential" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="limited">Limited Scale Potential</SelectItem>
+                              <SelectItem value="moderate">Moderate Scalability</SelectItem>
+                              <SelectItem value="high">Highly Scalable</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="competitiveDifferentiation"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <FormLabel>Competitive Differentiation</FormLabel>
-                          <FieldTooltip content="Assess your business's competitive advantage in the market" />
-                        </div>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("competitiveDifferentiation", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select competitive position" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low">Limited Differentiation</SelectItem>
-                            <SelectItem value="medium">Moderate Advantage</SelectItem>
-                            <SelectItem value="high">Strong Market Position</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="customerBase"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center">
+                            <FormLabel>Current Customer Base</FormLabel>
+                            <FieldTooltip content="Number of active customers or users your business has" />
+                          </div>
+                          <FormDescription>
+                            Include both paying and active free users
+                          </FormDescription>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={(e) => form.setValue("customerBase", Number(e.target.value))}
+                              className="max-w-md"
+                              placeholder="e.g., 1000"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="scalability"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center">
-                        <FormLabel>Business Scalability</FormLabel>
-                        <FieldTooltip content="Evaluate your business's potential for growth and expansion" />
-                      </div>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => form.setValue("scalability", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select scalability potential" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="limited">Limited Scale Potential</SelectItem>
-                          <SelectItem value="moderate">Moderate Scalability</SelectItem>
-                          <SelectItem value="high">Highly Scalable</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="regulatoryCompliance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center">
+                            <FormLabel>Regulatory Compliance</FormLabel>
+                            <FieldTooltip content="Your business's current regulatory compliance status" />
+                          </div>
+                          <FormDescription>
+                            Indicate your compliance with industry regulations
+                          </FormDescription>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => form.setValue("regulatoryCompliance", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select compliance status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="notRequired">Not Required</SelectItem>
+                              <SelectItem value="inProgress">In Progress</SelectItem>
+                              <SelectItem value="compliant">Fully Compliant</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="customerBase"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <FormLabel>Current Customer Base</FormLabel>
-                          <FieldTooltip content="Number of active customers or users your business has" />
-                        </div>
-                        <FormDescription>Number of active customers/users</FormDescription>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => form.setValue("customerBase", Number(e.target.value))}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="regulatoryCompliance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <FormLabel>Regulatory Compliance</FormLabel>
-                          <FieldTooltip content="Describe your business's regulatory compliance status" />
-                        </div>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("regulatoryCompliance", value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select compliance status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="notRequired">Not Required</SelectItem>
-                            <SelectItem value="inProgress">In Progress</SelectItem>
-                            <SelectItem value="compliant">Compliant</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="intellectualProperty"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center">
+                            <FormLabel>IP Protection Status</FormLabel>
+                            <FieldTooltip content="Current status of your intellectual property protection" />
+                          </div>
+                          <FormDescription>
+                            Include patents, trademarks, and trade secrets
+                          </FormDescription>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => form.setValue("intellectualProperty", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select IP status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No IP Protection</SelectItem>
+                              <SelectItem value="pending">Patents Pending</SelectItem>
+                              <SelectItem value="registered">Registered Patents/IP</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-4 pt-6">

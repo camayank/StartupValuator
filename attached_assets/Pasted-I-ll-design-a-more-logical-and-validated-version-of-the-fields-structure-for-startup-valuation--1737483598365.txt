@@ -1,0 +1,253 @@
+I'll design a more logical and validated version of the fields structure for startup valuation:
+
+```javascript
+// Core Fields Structure with Validations
+const valuationFields = {
+  // 1. Basic Information
+  basicInfo: {
+    businessName: {
+      type: 'text',
+      required: true,
+      validation: {
+        minLength: 2,
+        maxLength: 100,
+        pattern: /^[a-zA-Z0-9\s\-&\.]+$/,
+        errorMessages: {
+          required: 'Business name is required',
+          pattern: 'Use only letters, numbers, and basic punctuation'
+        }
+      }
+    },
+    
+    businessStage: {
+      type: 'select',
+      required: true,
+      options: {
+        concept: 'Concept/Ideation',
+        prototype: 'Prototype/MVP',
+        launched: 'Launched Product',
+        revenue: 'Revenue Generating',
+        growth: 'Growth Stage'
+      },
+      validation: {
+        errorMessage: 'Please select your business stage'
+      }
+    },
+
+    timeInCurrentStage: {
+      type: 'select',
+      required: true,
+      options: {
+        lessThan3: '< 3 months',
+        threeTo6: '3-6 months',
+        sixTo12: '6-12 months',
+        moreThan12: '> 12 months'
+      }
+    }
+  },
+
+  // 2. Market Information
+  marketInfo: {
+    businessSector: {
+      type: 'select',
+      required: true,
+      options: {
+        saas: 'SaaS',
+        ecommerce: 'E-commerce',
+        deeptech: 'Deep Tech',
+        marketplace: 'Marketplace',
+        fintech: 'FinTech',
+        healthtech: 'HealthTech'
+      },
+      validation: {
+        errorMessage: 'Please select your business sector'
+      }
+    },
+
+    targetMarket: {
+      type: 'multiSelect',
+      required: true,
+      options: {
+        b2b: 'Business to Business',
+        b2c: 'Business to Consumer',
+        b2b2c: 'Business to Business to Consumer',
+        d2c: 'Direct to Consumer'
+      }
+    },
+
+    geographicFocus: {
+      type: 'multiSelect',
+      required: true,
+      options: {
+        local: 'Local Market',
+        national: 'National',
+        regional: 'Regional',
+        global: 'Global'
+      }
+    }
+  },
+
+  // 3. Product/Service Status
+  productStatus: {
+    developmentStage: {
+      type: 'select',
+      required: true,
+      options: {
+        planning: 'Planning Phase',
+        development: 'In Development',
+        beta: 'Beta Testing',
+        launched: 'Launched',
+        scaling: 'Scaling'
+      }
+    },
+
+    intellectualProperty: {
+      type: 'multiSelect',
+      options: {
+        patent: 'Patents Filed/Granted',
+        trademark: 'Trademarks',
+        copyright: 'Copyrights',
+        trade_secret: 'Trade Secrets'
+      }
+    },
+
+    productValidation: {
+      type: 'slider',
+      required: true,
+      range: {
+        min: 0,
+        max: 100,
+        step: 10
+      },
+      validation: {
+        minValue: 10,
+        errorMessage: 'Please indicate your product validation level'
+      }
+    }
+  },
+
+  // 4. Traction & Metrics
+  tractionMetrics: {
+    userBase: {
+      type: 'number',
+      validation: {
+        min: 0,
+        format: 'integer',
+        errorMessage: 'Please enter a valid number of users'
+      }
+    },
+
+    revenue: {
+      type: 'number',
+      validation: {
+        min: 0,
+        format: 'currency',
+        errorMessage: 'Please enter valid revenue amount'
+      },
+      conditional: {
+        showIf: 'businessStage',
+        equals: ['revenue', 'growth']
+      }
+    },
+
+    growthRate: {
+      type: 'slider',
+      range: {
+        min: 0,
+        max: 200,
+        step: 5
+      },
+      validation: {
+        required: (formData) => formData.businessStage === 'growth',
+        errorMessage: 'Please indicate your monthly growth rate'
+      }
+    }
+  },
+
+  // 5. Team & Operations
+  teamInfo: {
+    teamSize: {
+      type: 'number',
+      required: true,
+      validation: {
+        min: 1,
+        max: 1000,
+        errorMessage: 'Team size must be at least 1'
+      }
+    },
+
+    keyTeamExperience: {
+      type: 'slider',
+      required: true,
+      range: {
+        min: 0,
+        max: 20,
+        step: 1
+      },
+      label: 'Years of relevant experience'
+    },
+
+    operationalStatus: {
+      type: 'multiSelect',
+      options: {
+        office: 'Physical Office',
+        remote: 'Remote Team',
+        hybrid: 'Hybrid Setup'
+      }
+    }
+  }
+};
+
+// Validation Rules
+const validationRules = {
+  enforceRequiredFields: (section, data) => {
+    const requiredFields = Object.entries(valuationFields[section])
+      .filter(([_, field]) => field.required)
+      .map(([fieldName]) => fieldName);
+
+    return requiredFields.every(field => data[field] !== undefined && data[field] !== '');
+  },
+
+  validateField: (fieldName, value, formData) => {
+    const field = Object.values(valuationFields)
+      .flatMap(section => Object.entries(section))
+      .find(([name]) => name === fieldName)?.[1];
+
+    if (!field) return true;
+
+    // Required validation
+    if (field.required && !value) {
+      return {
+        isValid: false,
+        error: field.validation?.errorMessage || 'This field is required'
+      };
+    }
+
+    // Conditional validation
+    if (field.conditional) {
+      const shouldValidate = field.conditional.showIf && 
+        field.conditional.equals.includes(formData[field.conditional.showIf]);
+      if (!shouldValidate) return true;
+    }
+
+    // Type-specific validation
+    switch (field.type) {
+      case 'number':
+        return validateNumber(value, field.validation);
+      case 'slider':
+        return validateRange(value, field.range);
+      // Add other type validations
+    }
+
+    return true;
+  }
+};
+```
+
+This structure provides:
+1. Logical grouping of related fields
+2. Stage-appropriate fields that show/hide based on context
+3. Proper validation rules for each field type
+4. Clear error messages
+5. Conditional validation based on business stage
+

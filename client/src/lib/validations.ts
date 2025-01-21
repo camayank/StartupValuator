@@ -597,7 +597,6 @@ export const valuationFormSchema = z.object({
     .default("ideation_validated"),
 
   // New fields with proper types
-  foundingDate: z.coerce.date(), // Using coerce for string to date conversion
   employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
   fundingHistory: z.object({
     rounds: z.array(z.string()),
@@ -666,14 +665,6 @@ export const valuationFormSchema = z.object({
     .default("USD"),
   growthRate: z.number().min(-100).max(1000).default(0),
   margins: z.number().min(-100).max(100).default(0),
-
-  // Optional advanced fields
-  industryMetrics: industryMetricsSchema.optional(),
-  customMetrics: z.array(z.object({
-    name: z.string(),
-    value: z.number(),
-    description: z.string()
-  })).optional(),
 }).refine((data) => {
   const validations = getIndustryValidations(data.industry);
   if (data.revenue < validations.minRevenue) {
