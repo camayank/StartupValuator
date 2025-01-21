@@ -3,166 +3,186 @@ import { sectors } from "./validations";
 import IndustryValidationEngine from "./industry-validation";
 
 interface BusinessRule {
-  validate: (value: any, formData: ValuationFormData) => string[];
-  errorMessages: Record<string, string>;
+  validate: (value: any, formData: ValuationFormData) => ValidationResult;
 }
 
-interface ValidationState {
+interface ValidationResult {
   isValid: boolean;
-  needsReview: boolean;
-  impact: 'low' | 'medium' | 'high';
+  severity: 'info' | 'warning' | 'error';
+  message?: string;
+  suggestions?: string[];
+  impact?: 'low' | 'medium' | 'high';
 }
 
 const BusinessRulesEngine = {
   rules: {
     employeeCount: {
-      validate: (value: number, formData: ValuationFormData): string[] => {
-        const errors: string[] = [];
+      validate: (value: number, formData: ValuationFormData): ValidationResult => {
+        const result: ValidationResult = { 
+          isValid: true,
+          severity: 'info',
+          suggestions: []
+        };
+
         const stage = formData.stage;
         const revenue = formData.revenue || 0;
 
         if (stage === 'revenue_growing' && value < 3) {
-          errors.push('Growth stage typically requires a larger team');
+          result.severity = 'warning';
+          result.message = 'Growth stage typically requires a larger team';
+          result.suggestions = [
+            'Consider your hiring plans for the next 6-12 months',
+            'Review industry benchmarks for similar stage companies',
+            'Factor in planned contractor or part-time resources'
+          ];
         }
+
         if (revenue > 1000000 && value < 5) {
-          errors.push('Revenue suggests a need for larger team size');
+          result.severity = 'warning';
+          result.message = 'Team size seems low for your revenue level';
+          result.suggestions = [
+            'Analyze your operational efficiency',
+            'Consider automation and tooling investments',
+            'Review workload distribution across team'
+          ];
         }
-        return errors;
-      },
-      errorMessages: {
-        lowTeamSize: 'Team size seems low for your business stage',
-        teamRevenueMismatch: 'Team size may be insufficient for your revenue level'
+
+        return result;
       }
     },
 
     customerBase: {
-      validate: (value: number, formData: ValuationFormData): string[] => {
-        const errors: string[] = [];
+      validate: (value: number, formData: ValuationFormData): ValidationResult => {
+        const result: ValidationResult = { isValid: true, severity: 'info', suggestions: [] };
         const stage = formData.stage;
         const employeeCount = formData.employeeCount || 0;
 
         if (stage === 'revenue_growing' && value < 100) {
-          errors.push('Growth stage typically has a larger customer base');
+          result.severity = 'warning';
+          result.message = 'Growth stage typically has a larger customer base';
+          result.suggestions = ['Consider your marketing and sales strategies', 'Review your customer acquisition cost', 'Analyze your customer churn rate'];
         }
         if (employeeCount > 10 && value < 50) {
-          errors.push('Customer base seems low for your team size');
+          result.severity = 'warning';
+          result.message = 'Customer base seems low for your team size';
+          result.suggestions = ['Review your sales process', 'Explore new customer acquisition channels', 'Improve customer retention strategies'];
         }
 
         // Add industry-specific validations
         const industryValidations = IndustryValidationEngine.validateIndustryMetrics(formData);
         industryValidations.forEach(validation => {
           if (!validation.isValid && validation.warning) {
-            errors.push(validation.warning);
+            result.severity = 'warning';
+            result.message = (result.message ? result.message + ', ' : '') + validation.warning;
+            result.suggestions = [...(result.suggestions || []), ...(validation.suggestions || [])];
           }
         });
 
-        return errors;
+        return result;
       },
-      errorMessages: {
-        lowCustomerBase: 'Customer base seems low for your business stage',
-        customerTeamMismatch: 'Customer base seems low relative to team size'
-      }
     },
 
     revenue: {
-      validate: (value: number, formData: ValuationFormData): string[] => {
-        const errors: string[] = [];
+      validate: (value: number, formData: ValuationFormData): ValidationResult => {
+        const result: ValidationResult = {
+          isValid: true,
+          severity: 'info',
+          suggestions: []
+        };
+
         const stage = formData.stage;
         const customerBase = formData.customerBase || 0;
 
         if (stage === 'revenue_growing' && value < 10000) {
-          errors.push('Growth stage companies typically have higher revenue');
-        }
-        if (customerBase > 1000 && value < 1000) {
-          errors.push('Revenue seems low for your customer base');
+          result.severity = 'warning';
+          result.message = 'Revenue seems low for your stated growth stage';
+          result.suggestions = [
+            'Consider if you\'re in early growth or pre-revenue stage',
+            'Review your revenue recognition policies',
+            'Include all revenue streams in calculation'
+          ];
         }
 
-        return errors;
-      },
-      errorMessages: {
-        lowRevenue: 'Revenue seems low for your business stage',
-        revenueCustomerMismatch: 'Revenue seems low relative to customer base'
+        if (customerBase > 1000 && value < 1000) {
+          result.severity = 'warning';
+          result.message = 'Revenue seems low relative to customer base';
+          result.suggestions = [
+            'Review your pricing strategy',
+            'Consider customer segmentation analysis',
+            'Evaluate customer lifetime value metrics'
+          ];
+        }
+
+        return result;
       }
     },
 
     intellectualProperty: {
-      validate: (value: 'none' | 'pending' | 'registered', formData: ValuationFormData): string[] => {
-        const errors: string[] = [];
+      validate: (value: 'none' | 'pending' | 'registered', formData: ValuationFormData): ValidationResult => {
+        const result: ValidationResult = {
+          isValid: true,
+          severity: 'info',
+          suggestions: []
+        };
+
         const sector = formData.sector;
         const stage = formData.stage;
 
         if (sector === 'technology' && value === 'none' && stage !== 'ideation_unvalidated') {
-          errors.push('Consider IP protection for your technology');
+          result.severity = 'warning';
+          result.message = 'Consider IP protection for your technology';
+          result.suggestions = [
+            'Review potential patentable innovations',
+            'Consider trademark protection for brand assets',
+            'Evaluate trade secret protection strategies'
+          ];
         }
-        return errors;
-      },
-      errorMessages: {
-        techIpProtection: 'Tech companies should consider IP protection',
-        stageIpProtection: 'Consider IP protection at your current stage'
+
+        return result;
       }
     },
-
     regulatoryCompliance: {
-      validate: (value: 'notRequired' | 'inProgress' | 'compliant', formData: ValuationFormData): string[] => {
-        const errors: string[] = [];
+      validate: (value: 'notRequired' | 'inProgress' | 'compliant', formData: ValuationFormData): ValidationResult => {
+        const result: ValidationResult = { isValid: true, severity: 'info', suggestions: [] };
         const sector = formData.sector;
         const stage = formData.stage;
 
         if ((sector === 'fintech' || sector === 'healthtech') && value === 'notRequired') {
-          errors.push('Regulatory compliance is typically required in your sector');
+          result.severity = 'warning';
+          result.message = 'Regulatory compliance is typically required in your sector';
+          result.suggestions = ['Research relevant regulations', 'Consult with legal counsel', 'Develop a compliance plan'];
         }
         if (stage === 'revenue_growing' && value !== 'compliant') {
-          errors.push('Growth stage companies should be compliant with regulations');
+          result.severity = 'warning';
+          result.message = 'Growth stage companies should be compliant with regulations';
+          result.suggestions = ['Prioritize compliance efforts', 'Allocate resources for compliance', 'Implement robust compliance processes'];
         }
-        return errors;
+        return result;
       },
-      errorMessages: {
-        sectorCompliance: 'Your sector typically requires regulatory compliance',
-        stageCompliance: 'Consider regulatory requirements at your stage'
-      }
     }
   },
 
-  validateField: (fieldName: keyof typeof BusinessRulesEngine.rules, value: any, formData: ValuationFormData): string[] => {
+  validateField: (fieldName: keyof typeof BusinessRulesEngine.rules, value: any, formData: ValuationFormData): ValidationResult => {
     const rule = BusinessRulesEngine.rules[fieldName];
     if (rule) {
       return rule.validate(value, formData);
     }
-    return [];
+    return { isValid: true, severity: 'info' };
   },
 
-  trackChanges: (field: string, value: any, previousValue: any, formData: ValuationFormData): ValidationState => {
-    const currentErrors = BusinessRulesEngine.validateField(field as keyof typeof BusinessRulesEngine.rules, value, formData);
-    const previousErrors = BusinessRulesEngine.validateField(field as keyof typeof BusinessRulesEngine.rules, previousValue, formData);
-
-    return {
-      isValid: currentErrors.length === 0,
-      needsReview: currentErrors.length > previousErrors.length,
-      impact: BusinessRulesEngine.assessChangeImpact(field, value, previousValue)
-    };
-  },
-
-  assessChangeImpact: (field: string, value: any, previousValue: any): 'low' | 'medium' | 'high' => {
-    const percentChange = previousValue ? Math.abs((value - previousValue) / previousValue) : 1;
-
-    if (percentChange > 0.5) return 'high';
-    if (percentChange > 0.2) return 'medium';
-    return 'low';
-  },
-
-  validateForm: (formData: ValuationFormData): Map<string, string[]> => {
-    const errors = new Map<string, string[]>();
+  validateForm: (formData: ValuationFormData): Map<string, ValidationResult> => {
+    const validations = new Map<string, ValidationResult>();
 
     // Validate all fields with business rules
     Object.keys(BusinessRulesEngine.rules).forEach((fieldName) => {
-      const fieldErrors = BusinessRulesEngine.validateField(
+      const validation = BusinessRulesEngine.validateField(
         fieldName as keyof typeof BusinessRulesEngine.rules,
         formData[fieldName as keyof ValuationFormData],
         formData
       );
 
-      if (fieldErrors.length > 0) {
-        errors.set(fieldName, fieldErrors);
+      if (validation.severity !== 'info') {
+        validations.set(fieldName, validation);
       }
     });
 
@@ -170,42 +190,41 @@ const BusinessRulesEngine = {
     const industryValidations = IndustryValidationEngine.validateIndustryMetrics(formData);
     industryValidations.forEach(validation => {
       if (!validation.isValid && validation.warning) {
-        const existingErrors = errors.get('industry') || [];
-        errors.set('industry', [...existingErrors, validation.warning]);
+        validations.set('industry', {
+          isValid: false,
+          severity: 'warning',
+          message: validation.warning,
+          suggestions: validation.suggestions || []
+        });
       }
     });
 
-    return errors;
+    return validations;
   },
 
-  suggestCorrections: (field: string, value: any, error: string): string[] => {
-    const suggestions: string[] = [];
+  getFieldGuidance: (field: string, value: any, formData: ValuationFormData): ValidationResult => {
+    const validation = BusinessRulesEngine.validateField(
+      field as keyof typeof BusinessRulesEngine.rules,
+      value,
+      formData
+    );
 
-    switch (field) {
-      case 'employeeCount':
-        suggestions.push(
-          'Consider your growth plans and required team size',
-          'Review industry benchmarks for similar stage companies',
-          'Factor in planned hires for the next 6-12 months'
-        );
-        break;
-      case 'revenue':
-        suggestions.push(
-          'Verify your revenue recognition policies',
-          'Include all revenue streams in the calculation',
-          'Consider seasonal variations in revenue'
-        );
-        break;
-      case 'customerBase':
-        suggestions.push(
-          'Include both active and paying customers',
-          'Review your customer segmentation',
-          'Consider your customer acquisition timeline'
-        );
-        break;
+    // Add industry-specific context
+    const industryContext = IndustryValidationEngine.getIndustryContext(formData.sector, field);
+    if (industryContext) {
+      validation.suggestions = [
+        ...(validation.suggestions || []),
+        ...industryContext.recommendations
+      ];
     }
 
-    return suggestions;
+    return validation;
+  },
+
+  assessImpact: (validation: ValidationResult): 'low' | 'medium' | 'high' => {
+    if (validation.severity === 'error') return 'high';
+    if (validation.severity === 'warning') return 'medium';
+    return 'low';
   }
 };
 
