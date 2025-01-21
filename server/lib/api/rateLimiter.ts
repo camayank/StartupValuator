@@ -1,14 +1,27 @@
 import { RateLimiterRedis } from 'rate-limiter-flexible';
-import Redis from 'redis';
+import { createClient } from 'redis';
 
 if (!process.env.REDIS_URL) {
   throw new Error('REDIS_URL environment variable is required for rate limiting');
 }
 
-const redisClient = Redis.createClient({
+const redisClient = createClient({
   url: process.env.REDIS_URL,
-  enable_offline_queue: false
+  socket: {
+    reconnectStrategy: (retries) => {
+      if (retries > 10) {
+        throw new Error('Redis connection lost');
+      }
+      return Math.min(retries * 100, 3000);
+    }
+  }
 });
+
+redisClient.on('error', (err) => {
+  console.error('Redis Rate Limiter Error:', err);
+});
+
+redisClient.connect().catch(console.error);
 
 export const apiRateLimiter = new RateLimiterRedis({
   storeClient: redisClient,
