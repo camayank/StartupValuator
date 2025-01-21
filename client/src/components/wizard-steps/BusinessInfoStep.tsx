@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -27,16 +27,16 @@ import { sectors, businessStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-// Create a schema for just the required fields
+// Create a schema for business info validation
 const formSchema = z.object({
-  businessName: z.string().min(1, "Business name is required"),
-  sector: z.string().min(1, "Sector is required"),
-  industry: z.string().min(1, "Industry is required"),
-  stage: z.string().min(1, "Stage is required"),
-  // Make other fields optional
+  businessName: z.string().min(1, "Business name is required").max(100, "Business name is too long"),
+  sector: z.string().min(1, "Please select a business sector"),
+  industry: z.string().min(1, "Please select an industry"),
+  stage: z.string().min(1, "Please select a business stage"),
+  // Optional fields with validation
   intellectualProperty: z.string().optional(),
-  teamExperience: z.number().optional(),
-  customerBase: z.number().optional(),
+  teamExperience: z.number().min(0).optional(),
+  customerBase: z.number().min(0).optional(),
   competitiveDifferentiation: z.string().optional(),
   regulatoryCompliance: z.string().optional(),
   scalability: z.string().optional()
@@ -52,10 +52,11 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(formSchema),
-    mode: "onSubmit",
+    mode: "onChange", // Enable real-time validation
     defaultValues: {
       businessName: data.businessName || "",
       sector: data.sector || "",
@@ -72,21 +73,29 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
 
   const handleSectorChange = (value: string) => {
     setSelectedSector(value);
-    form.setValue("sector", value);
-    form.setValue("industry", ""); 
+    form.setValue("sector", value, { shouldValidate: true });
+    form.setValue("industry", "", { shouldValidate: true }); 
+    setValidationError(null);
   };
 
   const handleSubmit = async (values: ValuationFormData) => {
     if (isSubmitting) return;
-
     setIsSubmitting(true);
+    setValidationError(null);
+
     try {
-      // Check required fields
-      if (!values.businessName?.trim() || !values.sector?.trim() || 
-          !values.industry?.trim() || !values.stage?.trim()) {
+      // Check form validity
+      const isValid = await form.trigger();
+      if (!isValid) {
+        const errors = form.formState.errors;
+        const errorMessages = Object.entries(errors)
+          .map(([field, error]) => `${field}: ${error.message}`)
+          .join('\n');
+
+        setValidationError(errorMessages);
         toast({
-          title: "Required Fields Missing",
-          description: "Please fill in all required fields marked with *",
+          title: "Validation Failed",
+          description: "Please check the highlighted fields and try again.",
           variant: "destructive",
         });
         return;
@@ -108,6 +117,17 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
 
   return (
     <div className="space-y-6">
+      {validationError && (
+        <Alert variant="destructive">
+          <AlertTitle>Form Validation Failed</AlertTitle>
+          <AlertDescription className="mt-2">
+            <pre className="whitespace-pre-wrap text-sm">
+              {validationError}
+            </pre>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
@@ -165,7 +185,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                     <FormLabel>Industry *</FormLabel>
                     <Select
                       value={field.value}
-                      onValueChange={(value) => form.setValue("industry", value)}
+                      onValueChange={(value) => {
+                        form.setValue("industry", value, { shouldValidate: true });
+                        setValidationError(null);
+                      }}
                       disabled={!selectedSector}
                     >
                       <SelectTrigger>
@@ -193,7 +216,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
                   <FormLabel>Business Stage *</FormLabel>
                   <Select
                     value={field.value}
-                    onValueChange={(value) => form.setValue("stage", value)}
+                    onValueChange={(value) => {
+                      form.setValue("stage", value, { shouldValidate: true });
+                      setValidationError(null);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your stage" />
@@ -326,10 +352,17 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
             </div>
 
             <div className="flex justify-end space-x-4">
-              <Button variant="outline" type="button" onClick={() => form.reset()}>
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => {
+                  form.reset();
+                  setValidationError(null);
+                }}
+              >
                 Reset
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || !form.formState.isValid}>
                 {isSubmitting ? "Saving..." : "Continue"}
               </Button>
             </div>
