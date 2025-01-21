@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -84,7 +83,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify(data),
       });
 
@@ -110,104 +108,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     },
   });
 
-  // Render field based on its type
-  const renderField = (field: typeof formSections[0]['fields'][0]) => {
-    return (
-      <FormField
-        key={field.name}
-        control={form.control}
-        name={field.name as keyof ValuationFormData}
-        render={({ field: formField }) => (
-          <FormItem>
-            <FormLabel>{field.label}</FormLabel>
-            <FormControl>
-              {field.type === "text" && (
-                <Input {...formField} required={field.required} />
-              )}
-              {field.type === "number" && (
-                <Input
-                  type="number"
-                  {...formField}
-                  required={field.required}
-                  onChange={(e) => formField.onChange(e.target.value ? Number(e.target.value) : 0)}
-                />
-              )}
-              {field.type === "dropdown" && (
-                <Select
-                  onValueChange={formField.onChange}
-                  defaultValue={formField.value}
-                  required={field.required}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${field.label}`} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Add dropdown options based on field name */}
-                    {field.name === "sector" && (
-                      <>
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="healthcare">Healthcare</SelectItem>
-                        <SelectItem value="finance">Finance</SelectItem>
-                      </>
-                    )}
-                    {field.name === "businessScalability" && (
-                      <>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="moderate">Moderate</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </>
-                    )}
-                    {field.name === "regulatoryCompliance" && (
-                      <>
-                        <SelectItem value="notRequired">Not Required</SelectItem>
-                        <SelectItem value="required">Required</SelectItem>
-                      </>
-                    )}
-                    {field.name === "ipProtectionStatus" && (
-                      <>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="patentPending">Patent Pending</SelectItem>
-                        <SelectItem value="patented">Patented</SelectItem>
-                      </>
-                    )}
-                    {field.name === "geographicMarkets" && (
-                      <>
-                        <SelectItem value="local">Local</SelectItem>
-                        <SelectItem value="regional">Regional</SelectItem>
-                        <SelectItem value="national">National</SelectItem>
-                        <SelectItem value="international">International</SelectItem>
-                      </>
-                    )}
-                    {field.name === "revenueModel" && (
-                      <>
-                        <SelectItem value="subscription">Subscription</SelectItem>
-                        <SelectItem value="oneTime">One-Time</SelectItem>
-                        <SelectItem value="freemium">Freemium</SelectItem>
-                      </>
-                    )}
-                    {field.name === "productStage" && (
-                      <>
-                        <SelectItem value="concept">Concept</SelectItem>
-                        <SelectItem value="prototype">Prototype</SelectItem>
-                        <SelectItem value="mvp">MVP</SelectItem>
-                        <SelectItem value="production">Production</SelectItem>
-                      </>
-                    )}
-
-
-                  </SelectContent>
-                </Select>
-              )}
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    );
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-6 max-w-4xl mx-auto">
@@ -217,7 +117,106 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
             title={section.title}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {section.fields.map(renderField)}
+              {section.fields.map((field) => (
+                <FormField
+                  key={field.name}
+                  control={form.control}
+                  name={field.name as keyof ValuationFormData}
+                  render={({ field: formField }) => (
+                    <FormItem>
+                      <FormLabel>{field.label}</FormLabel>
+                      <FormControl>
+                        {field.type === "text" && (
+                          <Input {...formField} required={field.required} />
+                        )}
+                        {field.type === "number" && (
+                          <Input
+                            type="number"
+                            {...formField}
+                            required={field.required}
+                            onChange={(e) => formField.onChange(e.target.value ? Number(e.target.value) : 0)}
+                          />
+                        )}
+                        {field.type === "dropdown" && (
+                          <Select
+                            onValueChange={formField.onChange}
+                            defaultValue={formField.value}
+                            required={field.required}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Select ${field.label}`} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {field.name === "sector" && (
+                                <>
+                                  <SelectItem value="technology">Technology</SelectItem>
+                                  <SelectItem value="healthcare">Healthcare</SelectItem>
+                                  <SelectItem value="finance">Finance</SelectItem>
+                                </>
+                              )}
+                              {field.name === "industry" && (
+                                <>
+                                  <SelectItem value="software">Software</SelectItem>
+                                  <SelectItem value="biotech">Biotech</SelectItem>
+                                  <SelectItem value="fintech">Fintech</SelectItem>
+                                </>
+                              )}
+                              {field.name === "geographicMarkets" && (
+                                <>
+                                  <SelectItem value="local">Local</SelectItem>
+                                  <SelectItem value="regional">Regional</SelectItem>
+                                  <SelectItem value="national">National</SelectItem>
+                                  <SelectItem value="international">International</SelectItem>
+                                </>
+                              )}
+                              {field.name === "revenueModel" && (
+                                <>
+                                  <SelectItem value="subscription">Subscription</SelectItem>
+                                  <SelectItem value="transactional">Transactional</SelectItem>
+                                  <SelectItem value="marketplace">Marketplace</SelectItem>
+                                  <SelectItem value="advertising">Advertising</SelectItem>
+                                </>
+                              )}
+                              {field.name === "productStage" && (
+                                <>
+                                  <SelectItem value="concept">Concept</SelectItem>
+                                  <SelectItem value="mvp">MVP</SelectItem>
+                                  <SelectItem value="beta">Beta</SelectItem>
+                                  <SelectItem value="production">Production</SelectItem>
+                                </>
+                              )}
+                              {field.name === "businessScalability" && (
+                                <>
+                                  <SelectItem value="low">Low</SelectItem>
+                                  <SelectItem value="moderate">Moderate</SelectItem>
+                                  <SelectItem value="high">High</SelectItem>
+                                </>
+                              )}
+                              {field.name === "regulatoryCompliance" && (
+                                <>
+                                  <SelectItem value="notRequired">Not Required</SelectItem>
+                                  <SelectItem value="inProgress">In Progress</SelectItem>
+                                  <SelectItem value="compliant">Compliant</SelectItem>
+                                </>
+                              )}
+                              {field.name === "ipProtectionStatus" && (
+                                <>
+                                  <SelectItem value="none">None</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="registered">Registered</SelectItem>
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
             </div>
           </CollapsibleSection>
         ))}
