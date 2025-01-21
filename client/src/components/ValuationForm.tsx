@@ -28,7 +28,7 @@ import { ErrorDisplay } from "@/components/ui/error-display";
 import { ProgressFeedback } from "@/components/ui/progress-feedback";
 import { motion } from "framer-motion";
 import { Building2, Calculator, ChartBar, ClipboardCheck, Globe } from "lucide-react";
-import SmartSlider from "@/components/SmartSlider"; // Assuming this import is correct
+import SmartSlider from "@/components/ui/smart-slider";
 
 interface ValuationFormProps {
   onResult: (data: ValuationFormData) => void;
@@ -154,18 +154,18 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
         className="max-w-2xl mx-auto"
       >
         <Card className="overflow-hidden">
-          <CardHeader className="text-center pb-8">
+          <CardHeader className="text-center pb-6 md:pb-8">
             <motion.div variants={itemVariants}>
-              <CardTitle className="text-3xl font-bold mb-4">Welcome to the Valuation Wizard</CardTitle>
-              <p className="text-lg text-muted-foreground">
+              <CardTitle className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">Welcome to the Valuation Wizard</CardTitle>
+              <p className="text-base md:text-lg text-muted-foreground">
                 Let's guide you through the process of valuing your business using our AI-powered platform.
               </p>
             </motion.div>
           </CardHeader>
-          <CardContent className="space-y-8">
+          <CardContent className="space-y-6 md:space-y-8">
             <motion.div
               variants={itemVariants}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
             >
               {[
                 {
@@ -216,10 +216,10 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
                 </motion.div>
               ))}
             </motion.div>
-            <motion.div variants={itemVariants} className="pt-4">
+            <motion.div variants={itemVariants} className="pt-2 md:pt-4">
               <Button
                 onClick={() => setCurrentStep(1)}
-                className="w-full py-6 text-lg"
+                className="w-full py-4 md:py-6 text-base md:text-lg"
                 variant="default"
               >
                 Get Started
@@ -233,7 +233,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-6 max-w-4xl mx-auto">
+      <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-4 md:space-y-6 max-w-4xl mx-auto px-4 md:px-0">
         <ProgressFeedback
           currentStep={currentStep}
           totalSteps={5}
@@ -244,81 +244,88 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             "Financial Details",
             "Review"
           ]}
+          className="hidden md:block"
         />
-        <ValuationStepCard
-          title="Business Information"
-          description="Tell us about your business type and stage"
-          stepNumber={1}
-          currentStep={currentStep}
-          isCompleted={completedSteps.includes(1)}
-          onComplete={() => handleStepComplete(1)}
-          className="mt-6"
-        >
-          <div className="space-y-4">
-            <FormField
-              control={form.control}
-              name="businessName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Name</FormLabel>
+
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <FormField
+            control={form.control}
+            name="businessName"
+            render={({ field }) => (
+              <FormItem className="col-span-full">
+                <FormLabel className="text-base">Business Name</FormLabel>
+                <FormControl>
+                  <Input {...field} className="h-12 text-base" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="industry"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Industry</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <Input {...field} />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="industry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Industry</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select industry" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="tech">Technology</SelectItem>
-                      <SelectItem value="ecommerce">E-Commerce</SelectItem>
-                      <SelectItem value="saas">SaaS</SelectItem>
-                      <SelectItem value="marketplace">Marketplace</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="stage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Stage</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select stage" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ideation">Ideation</SelectItem>
-                      <SelectItem value="mvp">MVP</SelectItem>
-                      <SelectItem value="growth">Growth</SelectItem>
-                      <SelectItem value="scale">Scale</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </ValuationStepCard>
-
+                  <SelectContent>
+                    <SelectItem value="tech">Technology</SelectItem>
+                    <SelectItem value="ecommerce">E-Commerce</SelectItem>
+                    <SelectItem value="saas">SaaS</SelectItem>
+                    <SelectItem value="marketplace">Marketplace</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="stage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-base">Business Stage</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select stage" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="ideation">Ideation</SelectItem>
+                    <SelectItem value="mvp">MVP</SelectItem>
+                    <SelectItem value="growth">Growth</SelectItem>
+                    <SelectItem value="scale">Scale</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="mt-6">
+          {currentStep > 1 && (
+            <Button
+              onClick={handleStepBack}
+              variant="outline"
+              className="w-full md:w-auto"
+            >
+              Back
+            </Button>
+          )}
+          <Button
+            onClick={() => handleStepComplete(currentStep)}
+            className="mt-4 w-full md:w-auto"
+          >
+            {currentStep === 5 ? "Submit" : "Continue"}
+          </Button>
+        </div>
         <ValuationStepCard
           title="Region & Standards"
           description="Select your region and applicable standards"
@@ -414,7 +421,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             />
           </div>
         </ValuationStepCard>
-
         <ValuationStepCard
           title="Valuation Method"
           description="Review and select the recommended valuation approach"
@@ -496,7 +502,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
             />
           </div>
         </ValuationStepCard>
-
         <ValuationStepCard
           title="Financial Details"
           description="Provide basic financial information"

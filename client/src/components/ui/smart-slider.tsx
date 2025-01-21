@@ -65,13 +65,13 @@ export function SmartSlider({
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-2">
-        <Label className="text-sm font-medium">{label}</Label>
+        <Label className="text-sm md:text-base font-medium">{label}</Label>
         {tooltip && (
           <HoverCard>
             <HoverCardTrigger asChild>
-              <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              <InfoIcon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground cursor-help" />
             </HoverCardTrigger>
-            <HoverCardContent className="w-80">
+            <HoverCardContent className="w-[280px] md:w-[320px]">
               {tooltip.title && (
                 <h4 className="font-semibold mb-1">{tooltip.title}</h4>
               )}
@@ -92,11 +92,11 @@ export function SmartSlider({
           max={max}
           step={step}
           onValueChange={handleValueChange}
-          className="w-full"
+          className="w-full touch-none"
         />
       </div>
 
-      <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+      <div className="flex justify-between mt-1 text-xs md:text-sm text-muted-foreground">
         {benchmarks.map((benchmark, i) => (
           <div
             key={i}
@@ -106,14 +106,14 @@ export function SmartSlider({
                 : ""
             }`}
           >
-            <div className="mb-1">{benchmark.label}</div>
-            <div>{benchmark.value}</div>
+            <div className="mb-1 hidden md:block">{benchmark.label}</div>
+            <div className="text-xs md:text-sm">{benchmark.value}</div>
           </div>
         ))}
       </div>
 
       {getCurrentBenchmark().description && (
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-xs md:text-sm text-muted-foreground">
           {getCurrentBenchmark().description}
         </p>
       )}
