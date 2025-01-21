@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Building2, Trophy, Globe2 } from "lucide-react";
+import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import type { ValuationFormData } from "@/lib/validations";
@@ -27,23 +27,24 @@ import { sectors, businessStages, regions, valuationPurposes } from "@/lib/valid
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-// Create a schema for the form validation
+// Create a schema for just the required fields
 const formSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
   sector: z.string().min(1, "Sector is required"),
   industry: z.string().min(1, "Industry is required"),
   stage: z.string().min(1, "Stage is required"),
-  intellectualProperty: z.string(),
-  teamExperience: z.number(),
-  customerBase: z.number(),
-  competitiveDifferentiation: z.string(),
-  regulatoryCompliance: z.string(),
-  scalability: z.string(),
-  valuationPurpose: z.string(),
-  region: z.string(),
-  revenue: z.number(),
-  growthRate: z.number(),
-  margins: z.number()
+  // Make other fields optional
+  intellectualProperty: z.string().optional(),
+  teamExperience: z.number().optional(),
+  customerBase: z.number().optional(),
+  competitiveDifferentiation: z.string().optional(),
+  regulatoryCompliance: z.string().optional(),
+  scalability: z.string().optional(),
+  valuationPurpose: z.string().optional(),
+  region: z.string().optional(),
+  revenue: z.number().optional(),
+  growthRate: z.number().optional(),
+  margins: z.number().optional()
 });
 
 interface BusinessInfoStepProps {
@@ -58,6 +59,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(formSchema),
+    mode: "onChange",
     defaultValues: {
       businessName: data.businessName || "",
       sector: data.sector || "",
@@ -67,7 +69,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
-      regulatoryCompliance: data.regulatoryCompliance || "notRequired",
+      regulatoryCompliance: data.regulatoryCompliance || "",
       scalability: data.scalability || "moderate",
       valuationPurpose: data.valuationPurpose || "",
       region: data.region || "",
@@ -84,7 +86,17 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
   };
 
   const handleSubmit = async (values: ValuationFormData) => {
+    // Log form state for debugging
+    console.log("Form state:", form.formState);
+    console.log("Form values:", values);
+
     try {
+      // Check if there are any validation errors
+      if (!form.formState.isValid) {
+        console.log("Validation errors:", form.formState.errors);
+        return;
+      }
+
       // Update the form data
       await onUpdate(values);
       // If successful, move to next step
