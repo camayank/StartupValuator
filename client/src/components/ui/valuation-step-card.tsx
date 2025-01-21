@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Lock, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Lock, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -12,6 +12,7 @@ interface ValuationStepCardProps {
   currentStep: number;
   isCompleted: boolean;
   onComplete: () => void;
+  onBack?: () => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -44,6 +45,7 @@ export function ValuationStepCard({
   currentStep,
   isCompleted,
   onComplete,
+  onBack,
   children,
   className,
 }: ValuationStepCardProps) {
@@ -128,18 +130,31 @@ export function ValuationStepCard({
                 {children}
                 {isActive && (
                   <motion.div 
-                    className="mt-6 flex justify-end"
+                    className="mt-6 flex justify-between"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <Button onClick={onComplete} className="gap-2 relative overflow-hidden">
+                    {stepNumber > 1 && (
+                      <Button 
+                        onClick={onBack}
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Back
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={onComplete} 
+                      className="gap-2 relative overflow-hidden ml-auto"
+                    >
                       <motion.span
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.3 }}
                       >
-                        Continue
+                        {stepNumber === 5 ? 'Submit' : 'Continue'}
                       </motion.span>
                       <motion.span
                         initial={{ x: -10, opacity: 0 }}

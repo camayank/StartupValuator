@@ -137,6 +137,12 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     setCurrentStep(step + 1);
   };
 
+  const handleStepBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   // Welcome screen
   if (currentStep === 0) {
     return (
@@ -245,6 +251,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           currentStep={currentStep}
           isCompleted={completedSteps.includes(1)}
           onComplete={() => handleStepComplete(1)}
+          className="mt-6"
         >
           <div className="space-y-4">
             <FormField
@@ -318,6 +325,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           currentStep={currentStep}
           isCompleted={completedSteps.includes(2)}
           onComplete={() => handleStepComplete(2)}
+          onBack={handleStepBack}
         >
           <div className="space-y-4">
             <FormField
@@ -413,6 +421,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           currentStep={currentStep}
           isCompleted={completedSteps.includes(3)}
           onComplete={() => handleStepComplete(3)}
+          onBack={handleStepBack}
         >
           <div className="space-y-4">
             <FormField
@@ -494,6 +503,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           currentStep={currentStep}
           isCompleted={completedSteps.includes(4)}
           onComplete={() => handleStepComplete(4)}
+          onBack={handleStepBack}
         >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -584,6 +594,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           currentStep={currentStep}
           isCompleted={completedSteps.includes(5)}
           onComplete={form.handleSubmit(mutation.mutate)}
+          onBack={handleStepBack}
         >
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
