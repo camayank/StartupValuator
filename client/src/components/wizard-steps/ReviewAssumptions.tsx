@@ -15,6 +15,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { ValuationFormData } from "@/lib/validations";
+import ValidationEngine from "@/lib/validation-engine";
+import ErrorHandler from "@/lib/error-handler";
+import DebugHelper from "@/lib/debug-helper";
 
 interface ReviewAssumptionsProps {
   data: ValuationFormData & {
@@ -27,10 +30,19 @@ interface ReviewAssumptionsProps {
     };
     valuation?: number;
   };
-  onUpdate: (data: Partial<ValuationFormData>) => void;
+  onUpdate: (data: Partial<ValuationFormData>) => Promise<void>;
   onRegenerate: () => void;
   onBack: () => void;
 }
+
+// Validation rules for the assumptions
+const validationRules = {
+  discountRate: { min: 0.05, max: 0.3 },
+  growthRate: { min: 0, max: 1 },
+  terminalGrowthRate: { min: 0.01, max: 0.05 },
+  beta: { min: 0.5, max: 2.0 },
+  marketRiskPremium: { min: 0.04, max: 0.08 }
+};
 
 export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: ReviewAssumptionsProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -50,17 +62,68 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
     },
   });
 
-  // Update handlers with type-safe assumption updates
-  const handleAssumptionUpdate = (field: keyof typeof assumptions, value: number) => {
-    const newAssumptions = { ...assumptions, [field]: value };
-    onUpdate({ assumptions: newAssumptions });
+  // Validate assumption values using ValidationEngine
+  const validateAssumption = (field: string, value: number): boolean => {
+    const rules = validationRules[field as keyof typeof validationRules];
+    if (!rules) return true;
+    return ValidationEngine.validateNumber(value, rules);
+  };
+
+  // Update handlers with type-safe assumption updates and validation
+  const handleAssumptionUpdate = async (field: keyof typeof assumptions, value: number) => {
+    try {
+      // Validate the new value
+      if (!validateAssumption(field, value)) {
+        const error = ErrorHandler.handleValidationError({
+          message: `Invalid value for ${field}. Please check the allowed range.`,
+          suggestions: [`Value must be between ${validationRules[field].min} and ${validationRules[field].max}`]
+        });
+        error.toast();
+        return;
+      }
+
+      // Track state change
+      const prevAssumptions = { ...assumptions };
+      const newAssumptions = { ...assumptions, [field]: value };
+
+      DebugHelper.trackStateChange(prevAssumptions, newAssumptions);
+
+      // Update state and notify parent
+      await DebugHelper.trackAPICall(
+        async () => await onUpdate({ assumptions: newAssumptions }),
+        `Update ${field}`
+      );
+
+    } catch (error) {
+      if (error instanceof Error) {
+        ErrorHandler.logError(error, {
+          context: 'handleAssumptionUpdate',
+          field,
+          value,
+          previousValue: assumptions[field]
+        });
+      }
+    }
   };
 
   const handleSubmit = async (values: Partial<ValuationFormData>) => {
     setIsRegenerating(true);
     try {
-      await onUpdate(values);
-      await onRegenerate();
+      // Track API calls with DebugHelper
+      await DebugHelper.trackAPICall(
+        async () => {
+          await onUpdate(values);
+          await onRegenerate();
+        },
+        'Regenerate Valuation'
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        ErrorHandler.logError(error, {
+          context: 'ReviewAssumptions.handleSubmit',
+          formData: values
+        });
+      }
     } finally {
       setIsRegenerating(false);
     }
@@ -78,6 +141,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
+            {/* Growth Rate Field */}
             <FormField
               control={form.control}
               name="growthRate"
@@ -105,6 +169,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
               )}
             />
 
+            {/* Margins Field */}
             <FormField
               control={form.control}
               name="margins"
@@ -132,6 +197,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
               )}
             />
 
+            {/* Discount Rate Slider */}
             <div className="space-y-2">
               <FormLabel>Discount Rate (%)</FormLabel>
               <FormDescription>
@@ -145,10 +211,10 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={5}
                 max={30}
                 step={0.5}
-                required
               />
             </div>
 
+            {/* Terminal Growth Rate Slider */}
             <div className="space-y-2">
               <FormLabel>Terminal Growth Rate (%)</FormLabel>
               <FormDescription>
@@ -162,10 +228,10 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={1}
                 max={5}
                 step={0.1}
-                required
               />
             </div>
 
+            {/* Beta Slider */}
             <div className="space-y-2">
               <FormLabel>Beta (Market Risk)</FormLabel>
               <FormDescription>
@@ -179,10 +245,10 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={0.5}
                 max={2}
                 step={0.1}
-                required
               />
             </div>
 
+            {/* Market Risk Premium Slider */}
             <div className="space-y-2">
               <FormLabel>Market Risk Premium (%)</FormLabel>
               <FormDescription>
@@ -196,7 +262,6 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={4}
                 max={8}
                 step={0.1}
-                required
               />
             </div>
           </div>

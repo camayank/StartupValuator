@@ -32,7 +32,9 @@ export function setupErrorMonitoring() {
   window.fetch = async function(...args) {
     try {
       const response = await originalFetch.apply(window, args);
-      if (!response.ok) {
+
+      // Don't log 401s for /api/user as that's expected when not logged in
+      if (!response.ok && !(response.status === 401 && args[0] === '/api/user')) {
         const error = new Error(`HTTP error! status: ${response.status}`);
         ErrorHandler.logError(error, {
           url: args[0],

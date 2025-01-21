@@ -45,31 +45,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import DebugHelper from "@/lib/debug-helper";
 
-// Create validation schema with proper industry validation
-const createFormSchema = (selectedSector: string) => z.object({
+const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
   businessName: z.string()
     .min(1, "Business name is required")
     .max(100, "Business name must be less than 100 characters")
     .regex(/^[a-zA-Z0-9\s\-&'.]+$/, "Business name can only contain letters, numbers, spaces, and basic punctuation"),
 
-  sector: z.string()
-    .min(1, "Please select a business sector")
-    .refine((val) => Object.keys(sectors).includes(val), "Invalid sector selected"),
+  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
 
   industry: z.string()
     .min(1, "Please select an industry")
     .refine((val) => {
-      const sector = sectors[selectedSector as keyof typeof sectors];
+      const sector = sectors[selectedSector];
       return sector?.subsectors && Object.keys(sector.subsectors).includes(val);
     }, "Invalid industry for selected sector"),
 
-  stage: z.string()
-    .min(1, "Please select a business stage")
-    .refine((val) => Object.keys(businessStages).includes(val), "Invalid business stage selected"),
+  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
 
-  intellectualProperty: z.string()
-    .optional()
-    .refine((val) => !val || ['none', 'pending', 'registered'].includes(val), "Invalid IP status"),
+  intellectualProperty: z.enum(['none', 'pending', 'registered']),
 
   teamExperience: z.number()
     .min(0, "Team experience cannot be negative")
@@ -82,16 +75,11 @@ const createFormSchema = (selectedSector: string) => z.object({
     .optional()
     .transform(val => val === undefined ? 0 : val),
 
-  competitiveDifferentiation: z.string()
-    .optional()
-    .refine((val) => !val || ['low', 'medium', 'high'].includes(val), "Invalid competitive differentiation level"),
+  competitiveDifferentiation: z.enum(['low', 'medium', 'high']),
 
-  regulatoryCompliance: z.string()
-    .optional(),
+  regulatoryCompliance: z.enum(['notRequired', 'inProgress', 'compliant']),
 
-  scalability: z.string()
-    .optional()
-    .refine((val) => !val || ['limited', 'moderate', 'high'].includes(val), "Invalid scalability level"),
+  scalability: z.enum(['limited', 'moderate', 'high'])
 });
 
 // Validation rules for ValidationEngine
@@ -110,7 +98,7 @@ interface BusinessInfoStepProps {
 }
 
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
-  const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
+  const [selectedSector, setSelectedSector] = useState<keyof typeof sectors>(data.sector as keyof typeof sectors || Object.keys(sectors)[0]);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { callApiWithRetry } = useApiWithRetry();
@@ -121,14 +109,14 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     mode: "onChange",
     defaultValues: {
       businessName: data.businessName || "",
-      sector: data.sector || "",
-      industry: data.industry || "",
-      stage: data.stage || "",
+      sector: data.sector as keyof typeof sectors || Object.keys(sectors)[0],
+      industry: data.industry || Object.keys(sectors[selectedSector]?.subsectors || {})[0] || "",
+      stage: data.stage as keyof typeof businessStages || Object.keys(businessStages)[0],
       intellectualProperty: data.intellectualProperty || "none",
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
-      regulatoryCompliance: data.regulatoryCompliance || "",
+      regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "moderate"
     }
   });
@@ -137,18 +125,19 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
   const formErrors = form.formState.errors;
   const hasErrors = Object.keys(formErrors).length > 0;
 
-  const handleSectorChange = (value: string) => {
+  const handleSectorChange = (value: keyof typeof sectors) => {
     const prevState = form.getValues();
     setSelectedSector(value);
     form.setValue("sector", value, { shouldValidate: true });
-    // Reset industry when sector changes
-    form.setValue("industry", "", { shouldValidate: true });
+    // Reset industry when sector changes to first industry in new sector
+    const firstIndustry = Object.keys(sectors[value]?.subsectors || {})[0] || "";
+    form.setValue("industry", firstIndustry, { shouldValidate: true });
 
     // Track state changes
     DebugHelper.trackStateChange(prevState, {
       ...prevState,
       sector: value,
-      industry: ""
+      industry: firstIndustry
     });
   };
 
@@ -525,6 +514,33 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="regulatoryCompliance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center">
+                        <FormLabel>Regulatory Compliance</FormLabel>
+                        <FieldTooltip content="Describe your business's regulatory compliance status" />
+                      </div>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => form.setValue("regulatoryCompliance", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select compliance status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="notRequired">Not Required</SelectItem>
+                          <SelectItem value="inProgress">In Progress</SelectItem>
+                          <SelectItem value="compliant">Compliant</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="flex justify-end space-x-4 pt-6">
                   <Button
