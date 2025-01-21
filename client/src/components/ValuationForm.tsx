@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -21,11 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ValuationSteps } from "@/components/ui/valuation-steps";
-import { ValuationStepCard } from "@/components/ui/valuation-step-card";
 import { valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
-import { ValuationProgress } from "@/components/ui/valuation-progress";
+import { useFormAutoSave } from "@/hooks/use-form-autosave";
+import { ErrorDisplay } from "@/components/ui/error-display";
+import { ProgressFeedback } from "@/components/ui/progress-feedback";
 import { motion } from "framer-motion";
 import { Building2, Calculator, ChartBar, ClipboardCheck, Globe } from "lucide-react";
 
@@ -44,7 +44,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { 
+  hidden: {
     opacity: 0,
     y: 20
   },
@@ -69,7 +69,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
     defaultValues: {
       businessName: "",
       region: "global",
-      complianceStandard: "", // Added default value
+      complianceStandard: "",
       valuationPurpose: "fundraising",
       revenue: 0,
       currency: "USD",
@@ -83,6 +83,19 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
       details: ""
     },
   });
+
+  // Initialize auto-save functionality
+  const { loadSavedData, clearSavedData } = useFormAutoSave(form.watch());
+
+  // Load saved data on mount
+  useEffect(() => {
+    const savedData = loadSavedData();
+    if (savedData) {
+      Object.keys(savedData).forEach((key) => {
+        form.setValue(key as keyof ValuationFormData, savedData[key]);
+      });
+    }
+  }, []);
 
   const mutation = useMutation({
     mutationFn: async (data: ValuationFormData) => {
@@ -101,6 +114,7 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
       return response.json();
     },
     onSuccess: (data) => {
+      clearSavedData(); // Clear saved data after successful submission
       onResult(data);
       toast({
         title: "Valuation calculated",
@@ -147,27 +161,27 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               {[
-                { 
+                {
                   title: "Business Information",
                   desc: "Tell us about your business type and stage",
                   icon: Building2
                 },
-                { 
+                {
                   title: "Region & Standards",
                   desc: "Select your region and applicable standards",
                   icon: Globe
                 },
-                { 
+                {
                   title: "Valuation Method",
                   desc: "Review region-specific valuation approaches",
                   icon: Calculator
                 },
-                { 
+                {
                   title: "Financial Details",
                   desc: "Provide basic financial information",
                   icon: ChartBar
                 },
-                { 
+                {
                   title: "Review",
                   desc: "Review and confirm your information",
                   icon: ClipboardCheck
@@ -196,8 +210,8 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               ))}
             </motion.div>
             <motion.div variants={itemVariants} className="pt-4">
-              <Button 
-                onClick={() => setCurrentStep(1)} 
+              <Button
+                onClick={() => setCurrentStep(1)}
                 className="w-full py-6 text-lg"
                 variant="default"
               >
@@ -212,11 +226,18 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onResult)} className="space-y-6 max-w-4xl mx-auto">
-        <ValuationProgress currentStep={currentStep} completedSteps={completedSteps} />
-        <ValuationSteps currentStep={currentStep} completedSteps={completedSteps} />
-
-        {/* Step 1: Business Information */}
+      <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-6 max-w-4xl mx-auto">
+        <ProgressFeedback
+          currentStep={currentStep}
+          totalSteps={5}
+          stepTitles={[
+            "Business Information",
+            "Region & Standards",
+            "Valuation Method",
+            "Financial Details",
+            "Review"
+          ]}
+        />
         <ValuationStepCard
           title="Business Information"
           description="Tell us about your business type and stage"
@@ -290,7 +311,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 2: Region Selection */}
         <ValuationStepCard
           title="Region & Standards"
           description="Select your region and applicable standards"
@@ -335,8 +355,8 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Compliance Standard</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
+                  <Select
+                    onValueChange={field.onChange}
                     defaultValue={field.value}
                     disabled={!form.watch('region')}
                   >
@@ -386,7 +406,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 3: Valuation Method */}
         <ValuationStepCard
           title="Valuation Method"
           description="Review and select the recommended valuation approach"
@@ -468,7 +487,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 4: Financial Details */}
         <ValuationStepCard
           title="Financial Details"
           description="Provide basic financial information"
@@ -559,7 +577,6 @@ export function ValuationForm({ onResult }: ValuationFormProps) {
           </div>
         </ValuationStepCard>
 
-        {/* Step 5: Review */}
         <ValuationStepCard
           title="Review"
           description="Review and confirm your information"
