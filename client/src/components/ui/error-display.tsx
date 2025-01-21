@@ -33,18 +33,23 @@ export function ErrorDisplay({ validations, onDismiss }: ErrorDisplayProps) {
             )}
             <div className="flex-1">
               <AlertTitle className="flex items-center justify-between font-medium mb-2">
-                <span>{field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}</span>
+                <span>
+                  {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
+                </span>
                 {onDismiss && (
                   <button 
                     onClick={onDismiss}
                     className="p-1 hover:bg-background/10 rounded transition-colors"
+                    aria-label="Dismiss"
                   >
                     <XCircle className="h-4 w-4" />
                   </button>
                 )}
               </AlertTitle>
               <AlertDescription>
-                <p className="text-sm mb-2">{validation.message}</p>
+                {validation.message && (
+                  <p className="text-sm mb-2">{validation.message}</p>
+                )}
                 {validation.suggestions && validation.suggestions.length > 0 && (
                   <div className="bg-background/40 rounded-md p-3 space-y-2">
                     <h4 className="text-sm font-medium">Suggestions:</h4>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ValidationResult } from "./types";
 
 export const currencies = {
   USD: { symbol: "$", name: "US Dollar" },
@@ -6,6 +7,27 @@ export const currencies = {
   GBP: { symbol: "£", name: "British Pound" },
   JPY: { symbol: "¥", name: "Japanese Yen" },
   INR: { symbol: "₹", name: "Indian Rupee" },
+} as const;
+
+// Update the business stages to match the actual values used
+export const businessStages = {
+  ideation_unvalidated: "Ideation Stage (Concept Only)",
+  ideation_validated: "Ideation Stage (Market Validated)",
+  mvp_development: "MVP Development",
+  mvp_early_traction: "MVP with Early Traction",
+  beta_testing: "Beta Testing",
+  revenue_early: "Early Revenue Stage",
+  revenue_growing: "Growing Revenue Stage",
+  revenue_scaling: "Scaling Revenue Stage",
+  growth_regional: "Regional Growth",
+  growth_national: "National Expansion",
+  growth_international: "International Expansion",
+  mature_stable: "Mature & Stable",
+  mature_expanding: "Mature & Expanding",
+  pre_ipo: "Pre-IPO Stage",
+  acquisition_target: "Acquisition Target",
+  restructuring: "Restructuring",
+  turnaround: "Turnaround Stage"
 } as const;
 
 // Add regions with their compliance standards and default currency
@@ -144,36 +166,6 @@ export const fundUtilizationSchema = z.object({
     description: z.string(),
   })),
 });
-
-// Enhanced business stages with integrated market validation
-export const businessStages = {
-  // Pre-revenue stages
-  ideation_unvalidated: "Ideation Stage (Concept Only)",
-  ideation_validated: "Ideation Stage (Market Validated)",
-  mvp_development: "MVP Development",
-  mvp_early_traction: "MVP with Early Traction",
-  beta_testing: "Beta Testing",
-
-  // Early revenue stages
-  revenue_early: "Early Revenue Stage",
-  revenue_growing: "Growing Revenue Stage",
-  revenue_scaling: "Scaling Revenue Stage",
-
-  // Growth stages
-  growth_regional: "Regional Growth",
-  growth_national: "National Expansion",
-  growth_international: "International Expansion",
-
-  // Mature stages
-  mature_stable: "Mature & Stable",
-  mature_expanding: "Mature & Expanding",
-
-  // Special situations
-  pre_ipo: "Pre-IPO Stage",
-  acquisition_target: "Acquisition Target",
-  restructuring: "Restructuring",
-  turnaround: "Turnaround Stage"
-} as const;
 
 // Revenue models for businesses
 export const revenueModels = {
@@ -612,48 +604,49 @@ export const valuationFormSchema = z.object({
   // Rest of the fields remain unchanged
   intellectualProperty: z.enum(["none", "pending", "registered"])
     .default("none")
-    .superRefine((val, ctx) => {
-      if (val === "none" && ctx.parent.sector === "deeptech") {
+    .refine((val, ctx) => {
+      if (val === "none" && (ctx as any).parent?.sector === "deeptech") {
         ctx.addIssue({
-          code: "custom",
+          code: z.ZodIssueCode.custom,
           message: "IP protection is highly recommended for deep tech startups",
           path: ["intellectualProperty"]
         });
       }
+      return true;
     }),
 
   // Financial metrics with stage-appropriate validation
-  revenue: z.number().min(0)
+  revenue: z.coerce.number().min(0)
     .default(0)
-    .superRefine((val, ctx) => {
-      const stage = ctx.parent.stage;
+    .refine((val, ctx) => {
+      const stage = (ctx as any).parent?.stage;
       if (stage === "revenue_growing" && val === 0) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Revenue is required for growth stage companies",
-          path: ["revenue"]
-        });
+        return false;
       }
+      return true;
+    }, {
+      message: "Revenue is required for growth stage companies",
+      path: ["revenue"]
     }),
 
   // Optional but encouraged fields
-  teamExperience: z.number().min(0).max(20).default(0),
-  customerBase: z.number().min(0).default(0),
+  teamExperience: z.coerce.number().min(0).max(20).default(0),
+  customerBase: z.coerce.number().min(0).default(0),
   competitiveDifferentiation: z.enum(["low", "medium", "high"])
     .default("medium"),
 
   // Compliance and regulatory fields
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"])
     .default("notRequired")
-    .superRefine((val, ctx) => {
-      const sector = ctx.parent.sector;
+    .refine((val, ctx) => {
+      const sector = (ctx as any).parent?.sector;
       if ((sector === "healthtech" || sector === "fintech") && val === "notRequired") {
-        ctx.addIssue({
-          code: "custom",
-          message: "Regulatory compliance is typically required in this sector",
-          path: ["regulatoryCompliance"]
-        });
+        return false;
       }
+      return true;
+    }, {
+      message: "Regulatory compliance is typically required in this sector",
+      path: ["regulatoryCompliance"]
     }),
 
   // Growth potential indicators
@@ -663,8 +656,8 @@ export const valuationFormSchema = z.object({
   // Financial settings
   currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>])
     .default("USD"),
-  growthRate: z.number().min(-100).max(1000).default(0),
-  margins: z.number().min(-100).max(100).default(0),
+  growthRate: z.coerce.number().min(-100).max(1000).default(0),
+  margins: z.coerce.number().min(-100).max(100).default(0),
 }).refine((data) => {
   const validations = getIndustryValidations(data.industry);
   if (data.revenue < validations.minRevenue) {

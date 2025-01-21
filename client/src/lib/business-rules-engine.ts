@@ -1,17 +1,10 @@
+import type { ValidationResult, BasicFormData } from "./types";
 import type { ValuationFormData } from "./validations";
 import { sectors } from "./validations";
 import IndustryValidationEngine from "./industry-validation";
 
 interface BusinessRule {
   validate: (value: any, formData: ValuationFormData) => ValidationResult;
-}
-
-interface ValidationResult {
-  isValid: boolean;
-  severity: 'info' | 'warning' | 'error';
-  message?: string;
-  suggestions?: string[];
-  impact?: 'low' | 'medium' | 'high';
 }
 
 const BusinessRulesEngine = {
@@ -229,3 +222,4 @@ const BusinessRulesEngine = {
 };
 
 export default BusinessRulesEngine;
+export type { ValidationResult };
