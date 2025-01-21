@@ -16,10 +16,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, AlertCircle } from "lucide-react";
+import { Info, AlertCircle, HelpCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useApiWithRetry } from "@/hooks/use-api-with-retry";
@@ -83,9 +97,11 @@ interface BusinessInfoStepProps {
   data: Partial<ValuationFormData>;
   onUpdate: (data: Partial<ValuationFormData>) => Promise<void>;
   onNext: () => void;
+  currentStep: number;
+  totalSteps: number;
 }
 
-export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepProps) {
+export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
   const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,253 +182,313 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
     );
   };
 
+  const progressPercentage = (currentStep / totalSteps) * 100;
+
+  // Helper components
+  const FieldTooltip = ({ content }: { content: string }) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle className="h-4 w-4 ml-1 inline-block text-muted-foreground" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="max-w-xs">{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+
   return (
-    <div className="space-y-6">
-      <ErrorSummary />
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Progress Bar */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>Step {currentStep} of {totalSteps}</span>
+          <span>{Math.round(progressPercentage)}% Complete</span>
+        </div>
+        <Progress value={progressPercentage} className="w-full" />
+      </div>
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          Fill in your business information below. Fields marked with * are required.
-        </AlertDescription>
-      </Alert>
+      <Card>
+        <CardHeader>
+          <CardTitle>Business Information</CardTitle>
+          <CardDescription>
+            Enter your business details to begin the valuation process
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ErrorSummary />
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid gap-6">
-            <FormField
-              control={form.control}
-              name="businessName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Name *</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="e.g., TechStart Solutions" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <div className="grid gap-6">
+                <FormField
+                  control={form.control}
+                  name="businessName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center">
+                        <FormLabel>Business Name *</FormLabel>
+                        <FieldTooltip content="Enter your company's legal or trading name" />
+                      </div>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="e.g., TechStart Solutions"
+                          className="max-w-md"
+                          aria-required="true"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="sector"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Sector *</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={handleSectorChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(sectors).map(([key, { name }]) => (
-                          <SelectItem key={key} value={key}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="sector"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Business Sector *</FormLabel>
+                          <FieldTooltip content="Choose the primary sector your business operates in" />
+                        </div>
+                        <Select
+                          value={field.value}
+                          onValueChange={handleSectorChange}
+                        >
+                          <SelectTrigger aria-required="true">
+                            <SelectValue placeholder="Select your sector" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(sectors).map(([key, { name }]) => (
+                              <SelectItem key={key} value={key}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry *</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => {
-                        form.setValue("industry", value, { shouldValidate: true });
-                      }}
-                      disabled={!selectedSector}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedSector && sectors[selectedSector]?.subsectors &&
-                          Object.entries(sectors[selectedSector].subsectors).map(([key, name]) => (
+                  <FormField
+                    control={form.control}
+                    name="industry"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Industry *</FormLabel>
+                          <FieldTooltip content="Select your specific industry within the chosen sector" />
+                        </div>
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            form.setValue("industry", value, { shouldValidate: true });
+                          }}
+                          disabled={!selectedSector}
+                        >
+                          <SelectTrigger aria-required="true">
+                            <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selectedSector && sectors[selectedSector]?.subsectors &&
+                              Object.entries(sectors[selectedSector].subsectors).map(([key, name]) => (
+                                <SelectItem key={key} value={key}>{name}</SelectItem>
+                              ))
+                            }
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="stage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center">
+                        <FormLabel>Business Stage *</FormLabel>
+                        <FieldTooltip content="Indicate the current stage of your business development" />
+                      </div>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          form.setValue("stage", value, { shouldValidate: true });
+                        }}
+                      >
+                        <SelectTrigger aria-required="true">
+                          <SelectValue placeholder="Select your stage" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(businessStages).map(([key, name]) => (
                             <SelectItem key={key} value={key}>{name}</SelectItem>
-                          ))
-                        }
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="stage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Stage *</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      form.setValue("stage", value, { shouldValidate: true });
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="intellectualProperty"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>IP Protection Status</FormLabel>
+                          <FieldTooltip content="Specify the status of your intellectual property protection" />
+                        </div>
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => form.setValue("intellectualProperty", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select IP status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No IP Protection</SelectItem>
+                            <SelectItem value="pending">Patents Pending</SelectItem>
+                            <SelectItem value="registered">Registered Patents/IP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="competitiveDifferentiation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Competitive Differentiation</FormLabel>
+                          <FieldTooltip content="Assess your business's competitive advantage in the market" />
+                        </div>
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => form.setValue("competitiveDifferentiation", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select competitive position" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Limited Differentiation</SelectItem>
+                            <SelectItem value="medium">Moderate Advantage</SelectItem>
+                            <SelectItem value="high">Strong Market Position</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="scalability"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center">
+                        <FormLabel>Business Scalability</FormLabel>
+                        <FieldTooltip content="Evaluate your business's potential for growth and expansion" />
+                      </div>
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => form.setValue("scalability", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select scalability potential" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="limited">Limited Scale Potential</SelectItem>
+                          <SelectItem value="moderate">Moderate Scalability</SelectItem>
+                          <SelectItem value="high">Highly Scalable</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="teamExperience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Team Experience (years)</FormLabel>
+                          <FieldTooltip content="Average relevant industry experience of your team" />
+                        </div>
+                        <FormDescription>Average relevant industry experience</FormDescription>
+                        <div className="pt-2">
+                          <Slider
+                            value={[field.value || 0]}
+                            onValueChange={([value]) => form.setValue("teamExperience", value)}
+                            max={20}
+                            step={1}
+                          />
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {field.value} years
+                          </p>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="customerBase"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Current Customer Base</FormLabel>
+                          <FieldTooltip content="Number of active customers or users your business has" />
+                        </div>
+                        <FormDescription>Number of active customers/users</FormDescription>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => form.setValue("customerBase", Number(e.target.value))}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-4 pt-6">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => {
+                      form.reset();
                     }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your stage" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(businessStages).map(([key, name]) => (
-                        <SelectItem key={key} value={key}>{name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="intellectualProperty"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>IP Protection Status</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => form.setValue("intellectualProperty", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select IP status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No IP Protection</SelectItem>
-                        <SelectItem value="pending">Patents Pending</SelectItem>
-                        <SelectItem value="registered">Registered Patents/IP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="competitiveDifferentiation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Competitive Differentiation</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => form.setValue("competitiveDifferentiation", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select competitive position" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Limited Differentiation</SelectItem>
-                        <SelectItem value="medium">Moderate Advantage</SelectItem>
-                        <SelectItem value="high">Strong Market Position</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="scalability"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Scalability</FormLabel>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => form.setValue("scalability", value)}
+                    Reset
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || hasErrors}
+                    aria-busy={isSubmitting}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select scalability potential" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="limited">Limited Scale Potential</SelectItem>
-                      <SelectItem value="moderate">Moderate Scalability</SelectItem>
-                      <SelectItem value="high">Highly Scalable</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    {isSubmitting ? "Saving..." : "Continue"}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="teamExperience"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Team Experience (years)</FormLabel>
-                    <FormDescription>Average relevant industry experience</FormDescription>
-                    <div className="pt-2">
-                      <Slider
-                        value={[field.value || 0]}
-                        onValueChange={([value]) => form.setValue("teamExperience", value)}
-                        max={20}
-                        step={1}
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {field.value} years
-                      </p>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="customerBase"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Current Customer Base</FormLabel>
-                    <FormDescription>Number of active customers/users</FormDescription>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => form.setValue("customerBase", Number(e.target.value))}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <Button 
-                variant="outline" 
-                type="button" 
-                onClick={() => {
-                  form.reset();
-                }}
-              >
-                Reset
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || hasErrors}
-              >
-                {isSubmitting ? "Saving..." : "Continue"}
-              </Button>
-            </div>
-          </div>
-        </form>
-      </Form>
-
-      {/* Real-time validation status */}
       {form.formState.isValidating && (
         <div className="text-sm text-muted-foreground">
           Validating...
