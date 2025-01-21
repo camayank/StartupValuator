@@ -175,6 +175,45 @@ export const businessStages = {
   turnaround: "Turnaround Stage"
 } as const;
 
+// Revenue models for businesses
+export const revenueModels = {
+  subscription: "Subscription Model",
+  transactional: "Transactional / One-time Sales",
+  marketplace: "Marketplace / Commission",
+  advertising: "Advertising Revenue",
+  licensing: "Licensing / Royalties",
+  saas: "Software as a Service",
+  freemium: "Freemium Model",
+  consulting: "Professional Services / Consulting",
+  hardware: "Hardware Sales",
+  usage_based: "Usage-Based Pricing",
+  hybrid: "Hybrid Model"
+} as const;
+
+// Geographic market definitions
+export const geographicMarkets = {
+  local: "Local / City-specific",
+  regional: "Regional / State-level",
+  national: "National",
+  multinational: "Multi-country Operations",
+  global: "Global Operations",
+  emerging: "Emerging Markets",
+  developed: "Developed Markets",
+  online_only: "Online / Digital Only"
+} as const;
+
+// Product development stages
+export const productStages = {
+  concept: "Concept / Ideation",
+  prototype: "Prototype / POC",
+  mvp: "Minimum Viable Product",
+  beta: "Beta Version",
+  market_ready: "Market Ready",
+  scaling: "Scaling / Growth",
+  mature: "Mature Product",
+  next_gen: "Next Generation Development"
+} as const;
+
 // Reorganized industry classifications with sector-subsector structure
 export const sectors = {
   technology: {
@@ -621,6 +660,14 @@ export const valuationFormSchema = z.object({
     value: z.number(),
     description: z.string()
   })).optional(),
+
+  foundingDate: z.date(), // Added
+  employeeCount: z.number().min(0), // Added
+  fundingHistory: z.array(z.string()), // Added
+  revenueModel: z.enum(Object.keys(revenueModels) as (keyof typeof revenueModels)[]), // Added
+  geographicMarkets: z.array(z.enum(Object.keys(geographicMarkets) as (keyof typeof geographicMarkets)[])), // Added
+  productStage: z.enum(Object.keys(productStages) as (keyof typeof productStages)[]), // Added
+
 }).refine((data) => {
   const validations = getIndustryValidations(data.industry);
   if (data.revenue < validations.minRevenue) {

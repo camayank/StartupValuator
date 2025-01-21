@@ -40,12 +40,13 @@ import { useApiWithRetry } from "@/hooks/use-api-with-retry";
 import ValidationEngine from "@/lib/validation-engine";
 import ErrorHandler from "@/lib/error-handler";
 import type { ValuationFormData } from "@/lib/validations";
-import { sectors, businessStages } from "@/lib/validations";
+import { sectors, businessStages, revenueModels, geographicMarkets, productStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import DebugHelper from "@/lib/debug-helper";
 
 const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
+  // Existing fields
   businessName: z.string()
     .min(1, "Business name is required")
     .max(100, "Business name must be less than 100 characters")
@@ -62,6 +63,30 @@ const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
 
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
 
+  // New fields
+  foundingDate: z.string()
+    .min(1, "Founding date is required")
+    .refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
+
+  employeeCount: z.number()
+    .min(1, "Employee count must be at least 1")
+    .max(1000000, "Employee count seems unusually high"),
+
+  fundingHistory: z.object({
+    rounds: z.array(z.string()),
+    totalRaised: z.number().optional(),
+    lastRound: z.string().optional(),
+  }).optional(),
+
+  revenueModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
+
+  geographicMarkets: z.array(
+    z.enum(Object.keys(geographicMarkets) as [keyof typeof geographicMarkets, ...Array<keyof typeof geographicMarkets>])
+  ),
+
+  productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
+
+  // Existing fields continued
   intellectualProperty: z.enum(['none', 'pending', 'registered']),
 
   teamExperience: z.number()
@@ -86,7 +111,8 @@ const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
 const validationRules = {
   businessName: { minLength: 1, maxLength: 100 },
   teamExperience: { min: 0, max: 50 },
-  customerBase: { min: 0, max: 1000000 }
+  customerBase: { min: 0, max: 1000000 },
+  employeeCount: { min: 1, max: 1000000 }
 };
 
 interface BusinessInfoStepProps {
@@ -108,6 +134,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     resolver: zodResolver(createFormSchema(selectedSector)),
     mode: "onChange",
     defaultValues: {
+      // Existing fields
       businessName: data.businessName || "",
       sector: data.sector as keyof typeof sectors || Object.keys(sectors)[0],
       industry: data.industry || Object.keys(sectors[selectedSector]?.subsectors || {})[0] || "",
@@ -117,7 +144,15 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       customerBase: data.customerBase || 0,
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
-      scalability: data.scalability || "moderate"
+      scalability: data.scalability || "moderate",
+
+      // New fields
+      foundingDate: data.foundingDate || new Date().toISOString().split('T')[0],
+      employeeCount: data.employeeCount || 1,
+      fundingHistory: data.fundingHistory || { rounds: [], totalRaised: 0, lastRound: undefined },
+      revenueModel: data.revenueModel || Object.keys(revenueModels)[0],
+      geographicMarkets: data.geographicMarkets || [Object.keys(geographicMarkets)[0]],
+      productStage: data.productStage || Object.keys(productStages)[0],
     }
   });
 
@@ -272,47 +307,173 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               <div className="grid gap-6">
-                <FormField
-                  control={form.control}
-                  name="businessName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center">
-                        <FormLabel>Business Name *</FormLabel>
-                        <FieldTooltip content="Enter your company's legal or trading name" />
-                      </div>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="e.g., TechStart Solutions"
-                          className="max-w-md"
-                          aria-required="true"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Basic Information Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Basic Information</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Business Name Field */}
                   <FormField
                     control={form.control}
-                    name="sector"
+                    name="businessName"
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex items-center">
-                          <FormLabel>Business Sector *</FormLabel>
-                          <FieldTooltip content="Choose the primary sector your business operates in" />
+                          <FormLabel>Business Name *</FormLabel>
+                          <FieldTooltip content="Enter your company's legal or trading name" />
+                        </div>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., TechStart Solutions"
+                            className="max-w-md"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Founding Date Field */}
+                  <FormField
+                    control={form.control}
+                    name="foundingDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Founding Date *</FormLabel>
+                          <FieldTooltip content="When was your company founded?" />
+                        </div>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            className="max-w-md"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Market Information Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Market Information</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Existing Sector and Industry fields */}
+                    <FormField
+                      control={form.control}
+                      name="sector"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center">
+                            <FormLabel>Business Sector *</FormLabel>
+                            <FieldTooltip content="Choose the primary sector your business operates in" />
+                          </div>
+                          <Select
+                            value={field.value}
+                            onValueChange={handleSectorChange}
+                          >
+                            <SelectTrigger aria-required="true">
+                              <SelectValue placeholder="Select your sector" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(sectors).map(([key, { name }]) => (
+                                <SelectItem key={key} value={key}>{name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="industry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center">
+                            <FormLabel>Industry *</FormLabel>
+                            <FieldTooltip content="Select your specific industry within the chosen sector" />
+                          </div>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => {
+                              form.setValue("industry", value, { shouldValidate: true });
+                            }}
+                            disabled={!selectedSector}
+                          >
+                            <SelectTrigger aria-required="true">
+                              <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedSector && sectors[selectedSector]?.subsectors &&
+                                Object.entries(sectors[selectedSector].subsectors).map(([key, name]) => (
+                                  <SelectItem key={key} value={key}>{name}</SelectItem>
+                                ))
+                              }
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Geographic Markets Field */}
+                  <FormField
+                    control={form.control}
+                    name="geographicMarkets"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Geographic Markets *</FormLabel>
+                          <FieldTooltip content="Select your target markets" />
+                        </div>
+                        <Select
+                          value={field.value[0]}
+                          onValueChange={(value) => form.setValue("geographicMarkets", [value])}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select markets" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(geographicMarkets).map(([key, name]) => (
+                              <SelectItem key={key} value={key}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Business Model Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Business Model</h3>
+
+                  {/* Revenue Model Field */}
+                  <FormField
+                    control={form.control}
+                    name="revenueModel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Revenue Model *</FormLabel>
+                          <FieldTooltip content="How does your business generate revenue?" />
                         </div>
                         <Select
                           value={field.value}
-                          onValueChange={handleSectorChange}
+                          onValueChange={(value) => form.setValue("revenueModel", value)}
                         >
-                          <SelectTrigger aria-required="true">
-                            <SelectValue placeholder="Select your sector" />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select revenue model" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.entries(sectors).map(([key, { name }]) => (
+                            {Object.entries(revenueModels).map(([key, name]) => (
                               <SelectItem key={key} value={key}>{name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -322,31 +483,27 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                     )}
                   />
 
+                  {/* Product Stage Field */}
                   <FormField
                     control={form.control}
-                    name="industry"
+                    name="productStage"
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex items-center">
-                          <FormLabel>Industry *</FormLabel>
-                          <FieldTooltip content="Select your specific industry within the chosen sector" />
+                          <FormLabel>Product Stage *</FormLabel>
+                          <FieldTooltip content="Current stage of your product development" />
                         </div>
                         <Select
                           value={field.value}
-                          onValueChange={(value) => {
-                            form.setValue("industry", value, { shouldValidate: true });
-                          }}
-                          disabled={!selectedSector}
+                          onValueChange={(value) => form.setValue("productStage", value)}
                         >
-                          <SelectTrigger aria-required="true">
-                            <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product stage" />
                           </SelectTrigger>
                           <SelectContent>
-                            {selectedSector && sectors[selectedSector]?.subsectors &&
-                              Object.entries(sectors[selectedSector].subsectors).map(([key, name]) => (
-                                <SelectItem key={key} value={key}>{name}</SelectItem>
-                              ))
-                            }
+                            {Object.entries(productStages).map(([key, name]) => (
+                              <SelectItem key={key} value={key}>{name}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -355,34 +512,62 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="stage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center">
-                        <FormLabel>Business Stage *</FormLabel>
-                        <FieldTooltip content="Indicate the current stage of your business development" />
-                      </div>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => {
-                          form.setValue("stage", value, { shouldValidate: true });
-                        }}
-                      >
-                        <SelectTrigger aria-required="true">
-                          <SelectValue placeholder="Select your stage" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(businessStages).map(([key, name]) => (
-                            <SelectItem key={key} value={key}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Team and Operations Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Team and Operations</h3>
+
+                  {/* Employee Count Field */}
+                  <FormField
+                    control={form.control}
+                    name="employeeCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Number of Employees *</FormLabel>
+                          <FieldTooltip content="Total number of full-time employees" />
+                        </div>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => form.setValue("employeeCount", parseInt(e.target.value))}
+                            min={1}
+                            className="max-w-md"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Existing Team Experience Field */}
+                  <FormField
+                    control={form.control}
+                    name="teamExperience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Team Experience (years)</FormLabel>
+                          <FieldTooltip content="Average relevant industry experience of your team" />
+                        </div>
+                        <FormDescription>Average relevant industry experience</FormDescription>
+                        <div className="pt-2">
+                          <Slider
+                            value={[field.value || 0]}
+                            onValueChange={([value]) => form.setValue("teamExperience", value)}
+                            max={20}
+                            step={1}
+                          />
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {field.value} years
+                          </p>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -470,32 +655,6 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="teamExperience"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <FormLabel>Team Experience (years)</FormLabel>
-                          <FieldTooltip content="Average relevant industry experience of your team" />
-                        </div>
-                        <FormDescription>Average relevant industry experience</FormDescription>
-                        <div className="pt-2">
-                          <Slider
-                            value={[field.value || 0]}
-                            onValueChange={([value]) => form.setValue("teamExperience", value)}
-                            max={20}
-                            step={1}
-                          />
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {field.value} years
-                          </p>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="customerBase"
                     render={({ field }) => (
                       <FormItem>
@@ -513,34 +672,34 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="regulatoryCompliance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center">
-                        <FormLabel>Regulatory Compliance</FormLabel>
-                        <FieldTooltip content="Describe your business's regulatory compliance status" />
-                      </div>
-                      <Select
-                        value={field.value}
-                        onValueChange={(value) => form.setValue("regulatoryCompliance", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select compliance status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="notRequired">Not Required</SelectItem>
-                          <SelectItem value="inProgress">In Progress</SelectItem>
-                          <SelectItem value="compliant">Compliant</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="regulatoryCompliance"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center">
+                          <FormLabel>Regulatory Compliance</FormLabel>
+                          <FieldTooltip content="Describe your business's regulatory compliance status" />
+                        </div>
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => form.setValue("regulatoryCompliance", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select compliance status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="notRequired">Not Required</SelectItem>
+                            <SelectItem value="inProgress">In Progress</SelectItem>
+                            <SelectItem value="compliant">Compliant</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="flex justify-end space-x-4 pt-6">
                   <Button
