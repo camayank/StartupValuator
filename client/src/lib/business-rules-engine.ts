@@ -1,6 +1,6 @@
 import type { ValuationFormData } from "./validations";
 import { sectors } from "./validations";
-import { IndustrySpecificValidation } from "./industry-validation";
+import IndustryValidationEngine from "./industry-validation";
 
 interface BusinessRule {
   validate: (value: any, formData: ValuationFormData) => string[];
@@ -21,7 +21,7 @@ const BusinessRulesEngine = {
         const stage = formData.stage;
         const revenue = formData.revenue || 0;
 
-        if (stage === 'growth' && value < 3) {
+        if (stage === 'revenue_growing' && value < 3) {
           errors.push('Growth stage typically requires a larger team');
         }
         if (revenue > 1000000 && value < 5) {
@@ -41,7 +41,7 @@ const BusinessRulesEngine = {
         const stage = formData.stage;
         const employeeCount = formData.employeeCount || 0;
 
-        if (stage === 'growth' && value < 100) {
+        if (stage === 'revenue_growing' && value < 100) {
           errors.push('Growth stage typically has a larger customer base');
         }
         if (employeeCount > 10 && value < 50) {
@@ -49,7 +49,7 @@ const BusinessRulesEngine = {
         }
 
         // Add industry-specific validations
-        const industryValidations = IndustrySpecificValidation.validateIndustryMetrics(formData);
+        const industryValidations = IndustryValidationEngine.validateIndustryMetrics(formData);
         industryValidations.forEach(validation => {
           if (!validation.isValid && validation.warning) {
             errors.push(validation.warning);
@@ -70,7 +70,7 @@ const BusinessRulesEngine = {
         const stage = formData.stage;
         const customerBase = formData.customerBase || 0;
 
-        if (stage === 'growth' && value < 10000) {
+        if (stage === 'revenue_growing' && value < 10000) {
           errors.push('Growth stage companies typically have higher revenue');
         }
         if (customerBase > 1000 && value < 1000) {
@@ -84,25 +84,6 @@ const BusinessRulesEngine = {
         revenueCustomerMismatch: 'Revenue seems low relative to customer base'
       }
     },
-    scalability: {
-      validate: (value: 'limited' | 'moderate' | 'high', formData: ValuationFormData): string[] => {
-        const errors: string[] = [];
-        const sector = formData.sector;
-        const stage = formData.stage;
-
-        if (sector === 'technology' && value === 'limited') {
-          errors.push('Tech companies typically have higher scalability potential');
-        }
-        if (stage === 'growth' && value === 'limited') {
-          errors.push('Growth stage companies should demonstrate higher scalability');
-        }
-        return errors;
-      },
-      errorMessages: {
-        techScalability: 'Consider your scalability potential as a tech company',
-        growthScalability: 'Growth stage typically indicates higher scalability'
-      }
-    },
 
     intellectualProperty: {
       validate: (value: 'none' | 'pending' | 'registered', formData: ValuationFormData): string[] => {
@@ -110,7 +91,7 @@ const BusinessRulesEngine = {
         const sector = formData.sector;
         const stage = formData.stage;
 
-        if (sector === 'technology' && value === 'none' && stage !== 'ideation') {
+        if (sector === 'technology' && value === 'none' && stage !== 'ideation_unvalidated') {
           errors.push('Consider IP protection for your technology');
         }
         return errors;
@@ -127,10 +108,10 @@ const BusinessRulesEngine = {
         const sector = formData.sector;
         const stage = formData.stage;
 
-        if ((sector === 'healthcare' || sector === 'fintech') && value === 'notRequired') {
+        if ((sector === 'fintech' || sector === 'healthtech') && value === 'notRequired') {
           errors.push('Regulatory compliance is typically required in your sector');
         }
-        if (stage === 'growth' && value !== 'compliant') {
+        if (stage === 'revenue_growing' && value !== 'compliant') {
           errors.push('Growth stage companies should be compliant with regulations');
         }
         return errors;
@@ -142,8 +123,8 @@ const BusinessRulesEngine = {
     }
   },
 
-  validateField: (fieldName: string, value: any, formData: ValuationFormData): string[] => {
-    const rule = BusinessRulesEngine.rules[fieldName as keyof typeof BusinessRulesEngine.rules];
+  validateField: (fieldName: keyof typeof BusinessRulesEngine.rules, value: any, formData: ValuationFormData): string[] => {
+    const rule = BusinessRulesEngine.rules[fieldName];
     if (rule) {
       return rule.validate(value, formData);
     }
@@ -151,8 +132,8 @@ const BusinessRulesEngine = {
   },
 
   trackChanges: (field: string, value: any, previousValue: any, formData: ValuationFormData): ValidationState => {
-    const currentErrors = BusinessRulesEngine.validateField(field, value, formData);
-    const previousErrors = BusinessRulesEngine.validateField(field, previousValue, formData);
+    const currentErrors = BusinessRulesEngine.validateField(field as keyof typeof BusinessRulesEngine.rules, value, formData);
+    const previousErrors = BusinessRulesEngine.validateField(field as keyof typeof BusinessRulesEngine.rules, previousValue, formData);
 
     return {
       isValid: currentErrors.length === 0,
@@ -175,7 +156,7 @@ const BusinessRulesEngine = {
     // Validate all fields with business rules
     Object.keys(BusinessRulesEngine.rules).forEach((fieldName) => {
       const fieldErrors = BusinessRulesEngine.validateField(
-        fieldName,
+        fieldName as keyof typeof BusinessRulesEngine.rules,
         formData[fieldName as keyof ValuationFormData],
         formData
       );
@@ -186,7 +167,7 @@ const BusinessRulesEngine = {
     });
 
     // Add industry-specific validations
-    const industryValidations = IndustrySpecificValidation.validateIndustryMetrics(formData);
+    const industryValidations = IndustryValidationEngine.validateIndustryMetrics(formData);
     industryValidations.forEach(validation => {
       if (!validation.isValid && validation.warning) {
         const existingErrors = errors.get('industry') || [];

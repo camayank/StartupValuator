@@ -1,6 +1,6 @@
 import type { ValuationFormData } from "./validations";
 import { sectors, businessStages } from "./validations";
-import { IndustrySpecificValidation } from "./industry-validation";
+import { IndustryValidationEngine } from "./industry-validation";
 
 interface ContextualHelp {
   description: string;
@@ -93,7 +93,7 @@ const SmartHelpSystem = {
     },
 
     getBenchmarks: (field: string, industry: string): Record<string, any> => {
-      const industryMetrics = IndustrySpecificValidation.getRequiredMetrics(industry);
+      const industryMetrics = IndustryValidationEngine.getRequiredMetrics(industry);
       if (industryMetrics.includes(field)) {
         return SmartHelpSystem.getIndustryBenchmarks(industry, field);
       }
@@ -104,8 +104,8 @@ const SmartHelpSystem = {
   private: {
     generateRecommendations: (data: ValuationFormData): string[] => {
       const recommendations: string[] = [];
-      const requiredMetrics = IndustrySpecificValidation.getRequiredMetrics(data.sector);
-      
+      const requiredMetrics = IndustryValidationEngine.getRequiredMetrics(data.sector);
+
       if (requiredMetrics.length > 0) {
         recommendations.push(`Consider tracking these key metrics: ${requiredMetrics.join(', ')}`);
       }
