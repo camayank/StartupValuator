@@ -17,24 +17,27 @@ export function ErrorDisplay({ error, fieldErrors, onDismiss }: ErrorDisplayProp
   return (
     <div className="space-y-4">
       {error && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="border-2">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle className="flex items-center justify-between">
+          <AlertTitle className="flex items-center justify-between font-bold">
             {error.type === 'validation' ? 'Validation Error' :
              error.type === 'business' ? 'Business Rule Error' :
              'System Error'}
             {onDismiss && (
-              <button onClick={onDismiss} className="p-1 hover:bg-destructive/10 rounded">
+              <button 
+                onClick={onDismiss} 
+                className="p-1 hover:bg-destructive/10 rounded transition-colors"
+              >
                 <XCircle className="h-4 w-4" />
               </button>
             )}
           </AlertTitle>
-          <AlertDescription>
-            <p>{error.message}</p>
+          <AlertDescription className="mt-2">
+            <p className="text-sm">{error.message}</p>
             {error.suggestions && (
-              <ul className="mt-2 list-disc pl-4">
+              <ul className="mt-2 list-disc pl-4 space-y-1">
                 {error.suggestions.map((suggestion, i) => (
-                  <li key={i} className="text-sm">{suggestion}</li>
+                  <li key={i} className="text-sm text-destructive-foreground/90">{suggestion}</li>
                 ))}
               </ul>
             )}
@@ -45,11 +48,15 @@ export function ErrorDisplay({ error, fieldErrors, onDismiss }: ErrorDisplayProp
       {fieldErrors && fieldErrors.size > 0 && (
         <div className="space-y-2">
           {Array.from(fieldErrors.entries()).map(([field, errors]) => (
-            <Alert key={field} variant="destructive" className="border-l-4">
+            <Alert 
+              key={field} 
+              variant="destructive" 
+              className="border-l-4 border-l-destructive"
+            >
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error in {field}</AlertTitle>
+              <AlertTitle className="font-medium">Error in {field}</AlertTitle>
               <AlertDescription>
-                <ul className="list-disc pl-4">
+                <ul className="list-disc pl-4 mt-1">
                   {errors.map((error, i) => (
                     <li key={i} className="text-sm">{error}</li>
                   ))}
