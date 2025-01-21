@@ -1,51 +1,114 @@
 import { Router } from 'express';
 import { db } from '@db';
-import { valuationRecords, industryBenchmarks, generatedReports } from '@db/schema';
+import { valuationRecords } from '@db/schema';
 import { calculateValuation } from '../lib/valuation';
 import type { ValuationFormData } from '../../client/src/lib/validations';
-import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 const router = Router();
+
+// Request rate limiting
+const requestCounts = new Map<string, { count: number; timestamp: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 5; // 5 requests per minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userRequests = requestCounts.get(ip) || { count: 0, timestamp: now };
+
+  if (now - userRequests.timestamp > RATE_LIMIT_WINDOW) {
+    userRequests.count = 1;
+    userRequests.timestamp = now;
+  } else if (userRequests.count >= MAX_REQUESTS) {
+    return false;
+  } else {
+    userRequests.count++;
+  }
+
+  requestCounts.set(ip, userRequests);
+  return true;
+}
 
 // Create new valuation
 router.post('/api/valuations', async (req, res) => {
   try {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
+    // Check rate limit
+    if (!checkRateLimit(req.ip)) {
+      return res.status(429).json({ 
+        message: 'Rate limit exceeded. Please try again in a few moments.',
+        retryAfter: Math.ceil((RATE_LIMIT_WINDOW - (Date.now() - (requestCounts.get(req.ip)?.timestamp || 0))) / 1000)
+      });
     }
 
     const formData: ValuationFormData = req.body;
-    const valuation = await calculateValuation(formData);
 
+    // Validate required fields
+    if (!formData.businessName || !formData.sector || !formData.stage) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: businessName, sector, and stage are required' 
+      });
+    }
+
+    console.log('Starting valuation calculation for:', formData.businessName);
+    const valuation = await calculateValuation(formData);
+    console.log('Valuation calculation completed');
+
+    // Store the valuation record
     const [record] = await db.insert(valuationRecords).values({
-      userId: req.user.id,
       businessName: formData.businessName,
-      industry: formData.industry,
+      industry: formData.sector,
       stage: formData.stage,
       metrics: {
-        financial: formData.financialMetrics || {},
-        industry: formData.industryMetrics || {},
-        custom: formData.customMetrics || [],
+        financial: {
+          revenue: formData.revenue || 0,
+          margins: formData.margins || 0,
+          growthRate: formData.growthRate || 0
+        },
+        market: {
+          size: formData.marketSize || 0,
+          share: formData.marketShare || 0
+        },
+        team: {
+          size: formData.teamSize || 0,
+          experience: formData.teamExperience || 0
+        }
       },
       calculations: {
-        methodologies: {
-          dcf: valuation.details.methods.dcf.value,
-          comparables: valuation.details.methods.comparables.value,
-          riskAdjusted: valuation.details.methods.riskAdjusted.value,
-        },
+        methodologies: valuation.methodology,
         weightedAverage: valuation.valuation,
+        confidenceScore: valuation.confidenceScore,
         adjustments: {
           marketSentiment: valuation.methodology.marketSentimentAdjustment,
         },
       },
+      insights: valuation.aiInsights,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning();
 
+    // Return the response
     res.json({
       id: record.id,
       valuation,
+      message: 'Valuation calculated successfully'
     });
+
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Valuation API error:', error);
+
+    // Handle specific error cases
+    if (error.message.includes('rate limit')) {
+      return res.status(429).json({ message: error.message });
+    }
+
+    if (error.message.includes('validation')) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    res.status(500).json({ 
+      message: 'An error occurred while calculating valuation',
+      error: error.message
+    });
   }
 });
 

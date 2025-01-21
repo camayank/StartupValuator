@@ -1,33 +1,75 @@
 import type { ValuationFormData } from "./validations";
 
 export interface ValuationResponse {
-  valuation: number;
-  multiplier: number;
-  details: {
-    baseValuation: number;
-    adjustments: Record<string, number>;
+  id: number;
+  valuation: {
+    valuation: number;
+    multiplier: number;
+    methodology: {
+      dcfWeight: number;
+      comparablesWeight: number;
+      riskAdjustedWeight: number;
+      aiAdjustedWeight: number;
+      marketSentimentAdjustment: number;
+    };
+    confidenceScore: number;
+    details: {
+      baseValuation: number;
+      methods: {
+        dcf: { value: number; stages: any[] };
+        comparables: { value: number; multiples: any };
+        riskAdjusted: { value: number; factors: Record<string, number> };
+        aiAdjusted: { value: number; factors: Record<string, number> };
+      };
+      scenarios: {
+        worst: { value: number; probability: number };
+        base: { value: number; probability: number };
+        best: { value: number; probability: number };
+        expectedValue: number;
+      };
+      sensitivityAnalysis: any;
+      industryMetrics: any;
+    };
+    assumptions: any;
+    marketAnalysis: {
+      sentiment: any;
+      trends: any;
+      growthPotential: any;
+    };
+    aiInsights: {
+      industryTrends: string[];
+      riskFactors: string[];
+      growthOpportunities: string[];
+      recommendations: string[];
+    };
   };
-  riskAssessment?: any;
-  potentialPrediction?: any;
-  ecosystemNetwork?: any;
+  message: string;
 }
 
 // Validate numeric values
 const validateNumericData = (data: ValuationFormData): string[] => {
   const errors: string[] = [];
 
-  if (data.revenue === undefined || isNaN(Number(data.revenue))) {
-    errors.push("Revenue is required and must be a valid number");
+  if (!data.businessName?.trim()) {
+    errors.push("Business name is required");
   }
-  if (data.growthRate === undefined || isNaN(Number(data.growthRate))) {
-    errors.push("Growth rate is required and must be a valid number");
+
+  if (data.revenue !== undefined && (isNaN(Number(data.revenue)) || Number(data.revenue) < 0)) {
+    errors.push("Revenue must be a valid non-negative number");
   }
-  if (data.margins === undefined || isNaN(Number(data.margins))) {
-    errors.push("Margins are required and must be a valid number");
+
+  if (data.growthRate !== undefined && (isNaN(Number(data.growthRate)) || Number(data.growthRate) < -100)) {
+    errors.push("Growth rate must be a valid number greater than -100%");
   }
+
+  if (data.margins !== undefined && (isNaN(Number(data.margins)) || Number(data.margins) < -100)) {
+    errors.push("Margins must be a valid number greater than -100%");
+  }
+
   if (!data.sector) {
     errors.push("Sector is required");
   }
+
   if (!data.stage) {
     errors.push("Business stage is required");
   }
@@ -42,8 +84,8 @@ const sanitizeNumericData = (data: ValuationFormData): ValuationFormData => {
     revenue: data.revenue !== undefined ? Number(data.revenue) : 0,
     growthRate: data.growthRate !== undefined ? Number(data.growthRate) : 0,
     margins: data.margins !== undefined ? Number(data.margins) : 0,
-    valuation: data.valuation !== undefined ? Number(data.valuation) : 0,
-    multiplier: data.multiplier !== undefined ? Number(data.multiplier) : 0,
+    teamSize: data.teamSize !== undefined ? Number(data.teamSize) : 0,
+    teamExperience: data.teamExperience !== undefined ? Number(data.teamExperience) : 0,
   };
 };
 
@@ -58,7 +100,9 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
     // Ensure all numeric fields are properly formatted
     const sanitizedData = sanitizeNumericData(data);
 
-    const response = await fetch("/api/valuation", {
+    console.log('Sending valuation request for:', sanitizedData.businessName);
+
+    const response = await fetch("/api/valuations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,7 +117,8 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
       }
 
       if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again in a few moments.");
+        const errorData = await response.json();
+        throw new Error(`Rate limit exceeded. Please try again in ${errorData.retryAfter} seconds.`);
       }
 
       const errorText = await response.text();
@@ -81,90 +126,48 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
     }
 
     const result = await response.json();
+    console.log('Valuation calculation completed successfully');
 
-    // Ensure all numeric fields are valid numbers
-    return {
-      valuation: Number(result.valuation) || 0,
-      multiplier: Number(result.multiplier) || 0,
-      details: {
-        baseValuation: Number(result.details.baseValuation) || 0,
-        adjustments: Object.fromEntries(
-          Object.entries(result.details.adjustments || {}).map(([key, value]) => [
-            key,
-            Number(value) || 0,
-          ])
-        ),
-      },
-      riskAssessment: result.riskAssessment,
-      potentialPrediction: result.potentialPrediction,
-      ecosystemNetwork: result.ecosystemNetwork,
-    };
+    return result;
   } catch (error: any) {
     console.error('Valuation calculation error:', error);
     throw new Error(error.message || 'Failed to calculate valuation');
   }
 }
 
-export async function generateReport(data: ValuationFormData): Promise<Blob> {
+export async function generateReport(valuationId: number): Promise<Blob> {
   try {
-    // Validate the input data
-    const validationErrors = validateNumericData(data);
-    if (validationErrors.length > 0) {
-      throw new Error(`Cannot generate report: ${validationErrors.join(", ")}`);
-    }
+    console.log('Generating report for valuation:', valuationId);
 
-    const sanitizedData = sanitizeNumericData(data);
-
-    const MAX_RETRIES = 3;
-    let attempt = 0;
-
-    while (attempt < MAX_RETRIES) {
-      try {
-        const response = await fetch("/api/report", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(sanitizedData),
-        });
-
-        if (response.status === 429) {
-          // Rate limit hit - wait longer before retry
-          const retryAfter = parseInt(response.headers.get("Retry-After") || "5", 10);
-          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-          attempt++;
-          continue;
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error ${response.status}: ${errorText}`);
-        }
-
-        const blob = await response.blob();
-        if (blob.size === 0) {
-          throw new Error("Generated report is empty");
-        }
-
-        // Validate the blob content type
-        if (!blob.type.includes('pdf') && !blob.type.includes('json') && !blob.type.includes('xlsx')) {
-          throw new Error("Invalid report format received");
-        }
-
-        return blob;
-      } catch (error: any) {
-        console.error('Report generation error:', error);
-
-        if (attempt === MAX_RETRIES - 1) {
-          throw new Error(`Failed to generate report: ${error.message}`);
-        }
-        // Wait before retrying, with exponential backoff
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-        attempt++;
+    const response = await fetch(`/api/valuations/${valuationId}/report`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       }
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        const errorData = await response.json();
+        throw new Error(`Rate limit exceeded. Please try again in ${errorData.retryAfter} seconds.`);
+      }
+
+      const errorText = await response.text();
+      throw new Error(`Error ${response.status}: ${errorText}`);
     }
 
-    throw new Error("Maximum retry attempts reached");
+    const blob = await response.blob();
+    if (blob.size === 0) {
+      throw new Error("Generated report is empty");
+    }
+
+    // Validate the blob content type
+    if (!blob.type.includes('pdf') && !blob.type.includes('json') && !blob.type.includes('xlsx')) {
+      throw new Error("Invalid report format received");
+    }
+
+    console.log('Report generated successfully');
+    return blob;
   } catch (error: any) {
     console.error('Report generation error:', error);
     throw new Error(error.message || 'Failed to generate report');
