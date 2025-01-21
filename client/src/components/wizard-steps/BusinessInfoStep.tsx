@@ -59,6 +59,8 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       competitiveDifferentiation: data.competitiveDifferentiation || "medium",
       regulatoryCompliance: data.regulatoryCompliance || "notRequired",
       scalability: data.scalability || "moderate",
+      valuationPurpose: data.valuationPurpose || "",
+      region: data.region || "",
       revenue: data.revenue || 0,
       currency: data.currency || "USD",
       growthRate: data.growthRate || 0,
@@ -66,7 +68,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     },
   });
 
-  const validateRequiredFields = (values: ValuationFormData) => {
+  const validateRequiredFields = (values: ValuationFormData): { isValid: boolean; missingFields: string[] } => {
     const requiredFields = [
       { field: 'businessName', label: 'Business Name' },
       { field: 'sector', label: 'Business Sector' },
@@ -74,7 +76,9 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       { field: 'stage', label: 'Business Stage' },
       { field: 'intellectualProperty', label: 'IP Protection Status' },
       { field: 'competitiveDifferentiation', label: 'Competitive Differentiation' },
-      { field: 'scalability', label: 'Business Scalability' }
+      { field: 'scalability', label: 'Business Scalability' },
+      { field: 'valuationPurpose', label: 'Purpose of Valuation' },
+      { field: 'region', label: 'Primary Region' }
     ];
 
     const missingFields = requiredFields.filter(({ field }) => {
@@ -82,17 +86,20 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
       return !value || (typeof value === 'string' && !value.trim());
     });
 
-    return missingFields;
+    return {
+      isValid: missingFields.length === 0,
+      missingFields: missingFields.map(f => f.label)
+    };
   };
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      const missingFields = validateRequiredFields(values);
+      const validation = validateRequiredFields(values);
 
-      if (missingFields.length > 0) {
+      if (!validation.isValid) {
         toast({
           title: "Required Fields Missing",
-          description: `Please fill in the following fields: ${missingFields.map(f => f.label).join(", ")}`,
+          description: `Please fill in the following fields: ${validation.missingFields.join(", ")}`,
           variant: "destructive",
         });
         return;
