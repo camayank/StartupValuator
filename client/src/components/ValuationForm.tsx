@@ -24,116 +24,226 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
-import { Info, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { Info, FileText, CheckCircle2, AlertCircle, HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
-import { sectors, industries } from "@/lib/validations";
+import { sectors, industries, revenueModels, geographicMarkets, productStages } from "@/lib/validations";
 
-// Form sections configuration
+// Enhanced form sections configuration based on user requirements
 const formSections = [
   {
+    id: "businessInfo",
     title: "Business Information",
-    subtitle: "Enter your business details to begin the valuation process",
+    subtitle: "Tell us about your business fundamentals",
+    description: "Basic information about your company and its operations",
     fields: [
       { 
         name: "businessName", 
         label: "Business Name", 
         type: "text", 
         required: true,
-        description: "e.g., TechStart Solutions",
-        placeholder: "e.g., TechStart Solutions"
+        description: "Your company's legal or registered business name",
+        placeholder: "e.g., TechStart Solutions Inc."
       },
       { 
         name: "sector", 
         label: "Business Sector", 
         type: "dropdown", 
         required: true,
-        description: "Primary sector of operation"
+        description: "Primary sector your business operates in",
+        help: "Choose the sector that best represents your core business activities"
       },
       { 
         name: "industry", 
         label: "Industry", 
         type: "dropdown", 
         required: true,
-        description: "Specific industry within the sector"
+        description: "Specific industry within the sector",
+        help: "Select the specific industry that matches your business model"
+      },
+      {
+        name: "businessModel",
+        label: "Business Model",
+        type: "dropdown",
+        required: true,
+        description: "How your business generates revenue",
+        help: "Common examples: SaaS, E-commerce, Marketplace, etc."
       }
     ]
   },
   {
+    id: "marketData",
     title: "Market Information",
+    subtitle: "Define your market opportunity and position",
+    description: "Details about your target market and competitive landscape",
     fields: [
       { 
-        name: "geographicMarkets", 
-        label: "Geographic Markets", 
-        type: "dropdown", 
+        name: "totalAddressableMarket", 
+        label: "Total Addressable Market (TAM)", 
+        type: "number", 
         required: true,
-        description: "Main geographic areas of operation"
+        description: "Total market size in USD",
+        help: "The total market demand for your product/service category"
       },
       { 
-        name: "revenueModel", 
-        label: "Revenue Model", 
-        type: "dropdown", 
+        name: "serviceableMarket", 
+        label: "Serviceable Addressable Market (SAM)", 
+        type: "number", 
         required: true,
-        description: "Primary revenue generation model"
+        description: "Portion of TAM you can realistically serve",
+        help: "The segment of TAM that your business can actually reach"
       },
+      { 
+        name: "targetMarket", 
+        label: "Serviceable Obtainable Market (SOM)", 
+        type: "number", 
+        required: true,
+        description: "Market share you can capture",
+        help: "Realistic portion of SAM you can capture in 3-5 years"
+      },
+      { 
+        name: "marketGrowthRate", 
+        label: "Market Growth Rate (%)", 
+        type: "number", 
+        required: true,
+        description: "Annual market growth percentage",
+        help: "Expected year-over-year growth rate of your target market"
+      }
+    ]
+  },
+  {
+    id: "financialData",
+    title: "Financial Metrics",
+    subtitle: "Key financial indicators and metrics",
+    description: "Current financial performance and metrics",
+    fields: [
+      { 
+        name: "monthlyRevenue", 
+        label: "Monthly Revenue", 
+        type: "number", 
+        required: true,
+        description: "Current monthly revenue in USD",
+        help: "Average monthly revenue from the last 3 months"
+      },
+      { 
+        name: "customerAcquisitionCost", 
+        label: "Customer Acquisition Cost (CAC)", 
+        type: "number", 
+        required: true,
+        description: "Cost to acquire one customer",
+        help: "Total sales & marketing costs divided by new customers"
+      },
+      { 
+        name: "customerLifetimeValue", 
+        label: "Customer Lifetime Value (LTV)", 
+        type: "number", 
+        required: true,
+        description: "Average revenue per customer",
+        help: "Expected total revenue from a typical customer"
+      },
+      { 
+        name: "burnRate", 
+        label: "Monthly Burn Rate", 
+        type: "number", 
+        required: true,
+        description: "Monthly cash burn rate",
+        help: "Average monthly expenses excluding one-time costs"
+      }
+    ]
+  },
+  {
+    id: "productDetails",
+    title: "Product Information",
+    subtitle: "Details about your product/service offering",
+    description: "Technical and operational aspects of your product",
+    fields: [
       { 
         name: "productStage", 
         label: "Product Stage", 
         type: "dropdown", 
         required: true,
-        description: "Current development stage"
+        description: "Current development stage of your product",
+        options: Object.entries(productStages)
+      },
+      { 
+        name: "technologyStack", 
+        label: "Technology Stack", 
+        type: "multiselect", 
+        required: true,
+        description: "Key technologies used in your product",
+        help: "Select all major technologies/frameworks used"
+      },
+      { 
+        name: "intellectualProperty", 
+        label: "Intellectual Property", 
+        type: "dropdown", 
+        required: false,
+        description: "Status of IP protection",
+        help: "Patents, trademarks, or other IP protections"
       }
     ]
   },
   {
-    title: "Team and Operations",
+    id: "risksOpportunities",
+    title: "Risks & Opportunities",
+    subtitle: "Evaluate potential risks and growth opportunities",
+    description: "Assessment of business risks and growth potential",
     fields: [
       { 
-        name: "numberOfEmployees", 
-        label: "Number of Employees", 
-        type: "number", 
+        name: "keyRisks", 
+        label: "Key Business Risks", 
+        type: "multiselect", 
         required: true,
-        description: "Total full-time employees"
+        description: "Major risks facing the business",
+        help: "Select all significant risks to your business"
       },
       { 
-        name: "teamExperience", 
-        label: "Team Experience (years)", 
-        type: "number", 
+        name: "mitigationStrategies", 
+        label: "Risk Mitigation Strategies", 
+        type: "textarea", 
         required: true,
-        description: "Average years of relevant experience"
+        description: "Strategies to address key risks",
+        help: "Describe how you plan to address each major risk"
+      },
+      { 
+        name: "growthOpportunities", 
+        label: "Growth Opportunities", 
+        type: "multiselect", 
+        required: true,
+        description: "Potential areas for growth",
+        help: "Select key areas where you see growth potential"
       }
     ]
   },
   {
-    title: "Additional Information",
+    id: "valuationInputs",
+    title: "Valuation Parameters",
+    subtitle: "Additional inputs for valuation calculation",
+    description: "Factors affecting the final valuation",
     fields: [
       { 
-        name: "businessScalability", 
-        label: "Business Scalability", 
-        type: "dropdown", 
-        required: false,
-        description: "Potential for growth and expansion"
-      },
-      { 
-        name: "currentCustomerBase", 
-        label: "Current Customer Base", 
+        name: "targetValuation", 
+        label: "Target Valuation", 
         type: "number", 
         required: false,
-        description: "Number of active customers"
+        description: "Expected valuation range",
+        help: "Your estimated company valuation (if any)"
       },
       { 
-        name: "regulatoryCompliance", 
-        label: "Regulatory Compliance", 
-        type: "dropdown", 
-        required: false,
-        description: "Status of regulatory requirements"
+        name: "fundingRequired", 
+        label: "Funding Required", 
+        type: "number", 
+        required: true,
+        description: "Amount of funding needed",
+        help: "How much funding are you looking to raise?"
       },
       { 
-        name: "ipProtectionStatus", 
-        label: "IP Protection Status", 
-        type: "dropdown", 
-        required: false,
-        description: "Intellectual property protection level"
+        name: "useOfFunds", 
+        label: "Use of Funds", 
+        type: "multiselect", 
+        required: true,
+        description: "Planned use of raised funds",
+        help: "Select how you plan to use the funding"
       }
     ]
   }
@@ -155,12 +265,11 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       businessName: "",
       sector: "",
       industry: "",
-      numberOfEmployees: 0,
-      teamExperience: 0,
-      currentCustomerBase: 0,
-      businessScalability: "moderate",
+      revenueModel: "subscription",
+      geographicMarkets: [],
+      productStage: "concept",
+      intellectualProperty: "none",
       regulatoryCompliance: "notRequired",
-      ipProtectionStatus: "none"
     }
   });
 
@@ -174,19 +283,24 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }
   }, [form]);
 
-  // Auto-save form data
+  // Enhanced auto-save with status indicator
   useEffect(() => {
     const subscription = form.watch((value) => {
       const timeoutId = setTimeout(() => {
         localStorage.setItem('valuationFormData', JSON.stringify(value));
+        toast({
+          title: "Progress Saved",
+          description: "Your changes have been automatically saved",
+          duration: 2000,
+        });
       }, AUTOSAVE_DELAY);
 
       return () => clearTimeout(timeoutId);
     });
     return () => subscription.unsubscribe();
-  }, [form.watch]);
+  }, [form.watch, toast]);
 
-  // Check step completion
+  // Enhanced step completion check
   useEffect(() => {
     const currentFields = formSections[currentStep - 1].fields;
     const formValues = form.getValues();
@@ -224,57 +338,42 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       localStorage.removeItem('valuationFormData'); // Clear saved data
       toast({
         title: "Success",
-        description: "Valuation has been calculated.",
+        description: "Your valuation report has been generated successfully.",
       });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to calculate valuation",
+        description: error instanceof Error ? error.message : "Failed to generate valuation report",
         variant: "destructive",
       });
     },
   });
 
-  // Get available industries based on selected sector
-  const getAvailableIndustries = () => {
-    if (!selectedSector) return [];
-    const sectorData = sectors[selectedSector as keyof typeof sectors];
-    return sectorData ? Object.entries(sectorData.subsectors) : [];
-  };
-
   return (
     <div className="max-w-[800px] mx-auto p-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold mb-1">Business Profile</h1>
-          <p className="text-sm text-muted-foreground">Company information and market position</p>
+          <h1 className="text-2xl font-bold mb-1">Startup Valuation Assessment</h1>
+          <p className="text-sm text-muted-foreground">Complete all sections for a comprehensive valuation report</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-2">
-          <FileText className="h-4 w-4" />
-          Preview
-        </Button>
       </div>
 
-      <div className="flex items-center gap-4 mb-8">
-        <div className="flex-1 bg-secondary h-2 rounded-full">
-          <motion.div 
-            className="h-full bg-primary rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
+      {/* Enhanced progress indicator */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Progress</span>
+          <span className="text-sm text-muted-foreground">{progress}% Complete</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Step {currentStep} of {totalSteps}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {progress}% Complete
-          </span>
-          {stepsCompleted[currentStep] && (
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          )}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 bg-secondary h-2 rounded-full">
+            <motion.div 
+              className="h-full bg-primary rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
         </div>
       </div>
 
@@ -292,10 +391,11 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                     transition={{ duration: 0.2 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-lg font-medium">{formSections[currentStep -1].title}</h2>
-                    {formSections[currentStep -1].subtitle && (
-                      <p className="text-sm text-muted-foreground">{formSections[currentStep -1].subtitle}</p>
-                    )}
+                    <div className="space-y-2">
+                      <h2 className="text-lg font-medium">{formSections[currentStep - 1].title}</h2>
+                      <p className="text-sm text-muted-foreground">{formSections[currentStep - 1].subtitle}</p>
+                      <p className="text-sm text-muted-foreground">{formSections[currentStep - 1].description}</p>
+                    </div>
 
                     <div className="grid gap-6">
                       {formSections[currentStep - 1].fields.map((field) => (
@@ -310,20 +410,28 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                   {field.label}
                                   {field.required && <span className="text-red-500 ml-1">*</span>}
                                 </FormLabel>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="text-sm">{field.description}</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <div className="space-y-2">
+                                        <p className="font-medium">{field.description}</p>
+                                        {field.help && (
+                                          <p className="text-sm text-muted-foreground">{field.help}</p>
+                                        )}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               </div>
+
                               <FormControl>
                                 {field.type === "text" && (
                                   <Input 
                                     {...formField} 
-                                    placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                                    placeholder={field.placeholder} 
                                     className="w-full"
                                   />
                                 )}
@@ -336,13 +444,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                     onChange={(e) => {
                                       const value = e.target.value ? Number(e.target.value) : 0;
                                       formField.onChange(value);
-                                      if (field.name === 'numberOfEmployees' && value > 1000) {
-                                        toast({
-                                          title: "Large Team",
-                                          description: "Consider providing more details about team structure",
-                                          variant: "default"
-                                        });
-                                      }
                                     }}
                                   />
                                 )}
@@ -352,7 +453,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                       formField.onChange(value);
                                       if (field.name === 'sector') {
                                         setSelectedSector(value);
-                                        // Reset industry when sector changes
                                         form.setValue('industry', '');
                                       }
                                     }}
@@ -364,49 +464,26 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {field.name === "sector" && 
-                                        Object.entries(sectors).map(([key, value]) => (
-                                          <SelectItem key={key} value={key}>
-                                            {value.name}
-                                          </SelectItem>
-                                        ))
-                                      }
-                                      {field.name === "industry" && 
-                                        getAvailableIndustries().map(([key, value]) => (
-                                          <SelectItem key={key} value={key}>
-                                            {value}
-                                          </SelectItem>
-                                        ))
-                                      }
-                                      {field.name === "businessScalability" && (
-                                        <>
-                                          <SelectItem value="low">Low</SelectItem>
-                                          <SelectItem value="moderate">Moderate</SelectItem>
-                                          <SelectItem value="high">High</SelectItem>
-                                        </>
-                                      )}
-                                      {field.name === "regulatoryCompliance" && (
-                                        <>
-                                          <SelectItem value="notRequired">Not Required</SelectItem>
-                                          <SelectItem value="inProgress">In Progress</SelectItem>
-                                          <SelectItem value="compliant">Compliant</SelectItem>
-                                        </>
-                                      )}
-                                      {field.name === "ipProtectionStatus" && (
-                                        <>
-                                          <SelectItem value="none">None</SelectItem>
-                                          <SelectItem value="pending">Pending</SelectItem>
-                                          <SelectItem value="registered">Registered</SelectItem>
-                                        </>
-                                      )}
+                                      {field.options?.map(([key, value]) => (
+                                        <SelectItem key={key} value={key}>
+                                          {value}
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 )}
+                                {field.type === "textarea" && (
+                                  <textarea
+                                    {...formField}
+                                    className="w-full min-h-[100px] p-2 rounded-md border border-input"
+                                    placeholder={field.placeholder}
+                                  />
+                                )}
                               </FormControl>
                               <FormMessage />
-                              {field.description && (
-                                <FormDescription className="text-xs text-muted-foreground">
-                                  {field.description}
+                              {field.help && (
+                                <FormDescription className="text-xs">
+                                  {field.help}
                                 </FormDescription>
                               )}
                             </FormItem>
@@ -459,10 +536,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         >
                           <AlertCircle className="h-4 w-4" />
                         </motion.div>
-                        Calculating...
+                        Generating Report...
                       </>
                     ) : (
-                      'Calculate Valuation'
+                      'Generate Valuation Report'
                     )}
                   </Button>
                 )}
