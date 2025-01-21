@@ -63,28 +63,23 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
 
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Only check the core required fields
-      const coreRequiredFields = [
-        'businessName',
-        'sector',
-        'industry',
-        'stage'
-      ];
+      // Check only core required fields
+      const hasBusinessName = values.businessName?.trim();
+      const hasSector = values.sector?.trim();
+      const hasIndustry = values.industry?.trim();
+      const hasStage = values.stage?.trim();
 
-      const missingFields = coreRequiredFields.filter(field => {
-        const value = values[field as keyof ValuationFormData];
-        return !value || (typeof value === 'string' && value.trim() === '');
-      });
-
-      if (missingFields.length > 0) {
+      // Simplified validation check
+      if (!hasBusinessName || !hasSector || !hasIndustry || !hasStage) {
         toast({
-          title: "Required Fields Missing",
-          description: "Please fill in the core business information fields marked with *",
+          title: "Missing Core Information",
+          description: "Please fill in the business name, sector, industry, and stage.",
           variant: "destructive",
         });
         return;
       }
 
+      // If validation passes, proceed with update
       await onUpdate(values);
       onNext();
     } catch (error) {
