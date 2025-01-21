@@ -47,6 +47,7 @@ import { TourGuide } from "@/components/TourGuide";
 import { LandingPage } from "./pages/LandingPage";
 import { IntegratedWorkflowController } from "@/components/IntegratedWorkflowController";
 import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
+import { ValuationWorkflowController } from "@/components/wizard-steps/ValuationWorkflowController";
 
 
 // Update navigation configuration
@@ -358,11 +359,7 @@ function App() {
                 <ValuationCalculatorPage />
               </Route>
               <Route path="/valuation">
-                <ValuationWizard
-                  onSubmit={(data) => {
-                    console.log('Valuation data submitted:', data);
-                  }}
-                />
+                <ValuationWorkflowController />
               </Route>
               <Route path="/projections">
                 <ProjectionsWizard />
@@ -392,11 +389,7 @@ function App() {
                 <BusinessPlanWizard />
               </Route>
               <Route path="/">
-                <ValuationWizard
-                  onSubmit={(data) => {
-                    console.log('Valuation data submitted:', data);
-                  }}
-                />
+                <ValuationWorkflowController />
               </Route>
               <Route>
                 <NotFound />
