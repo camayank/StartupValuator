@@ -1,0 +1,204 @@
+### Step-by-Step Prompts for Error Handling and Validation Implementation:
+
+---
+
+#### **1. Set Up Central Error Handling**
+Prompt:
+```javascript
+// Create a centralized error handling system
+const ErrorHandler = {
+  logError: async (error, context) => {
+    // Log error to console
+    console.error({
+      timestamp: new Date(),
+      error: error.message,
+      stack: error.stack,
+      context: context
+    });
+
+    // Extend: Add integration with tools like Sentry or Bugsnag
+  },
+
+  handleValidationError: (error) => ({
+    type: 'ValidationError',
+    message: error.message,
+    suggestions: error.suggestions || []
+  }),
+
+  handleAPIError: (error) => ({
+    type: 'APIError',
+    message: 'Service temporarily unavailable',
+    retry: error.canRetry || false
+  }),
+
+  handleCalculationError: (error) => ({
+    type: 'CalculationError',
+    message: 'Error in valuation calculations',
+    details: error.details || {}
+  })
+};
+
+export default ErrorHandler;
+```
+
+---
+
+#### **2. Create Validation Engine**
+Prompt:
+```javascript
+// Input validation rules and dependencies
+const ValidationEngine = {
+  validateNumber: (value, rules) => {
+    if (typeof value !== 'number') return false;
+    return value >= rules.min && value <= rules.max;
+  },
+
+  validateString: (value, rules) => {
+    if (typeof value !== 'string') return false;
+    return value.length >= rules.minLength && value.length <= rules.maxLength;
+  },
+
+  validateDependencies: (fields, dependencies) => {
+    return Object.entries(dependencies).every(([field, deps]) => {
+      if (fields[field]) {
+        return deps.every(dep => fields[dep] && fields[dep].isValid);
+      }
+      return true;
+    });
+  }
+};
+
+export default ValidationEngine;
+```
+
+---
+
+#### **3. Debugging Utilities**
+Prompt:
+```javascript
+// Utilities for tracking state, API, and calculations
+const DebugHelper = {
+  trackStateChange: (prevState, newState) => {
+    const changes = {};
+    Object.keys(newState).forEach(key => {
+      if (prevState[key] !== newState[key]) {
+        changes[key] = { from: prevState[key], to: newState[key] };
+      }
+    });
+    console.log('State Changes:', changes);
+  },
+
+  trackAPICall: async (apiFunction, label) => {
+    const startTime = Date.now();
+    try {
+      const result = await apiFunction();
+      console.log(`${label} completed in ${Date.now() - startTime}ms`);
+      return result;
+    } catch (error) {
+      console.error(`${label} failed in ${Date.now() - startTime}ms`, error);
+      throw error;
+    }
+  },
+
+  trackCalculation: (calculation, inputs) => {
+    console.log('Calculation Inputs:', inputs);
+    const result = calculation(inputs);
+    console.log('Calculation Result:', result);
+    return result;
+  }
+};
+
+export default DebugHelper;
+```
+
+---
+
+#### **4. Build Comprehensive Error Monitoring**
+Prompt:
+```javascript
+// Monitor global and API-level errors
+const setupErrorMonitoring = () => {
+  window.onerror = (message, source, lineno, colno, error) => {
+    ErrorHandler.logError(error, { message, source, lineno, colno });
+  };
+
+  window.onunhandledrejection = (event) => {
+    ErrorHandler.logError(event.reason, 'Unhandled Promise Rejection');
+  };
+
+  axios.interceptors.response.use(
+    response => response,
+    error => {
+      ErrorHandler.logError(error, 'API Error');
+      return Promise.reject(error);
+    }
+  );
+};
+
+export default setupErrorMonitoring;
+```
+
+---
+
+#### **5. Implement in Main Application**
+Prompt:
+```javascript
+// Integrate error handling and validation into valuation workflow
+const handleValuation = async (data) => {
+  try {
+    // Validate inputs
+    Object.entries(data).forEach(([field, value]) => {
+      const rules = getValidationRules(field); // Fetch rules dynamically
+      if (typeof value === 'number') {
+        if (!ValidationEngine.validateNumber(value, rules)) {
+          throw new Error(`Validation failed for ${field}`);
+        }
+      } else if (typeof value === 'string') {
+        if (!ValidationEngine.validateString(value, rules)) {
+          throw new Error(`Validation failed for ${field}`);
+        }
+      }
+    });
+
+    // Fetch benchmarks using DebugHelper
+    const marketData = await DebugHelper.trackAPICall(fetchMarketData, 'Market Data Fetch');
+
+    // Perform valuation calculation
+    const valuationResult = DebugHelper.trackCalculation(calculateValuation, { ...data, marketData });
+
+    return valuationResult;
+  } catch (error) {
+    ErrorHandler.logError(error, 'Valuation Workflow');
+    throw error;
+  }
+};
+```
+
+---
+
+#### **6. Add Test Cases**
+Prompt:
+```javascript
+// Test validation logic
+describe('ValidationEngine', () => {
+  test('validates numbers correctly', () => {
+    expect(ValidationEngine.validateNumber(500, { min: 0, max: 1000 })).toBe(true);
+    expect(ValidationEngine.validateNumber(1500, { min: 0, max: 1000 })).toBe(false);
+  });
+
+  test('validates strings correctly', () => {
+    expect(ValidationEngine.validateString('test', { minLength: 2, maxLength: 10 })).toBe(true);
+    expect(ValidationEngine.validateString('t', { minLength: 2, maxLength: 10 })).toBe(false);
+  });
+});
+```
+
+---
+
+#### **Next Steps**
+1. **Integrate Error Handling**: Add to your main modules.
+2. **Test Each Component**: Use the provided test cases.
+3. **Monitor in Production**: Connect to monitoring tools like Sentry.
+4. **Iterate**: Improve based on logs and user feedback.
+
+Let me know if you need more refinements or additional layers!
