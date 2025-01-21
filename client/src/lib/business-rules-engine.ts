@@ -1,14 +1,13 @@
-import type { ValidationResult, BusinessRule } from "./types/shared";
+import type { ValidationResult } from "./types";
 import type { ValuationFormData } from "./validations";
-import { sectors } from "./validations";
-import IndustryValidationEngine from "./industry-validation";
+import { sectors, businessStages } from "./validations";
 
 class BusinessRulesEngine {
-  private static rules: Record<string, BusinessRule> = {
+  private static readonly rules = {
     employeeCount: {
       id: 'employee_validation',
-      condition: (data: ValuationFormData) => {
-        if (data.stage === 'revenue_growing' && data.employeeCount < 3) {
+      condition: (data: ValuationFormData): boolean => {
+        if (data.stage === 'revenue_growing' && (data.employeeCount ?? 0) < 3) {
           return false;
         }
         return true;
@@ -17,27 +16,27 @@ class BusinessRulesEngine {
     },
     customerBase: {
       id: 'customerBase_validation',
-      condition: (data: ValuationFormData) => {
-        if (data.stage === 'revenue_growing' && data.customerBase < 100) return false;
-        if (data.employeeCount > 10 && data.customerBase < 50) return false;
+      condition: (data: ValuationFormData): boolean => {
+        if (data.stage === 'revenue_growing' && (data.customerBase ?? 0) < 100) return false;
+        if ((data.employeeCount ?? 0) > 10 && (data.customerBase ?? 0) < 50) return false;
         return true;
       },
       message: 'Customer base seems insufficient for your stage or team size'
     },
     revenue: {
       id: 'revenue_validation',
-      condition: (data: ValuationFormData) => {
+      condition: (data: ValuationFormData): boolean => {
         if (data.stage === 'revenue_growing' && !data.revenue) {
           return false;
         }
-        if (data.customerBase > 1000 && data.revenue < 1000) return false;
+        if ((data.customerBase ?? 0) > 1000 && (data.revenue ?? 0) < 1000) return false;
         return true;
       },
       message: 'Revenue seems low for your stated growth stage or customer base'
     },
     intellectualProperty: {
       id: 'intellectualProperty_validation',
-      condition: (data: ValuationFormData) => {
+      condition: (data: ValuationFormData): boolean => {
         if (data.sector === 'technology' && data.intellectualProperty === 'none' && data.stage !== 'ideation_unvalidated') {
           return false;
         }
@@ -47,16 +46,16 @@ class BusinessRulesEngine {
     },
     regulatoryCompliance: {
       id: 'regulatoryCompliance_validation',
-      condition: (data: ValuationFormData) => {
+      condition: (data: ValuationFormData): boolean => {
         if ((data.sector === 'fintech' || data.sector === 'healthtech') && data.regulatoryCompliance === 'notRequired') return false;
         if (data.stage === 'revenue_growing' && data.regulatoryCompliance !== 'compliant') return false;
         return true;
       },
       message: 'Regulatory compliance is crucial for your sector or growth stage'
     }
-  };
+  } as const;
 
-  static validateField(field: keyof typeof BusinessRulesEngine.rules, value: any, formData: ValuationFormData): ValidationResult {
+  static validateField(field: keyof typeof BusinessRulesEngine.rules, _value: any, formData: ValuationFormData): ValidationResult {
     const rule = this.rules[field];
     if (!rule) {
       return { isValid: true, severity: 'info' };
@@ -74,9 +73,9 @@ class BusinessRulesEngine {
   static validateForm(formData: ValuationFormData): Map<string, ValidationResult> {
     const validations = new Map<string, ValidationResult>();
 
-    Object.keys(this.rules).forEach((field) => {
+    (Object.keys(this.rules) as Array<keyof typeof BusinessRulesEngine.rules>).forEach((field) => {
       const validation = this.validateField(
-        field as keyof typeof BusinessRulesEngine.rules,
+        field,
         formData[field as keyof ValuationFormData],
         formData
       );

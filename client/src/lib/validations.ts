@@ -573,7 +573,23 @@ const getIndustryValidations = (industry: string) => {
   }
 };
 
-// Update existing schema
+// Move scalabilityOptions before its usage
+export const scalabilityOptions = {
+  limited: "Limited Growth Potential",
+  moderate: "Moderate Growth Potential",
+  high: "High Growth Potential"
+} as const;
+
+// Add region and compliance schemas
+export const regionSchema = z.object({
+  region: z.enum(Object.keys(regions) as [keyof typeof regions, ...Array<keyof typeof regions>])
+    .default("global"),
+  complianceStandard: z.string().optional(),
+  valuationPurpose: z.enum(Object.keys(valuationPurposes) as [keyof typeof valuationPurposes, ...Array<keyof typeof valuationPurposes>])
+    .default("fundraising")
+});
+
+// Update valuationFormSchema to include region fields
 export const valuationFormSchema = z.object({
   // Core required fields - these must be filled
   businessName: z.string().min(1, "Business name is required"),
@@ -584,11 +600,12 @@ export const valuationFormSchema = z.object({
     required_error: "Industry is required"
   }),
 
-  // Stage-based validations
+  // Region and compliance
+  ...regionSchema.shape,
+
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>])
     .default("ideation_validated"),
 
-  // New fields with proper types
   employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
   fundingHistory: z.object({
     rounds: z.array(z.string()),
@@ -601,21 +618,18 @@ export const valuationFormSchema = z.object({
   ),
   productStage: z.enum([...Object.keys(productStages)] as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
 
-  // Rest of the fields remain unchanged
   intellectualProperty: z.enum(["none", "pending", "registered"])
     .default("none")
-    .refine((val, ctx) => {
-      if (val === "none" && (ctx as any).parent?.sector === "deeptech") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "IP protection is highly recommended for deep tech startups",
-          path: ["intellectualProperty"]
-        });
+    .refine((val) => {
+      if (val === "none") {
+        return false;
       }
       return true;
+    }, {
+      message: "IP protection is highly recommended for deep tech startups",
+      path: ["intellectualProperty"]
     }),
 
-  // Financial metrics with stage-appropriate validation
   revenue: z.coerce.number().min(0)
     .default(0)
     .refine((val, ctx) => {
@@ -629,13 +643,11 @@ export const valuationFormSchema = z.object({
       path: ["revenue"]
     }),
 
-  // Optional but encouraged fields
   teamExperience: z.coerce.number().min(0).max(20).default(0),
   customerBase: z.coerce.number().min(0).default(0),
   competitiveDifferentiation: z.enum(["low", "medium", "high"])
     .default("medium"),
 
-  // Compliance and regulatory fields
   regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"])
     .default("notRequired")
     .refine((val, ctx) => {
@@ -649,12 +661,10 @@ export const valuationFormSchema = z.object({
       path: ["regulatoryCompliance"]
     }),
 
-  // Growth potential indicators
-  scalability: z.enum(["limited", "moderate", "high"])
+  scalability: z.enum([...Object.keys(scalabilityOptions)] as [keyof typeof scalabilityOptions, ...Array<keyof typeof scalabilityOptions>])
     .default("moderate"),
 
-  // Financial settings
-  currency: z.enum(Object.keys(currencies) as [keyof typeof currencies, ...Array<keyof typeof currencies>])
+  currency: z.enum([...Object.keys(currencies)] as [keyof typeof currencies, ...Array<keyof typeof currencies>])
     .default("USD"),
   growthRate: z.coerce.number().min(-100).max(1000).default(0),
   margins: z.coerce.number().min(-100).max(100).default(0),
