@@ -37,6 +37,8 @@ import { Info, AlertCircle, HelpCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useApiWithRetry } from "@/hooks/use-api-with-retry";
+import ValidationEngine from "@/lib/validation-engine";
+import ErrorHandler from "@/lib/error-handler";
 import type { ValuationFormData } from "@/lib/validations";
 import { sectors, businessStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,7 +66,6 @@ const createFormSchema = (selectedSector: string) => z.object({
     .min(1, "Please select a business stage")
     .refine((val) => Object.keys(businessStages).includes(val), "Invalid business stage selected"),
 
-  // Optional fields with enhanced validation
   intellectualProperty: z.string()
     .optional()
     .refine((val) => !val || ['none', 'pending', 'registered'].includes(val), "Invalid IP status"),
@@ -91,6 +92,13 @@ const createFormSchema = (selectedSector: string) => z.object({
     .optional()
     .refine((val) => !val || ['limited', 'moderate', 'high'].includes(val), "Invalid scalability level"),
 });
+
+// Validation rules for ValidationEngine
+const validationRules = {
+  businessName: { minLength: 1, maxLength: 100 },
+  teamExperience: { min: 0, max: 50 },
+  customerBase: { min: 0, max: 1000000 }
+};
 
 interface BusinessInfoStepProps {
   data: Partial<ValuationFormData>;
@@ -135,11 +143,41 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
     form.setValue("industry", "", { shouldValidate: true });
   };
 
+  const validateField = (name: string, value: any) => {
+    if (name in validationRules) {
+      const rules = validationRules[name as keyof typeof validationRules];
+      if (typeof value === 'number') {
+        return ValidationEngine.validateNumber(value, rules);
+      }
+      if (typeof value === 'string') {
+        return ValidationEngine.validateString(value, rules);
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (values: ValuationFormData) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
+      // Additional validation using ValidationEngine
+      const validationErrors: string[] = [];
+      Object.entries(values).forEach(([field, value]) => {
+        if (!validateField(field, value)) {
+          validationErrors.push(`Invalid value for ${field}`);
+        }
+      });
+
+      if (validationErrors.length > 0) {
+        const error = ErrorHandler.handleValidationError({
+          message: validationErrors.join(', '),
+          suggestions: ['Check the input values', 'Ensure all required fields are filled']
+        });
+        error.toast();
+        return;
+      }
+
       // Attempt to update with retry mechanism
       const result = await callApiWithRetry(
         () => onUpdate(values),
@@ -152,6 +190,18 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
         toast({
           title: "Error",
           description: "Failed to save business information after multiple attempts. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        ErrorHandler.logError(error, {
+          context: 'BusinessInfoStep.handleSubmit',
+          formData: values
+        });
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again later.",
           variant: "destructive",
         });
       }
