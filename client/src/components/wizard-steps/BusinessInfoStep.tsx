@@ -61,25 +61,10 @@ export function BusinessInfoStep({ data, onUpdate, onNext }: BusinessInfoStepPro
     form.setValue("industry", ""); // Reset industry when sector changes
   };
 
+  // Simplified submit handler without redundant validation
   const handleSubmit = async (values: ValuationFormData) => {
     try {
-      // Check only core required fields
-      const hasBusinessName = values.businessName?.trim();
-      const hasSector = values.sector?.trim();
-      const hasIndustry = values.industry?.trim();
-      const hasStage = values.stage?.trim();
-
-      // Simplified validation check
-      if (!hasBusinessName || !hasSector || !hasIndustry || !hasStage) {
-        toast({
-          title: "Missing Core Information",
-          description: "Please fill in the business name, sector, industry, and stage.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // If validation passes, proceed with update
+      // Proceed with the update
       await onUpdate(values);
       onNext();
     } catch (error) {
