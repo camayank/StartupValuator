@@ -4,8 +4,10 @@ import { valuationRecords, type InsertValuationRecord } from '@db/schema';
 import type { ValuationFormData } from '../../client/src/lib/validations';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
+import { ValuationCalculator } from '../services/valuation';
 
 const router = Router();
+const calculator = new ValuationCalculator();
 
 // Request rate limiting
 const requestCounts = new Map<string, { count: number; timestamp: number }>();
@@ -65,6 +67,9 @@ router.post('/api/valuations', async (req, res) => {
 
     console.log('Starting valuation calculation for:', formData.businessInfo.name);
 
+    // Calculate valuation
+    const calculatedValuation = await calculator.calculateValuation(formData);
+
     // Store the valuation record
     const [record] = await db.insert(valuationRecords).values({
       businessInfo: formData.businessInfo,
@@ -73,13 +78,12 @@ router.post('/api/valuations', async (req, res) => {
       productDetails: formData.productDetails,
       risksAndOpportunities: formData.risksAndOpportunities,
       valuationInputs: formData.valuationInputs,
-      // Initial calculated valuation (to be updated by AI service)
       calculatedValuation: {
-        low: 0,
-        high: 0,
-        methodologies: {},
-        confidence: 0,
-        factors: []
+        low: calculatedValuation.range.low,
+        high: calculatedValuation.range.high,
+        methodologies: calculatedValuation.methodologies,
+        confidence: calculatedValuation.confidence,
+        factors: calculatedValuation.factors
       },
       userId: 1, // Using a default user ID since auth is not implemented yet
       createdAt: new Date(),
@@ -89,7 +93,8 @@ router.post('/api/valuations', async (req, res) => {
     // Return the response
     res.json({
       id: record.id,
-      message: 'Valuation data saved successfully',
+      message: 'Valuation calculated successfully',
+      valuation: calculatedValuation,
       record
     });
 
