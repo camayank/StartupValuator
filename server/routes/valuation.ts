@@ -5,9 +5,11 @@ import type { ValuationFormData } from '../../client/src/lib/validations';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { ValuationCalculator } from '../services/valuation';
+import { AIValuationService } from '../services/ai-valuation';
 
 const router = Router();
 const calculator = new ValuationCalculator();
+const aiService = new AIValuationService();
 
 // Request rate limiting
 const requestCounts = new Map<string, { count: number; timestamp: number }>();
@@ -31,7 +33,7 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
-// Create new valuation
+// Create new valuation with AI insights
 router.post('/api/valuations', async (req, res) => {
   try {
     // Check rate limit
@@ -65,18 +67,38 @@ router.post('/api/valuations', async (req, res) => {
       });
     }
 
-    console.log('Starting valuation calculation for:', formData.businessInfo.name);
+    console.log('Starting valuation process for:', formData.businessInfo.name);
+
+    // Auto-complete missing fields if necessary
+    if (Object.values(formData).some(v => !v)) {
+      const completedData = await aiService.autoCompleteMissingFields(formData);
+      formData = { ...formData, ...completedData };
+    }
+
+    // Get AI insights
+    const [marketAnalysis, riskAssessment, growthProjections] = await Promise.all([
+      aiService.analyzeMarket(formData),
+      aiService.assessRisks(formData),
+      aiService.generateGrowthProjections(formData)
+    ]);
 
     // Calculate valuation
     const calculatedValuation = await calculator.calculateValuation(formData);
 
-    // Store the valuation record
+    // Store the valuation record with AI insights
     const [record] = await db.insert(valuationRecords).values({
       businessInfo: formData.businessInfo,
       marketData: formData.marketData,
       financialData: formData.financialData,
       productDetails: formData.productDetails,
-      risksAndOpportunities: formData.risksAndOpportunities,
+      risksAndOpportunities: {
+        ...formData.risksAndOpportunities,
+        aiInsights: {
+          marketAnalysis,
+          riskAssessment,
+          growthProjections
+        }
+      },
       valuationInputs: formData.valuationInputs,
       calculatedValuation: {
         low: calculatedValuation.range.low,
@@ -93,8 +115,13 @@ router.post('/api/valuations', async (req, res) => {
     // Return the response
     res.json({
       id: record.id,
-      message: 'Valuation calculated successfully',
+      message: 'Valuation calculated successfully with AI insights',
       valuation: calculatedValuation,
+      aiInsights: {
+        marketAnalysis,
+        riskAssessment,
+        growthProjections
+      },
       record
     });
 
@@ -117,7 +144,7 @@ router.post('/api/valuations', async (req, res) => {
   }
 });
 
-// Get valuation by ID
+// Get valuation by ID with AI insights
 router.get('/api/valuations/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -131,7 +158,35 @@ router.get('/api/valuations/:id', async (req, res) => {
       return res.status(404).json({ message: 'Valuation record not found' });
     }
 
-    res.json(valuation);
+    // If AI insights are missing, generate them
+    if (!valuation.risksAndOpportunities.aiInsights) {
+      const [marketAnalysis, riskAssessment, growthProjections] = await Promise.all([
+        aiService.analyzeMarket(valuation),
+        aiService.assessRisks(valuation),
+        aiService.generateGrowthProjections(valuation)
+      ]);
+
+      // Update the record with AI insights
+      const [updatedValuation] = await db
+        .update(valuationRecords)
+        .set({
+          risksAndOpportunities: {
+            ...valuation.risksAndOpportunities,
+            aiInsights: {
+              marketAnalysis,
+              riskAssessment,
+              growthProjections
+            }
+          },
+          updatedAt: new Date()
+        })
+        .where(eq(valuationRecords.id, id))
+        .returning();
+
+      res.json(updatedValuation);
+    } else {
+      res.json(valuation);
+    }
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
