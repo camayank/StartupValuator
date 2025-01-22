@@ -1,97 +1,118 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
-import { WorkflowSuggestionEngine } from "./services/workflowSuggestion";
-import { ActivityTracker } from "./services/activityTracker";
-import subscriptionRoutes from "./routes/subscription";
 import valuationRoutes from "./routes/valuation";
 import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
-import { generatePdfReport } from "./lib/report";
-import { calculateValuation } from "./lib/valuation";
 import { setupCache } from "./lib/cache";
 import { z } from "zod";
-import { generatePersonalizedSuggestions, analyzeIndustryFit } from "./services/ai-personalization";
-import { Parser } from "json2csv";
-import * as XLSX from 'xlsx';
-import { setupAuth } from "./auth";
-import {
-  analyzePitchDeck,
-  validateMetrics,
-  assessBusinessModel,
-  generateComplianceReport,
-  generateComplianceChecklist,
-  analyzeMarketSentiment,
-  assessIntellectualProperty,
-  evaluateTeamExpertise,
-  validateRevenueModel,
-  generateValuationReport
-} from "../client/src/lib/services/openai";
-
-
-// Define pitch deck data schema for validation
-const pitchDeckSlideSchema = z.object({
-  slideNumber: z.number(),
-  content: z.string(),
-  type: z.string(),
-});
-
-const pitchDeckAnalysisRequestSchema = z.object({
-  slides: z.array(pitchDeckSlideSchema),
-});
-
-// Define report data schema for validation
-const reportDataSchema = z.object({
-  businessName: z.string().min(1, "Business name is required"),
-  valuationPurpose: z.string(),
-  revenue: z.number().min(0, "Revenue must be non-negative"),
-  currency: z.string(),
-  growthRate: z.number(),
-  margins: z.number(),
-  sector: z.string(),
-  industry: z.string(),
-  stage: z.string(),
-  region: z.string(),
-  valuation: z.number().optional(),
-  multiplier: z.number().optional(),
-  details: z.object({
-    baseValuation: z.number().optional(),
-    adjustments: z.record(z.string(), z.number()).optional()
-  }).optional(),
-  riskAssessment: z.any().optional(),
-  potentialPrediction: z.any().optional(),
-  ecosystemNetwork: z.any().optional()
-});
+import { valuationRecords } from "@db/schema";
 
 export function registerRoutes(app: Express): Server {
-  // Set up authentication first
-  setupAuth(app);
-
   // Set up cache
   const cache = setupCache();
 
   // Register all routes
-  app.use(subscriptionRoutes);
   app.use(valuationRoutes);
 
-  // Activity tracking middleware
-  app.use((req, res, next) => {
-    if (req.isAuthenticated() && req.user) {
-      ActivityTracker.trackActivity(req.user.id, "page_view", req).catch(console.error);
+  // Enhanced valuation route with proper validation
+  app.post("/api/valuation", async (req, res) => {
+    try {
+      // Validate request body against our schema
+      const validatedData = valuationFormSchema.parse(req.body);
+
+      // Create a cache key from the important parameters
+      const cacheKey = `${validatedData.businessInfo.name}-${validatedData.businessInfo.sector}`;
+
+      // Check cache first
+      const cachedResult = cache.get(cacheKey);
+      if (cachedResult) {
+        return res.json(cachedResult);
+      }
+
+      // Store in database
+      const [result] = await db.insert(valuationRecords).values({
+        ...validatedData,
+        userId: 1, // Default user ID for now
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+
+      // Cache the result
+      cache.set(cacheKey, result);
+      res.json(result);
+    } catch (error) {
+      console.error('Valuation processing failed:', error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          message: 'Validation failed',
+          errors: error.errors,
+        });
+      }
+
+      res.status(500).json({
+        message: error instanceof Error ? error.message : 'Failed to process valuation'
+      });
     }
-    next();
   });
+
+  // User profile routes
+  app.get("/api/profile/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const profile = await db.query.userProfiles.findFirst({
+        where: eq(userProfiles.userId, parseInt(userId)),
+      });
+
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  app.post("/api/profile", async (req, res) => {
+    try {
+      const profileData = req.body;
+      const result = await db.insert(userProfiles).values(profileData).returning();
+      res.json(result[0]);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
+  app.patch("/api/profile/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const updateData = req.body;
+
+      const result = await db
+        .update(userProfiles)
+        .set(updateData)
+        .where(eq(userProfiles.userId, parseInt(userId)))
+        .returning();
+
+      if (!result.length) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      res.json(result[0]);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
 
   // Add activity tracking endpoint
   app.post("/api/activities", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
     try {
       await ActivityTracker.trackActivity(
-        req.user!.id,
+        1, // Default user ID for now
         req.body.activityType,
         req,
         req.body.metadata
@@ -282,92 +303,6 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // User profile routes
-  app.get("/api/profile/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const profile = await db.query.userProfiles.findFirst({
-        where: eq(userProfiles.userId, parseInt(userId)),
-      });
-
-      if (!profile) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      res.json(profile);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.post("/api/profile", async (req, res) => {
-    try {
-      const profileData = req.body;
-      const result = await db.insert(userProfiles).values(profileData).returning();
-      res.json(result[0]);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  app.patch("/api/profile/:userId", async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const updateData = req.body;
-
-      const result = await db
-        .update(userProfiles)
-        .set(updateData)
-        .where(eq(userProfiles.userId, parseInt(userId)))
-        .returning();
-
-      if (!result.length) {
-        return res.status(404).json({ message: "Profile not found" });
-      }
-
-      res.json(result[0]);
-    } catch (error) {
-      res.status(500).json({ message: (error as Error).message });
-    }
-  });
-
-  // Enhanced valuation route with proper validation
-  app.post("/api/valuation", async (req, res) => {
-    try {
-      // Validate request body against our schema
-      const validatedData = valuationFormSchema.parse(req.body);
-      const { revenue, growthRate, margins, industry, stage } = validatedData;
-
-      // Create a cache key from the important parameters
-      const cacheKey = `${revenue}-${growthRate}-${margins}-${industry}-${stage}`;
-
-      // Check cache first
-      const cachedResult = cache.get(cacheKey);
-      if (cachedResult) {
-        return res.json(cachedResult);
-      }
-
-      // Calculate valuation if not in cache
-      const result = await calculateValuation(validatedData);
-
-      // Cache the result
-      cache.set(cacheKey, result);
-      res.json(result);
-    } catch (error) {
-      console.error('Valuation calculation failed:', error);
-
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: 'Validation failed',
-          errors: error.errors,
-        });
-      }
-
-      res.status(500).json({
-        message: error instanceof Error ? error.message : 'Failed to calculate valuation'
-      });
-    }
-  });
 
   // Export routes for different formats
   app.post("/api/export/pdf", async (req, res) => {
@@ -429,7 +364,6 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-
 
   const httpServer = createServer(app);
   return httpServer;

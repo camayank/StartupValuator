@@ -26,6 +26,11 @@ export const activityTypes = pgEnum("activity_type", [
 export const valuationStatus = pgEnum("valuation_status", ["draft", "completed", "archived"]);
 export const reportFormat = pgEnum("report_format", ["pdf", "excel", "both"]);
 
+// Add new enums for valuation-specific data
+export const productStageEnum = pgEnum("product_stage", ["concept", "mvp", "beta", "production"]);
+export const businessModelEnum = pgEnum("business_model", ["subscription", "transactional", "marketplace", "advertising"]);
+export const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
+
 // Define market size types enum
 export const marketSizeTypes = pgEnum("market_size_type", ["tam", "sam", "som"]);
 export const productStages = pgEnum("product_stage", ["concept", "mvp", "beta", "production"]);
@@ -117,56 +122,70 @@ export const investmentRequirements = pgTable("investment_requirements", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Extend the existing valuationRecords table
+// Valuation records table
 export const valuationRecords = pgTable("valuation_records", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  businessName: varchar("business_name", { length: 255 }).notNull(),
-  industry: varchar("industry", { length: 100 }).notNull(),
-  stage: varchar("stage", { length: 50 }).notNull(),
-  metrics: jsonb("metrics").$type<{
-    financial: {
-      revenue: number;
-      margins: number;
-      growthRate: number;
-      burnRate: number;
-      runwayMonths: number;
-    };
-    market: {
-      size: number;
-      share: number;
-      growth: number;
-    };
-    team: {
-      size: number;
-      experience: number;
-      keyRoles: string[];
-    };
-    product: {
-      stage: string;
-      features: string[];
-      traction: {
-        users: number;
-        growth: number;
-        engagement: number;
-      };
-    };
-  }>(),
-  calculations: jsonb("calculations").$type<{
-    methodologies: Record<string, number>;
-    weightedAverage: number;
-    confidenceScore: number;
-    adjustments: Record<string, number>;
-  }>(),
-  insights: jsonb("insights").$type<{
-    strengths: string[];
-    weaknesses: string[];
-    opportunities: string[];
-    threats: string[];
-    recommendations: string[];
-  }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+
+  // Business Info
+  businessInfo: jsonb("business_info").$type<{
+    name: string;
+    sector: string;
+    industry: string;
+    location: string;
+    productStage: string;
+    businessModel: string;
+  }>().notNull(),
+
+  // Market Data
+  marketData: jsonb("market_data").$type<{
+    tam: number;
+    sam: number;
+    som: number;
+    growthRate: number;
+    competitors: string[];
+  }>().notNull(),
+
+  // Financial Data
+  financialData: jsonb("financial_data").$type<{
+    revenue: number;
+    cac: number;
+    ltv: number;
+    burnRate: number;
+    runway: number;
+  }>().notNull(),
+
+  // Product Details
+  productDetails: jsonb("product_details").$type<{
+    maturity: string;
+    roadmap: string;
+    technologyStack: string;
+    differentiators: string;
+  }>().notNull(),
+
+  // Risks and Opportunities
+  risksAndOpportunities: jsonb("risks_and_opportunities").$type<{
+    risks: string[];
+    opportunities: string[];
+  }>().notNull(),
+
+  // Valuation Inputs
+  valuationInputs: jsonb("valuation_inputs").$type<{
+    targetValuation: number;
+    fundingRequired: number;
+    expectedROI: number;
+  }>().notNull(),
+
+  // Calculated Results
+  calculatedValuation: jsonb("calculated_valuation").$type<{
+    low: number;
+    high: number;
+    methodologies: Record<string, number>;
+    confidence: number;
+    factors: string[];
+  }>(),
 });
 
 // Report Generation Table
@@ -203,12 +222,17 @@ export const selectInvestmentRequirementsSchema = createSelectSchema(investmentR
 export const insertValuationReportSchema = createInsertSchema(valuationReports);
 export const selectValuationReportSchema = createSelectSchema(valuationReports);
 
+export const insertValuationRecordSchema = createInsertSchema(valuationRecords);
+export const selectValuationRecordSchema = createSelectSchema(valuationRecords);
+
 // Export types
 export type MarketAnalysis = typeof marketAnalysis.$inferSelect;
 export type ProductAnalysis = typeof productAnalysis.$inferSelect;
 export type RiskAssessment = typeof riskAssessment.$inferSelect;
 export type InvestmentRequirements = typeof investmentRequirements.$inferSelect;
 export type ValuationReport = typeof valuationReports.$inferSelect;
+export type ValuationRecord = typeof valuationRecords.$inferSelect;
+export type InsertValuationRecord = typeof valuationRecords.$inferInsert;
 
 
 export const users = pgTable("users", {
@@ -419,6 +443,13 @@ export const reportRelations = relations(generatedReports, ({ one }) => ({
   }),
 }));
 
+export const valuationRecordRelations = relations(valuationRecords, ({ one }) => ({
+  user: one(users, {
+    fields: [valuationRecords.userId],
+    references: [users.id],
+  }),
+}));
+
 // Create schemas for validation with custom validation rules
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email("Invalid email format"),
@@ -452,8 +483,6 @@ export const selectUserActivitySchema = createSelectSchema(userActivities);
 export const insertWorkflowSuggestionSchema = createInsertSchema(workflowSuggestions);
 export const selectWorkflowSuggestionSchema = createSelectSchema(workflowSuggestions);
 
-export const insertValuationRecordSchema = createInsertSchema(valuationRecords);
-export const selectValuationRecordSchema = createSelectSchema(valuationRecords);
 export const insertIndustryBenchmarkSchema = createInsertSchema(industryBenchmarks);
 export const selectIndustryBenchmarkSchema = createSelectSchema(industryBenchmarks);
 export const insertGeneratedReportSchema = createInsertSchema(generatedReports);
