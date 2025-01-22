@@ -1,15 +1,17 @@
 import { Router } from 'express';
 import { db } from '@db';
-import { valuationRecords, type InsertValuationRecord } from '@db/schema';
+import { valuationRecords, type InsertValuationRecord, generatedReports } from '@db/schema';
 import type { ValuationFormData } from '../../client/src/lib/validations';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { ValuationCalculator } from '../services/valuation';
 import { AIValuationService } from '../services/ai-valuation';
+import { ReportGenerator } from '../services/report-generation';
 
 const router = Router();
 const calculator = new ValuationCalculator();
 const aiService = new AIValuationService();
+const reportGenerator = new ReportGenerator();
 
 // Request rate limiting
 const requestCounts = new Map<string, { count: number; timestamp: number }>();
@@ -201,6 +203,84 @@ router.get('/api/valuations', async (req, res) => {
       .orderBy(desc(valuationRecords.createdAt));
 
     res.json(valuations);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Generate report endpoint
+router.post('/api/valuations/:id/report', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const format = req.body.format || 'pdf';
+
+    // Get valuation data
+    const [valuation] = await db
+      .select()
+      .from(valuationRecords)
+      .where(eq(valuationRecords.id, id))
+      .limit(1);
+
+    if (!valuation) {
+      return res.status(404).json({ message: 'Valuation not found' });
+    }
+
+    let reportBuffer: Buffer;
+    let contentType: string;
+    let filename: string;
+
+    // Generate report in requested format
+    if (format === 'pdf') {
+      reportBuffer = await reportGenerator.generatePDFReport(valuation);
+      contentType = 'application/pdf';
+      filename = 'valuation-report.pdf';
+    } else if (format === 'excel') {
+      reportBuffer = await reportGenerator.generateExcelReport(valuation);
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      filename = 'valuation-report.xlsx';
+    } else {
+      return res.status(400).json({ message: 'Invalid format requested' });
+    }
+
+    // Store report in database
+    const [report] = await db.insert(generatedReports).values({
+      valuationId: id,
+      userId: 1, // Default user ID for now
+      format,
+      content: {
+        timestamp: new Date().toISOString(),
+        format,
+        size: reportBuffer.length,
+      },
+      generatedAt: new Date(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days expiry
+    }).returning();
+
+    // Send report to client
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(reportBuffer);
+
+  } catch (error: any) {
+    console.error('Report generation failed:', error);
+    res.status(500).json({ 
+      message: error instanceof Error ? error.message : 'Failed to generate report'
+    });
+  }
+});
+
+// Get all reports for a valuation
+router.get('/api/valuations/:id/reports', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const reports = await db
+      .select()
+      .from(generatedReports)
+      .where(eq(generatedReports.valuationId, id))
+      .orderBy(desc(generatedReports.generatedAt));
+
+    res.json(reports);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

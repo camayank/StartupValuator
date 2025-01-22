@@ -36,7 +36,10 @@ export class AIValuationService {
         response_format: { type: "json_object" }
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content;
+      if (!content) throw new Error("Failed to get response from OpenAI");
+
+      return JSON.parse(content);
     } catch (error) {
       console.error("Market analysis failed:", error);
       return this.getFallbackMarketAnalysis(data);
@@ -66,7 +69,10 @@ export class AIValuationService {
         response_format: { type: "json_object" }
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content;
+      if (!content) throw new Error("Failed to get response from OpenAI");
+
+      return JSON.parse(content);
     } catch (error) {
       console.error("Risk assessment failed:", error);
       return this.getFallbackRiskAssessment(data);
@@ -91,7 +97,10 @@ export class AIValuationService {
         response_format: { type: "json_object" }
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content;
+      if (!content) throw new Error("Failed to get response from OpenAI");
+
+      return JSON.parse(content);
     } catch (error) {
       console.error("Auto-completion failed:", error);
       return this.getFallbackAutoComplete(partialData);
@@ -125,7 +134,10 @@ export class AIValuationService {
         response_format: { type: "json_object" }
       });
 
-      return JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content;
+      if (!content) throw new Error("Failed to get response from OpenAI");
+
+      return JSON.parse(content);
     } catch (error) {
       console.error("Growth projection failed:", error);
       return this.getFallbackGrowthProjections(data);
@@ -191,7 +203,7 @@ export class AIValuationService {
   private getFallbackGrowthProjections(data: ValuationFormData) {
     const baseGrowth = data.marketData.growthRate || 20;
     const currentRevenue = data.financialData.revenue || 0;
-    
+
     return {
       projections: {
         year1: currentRevenue * (1 + baseGrowth/100),
