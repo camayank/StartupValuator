@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
+import { setupAuth } from "./auth";
 import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
@@ -13,7 +14,10 @@ export function registerRoutes(app: Express): Server {
   // Set up cache
   const cache = setupCache();
 
-  // Register all routes
+  // Setup authentication first
+  setupAuth(app);
+
+  // Register all other routes
   app.use(valuationRoutes);
 
   // Enhanced valuation route with proper validation
@@ -31,10 +35,13 @@ export function registerRoutes(app: Express): Server {
         return res.json(cachedResult);
       }
 
+      // Get user ID from session
+      const userId = req.user?.id || 1; // Fallback to default user if not logged in
+
       // Store in database
       const [result] = await db.insert(valuationRecords).values({
         ...validatedData,
-        userId: 1, // Default user ID for now
+        userId,
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();

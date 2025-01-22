@@ -17,7 +17,8 @@ import {
   BookOpen,
   LogOut,
   Menu,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,6 +30,7 @@ import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import { ComplianceChecker } from "@/components/ComplianceChecker";
 import { PricingPage } from "./pages/PricingPage";
 import { useUser } from "@/hooks/use-user";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,13 +43,12 @@ import { DashboardContainer } from "@/components/DashboardContainer";
 import AuthPage from "./pages/AuthPage";
 import { RoleAccessVisualization } from "@/components/RoleAccessVisualization";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 import { LandingPage } from "./pages/LandingPage";
 import { IntegratedWorkflowController } from "@/components/IntegratedWorkflowController";
 import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
-
 
 // Update navigation configuration
 const navigationConfig = {
@@ -101,16 +102,57 @@ const resourceLinks = [
 ];
 
 function App() {
-  const { user, isLoading, logout } = useUser();
+  const { user, isLoading, error, logout } = useUser();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { toast } = useToast();
+
+  // Handle authentication errors
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Authentication Error",
+        description: "There was a problem loading your account. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  // Show loading state for max 5 seconds
+  const [showLoadingError, setShowLoadingError] = useState(false);
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoading) {
+      timer = setTimeout(() => {
+        setShowLoadingError(true);
+      }, 5000);
+    } else {
+      setShowLoadingError(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isLoading]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-sm text-muted-foreground">Loading your workspace...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">
+            {showLoadingError 
+              ? "Taking longer than expected... Please refresh the page."
+              : "Loading your workspace..."}
+          </p>
+          {showLoadingError && (
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+              className="mt-2"
+            >
+              Refresh Page
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -160,7 +202,11 @@ function App() {
       await logout();
       window.location.href = '/';
     } catch (error) {
-      console.error('Logout failed:', error);
+      toast({
+        title: "Logout Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
