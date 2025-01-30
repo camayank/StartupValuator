@@ -13,8 +13,11 @@ import {
   Users,
   TrendingUp,
   Award,
+  AlertCircle,
 } from "lucide-react";
 import { StartupJourneyDashboard } from "./StartupJourneyDashboard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ViewFounderProfileProps {
   profile: {
@@ -67,9 +70,11 @@ interface ViewFounderProfileProps {
       priority: "low" | "medium" | "high";
     }>;
   };
+  isLoading?: boolean;
+  error?: Error;
 }
 
-export function ViewFounderProfile({ profile }: ViewFounderProfileProps) {
+export function ViewFounderProfile({ profile, isLoading, error }: ViewFounderProfileProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -78,6 +83,49 @@ export function ViewFounderProfile({ profile }: ViewFounderProfileProps) {
       notation: 'compact'
     }).format(value);
   };
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load founder profile: {error.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid md:grid-cols-3 gap-6">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <StartupJourneyDashboard profile={profile} isLoading={true} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

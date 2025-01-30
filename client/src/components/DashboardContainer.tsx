@@ -4,16 +4,51 @@ import { InvestorDashboard } from "./dashboards/InvestorDashboard";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardContainer() {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, error } = useUser();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64 mt-2" />
+              </div>
+              <Skeleton className="h-6 w-24" />
+            </div>
+          </CardHeader>
+        </Card>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load dashboard: {error.message}
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -58,14 +93,31 @@ export function DashboardContainer() {
     }
   };
 
+  const getLastLoginText = () => {
+    if (!user.last_login_at) return null;
+    const lastLogin = new Date(user.last_login_at);
+    const now = new Date();
+    const diffInHours = Math.abs(now.getTime() - lastLogin.getTime()) / 36e5;
+
+    if (diffInHours < 24) {
+      return `Last login: Today at ${lastLogin.toLocaleTimeString()}`;
+    }
+    return `Last login: ${lastLogin.toLocaleDateString()}`;
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Welcome, {user.username}</CardTitle>
-              <CardDescription>{getRoleDescription(user.role)}</CardDescription>
+              <CardTitle>Welcome back, {user.username}</CardTitle>
+              <CardDescription>
+                {getRoleDescription(user.role)}
+                {getLastLoginText() && (
+                  <span className="block text-sm mt-1">{getLastLoginText()}</span>
+                )}
+              </CardDescription>
             </div>
             <Badge className={`${getRoleBadgeColor(user.role)} capitalize`}>
               {user.role}
@@ -81,18 +133,48 @@ export function DashboardContainer() {
         ) : user.role === "investor" ? (
           <InvestorDashboard />
         ) : user.role === "valuer" ? (
-          <div className="p-6 bg-background border rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">Valuer Dashboard</h2>
-            <p className="text-muted-foreground">
-              Professional valuation tools and features coming soon.
-            </p>
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Valuation Tools</CardTitle>
+                <CardDescription>
+                  Professional valuation tools and features for accurate startup assessments
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-muted-foreground">
+                  Advanced valuation features coming soon. You'll be able to:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Access industry-specific valuation models</li>
+                    <li>Generate detailed valuation reports</li>
+                    <li>Compare with market benchmarks</li>
+                    <li>Collaborate with team members</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : user.role === "consultant" ? (
-          <div className="p-6 bg-background border rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">Consultant Dashboard</h2>
-            <p className="text-muted-foreground">
-              Consultant features and client management tools coming soon.
-            </p>
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Advisory Dashboard</CardTitle>
+                <CardDescription>
+                  Manage your client portfolio and advisory services
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-muted-foreground">
+                  Consultant features coming soon. You'll be able to:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Manage multiple client accounts</li>
+                    <li>Track client progress and metrics</li>
+                    <li>Generate advisory reports</li>
+                    <li>Schedule consultations</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <Alert>
