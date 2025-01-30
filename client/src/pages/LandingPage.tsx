@@ -81,7 +81,7 @@ export function LandingPage() {
         <div className="container mx-auto px-4 py-20 lg:py-32">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Smart Startup Valuation Platform - TEST UPDATE
+              AI-Powered Startup Valuation Platform
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Get an accurate, data-driven valuation for your startup in minutes. Trusted by over 10,000 founders and investors.
