@@ -243,4 +243,121 @@ router.get('/api/valuations/draft', async (req, res) => {
   }
 });
 
+// Add report generation endpoints
+router.post('/api/valuations/:id/report', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { format = 'pdf', template = 'default' } = req.body;
+
+    // Get valuation data
+    const [valuation] = await db
+      .select()
+      .from(valuationRecords)
+      .where(eq(valuationRecords.id, id))
+      .limit(1);
+
+    if (!valuation) {
+      return res.status(404).json({ message: 'Valuation record not found' });
+    }
+
+    // Generate report using ReportGenerator service
+    const report = await reportGenerator.generateReport(valuation, {
+      format,
+      template,
+      includeExecutiveSummary: true,
+      includeMethodComparison: true,
+      includeMarketAnalysis: true,
+      includeAIInsights: true
+    });
+
+    // Update export history
+    await db.update(valuationRecords)
+      .set({
+        exportHistory: {
+          exports: [
+            ...(valuation.exportHistory?.exports || []),
+            {
+              type: format,
+              timestamp: new Date().toISOString(),
+              version: valuation.version
+            }
+          ]
+        }
+      })
+      .where(eq(valuationRecords.id, id));
+
+    // Set appropriate headers based on format
+    switch (format) {
+      case 'pdf':
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="valuation-report-${id}.pdf"`);
+        break;
+      case 'excel':
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="valuation-report-${id}.xlsx"`);
+        break;
+      case 'csv':
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="valuation-report-${id}.csv"`);
+        break;
+    }
+
+    res.send(report);
+  } catch (error: any) {
+    console.error('Report generation error:', error);
+    res.status(500).json({ 
+      message: 'Failed to generate report',
+      error: error.message 
+    });
+  }
+});
+
+// Add method comparison endpoint
+router.get('/api/valuations/:id/compare-methods', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [valuation] = await db
+      .select()
+      .from(valuationRecords)
+      .where(eq(valuationRecords.id, id))
+      .limit(1);
+
+    if (!valuation) {
+      return res.status(404).json({ message: 'Valuation record not found' });
+    }
+
+    // Generate comparison data using ValuationCalculator
+    const methodComparison = await calculator.compareMethodologies(valuation);
+
+    res.json(methodComparison);
+  } catch (error: any) {
+    console.error('Method comparison error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Add executive summary endpoint
+router.get('/api/valuations/:id/executive-summary', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const [valuation] = await db
+      .select()
+      .from(valuationRecords)
+      .where(eq(valuationRecords.id, id))
+      .limit(1);
+
+    if (!valuation) {
+      return res.status(404).json({ message: 'Valuation record not found' });
+    }
+
+    // Generate executive summary using OpenAI
+    const summary = await openAIService.generateExecutiveSummary(valuation);
+
+    res.json(summary);
+  } catch (error: any) {
+    console.error('Executive summary generation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
