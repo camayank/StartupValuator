@@ -68,17 +68,42 @@ export function ProjectionsWizard() {
     const step = steps[stepIndex];
     const errors: string[] = [];
 
-    step.validationFields.forEach(field => {
-      const value = field.includes('.')
-        ? field.split('.').reduce((obj, key) => obj?.[key], data)
-        : data[field as keyof FinancialProjectionData];
+    // Skip validation for the review step
+    if (stepIndex === steps.length - 1) return true;
 
-      if (value === undefined || value === null ||
+    // Add debug logging
+    console.log("Current step data:", data);
+
+    step.validationFields.forEach(field => {
+      let value;
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        value = data[parent as keyof typeof data]?.[child];
+      } else {
+        value = data[field as keyof typeof data];
+      }
+
+      // Add debug logging
+      console.log(`Validating field ${field}:`, value);
+
+      // Special validation for arrays
+      if (field === 'assumptions.expenseAssumptions') {
+        const assumptions = data.assumptions?.expenseAssumptions;
+        if (!assumptions || !Array.isArray(assumptions) || assumptions.length === 0) {
+          errors.push('Expense assumptions are required');
+        }
+      } 
+      // Standard validation for other fields
+      else if (value === undefined || value === null || 
           (Array.isArray(value) && value.length === 0) ||
-          (typeof value === 'string' && value.trim() === '')) {
+          (typeof value === 'string' && value.trim() === '') ||
+          (typeof value === 'number' && isNaN(value))) {
         errors.push(`${field.split('.').pop()} is required`);
       }
     });
+
+    // Add debug logging
+    console.log("Validation errors:", errors);
 
     setStepErrors(prev => ({ ...prev, [stepIndex]: errors }));
     return errors.length === 0;
