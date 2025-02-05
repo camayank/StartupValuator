@@ -41,7 +41,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  log("Starting server initialization...");
+
   const server = registerRoutes(app);
+  log("Routes registered successfully");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -66,7 +69,12 @@ app.use((req, res, next) => {
   }
 
   const PORT = process.env.PORT || 3000;
-  server.listen(PORT, "0.0.0.0", () => {
+  log(`Attempting to start server on port ${PORT}...`);
+
+  server.listen({
+    port: PORT,
+    host: "0.0.0.0"
+  }, () => {
     log(`Server running on port ${PORT}`);
   }).on('error', (error: NodeJS.ErrnoException) => {
     if (error.code === 'EADDRINUSE') {
@@ -74,7 +82,16 @@ app.use((req, res, next) => {
       process.exit(1);
     } else {
       log(`Failed to start server: ${error.message}`);
+      if (error.stack) {
+        log(`Error stack trace: ${error.stack}`);
+      }
       throw error;
     }
   });
-})();
+})().catch(error => {
+  log(`Unhandled error during server startup: ${error.message}`);
+  if (error.stack) {
+    log(`Stack trace: ${error.stack}`);
+  }
+  process.exit(1);
+});
