@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
 import analysisRoutes from "./routes/analysis";
+import monitoringRoutes from "./routes/monitoring"; // Add monitoring routes import
 import { setupAuth } from "./auth";
 import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -35,6 +36,7 @@ export function registerRoutes(app: Express): Server {
   // Register all routes
   app.use(valuationRoutes);
   app.use(analysisRoutes);
+  app.use(monitoringRoutes); // Register monitoring routes
 
   // Enhanced valuation route with proper validation
   app.post("/api/valuation", async (req, res) => {
@@ -387,6 +389,9 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
+
+  // Inside registerRoutes function, after other route registrations
+  app.use(monitoringRoutes);
 
   const httpServer = createServer(app);
   return httpServer;
