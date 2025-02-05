@@ -12,8 +12,14 @@ export const defaultReportTemplate = {
         required: true,
       },
       {
-        id: "keyDrivers",
-        title: "Key Value Drivers",
+        id: "keyHighlights",
+        title: "Key Business Highlights",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "keyMetrics",
+        title: "Key Performance Metrics",
         enabled: true,
         required: true,
       },
@@ -25,12 +31,93 @@ export const defaultReportTemplate = {
       }
     ]
   },
-  detailedAnalysis: {
-    title: "Detailed Analysis",
+  financialAnalysis: {
+    title: "Financial Analysis",
+    sections: [
+      {
+        id: "revenueAnalysis",
+        title: "Revenue and Growth Analysis",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "unitEconomics",
+        title: "Unit Economics",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "cashFlow",
+        title: "Cash Flow and Runway",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "projections",
+        title: "Financial Projections",
+        enabled: true,
+        required: false,
+      }
+    ]
+  },
+  marketAnalysis: {
+    title: "Market Analysis",
+    sections: [
+      {
+        id: "marketSize",
+        title: "Market Size (TAM, SAM, SOM)",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "competitorAnalysis",
+        title: "Competitor Analysis",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "marketTrends",
+        title: "Market Trends and Growth",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "barriers",
+        title: "Entry Barriers & Opportunities",
+        enabled: true,
+        required: false,
+      }
+    ]
+  },
+  riskAssessment: {
+    title: "Risk Assessment",
+    sections: [
+      {
+        id: "riskMatrix",
+        title: "Risk Matrix",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "mitigationStrategies",
+        title: "Risk Mitigation Strategies",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "sensitivityAnalysis",
+        title: "Sensitivity Analysis",
+        enabled: true,
+        required: false,
+      }
+    ]
+  },
+  valuationMethodology: {
+    title: "Valuation Methodology",
     sections: [
       {
         id: "methodology",
-        title: "Valuation Methodology",
+        title: "Applied Methods",
         enabled: true,
         required: true,
       },
@@ -41,54 +128,37 @@ export const defaultReportTemplate = {
         required: true,
       },
       {
-        id: "calculations",
-        title: "Detailed Calculations",
+        id: "comparables",
+        title: "Comparable Analysis",
+        enabled: true,
+        required: true,
+      },
+      {
+        id: "aiInsights",
+        title: "AI-Powered Insights",
         enabled: true,
         required: false,
       }
     ]
   },
-  visualizations: {
-    title: "Visual Analysis",
+  appendices: {
+    title: "Appendices",
     sections: [
       {
-        id: "revenueGrowth",
-        title: "Revenue Growth Trajectory",
+        id: "detailedFinancials",
+        title: "Detailed Financial Statements",
         enabled: true,
         required: false,
       },
       {
-        id: "marketShare",
-        title: "Market Share Analysis",
+        id: "marketData",
+        title: "Market Research Data",
         enabled: true,
         required: false,
       },
       {
-        id: "valuationBreakdown",
-        title: "Valuation Components",
-        enabled: true,
-        required: true,
-      }
-    ]
-  },
-  scenarioAnalysis: {
-    title: "Scenario Analysis",
-    sections: [
-      {
-        id: "bestCase",
-        title: "Optimistic Scenario",
-        enabled: true,
-        required: false,
-      },
-      {
-        id: "baseCase",
-        title: "Base Case",
-        enabled: true,
-        required: true,
-      },
-      {
-        id: "worstCase",
-        title: "Conservative Scenario",
+        id: "modelAssumptions",
+        title: "Detailed Model Assumptions",
         enabled: true,
         required: false,
       }
@@ -108,16 +178,34 @@ export interface ReportCustomization {
   };
   enabledSections: Partial<Record<ReportSection, boolean>>;
   format: 'pdf' | 'excel' | 'html';
+  outputPreferences?: {
+    includeCharts: boolean;
+    includeTables: boolean;
+    includeExecutiveSummary: boolean;
+    includeAppendices: boolean;
+    chartStyle: 'minimal' | 'detailed';
+    colorScheme: 'light' | 'dark' | 'print';
+  };
 }
 
 export const defaultCustomization: ReportCustomization = {
   enabledSections: {
     executiveSummary: true,
-    detailedAnalysis: true,
-    visualizations: true,
-    scenarioAnalysis: true
+    financialAnalysis: true,
+    marketAnalysis: true,
+    riskAssessment: true,
+    valuationMethodology: true,
+    appendices: false
   },
-  format: 'pdf'
+  format: 'pdf',
+  outputPreferences: {
+    includeCharts: true,
+    includeTables: true,
+    includeExecutiveSummary: true,
+    includeAppendices: false,
+    chartStyle: 'detailed',
+    colorScheme: 'light'
+  }
 };
 
 export function validateReportConfig(config: ReportCustomization): { valid: boolean; errors: string[] } {
@@ -139,9 +227,20 @@ export function validateReportConfig(config: ReportCustomization): { valid: bool
     if (config.branding.logo && !config.branding.logo.startsWith('data:image/')) {
       errors.push("Logo must be a valid base64 encoded image");
     }
-    
+
     if (config.branding.primaryColor && !/^#[0-9A-F]{6}$/i.test(config.branding.primaryColor)) {
       errors.push("Primary color must be a valid hex color code");
+    }
+  }
+
+  // Validate output preferences if provided
+  if (config.outputPreferences) {
+    if (config.outputPreferences.chartStyle && !['minimal', 'detailed'].includes(config.outputPreferences.chartStyle)) {
+      errors.push("Invalid chart style specified");
+    }
+
+    if (config.outputPreferences.colorScheme && !['light', 'dark', 'print'].includes(config.outputPreferences.colorScheme)) {
+      errors.push("Invalid color scheme specified");
     }
   }
 
