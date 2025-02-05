@@ -63,6 +63,10 @@ const navigationConfig = {
     analytics: [
       { href: "/dashboard", label: "Health Dashboard", description: "Monitor startup metrics", icon: PieChart },
       { href: "/compliance", label: "Compliance Check", description: "Regulatory compliance", icon: ClipboardCheck },
+    ],
+    resources: [
+      { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
+      { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
     ]
   },
   investor: {
@@ -74,15 +78,25 @@ const navigationConfig = {
     analytics: [
       { href: "/dashboard", label: "Investment Dashboard", description: "Portfolio performance", icon: PieChart },
       { href: "/market-analysis", label: "Market Analysis", description: "Market trends", icon: BarChart3 },
+    ],
+    resources: [
+      { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
+      { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
     ]
   },
   default: {
     mainTools: [
       { href: "/valuation", label: "Full Valuation", description: "Complete valuation", icon: Calculator },
       { href: "/calculator", label: "Quick Calculator", description: "Basic calculator", icon: Calculator },
+      { href: "/projections", label: "Financial Projections", description: "Create forecasts", icon: BarChart3 },
+      { href: "/pitch-deck", label: "Pitch Deck", description: "Create presentations", icon: FileText },
     ],
     analytics: [
       { href: "/dashboard", label: "Dashboard", description: "View analytics", icon: PieChart },
+    ],
+    resources: [
+      { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
+      { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
     ]
   }
 } as const;
@@ -290,7 +304,7 @@ function App() {
               <div>
                 <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Resources</h2>
                 <div className="space-y-1">
-                  {resourceLinks.map((item) => (
+                  {userNavigation.resources.map((item) => (
                     <NavLink key={item.href} {...item} />
                   ))}
                 </div>
@@ -364,7 +378,7 @@ function App() {
 
                     <div>
                       <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
-                      {resourceLinks.map((item) => (
+                      {userNavigation.resources.map((item) => (
                         <MobileNavItem key={item.href} {...item} />
                       ))}
                     </div>
