@@ -10,7 +10,7 @@ import { ProjectionsReviewStep } from "./ProjectionsReviewStep";
 import { MarketValidationStep } from "./MarketValidationStep";
 import type { FinancialProjectionData } from "@/lib/validations";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, Sparkles, LineChart, Calculator, Target, Coins, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, LineChart, Calculator, Target, Coins, ClipboardCheck } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -24,66 +24,86 @@ const steps = [
   {
     title: "Revenue Projections",
     description: "Forecast your revenue streams and growth",
-    icon: LineChart
+    icon: LineChart,
+    validationFields: ["baseRevenue", "growthRate", "marginProjection"]
   },
   {
     title: "Expense Planning",
     description: "Plan your operational and capital expenses",
-    icon: Calculator
+    icon: Calculator,
+    validationFields: ["baseExpenses", "assumptions.expenseAssumptions"]
   },
   {
     title: "Market Validation",
     description: "Validate projections against market data",
-    icon: Target
+    icon: Target,
+    validationFields: ["marketSize", "competitorAnalysis", "marketGrowth"]
   },
   {
     title: "Fund Utilization",
     description: "Plan how you'll utilize funding",
-    icon: Coins
+    icon: Coins,
+    validationFields: ["totalFunding", "burnRate", "allocation"]
   },
   {
     title: "Review & Finalize",
     description: "Review and confirm your projections",
-    icon: ClipboardCheck
+    icon: ClipboardCheck,
+    validationFields: []
   }
 ] as const;
-
-interface ProjectionsReviewStepProps {
-  data: FinancialProjectionData;
-  onUpdate: (data: Partial<FinancialProjectionData>) => Promise<void>;
-  onSubmit: (data: FinancialProjectionData) => Promise<void>;
-  onBack: () => void;
-  isSubmitting: boolean;
-}
-
-interface FundUtilizationStepProps {
-  data: {
-    totalFunding: number;
-    burnRate: number;
-    runway: number;
-    allocation: {
-      category: string;
-      percentage: number;
-      amount: number;
-      description: string;
-    }[];
-  };
-  onUpdate: (data: Partial<FinancialProjectionData>) => Promise<void>;
-  onNext: () => void;
-  onBack: () => void;
-}
 
 export function ProjectionsWizard() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [data, setData] = useState<Partial<FinancialProjectionData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({});
   const { toast } = useToast();
+
+  // Current step icon component
+  const CurrentStepIcon = steps[currentStep].icon;
+
+  const validateStep = (stepIndex: number): boolean => {
+    const step = steps[stepIndex];
+    const errors: string[] = [];
+
+    step.validationFields.forEach(field => {
+      const value = field.includes('.')
+        ? field.split('.').reduce((obj, key) => obj?.[key], data)
+        : data[field as keyof FinancialProjectionData];
+
+      if (value === undefined || value === null ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'string' && value.trim() === '')) {
+        errors.push(`${field.split('.').pop()} is required`);
+      }
+    });
+
+    setStepErrors(prev => ({ ...prev, [stepIndex]: errors }));
+    return errors.length === 0;
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
+      if (!validateStep(currentStep)) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields before proceeding.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setCompletedSteps(prev => Array.from(new Set([...prev, currentStep])));
       setCurrentStep(prev => prev + 1);
+
+      // Animate progress update
+      const progressBar = document.querySelector('.progress-bar');
+      if (progressBar) {
+        progressBar.classList.add('progress-animate');
+        setTimeout(() => progressBar.classList.remove('progress-animate'), 500);
+      }
     }
   };
 
@@ -93,13 +113,33 @@ export function ProjectionsWizard() {
     }
   };
 
-  const handleUpdate = (newData: Partial<FinancialProjectionData>) => {
+  const handleUpdate = async (newData: Partial<FinancialProjectionData>) => {
     setData(prev => ({ ...prev, ...newData }));
   };
 
   const handleSubmit = async (finalData: FinancialProjectionData) => {
     try {
       setIsSubmitting(true);
+
+      // Validate all steps before final submission
+      let hasErrors = false;
+      for (let i = 0; i < steps.length - 1; i++) {
+        if (!validateStep(i)) {
+          hasErrors = true;
+          setCurrentStep(i);
+          break;
+        }
+      }
+
+      if (hasErrors) {
+        toast({
+          title: "Validation Error",
+          description: "Please complete all required information before generating the report.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Processing Projections",
         description: "Analyzing and generating your financial projection report...",
@@ -165,7 +205,7 @@ export function ProjectionsWizard() {
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <CardTitle className="text-2xl flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" />
+              <CurrentStepIcon className="h-6 w-6 text-primary" />
               {steps[currentStep].title}
               <Badge variant="secondary" className="ml-2">
                 Step {currentStep + 1} of {steps.length}
@@ -178,12 +218,26 @@ export function ProjectionsWizard() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="relative">
                   <HelpCircle className="h-5 w-5" />
+                  {stepErrors[currentStep]?.length > 0 && (
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="max-w-xs">Need help with financial projections? Click for guidance.</p>
+                <div className="space-y-2">
+                  <p className="font-medium">Step Requirements</p>
+                  {stepErrors[currentStep]?.length > 0 ? (
+                    <ul className="text-sm space-y-1 text-destructive">
+                      {stepErrors[currentStep].map((error, i) => (
+                        <li key={i}>• {error}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm">All required fields are complete.</p>
+                  )}
+                </div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -191,40 +245,60 @@ export function ProjectionsWizard() {
 
         <div className="space-y-2">
           <div className="flex justify-between mb-2">
-            {steps.map((step, index) => (
-              <div key={index} className="flex flex-col items-center">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                    currentStep === index
-                      ? "bg-primary text-primary-foreground"
-                      : completedSteps.includes(index)
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {completedSteps.includes(index) ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : (
-                    <step.icon className="h-5 w-5" />
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+              return (
+                <div key={index} className="flex flex-col items-center">
+                  <motion.div
+                    initial={{ scale: 0.8 }}
+                    animate={{
+                      scale: currentStep === index ? 1.1 : 1,
+                      backgroundColor: currentStep === index
+                        ? "var(--primary)"
+                        : completedSteps.includes(index)
+                        ? "var(--primary-light)"
+                        : "var(--muted)"
+                    }}
+                    className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
+                      "shadow-lg hover:shadow-xl transition-shadow duration-200",
+                      currentStep === index
+                        ? "bg-primary text-primary-foreground"
+                        : completedSteps.includes(index)
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {completedSteps.includes(index) ? (
+                      <CheckCircle2 className="h-6 w-6" />
+                    ) : (
+                      <StepIcon className="h-6 w-6" />
+                    )}
+                  </motion.div>
+                  {index < steps.length - 1 && (
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{
+                        scaleX: completedSteps.includes(index) ? 1 : 0,
+                        backgroundColor: completedSteps.includes(index)
+                          ? "var(--primary-light)"
+                          : "var(--muted)"
+                      }}
+                      className={cn(
+                        "h-1 w-24 mt-4 origin-left",
+                        completedSteps.includes(index)
+                          ? "bg-primary/20"
+                          : "bg-muted"
+                      )}
+                    />
                   )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      "h-1 w-24 mt-4",
-                      completedSteps.includes(index)
-                        ? "bg-primary/20"
-                        : "bg-muted"
-                    )}
-                  />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
           <Progress
             value={((currentStep + 1) / steps.length) * 100}
-            className="h-2"
+            className="h-2 progress-bar"
           />
         </div>
       </CardHeader>
@@ -237,7 +311,7 @@ export function ProjectionsWizard() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
             >
               {currentStep === 0 && (
                 <RevenueProjectionsStep
@@ -297,6 +371,7 @@ export function ProjectionsWizard() {
             <Button
               onClick={handleNext}
               className="ml-auto flex items-center gap-2"
+              disabled={stepErrors[currentStep]?.length > 0}
             >
               Next <ArrowRight className="h-4 w-4" />
             </Button>
