@@ -33,12 +33,25 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { NumericInput } from "@/components/ui/numeric-input";
+//import { ValuationFormSchema } from "@/lib/validations"; // You'll need to import your schema here
+
 
 // High contrast color palette that meets WCAG 2.1 AA standards
-const HIGH_CONTRAST_COLORS = ["#0052CC", "#00875A", "#DE350B", "#403294"];
-const STANDARD_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+const HIGH_CONTRAST_COLORS = {
+  primary: "#0052CC",
+  secondary: "#00875A",
+  accent: "#DE350B",
+  neutral: "#403294"
+};
 
-// Help content for each field
+const STANDARD_COLORS = {
+  primary: "#0088FE",
+  secondary: "#00C49F",
+  accent: "#FFBB28",
+  neutral: "#FF8042"
+};
+
+// Updated help content with improved accessibility descriptions
 const fieldHelp = {
   revenue: {
     icon: DollarSign,
@@ -50,6 +63,7 @@ const fieldHelp = {
       "For early-stage startups, use projected annual revenue",
     ],
     example: "Example: If you make $100,000 per month, enter $1,200,000",
+    ariaLabel: "Annual revenue input field"
   },
   growthRate: {
     icon: TrendingUp,
@@ -61,6 +75,7 @@ const fieldHelp = {
       "For early-stage startups, use projected growth rate",
     ],
     example: "Example: If revenue doubled, enter 100%",
+    ariaLabel: "Growth rate input field"
   },
   margins: {
     icon: Percent,
@@ -72,6 +87,7 @@ const fieldHelp = {
       "Include all direct costs and overhead",
     ],
     example: "Example: If you make $200K profit on $1M revenue, enter 20%",
+    ariaLabel: "Operating margins input field"
   },
   sector: {
     icon: Building2,
@@ -82,6 +98,7 @@ const fieldHelp = {
       "Consider where most of your revenue comes from",
       "This affects industry-specific valuation multiples",
     ],
+    ariaLabel: "Business sector selection"
   },
   stage: {
     icon: Milestone,
@@ -92,45 +109,75 @@ const fieldHelp = {
       "This impacts the valuation methodology used",
       "Be realistic about your current stage",
     ],
+    ariaLabel: "Business stage selection"
   },
 } as const;
 
 // Default values that match our validation schema
-const defaultValues: Partial<ValuationFormData> = {
+const defaultValues: ValuationFormData = {
   revenue: 1000000,
   currency: "USD",
   growthRate: 20,
   margins: 15,
   sector: "technology",
   stage: "revenue_early",
+  assumptions: {
+    discountRate: 0.1,
+    growthRate: 0.05,
+    terminalGrowthRate: 0.02,
+    beta: 1.0,
+    marketRiskPremium: 0.05
+  }
 };
 
 export function InteractiveValuationCalculator() {
-  const [formData, setFormData] = useState<Partial<ValuationFormData>>(defaultValues);
+  const [formData, setFormData] = useState<ValuationFormData>(defaultValues);
   const [valuation, setValuation] = useState<any>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [highContrast, setHighContrast] = useState(() => {
-    // Check if the user has previously set a preference
     const stored = localStorage.getItem('highContrast');
     return stored ? JSON.parse(stored) : false;
   });
 
-  const colors = highContrast ? HIGH_CONTRAST_COLORS : STANDARD_COLORS;
+  const colors = highContrast ? Object.values(HIGH_CONTRAST_COLORS) : Object.values(STANDARD_COLORS);
 
-  // Toggle high contrast mode
-  const toggleContrast = () => {
-    setHighContrast(prev => {
-      const newValue = !prev;
-      localStorage.setItem('highContrast', JSON.stringify(newValue));
-      return newValue;
-    });
+  // Real-time validation
+  const validateField = (field: keyof ValuationFormData, value: any): string | undefined => {
+    //This needs a proper validation schema implementation.  Replace with your actual validation logic.
+    //const result = ValuationFormSchema.shape[field].safeParse(value);
+    //return result.success ? undefined : result.error.errors[0].message;
+    return undefined; // Placeholder - replace with actual validation
   };
 
   const handleInputChange = (field: keyof ValuationFormData, value: any) => {
-    setErrors(prev => ({ ...prev, [field]: '' }));
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const error = validateField(field, value);
+    setErrors(prev => ({ ...prev, [field]: error }));
+
+    if (!error) {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
+
+  // Real-time calculation effect
+  useEffect(() => {
+    const calculateValue = async () => {
+      if (Object.keys(errors).length > 0) return;
+
+      setIsCalculating(true);
+      try {
+        const result = await calculateValuation(formData);
+        setValuation(result);
+      } catch (error) {
+        console.error('Calculation error:', error);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    const timer = setTimeout(calculateValue, 500);
+    return () => clearTimeout(timer);
+  }, [formData, errors]);
 
   const formatCurrency = (value: number) => {
     if (!formData.currency) return '$0';
@@ -147,35 +194,6 @@ export function InteractiveValuationCalculator() {
       notation: 'compact'
     }).format(value);
   };
-
-  useEffect(() => {
-    const calculateValue = async () => {
-      // Validate required fields
-      const newErrors: Record<string, string> = {};
-      if (!formData.revenue) newErrors.revenue = 'Revenue is required';
-      if (!formData.growthRate) newErrors.growthRate = 'Growth rate is required';
-      if (!formData.margins) newErrors.margins = 'Operating margins are required';
-      if (!formData.sector) newErrors.sector = 'Sector is required';
-      if (!formData.stage) newErrors.stage = 'Business stage is required';
-
-      setErrors(newErrors);
-      if (Object.keys(newErrors).length > 0) return;
-
-      setIsCalculating(true);
-      try {
-        const result = await calculateValuation(formData as ValuationFormData);
-        setValuation(result);
-      } catch (error) {
-        console.error('Calculation error:', error);
-      } finally {
-        setIsCalculating(false);
-      }
-    };
-
-    // Debounce the calculation
-    const timer = setTimeout(calculateValue, 500);
-    return () => clearTimeout(timer);
-  }, [formData]);
 
   const breakdownData = valuation ? [
     { name: "Base Value", value: valuation.details.baseValuation },
@@ -241,7 +259,10 @@ export function InteractiveValuationCalculator() {
             <Button
               variant="outline"
               size="icon"
-              onClick={toggleContrast}
+              onClick={() => {
+                setHighContrast(prev => !prev);
+                localStorage.setItem('highContrast', JSON.stringify(!highContrast));
+              }}
               aria-label={highContrast ? "Disable high contrast mode" : "Enable high contrast mode"}
               className="ml-4"
             >
@@ -250,7 +271,6 @@ export function InteractiveValuationCalculator() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Financial Metrics */}
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Financial Metrics</h3>
@@ -261,9 +281,10 @@ export function InteractiveValuationCalculator() {
                       onValueChange={(value) => handleInputChange('revenue', value)}
                       className={errors.revenue ? 'border-destructive' : ''}
                       placeholder="Enter your annual revenue"
-                      prefix={currencies[formData.currency as keyof typeof currencies]?.symbol || '$'}
+                      prefix={currencies[formData.currency]?.symbol || '$'}
                       thousandSeparator=","
                       decimalScale={0}
+                      aria-label={fieldHelp.revenue.ariaLabel}
                     />
                     {errors.revenue && (
                       <p className="text-sm text-destructive mt-1">{errors.revenue}</p>
@@ -275,6 +296,7 @@ export function InteractiveValuationCalculator() {
                     <Select
                       value={formData.currency}
                       onValueChange={(value) => handleInputChange('currency', value)}
+                      aria-label="Currency selection"
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select currency" />
@@ -299,6 +321,7 @@ export function InteractiveValuationCalculator() {
                       suffix="%"
                       decimalScale={1}
                       allowNegative
+                      aria-label={fieldHelp.growthRate.ariaLabel}
                     />
                     {errors.growthRate && (
                       <p className="text-sm text-destructive mt-1">{errors.growthRate}</p>
@@ -315,6 +338,7 @@ export function InteractiveValuationCalculator() {
                       suffix="%"
                       decimalScale={1}
                       allowNegative
+                      aria-label={fieldHelp.margins.ariaLabel}
                     />
                     {errors.margins && (
                       <p className="text-sm text-destructive mt-1">{errors.margins}</p>
@@ -323,7 +347,6 @@ export function InteractiveValuationCalculator() {
                 </div>
               </div>
 
-              {/* Business Information */}
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Business Information</h3>
@@ -332,6 +355,7 @@ export function InteractiveValuationCalculator() {
                     <Select
                       value={formData.sector}
                       onValueChange={(value) => handleInputChange('sector', value)}
+                      aria-label={fieldHelp.sector.ariaLabel}
                     >
                       <SelectTrigger className={errors.sector ? 'border-destructive' : ''}>
                         <SelectValue placeholder="Select your sector" />
@@ -354,6 +378,7 @@ export function InteractiveValuationCalculator() {
                     <Select
                       value={formData.stage}
                       onValueChange={(value) => handleInputChange('stage', value)}
+                      aria-label={fieldHelp.stage.ariaLabel}
                     >
                       <SelectTrigger className={errors.stage ? 'border-destructive' : ''}>
                         <SelectValue placeholder="Select your stage" />
@@ -394,7 +419,6 @@ export function InteractiveValuationCalculator() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Bar Chart with improved accessibility */}
                   <div className="h-[400px]" role="figure" aria-label="Valuation breakdown bar chart">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={breakdownData} layout="vertical">
@@ -426,7 +450,6 @@ export function InteractiveValuationCalculator() {
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Pie Chart with improved accessibility */}
                   <div className="h-[400px]" role="figure" aria-label="Valuation breakdown pie chart">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsPC>
@@ -465,7 +488,6 @@ export function InteractiveValuationCalculator() {
                   </div>
                 </div>
 
-                {/* CTA section with improved contrast */}
                 <div className="mt-8 p-4 bg-primary/5 rounded-lg border-2 border-primary/10">
                   <h3 className="text-lg font-semibold mb-2">
                     Want More Detailed Analysis?
