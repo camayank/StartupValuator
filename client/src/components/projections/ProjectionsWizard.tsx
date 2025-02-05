@@ -8,6 +8,7 @@ import { ExpensesProjectionsStep } from "./ExpensesProjectionsStep";
 import { FundUtilizationStep } from "./FundUtilizationStep";
 import { ProjectionsReviewStep } from "./ProjectionsReviewStep";
 import { MarketValidationStep } from "./MarketValidationStep";
+import { MethodSelectionStep } from "./MethodSelectionStep";
 import type { FinancialProjectionData } from "@/lib/validations";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, LineChart, Calculator, Target, Coins, ClipboardCheck } from "lucide-react";
@@ -26,6 +27,12 @@ const steps = [
     description: "Forecast your revenue streams and growth",
     icon: LineChart,
     validationFields: ["baseRevenue", "growthRate", "marginProjection"]
+  },
+  {
+    title: "Method Selection",
+    description: "Choose appropriate valuation methods",
+    icon: Calculator,
+    validationFields: ["valuationMethods"]
   },
   {
     title: "Expense Planning",
@@ -92,9 +99,9 @@ export function ProjectionsWizard() {
         if (!assumptions || !Array.isArray(assumptions) || assumptions.length === 0) {
           errors.push('Expense assumptions are required');
         }
-      } 
+      }
       // Standard validation for other fields
-      else if (value === undefined || value === null || 
+      else if (value === undefined || value === null ||
           (Array.isArray(value) && value.length === 0) ||
           (typeof value === 'string' && value.trim() === '') ||
           (typeof value === 'number' && isNaN(value))) {
@@ -346,7 +353,7 @@ export function ProjectionsWizard() {
                 />
               )}
               {currentStep === 1 && (
-                <ExpensesProjectionsStep
+                <MethodSelectionStep
                   data={data}
                   onUpdate={handleUpdate}
                   onNext={handleNext}
@@ -354,7 +361,7 @@ export function ProjectionsWizard() {
                 />
               )}
               {currentStep === 2 && (
-                <MarketValidationStep
+                <ExpensesProjectionsStep
                   data={data}
                   onUpdate={handleUpdate}
                   onNext={handleNext}
@@ -362,7 +369,7 @@ export function ProjectionsWizard() {
                 />
               )}
               {currentStep === 3 && (
-                <FundUtilizationStep
+                <MarketValidationStep
                   data={data}
                   onUpdate={handleUpdate}
                   onNext={handleNext}
@@ -370,6 +377,14 @@ export function ProjectionsWizard() {
                 />
               )}
               {currentStep === 4 && (
+                <FundUtilizationStep
+                  data={data}
+                  onUpdate={handleUpdate}
+                  onNext={handleNext}
+                  onBack={handleBack}
+                />
+              )}
+              {currentStep === 5 && (
                 <ProjectionsReviewStep
                   data={data}
                   onUpdate={handleUpdate}
