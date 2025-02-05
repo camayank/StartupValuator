@@ -49,7 +49,14 @@ export class OpenAIService {
         messages: [
           {
             role: "system",
-            content: "You are an expert startup valuator. Analyze the provided business data and generate a detailed valuation with confidence scores.",
+            content: `You are an expert startup valuator specializing in comprehensive market analysis and valuation.
+                     Analyze the provided business data considering:
+                     1. Current market conditions and trends
+                     2. Industry-specific growth patterns
+                     3. Competitive landscape
+                     4. Team capabilities and track record
+                     5. Technology differentiation
+                     Generate a detailed valuation with confidence scores based on these factors.`,
           },
           {
             role: "user",
@@ -72,26 +79,13 @@ export class OpenAIService {
       messages: [
         {
           role: "system",
-          content: "Analyze the market conditions and competitive landscape for this business.",
-        },
-        {
-          role: "user",
-          content: JSON.stringify(data),
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
-
-    return JSON.parse(response.choices[0].message.content || "{}");
-  }
-
-  async assessRisks(data: ValuationFormData) {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "Identify and assess potential risks and challenges for this business.",
+          content: `Analyze the market conditions and competitive landscape for this business.
+                   Consider:
+                   1. Market size and growth potential
+                   2. Competitive intensity and barriers to entry
+                   3. Regulatory environment
+                   4. Technology trends and disruption potential
+                   5. Customer segment analysis`,
         },
         {
           role: "user",
@@ -110,7 +104,13 @@ export class OpenAIService {
       messages: [
         {
           role: "system",
-          content: "Generate growth projections and financial forecasts for this business.",
+          content: `Generate detailed growth projections and financial forecasts considering:
+                   1. Historical growth patterns
+                   2. Market penetration potential
+                   3. Industry growth benchmarks
+                   4. Resource scalability
+                   5. Market size constraints
+                   Provide confidence intervals for projections.`,
         },
         {
           role: "user",
@@ -132,7 +132,14 @@ export class AnthropicService {
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 1024,
         messages: [{ role: "user", content: JSON.stringify(data) }],
-        system: "You are an expert startup valuator. Analyze the provided business data and generate a detailed valuation with confidence scores. Output in JSON format matching the AIValuationResponse type.",
+        system: `You are an expert startup valuator specializing in risk assessment and validation.
+                Analyze the provided business data considering:
+                1. Business model risks
+                2. Market timing risks
+                3. Technology risks
+                4. Team capability gaps
+                5. Competitive threats
+                Output in JSON format matching the AIValuationResponse type.`,
       });
 
       const content = typeof response.content === "string" 
@@ -153,7 +160,13 @@ export class AnthropicService {
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1024,
       messages: [{ role: "user", content: JSON.stringify(data) }],
-      system: "You are a risk assessment specialist. Analyze the business data and provide a detailed risk assessment including overall risk score, category breakdown, and mitigation strategies. Output in JSON format.",
+      system: `You are a risk assessment specialist. Analyze the business data and provide:
+               1. Overall risk score (0-100)
+               2. Category-specific risk breakdown
+               3. Risk mitigation strategies
+               4. Confidence levels per assessment
+               5. Impact severity ratings
+               Output in JSON format.`,
     });
 
     const content = typeof response.content === "string" 
@@ -170,7 +183,13 @@ export class AnthropicService {
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1024,
       messages: [{ role: "user", content: JSON.stringify(data) }],
-      system: "You are a talent assessment expert. Analyze the team's expertise, experience, and capabilities. Identify strengths and gaps. Output in JSON format.",
+      system: `You are a talent assessment expert. Analyze the team's:
+               1. Industry expertise
+               2. Technical capabilities
+               3. Prior startup experience
+               4. Leadership track record
+               5. Key skill gaps
+               Provide detailed scoring and recommendations. Output in JSON format.`,
     });
 
     const content = typeof response.content === "string" 

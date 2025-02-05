@@ -62,13 +62,16 @@ export class ValidationService {
     const results: ValidationResult[] = [];
 
     try {
-      // First pass: Basic validation
+      // First pass: Core business information validation
+      await this.validateBusinessInfo(data, results);
+
+      // Second pass: Basic financial metrics validation
       await this.validateBasicMetrics(data, results);
 
-      // Second pass: Industry-specific validation
+      // Third pass: Industry-specific validation
       await this.validateIndustryMetrics(data, results);
 
-      // Third pass: Cross-method validation
+      // Fourth pass: Cross-method validation
       await this.validateMethodConsistency(data, results);
 
       // Final pass: Comprehensive validation
@@ -79,7 +82,7 @@ export class ValidationService {
 
       return results;
     } catch (error) {
-      await ErrorLoggingService.logError(error, {
+      await ErrorLoggingService.logError(error instanceof Error ? error : 'Validation error occurred', {
         category: 'validation',
         severity: 'high',
         context: { data, results },
@@ -94,6 +97,410 @@ export class ValidationService {
       });
 
       return results;
+    }
+  }
+
+  private static async validateBusinessInfo(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    const { businessInfo } = data;
+
+    // Validate required fields
+    const requiredFields = ['name', 'sector', 'industry', 'location', 'productStage', 'businessModel'];
+    const missingFields = requiredFields.filter(field => !businessInfo[field]);
+
+    if (missingFields.length > 0) {
+      results.push({
+        isValid: false,
+        severity: 'error',
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        impact: 'high',
+        suggestions: [
+          'All core business information fields are required',
+          'Please provide values for all missing fields'
+        ]
+      });
+    }
+
+    // Validate sector against predefined list
+    if (!sectors.includes(businessInfo.sector)) {
+      results.push({
+        isValid: false,
+        severity: 'error',
+        message: `Invalid sector: ${businessInfo.sector}`,
+        impact: 'high',
+        suggestions: [
+          'Select a sector from the predefined list',
+          `Available sectors: ${sectors.join(', ')}`
+        ]
+      });
+    }
+
+    // Validate industry against predefined list
+    if (!industries[businessInfo.sector]?.includes(businessInfo.industry)) {
+      results.push({
+        isValid: false,
+        severity: 'error',
+        message: `Invalid industry for sector ${businessInfo.sector}`,
+        impact: 'high',
+        suggestions: [
+          'Select an industry appropriate for the chosen sector',
+          `Available industries: ${industries[businessInfo.sector]?.join(', ')}`
+        ]
+      });
+    }
+
+    // Location format validation (basic)
+    const locationRegex = /^[A-Za-z\s,]+$/;
+    if (!locationRegex.test(businessInfo.location)) {
+      results.push({
+        isValid: false,
+        severity: 'warning',
+        message: 'Location format may be invalid',
+        impact: 'medium',
+        suggestions: [
+          'Use only letters, spaces, and commas',
+          'Example format: City, Country'
+        ]
+      });
+    }
+  }
+
+  private static async validateBasicMetrics(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    try {
+      const { financialData } = data;
+
+      // Revenue and growth rate cross-check
+      if (financialData.revenue && financialData.growthRate) {
+        if (financialData.growthRate > 200 && financialData.revenue < 100000) {
+          results.push({
+            isValid: false,
+            severity: 'warning',
+            message: 'Very high growth rate projected for early-stage revenue',
+            suggestions: [
+              'Compare with industry averages',
+              'Provide supporting evidence for growth assumptions',
+              'Consider market size constraints'
+            ],
+            impact: 'medium'
+          });
+        }
+      }
+
+      // Operating margin validation
+      if (financialData.operatingMargin) {
+        if (financialData.operatingMargin < this.COMMON_RATIOS.minProfitMargin ||
+            financialData.operatingMargin > this.COMMON_RATIOS.maxProfitMargin) {
+          results.push({
+            isValid: false,
+            severity: 'warning',
+            message: `Operating margin (${(financialData.operatingMargin * 100).toFixed(1)}%) outside typical range`,
+            suggestions: [
+              'Review cost assumptions',
+              'Compare with competitor margins',
+              'Document justification for unusual margins'
+            ],
+            impact: 'high'
+          });
+        }
+      }
+
+      // Revenue multiple validation
+      if (financialData.revenueMultiple) {
+        if (financialData.revenueMultiple < this.COMMON_RATIOS.minRevenueMultiple ||
+            financialData.revenueMultiple > this.COMMON_RATIOS.maxRevenueMultiple) {
+          results.push({
+            isValid: false,
+            severity: 'warning',
+            message: `Revenue multiple (${financialData.revenueMultiple}x) outside typical range`,
+            suggestions: [
+              'Review comparable company multiples',
+              'Consider stage-appropriate multiples',
+              'Document justification for multiple'
+            ],
+            impact: 'high'
+          });
+        }
+      }
+
+      // Burn rate and runway validation
+      if (financialData.burnRate && financialData.runway) {
+        if (financialData.runway < 6) {
+          results.push({
+            isValid: false,
+            severity: 'warning',
+            message: 'Short runway detected (less than 6 months)',
+            suggestions: [
+              'Review burn rate assumptions',
+              'Consider additional funding needs',
+              'Evaluate cost reduction opportunities'
+            ],
+            impact: 'critical'
+          });
+        }
+      }
+
+    } catch (error) {
+      await ErrorLoggingService.logError('Basic metrics validation failed', {
+        category: 'validation',
+        severity: 'medium',
+        context: { data, metric: 'basic' },
+        source: 'validateBasicMetrics'
+      });
+      throw error;
+    }
+  }
+
+  private static async validateIndustryMetrics(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    try {
+      const { businessInfo, financialData } = data;
+
+      const benchmarks = await this.getIndustryBenchmarks(businessInfo.industry);
+
+      // Revenue multiple validation against industry
+      if (financialData.revenueMultiple > benchmarks.maxMultiple * 1.5) {
+        results.push({
+          isValid: false,
+          severity: 'warning',
+          message: `Revenue multiple significantly exceeds industry maximum (${benchmarks.maxMultiple}x)`,
+          suggestions: [
+            'Review comparable company multiples',
+            'Document growth assumptions',
+            'Consider market conditions'
+          ],
+          impact: 'high'
+        });
+      }
+
+      // Growth rate validation against industry
+      if (financialData.projectedGrowth > benchmarks.maxGrowth * 1.3) {
+        results.push({
+          isValid: false,
+          severity: 'warning',
+          message: `Growth projections exceed typical industry maximum by >30%`,
+          suggestions: [
+            'Validate growth assumptions',
+            'Compare to historical performance',
+            'Consider market size constraints'
+          ],
+          impact: 'medium'
+        });
+      }
+
+      // Operating margin validation against industry
+      if (financialData.operatingMargin > benchmarks.maxMargin * 1.2) {
+        results.push({
+          isValid: false,
+          severity: 'warning',
+          message: `Operating margin exceeds industry benchmark by >20%`,
+          suggestions: [
+            'Review cost structure',
+            'Compare with industry leaders',
+            'Document competitive advantages'
+          ],
+          impact: 'medium'
+        });
+      }
+
+    } catch (error) {
+      await ErrorLoggingService.logError('Industry metrics validation failed', {
+        category: 'validation',
+        severity: 'medium',
+        context: { data, metric: 'industry' },
+        source: 'validateIndustryMetrics'
+      });
+      throw error;
+    }
+  }
+
+  private static async validateMethodConsistency(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    try {
+      const valuationResults = await this.calculateAllMethodologies(data);
+      const consistencyScore = this.assessMethodologyConsistency(valuationResults);
+
+      if (consistencyScore < 0.7) {
+        results.push({
+          isValid: false,
+          severity: 'warning',
+          message: 'Significant variations between valuation methods detected',
+          suggestions: [
+            'Review assumptions across all methods',
+            'Check for outliers in financial data',
+            'Consider industry-specific adjustments'
+          ],
+          impact: 'high'
+        });
+
+        // Add detailed analysis for each method
+        const meanValue = valuationResults.reduce((sum, r) => sum + r.value, 0) / valuationResults.length;
+        valuationResults.forEach(result => {
+          const deviation = Math.abs(result.value - meanValue) / meanValue;
+          if (deviation > 0.3) {
+            results.push({
+              isValid: false,
+              severity: 'info',
+              message: `${result.method} method deviates by ${(deviation * 100).toFixed(1)}%`,
+              suggestions: result.factors.map(f => `Review ${f}`),
+              impact: 'medium'
+            });
+          }
+        });
+      }
+
+    } catch (error) {
+      await ErrorLoggingService.logError('Method consistency validation failed', {
+        category: 'validation',
+        severity: 'high',
+        context: { data, metric: 'method-consistency' },
+        source: 'validateMethodConsistency'
+      });
+      throw error;
+    }
+  }
+
+  private static async calculateAllMethodologies(
+    data: EnhancedValuationFormData
+  ): Promise<ValuationMethodResult[]> {
+    const results: ValuationMethodResult[] = [];
+    const methods = data.valuationInputs.methodologies;
+
+    for (const method of methods) {
+      try {
+        const result = await this.calculateMethodValue(data, method);
+        results.push(result);
+      } catch (error) {
+        await ErrorLoggingService.logError('Method calculation failed', {
+          category: 'calculation',
+          severity: 'medium',
+          context: { method, data },
+          source: 'calculateAllMethodologies'
+        });
+      }
+    }
+
+    return results;
+  }
+
+  private static async calculateMethodValue(
+    data: EnhancedValuationFormData, 
+    method: string
+  ): Promise<ValuationMethodResult> {
+    const { financialData } = data;
+    let value = 0;
+    let confidence = 0;
+    const factors: string[] = [];
+
+    switch (method.toLowerCase()) {
+      case 'dcf':
+        value = this.calculateDCF(financialData);
+        confidence = 0.8;
+        factors.push('Growth rate', 'Cash flow projections', 'Discount rate');
+        break;
+      case 'multiple':
+        value = this.calculateMultiple(financialData);
+        confidence = 0.85;
+        factors.push('Revenue multiple', 'Industry benchmarks', 'Company stage');
+        break;
+      case 'asset':
+        value = this.calculateAssetBased(financialData);
+        confidence = 0.9;
+        factors.push('Asset value', 'Liability adjustments', 'Intangible assets');
+        break;
+      default:
+        value = 0;
+        confidence = 0;
+    }
+
+    return { method, value, confidence, factors };
+  }
+
+  private static calculateDCF(financialData: EnhancedFinancialData): number {
+    // DCF calculation logic
+    const projectionYears = 5;
+    const discountRate = 0.15; // 15% discount rate for early-stage companies
+
+    let value = 0;
+    let currentRevenue = financialData.revenue;
+
+    // Project cash flows
+    for (let year = 1; year <= projectionYears; year++) {
+      const growthRate = Math.max(financialData.growthRate * Math.pow(0.9, year - 1), 0.15);
+      currentRevenue *= (1 + growthRate);
+      const operatingMargin = Math.min(financialData.operatingMargin * Math.pow(1.1, year - 1), 0.3);
+      const freeCashFlow = currentRevenue * operatingMargin;
+      value += freeCashFlow / Math.pow(1 + discountRate, year);
+    }
+
+    // Terminal value calculation
+    const terminalGrowthRate = 0.03; // 3% long-term growth
+    const terminalValue = (currentRevenue * 0.15) / (discountRate - terminalGrowthRate);
+    value += terminalValue / Math.pow(1 + discountRate, projectionYears);
+
+    return value;
+  }
+
+  private static calculateMultiple(financialData: EnhancedFinancialData): number {
+    return financialData.revenue * financialData.revenueMultiple;
+  }
+
+  private static calculateAssetBased(financialData: EnhancedFinancialData): number {
+    return (financialData.assets || 0) - (financialData.liabilities || 0);
+  }
+
+  private static assessMethodologyConsistency(results: ValuationMethodResult[]): number {
+    if (results.length < 2) return 1;
+
+    const values = results.map(r => r.value);
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const maxDeviation = Math.max(...values.map(v => Math.abs(v - mean) / mean));
+
+    return 1 - (maxDeviation / 2); // Normalize to [0,1]
+  }
+
+  private static async getIndustryBenchmarks(industry: string) {
+    // In a production environment, this would fetch from a database or external API
+    return {
+      maxMultiple: 12,
+      avgMultiple: 8,
+      maxMargin: 0.4,
+      avgMargin: 0.25,
+      maxGrowth: 100,
+      avgGrowth: 15
+    };
+  }
+
+  private static async logValidationResults(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    const hasErrors = results.some(r => r.severity === 'error');
+    const hasWarnings = results.some(r => r.severity === 'warning');
+
+    if (hasErrors || hasWarnings) {
+      await ErrorLoggingService.logError('Validation issues detected', {
+        category: 'validation',
+        severity: hasErrors ? 'high' : 'medium',
+        context: {
+          businessInfo: {
+            name: data.businessInfo.name,
+            sector: data.businessInfo.sector,
+            industry: data.businessInfo.industry
+          },
+          results: results.filter(r => !r.isValid),
+          timestamp: new Date()
+        },
+        source: 'ValidationService'
+      });
     }
   }
 
@@ -113,17 +520,9 @@ export class ValidationService {
           suggestions: [
             'Review assumptions across all methods',
             'Check for outliers in financial data',
-            'Consider industry-specific adjustments',
-            'Document justification for variations'
+            'Consider industry-specific adjustments'
           ],
-          impact: 'high',
-          details: {
-            consistencyScore,
-            methodResults: valuationResults.map(r => ({
-              method: r.method,
-              deviation: r.confidence
-            }))
-          }
+          impact: 'high'
         });
       }
 
@@ -141,39 +540,6 @@ export class ValidationService {
     }
   }
 
-  private static async calculateAllMethodologies(
-    data: EnhancedValuationFormData
-  ): Promise<ValuationMethodResult[]> {
-    const results: ValuationMethodResult[] = [];
-    const methods = data.valuationInputs.methodologies;
-
-    for (const method of methods) {
-      try {
-        const result = await this.calculateMethodValue(data, method);
-        results.push(result);
-      } catch (error) {
-        await ErrorLoggingService.logError(error, {
-          category: 'calculation',
-          severity: 'medium',
-          context: { method, data },
-          source: 'calculateAllMethodologies'
-        });
-      }
-    }
-
-    return results;
-  }
-
-  private static assessMethodologyConsistency(results: ValuationMethodResult[]): number {
-    if (results.length < 2) return 1;
-
-    const values = results.map(r => r.value);
-    const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const maxDeviation = Math.max(...values.map(v => Math.abs(v - mean) / mean));
-
-    // Return a score between 0 and 1, where 1 is perfect consistency
-    return 1 - (maxDeviation / 2); // Normalize the deviation
-  }
 
   private static async validateAgainstBenchmarks(
     data: EnhancedValuationFormData,
@@ -211,231 +577,5 @@ export class ValidationService {
         impact: 'medium'
       });
     }
-  }
-
-  private static async calculateMethodValue(
-    data: EnhancedValuationFormData, 
-    method: string
-  ): Promise<ValuationMethodResult> {
-    const { financialData } = data;
-    let value = 0;
-    let confidence = 0;
-    const factors: string[] = [];
-
-    switch (method.toLowerCase()) {
-      case 'dcf':
-        value = this.calculateDCF(financialData);
-        confidence = 0.8;
-        factors.push('Growth rate', 'Cash flow projections', 'Discount rate');
-        break;
-      case 'multiple':
-        value = this.calculateMultiple(financialData);
-        confidence = 0.85;
-        factors.push('Revenue multiple', 'Industry benchmarks', 'Company stage');
-        break;
-      case 'asset':
-        value = this.calculateAssetBased(financialData);
-        confidence = 0.9;
-        factors.push('Asset value', 'Liability adjustments', 'Intangible assets');
-        break;
-      default:
-        value = 0;
-        confidence = 0;
-    }
-
-    return { method, value, confidence, factors };
-  }
-
-  private static calculateDCF(financialData: EnhancedFinancialData): number {
-    // Implement DCF calculation logic
-    return financialData.revenue * 5;
-  }
-
-  private static calculateMultiple(financialData: EnhancedFinancialData): number {
-    // Implement multiple-based calculation
-    return financialData.revenue * financialData.revenueMultiple;
-  }
-
-  private static calculateAssetBased(financialData: EnhancedFinancialData): number {
-    // Implement asset-based calculation
-    return (financialData.assets || 0) - (financialData.liabilities || 0);
-  }
-
-  private static async validateBasicMetrics(
-    data: EnhancedValuationFormData,
-    results: ValidationResult[]
-  ): Promise<void> {
-    try {
-      const { financialData } = data;
-
-      if (financialData.revenue && financialData.growthRate) {
-        if (financialData.growthRate > 200 && financialData.revenue < 100000) {
-          results.push({
-            isValid: false,
-            severity: 'warning',
-            message: 'Very high growth rate projected for early-stage revenue. Consider revising projections.',
-            suggestions: [
-              'Compare with industry averages',
-              'Provide supporting evidence for growth assumptions',
-              'Consider market size constraints'
-            ],
-            impact: 'medium'
-          });
-        }
-      }
-
-      if (financialData.operatingMargin && financialData.industry) {
-        const industryBenchmarks = await this.getIndustryBenchmarks(financialData.industry);
-        if (financialData.operatingMargin > industryBenchmarks.maxMargin) {
-          results.push({
-            isValid: false,
-            severity: 'warning',
-            message: `Operating margin significantly higher than industry average of ${industryBenchmarks.avgMargin}%`,
-            suggestions: [
-              'Review cost assumptions',
-              'Compare with competitor margins',
-              'Document justification for premium margins'
-            ],
-            impact: 'high'
-          });
-        }
-      }
-    } catch (error) {
-      await ErrorLoggingService.logError('Basic metrics validation failed', {
-        category: 'validation',
-        severity: 'medium',
-        context: { data, metric: 'basic' },
-        source: 'validateBasicMetrics'
-      });
-      throw error;
-    }
-  }
-
-  private static async validateIndustryMetrics(
-    data: EnhancedValuationFormData,
-    results: ValidationResult[]
-  ): Promise<void> {
-    try {
-      const sector = data.businessInfo?.sector;
-      const industry = data.businessInfo?.industry;
-
-      if (!sector || !industry) return;
-
-      const benchmarks = await this.getIndustryBenchmarks(industry);
-
-      if (data.financialData?.revenueMultiple) {
-        const { revenueMultiple } = data.financialData;
-        if (revenueMultiple > benchmarks.maxMultiple) {
-          results.push({
-            isValid: false,
-            severity: 'warning',
-            message: `Revenue multiple (${revenueMultiple}x) is significantly higher than industry average (${benchmarks.avgMultiple}x)`,
-            suggestions: [
-              'Review recent comparable company transactions',
-              'Consider adjusting for company-specific risk factors',
-              'Document justification for premium valuation'
-            ],
-            impact: 'high'
-          });
-        }
-      }
-
-      if (data.financialData?.projectedGrowth) {
-        const { projectedGrowth } = data.financialData;
-        if (projectedGrowth > benchmarks.maxGrowth) {
-          results.push({
-            isValid: false,
-            severity: 'warning',
-            message: `Projected growth rate (${projectedGrowth}%) exceeds industry maximum (${benchmarks.maxGrowth}%)`,
-            suggestions: [
-              'Review market size and penetration assumptions',
-              'Consider competitive dynamics',
-              'Validate growth sustainability'
-            ],
-            impact: 'medium'
-          });
-        }
-      }
-    } catch (error) {
-      await ErrorLoggingService.logError(error, {
-        category: 'validation',
-        severity: 'medium',
-        context: { data, metric: 'industry' },
-        source: 'validateIndustryMetrics'
-      });
-      throw error;
-    }
-  }
-
-  private static async validateMethodConsistency(
-    data: EnhancedValuationFormData,
-    results: ValidationResult[]
-  ): Promise<void> {
-    try {
-      const methods = data.valuationInputs?.methodologies || [];
-      if (methods.length < 2) return;
-
-      const valuations = methods.map(m => this.calculateMethodValue(data, m));
-      const avgValuation = valuations.reduce((a, b) => a + b, 0) / valuations.length;
-      const maxDeviation = Math.max(...valuations.map(v => Math.abs(v - avgValuation) / avgValuation));
-
-      if (maxDeviation > 0.5) {
-        results.push({
-          isValid: false,
-          severity: 'warning',
-          message: 'Large discrepancy between valuation methods (>50% deviation)',
-          suggestions: [
-            'Review assumptions for each method',
-            'Consider industry-specific factors affecting each approach',
-            'Document justification for variations'
-          ],
-          impact: 'high'
-        });
-      }
-    } catch (error) {
-      await ErrorLoggingService.logError(error, {
-        category: 'validation',
-        severity: 'high',
-        context: { data, metric: 'method-consistency' },
-        source: 'validateMethodConsistency'
-      });
-      throw error;
-    }
-  }
-
-  private static async logValidationResults(
-    data: EnhancedValuationFormData,
-    results: ValidationResult[]
-  ): Promise<void> {
-    const hasErrors = results.some(r => r.severity === 'error');
-    const hasWarnings = results.some(r => r.severity === 'warning');
-
-    if (hasErrors || hasWarnings) {
-      await ErrorLoggingService.logError('Validation issues detected', {
-        category: 'validation',
-        severity: hasErrors ? 'high' : 'medium',
-        context: {
-          businessInfo: {
-            name: data.businessInfo.name,
-            sector: data.businessInfo.sector,
-            industry: data.businessInfo.industry
-          },
-          results: results.filter(r => !r.isValid),
-          timestamp: new Date()
-        },
-        source: 'ValidationService'
-      });
-    }
-  }
-
-  private static async getIndustryBenchmarks(industry: string) {
-    return {
-      maxMultiple: 12,
-      avgMultiple: 8,
-      maxMargin: 0.4,
-      avgMargin: 0.25,
-      maxGrowth: 100,
-      avgGrowth: 15
-    };
   }
 }
