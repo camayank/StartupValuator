@@ -10,11 +10,16 @@ interface EnhancedFinancialData {
   ltv: number;
   burnRate: number;
   runway: number;
-  growthRate: number; // Make required
-  operatingMargin: number; // Make required
-  industry: string; // Make required
-  revenueMultiple: number; // Make required
-  projectedGrowth: number; // Make required
+  growthRate: number;
+  operatingMargin: number;
+  industry: string;
+  revenueMultiple: number;
+  projectedGrowth: number;
+  ebitda?: number;
+  netIncome?: number;
+  cashFlow?: number;
+  assets?: number;
+  liabilities?: number;
 }
 
 interface EnhancedValuationFormData extends ValuationFormData {
@@ -29,11 +34,18 @@ interface EnhancedValuationFormData extends ValuationFormData {
   };
   financialData: EnhancedFinancialData;
   valuationInputs: {
-    methodologies: string[]; // Make required
+    methodologies: string[];
     targetValuation: number;
     fundingRequired: number;
     expectedROI: number;
   };
+}
+
+interface ValuationMethodResult {
+  method: string;
+  value: number;
+  confidence: number;
+  factors: string[];
 }
 
 export class ValidationService {
@@ -50,10 +62,21 @@ export class ValidationService {
     const results: ValidationResult[] = [];
 
     try {
+      // First pass: Basic validation
       await this.validateBasicMetrics(data, results);
+
+      // Second pass: Industry-specific validation
       await this.validateIndustryMetrics(data, results);
+
+      // Third pass: Cross-method validation
       await this.validateMethodConsistency(data, results);
+
+      // Final pass: Comprehensive validation
+      await this.validateComprehensive(data, results);
+
+      // Log validation results
       await this.logValidationResults(data, results);
+
       return results;
     } catch (error) {
       await ErrorLoggingService.logError(error, {
@@ -72,6 +95,170 @@ export class ValidationService {
 
       return results;
     }
+  }
+
+  private static async validateComprehensive(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    try {
+      const valuationResults = await this.calculateAllMethodologies(data);
+      const consistencyScore = this.assessMethodologyConsistency(valuationResults);
+
+      if (consistencyScore < 0.7) { // 70% consistency threshold
+        results.push({
+          isValid: false,
+          severity: 'warning',
+          message: 'Significant variations between valuation methods detected',
+          suggestions: [
+            'Review assumptions across all methods',
+            'Check for outliers in financial data',
+            'Consider industry-specific adjustments',
+            'Document justification for variations'
+          ],
+          impact: 'high',
+          details: {
+            consistencyScore,
+            methodResults: valuationResults.map(r => ({
+              method: r.method,
+              deviation: r.confidence
+            }))
+          }
+        });
+      }
+
+      // Validate against industry benchmarks
+      const benchmarks = await this.getIndustryBenchmarks(data.businessInfo.industry);
+      this.validateAgainstBenchmarks(data, benchmarks, results);
+    } catch (error) {
+      await ErrorLoggingService.logError(error, {
+        category: 'validation',
+        severity: 'high',
+        context: { data, metric: 'comprehensive' },
+        source: 'validateComprehensive'
+      });
+      throw error;
+    }
+  }
+
+  private static async calculateAllMethodologies(
+    data: EnhancedValuationFormData
+  ): Promise<ValuationMethodResult[]> {
+    const results: ValuationMethodResult[] = [];
+    const methods = data.valuationInputs.methodologies;
+
+    for (const method of methods) {
+      try {
+        const result = await this.calculateMethodValue(data, method);
+        results.push(result);
+      } catch (error) {
+        await ErrorLoggingService.logError(error, {
+          category: 'calculation',
+          severity: 'medium',
+          context: { method, data },
+          source: 'calculateAllMethodologies'
+        });
+      }
+    }
+
+    return results;
+  }
+
+  private static assessMethodologyConsistency(results: ValuationMethodResult[]): number {
+    if (results.length < 2) return 1;
+
+    const values = results.map(r => r.value);
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const maxDeviation = Math.max(...values.map(v => Math.abs(v - mean) / mean));
+
+    // Return a score between 0 and 1, where 1 is perfect consistency
+    return 1 - (maxDeviation / 2); // Normalize the deviation
+  }
+
+  private static async validateAgainstBenchmarks(
+    data: EnhancedValuationFormData,
+    benchmarks: any,
+    results: ValidationResult[]
+  ): Promise<void> {
+    const { financialData } = data;
+
+    // Validate revenue multiple
+    if (financialData.revenueMultiple > benchmarks.maxMultiple * 1.5) {
+      results.push({
+        isValid: false,
+        severity: 'warning',
+        message: `Revenue multiple significantly exceeds industry maximum (${benchmarks.maxMultiple}x)`,
+        suggestions: [
+          'Review comparable company multiples',
+          'Document growth assumptions',
+          'Consider market conditions'
+        ],
+        impact: 'high'
+      });
+    }
+
+    // Validate growth projections
+    if (financialData.projectedGrowth > benchmarks.maxGrowth * 1.3) {
+      results.push({
+        isValid: false,
+        severity: 'warning',
+        message: `Growth projections exceed typical industry maximum by >30%`,
+        suggestions: [
+          'Validate growth assumptions',
+          'Compare to historical performance',
+          'Consider market size constraints'
+        ],
+        impact: 'medium'
+      });
+    }
+  }
+
+  private static async calculateMethodValue(
+    data: EnhancedValuationFormData, 
+    method: string
+  ): Promise<ValuationMethodResult> {
+    const { financialData } = data;
+    let value = 0;
+    let confidence = 0;
+    const factors: string[] = [];
+
+    switch (method.toLowerCase()) {
+      case 'dcf':
+        value = this.calculateDCF(financialData);
+        confidence = 0.8;
+        factors.push('Growth rate', 'Cash flow projections', 'Discount rate');
+        break;
+      case 'multiple':
+        value = this.calculateMultiple(financialData);
+        confidence = 0.85;
+        factors.push('Revenue multiple', 'Industry benchmarks', 'Company stage');
+        break;
+      case 'asset':
+        value = this.calculateAssetBased(financialData);
+        confidence = 0.9;
+        factors.push('Asset value', 'Liability adjustments', 'Intangible assets');
+        break;
+      default:
+        value = 0;
+        confidence = 0;
+    }
+
+    return { method, value, confidence, factors };
+  }
+
+  private static calculateDCF(financialData: EnhancedFinancialData): number {
+    // Implement DCF calculation logic
+    return financialData.revenue * 5;
+  }
+
+  private static calculateMultiple(financialData: EnhancedFinancialData): number {
+    // Implement multiple-based calculation
+    return financialData.revenue * financialData.revenueMultiple;
+  }
+
+  private static calculateAssetBased(financialData: EnhancedFinancialData): number {
+    // Implement asset-based calculation
+    return (financialData.assets || 0) - (financialData.liabilities || 0);
   }
 
   private static async validateBasicMetrics(
@@ -250,9 +437,5 @@ export class ValidationService {
       maxGrowth: 100,
       avgGrowth: 15
     };
-  }
-
-  private static calculateMethodValue(data: EnhancedValuationFormData, method: string): number {
-    return 1000000;
   }
 }
