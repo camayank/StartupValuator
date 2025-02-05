@@ -90,9 +90,11 @@ const navigationConfig = {
       { href: "/calculator", label: "Quick Calculator", description: "Basic calculator", icon: Calculator },
       { href: "/projections", label: "Financial Projections", description: "Create forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Create presentations", icon: FileText },
+      { href: "/business-plan", label: "Business Plan", description: "Create business plan", icon: FileText },
     ],
     analytics: [
       { href: "/dashboard", label: "Dashboard", description: "View analytics", icon: PieChart },
+      { href: "/compliance", label: "Compliance Check", description: "View compliance", icon: ClipboardCheck },
     ],
     resources: [
       { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
@@ -110,10 +112,6 @@ function getNavigation(role: UserRole) {
   return navigationConfig.default;
 }
 
-const resourceLinks = [
-  { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
-  { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
-];
 
 function App() {
   const { user, isLoading, error, logout } = useUser();
