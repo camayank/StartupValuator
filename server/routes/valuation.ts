@@ -7,6 +7,7 @@ import { eq, desc } from 'drizzle-orm';
 import { ValuationCalculator } from '../services/valuation';
 import { openAIService, anthropicService } from '../services/ai-service';
 import { ReportGenerator } from '../services/report-generation';
+import { ValidationService } from '../services/validation';
 
 const router = Router();
 const calculator = new ValuationCalculator();
@@ -47,28 +48,18 @@ router.post('/api/valuations', async (req, res) => {
 
     const formData: ValuationFormData = req.body;
 
-    // Validate required fields
-    if (!formData.businessInfo?.name || !formData.businessInfo?.sector) {
-      return res.status(400).json({ 
-        message: 'Missing required business information fields' 
-      });
-    }
+    // Perform comprehensive validation
+    const validationResults = await ValidationService.validateValuationData(formData);
+    const hasErrors = validationResults.some(r => !r.isValid && r.severity === 'error');
 
-    // Additional validations
-    if (formData.financialData?.ltv <= formData.financialData?.cac) {
+    if (hasErrors) {
       return res.status(400).json({
-        message: 'LTV must be greater than CAC for a sustainable business model'
+        message: 'Validation failed',
+        validationResults
       });
     }
 
-    if (formData.marketData?.tam < formData.marketData?.sam || 
-        formData.marketData?.sam < formData.marketData?.som) {
-      return res.status(400).json({
-        message: 'Market sizes must follow TAM ≥ SAM ≥ SOM'
-      });
-    }
-
-    console.log('Starting valuation process for:', formData.businessInfo.name);
+    const hasWarnings = validationResults.some(r => !r.isValid && r.severity === 'warning');
 
     // Get AI insights using both services
     const [marketAnalysis, riskAssessment, growthProjections] = await Promise.all([
@@ -80,7 +71,7 @@ router.post('/api/valuations', async (req, res) => {
     // Calculate valuation
     const calculatedValuation = await calculator.calculateValuation(formData);
 
-    // Prepare the record
+    // Prepare the record with validation results
     const valuationRecord = {
       businessInfo: formData.businessInfo,
       marketData: formData.marketData,
@@ -102,11 +93,12 @@ router.post('/api/valuations', async (req, res) => {
         confidence: calculatedValuation.confidence,
         factors: calculatedValuation.factors
       },
+      validationResults,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    // Store the valuation record with AI insights
+    // Store the valuation record with AI insights and validation results
     const [record] = await db.insert(valuationRecords)
       .values(valuationRecord)
       .returning();
@@ -114,13 +106,16 @@ router.post('/api/valuations', async (req, res) => {
     // Return the response
     res.json({
       id: record.id,
-      message: 'Valuation calculated successfully with AI insights',
+      message: hasWarnings 
+        ? 'Valuation calculated with warnings. Please review the validation results.'
+        : 'Valuation calculated successfully with AI insights',
       valuation: calculatedValuation,
       aiInsights: {
         marketAnalysis,
         riskAssessment,
         growthProjections
       },
+      validationResults,
       record
     });
 
