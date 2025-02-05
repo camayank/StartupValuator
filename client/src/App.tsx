@@ -24,13 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
-import { ValuationWizard } from "@/components/ValuationWizard";
 import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
 import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
 import { ComplianceChecker } from "@/components/ComplianceChecker";
 import { PricingPage } from "./pages/PricingPage";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
+import { ValuationForm } from "@/components/ValuationForm"; // Updated import path
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,15 +47,13 @@ import { useState, useEffect } from "react";
 import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
 import { LandingPage } from "./pages/LandingPage";
-import { IntegratedWorkflowController } from "@/components/IntegratedWorkflowController";
 import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
 
-// Update navigation configuration
 const navigationConfig = {
   startup: {
     mainTools: [
+      { href: "/valuation-form", label: "Full Valuation", description: "Comprehensive startup valuation", icon: FileText },
       { href: "/calculator", label: "Quick Calculator", description: "Basic valuation estimation", icon: Calculator },
-      { href: "/valuation", label: "Full Valuation", description: "Comprehensive startup valuation", icon: FileText },
       { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor presentations", icon: FileText },
       { href: "/business-plan", label: "Business Plan", description: "Create detailed business plan", icon: FileText },
@@ -71,7 +69,7 @@ const navigationConfig = {
   },
   investor: {
     mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
+      { href: "/valuation-form", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
       { href: "/calculator", label: "Quick Calculator", description: "Quick valuation estimates", icon: Calculator },
       { href: "/portfolio", label: "Portfolio", description: "Manage investments", icon: PieChart },
     ],
@@ -86,7 +84,7 @@ const navigationConfig = {
   },
   default: {
     mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Complete valuation", icon: Calculator },
+      { href: "/valuation-form", label: "Full Valuation", description: "Complete valuation", icon: Calculator },
       { href: "/calculator", label: "Quick Calculator", description: "Basic calculator", icon: Calculator },
       { href: "/projections", label: "Financial Projections", description: "Create forecasts", icon: BarChart3 },
       { href: "/pitch-deck", label: "Pitch Deck", description: "Create presentations", icon: FileText },
@@ -112,14 +110,12 @@ function getNavigation(role: UserRole) {
   return navigationConfig.default;
 }
 
-
 function App() {
   const { user, isLoading, error, logout } = useUser();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
 
-  // Handle authentication errors
   useEffect(() => {
     if (error) {
       toast({
@@ -130,7 +126,6 @@ function App() {
     }
   }, [error, toast]);
 
-  // Show loading state for max 5 seconds
   const [showLoadingError, setShowLoadingError] = useState(false);
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -170,7 +165,6 @@ function App() {
     );
   }
 
-  // Public routes - show landing page or calculator
   if (!user && !location.startsWith('/auth')) {
     if (location === '/calculator') {
       return (
@@ -198,15 +192,12 @@ function App() {
     return <LandingPage />;
   }
 
-  // Show auth page if not logged in and on auth page
   if (!user && location.startsWith('/auth')) {
     return <AuthPage />;
   }
 
-  // If we get here, user must be logged in
   if (!user) return null;
 
-  // Get navigation config based on user role with fallback
   const userNavigation = user ? getNavigation(user.role) : navigationConfig.default;
 
   const handleLogout = async () => {
@@ -268,7 +259,6 @@ function App() {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
-        {/* Desktop Sidebar */}
         <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r bg-card lg:block">
           <div className="flex h-full flex-col">
             <div className="border-b p-4 flex items-center justify-between">
@@ -343,7 +333,6 @@ function App() {
           </div>
         </aside>
 
-        {/* Mobile Header */}
         <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur lg:hidden">
           <div className="flex h-16 items-center justify-between px-4">
             <Link href="/">
@@ -405,7 +394,6 @@ function App() {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="lg:pl-64">
           <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
             <Switch>
@@ -415,10 +403,10 @@ function App() {
               <Route path="/calculator">
                 <ValuationCalculatorPage />
               </Route>
-              <Route path="/valuation">
-                <ValuationWizard
-                  onSubmit={(data) => {
-                    console.log('Valuation data submitted:', data);
+              <Route path="/valuation-form">
+                <ValuationForm
+                  onResult={(data) => {
+                    console.log('Valuation form data:', data);
                   }}
                 />
               </Route>
@@ -443,16 +431,13 @@ function App() {
               <Route path="/profile/:userId">
                 <Profile />
               </Route>
-              <Route path="/integrated-workflow">
-                <IntegratedWorkflowController />
-              </Route>
               <Route path="/business-plan">
                 <BusinessPlanWizard />
               </Route>
               <Route path="/">
-                <ValuationWizard
-                  onSubmit={(data) => {
-                    console.log('Valuation data submitted:', data);
+                <ValuationForm
+                  onResult={(data) => {
+                    console.log('Valuation form data:', data);
                   }}
                 />
               </Route>
@@ -470,7 +455,6 @@ function App() {
   );
 }
 
-// fallback 404 not found page
 function NotFound() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

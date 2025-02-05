@@ -35,6 +35,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { FormLoadingSkeleton } from "@/components/ui/form-loading-skeleton";
+import { productStages, businessModels, sectors } from "@/lib/constants";
+
+const getSectorOptions = () => Object.entries(sectors);
+const getProductStageOptions = () => Object.entries(productStages);
+const getBusinessModelOptions = () => Object.entries(businessModels);
 
 // Enhanced form sections configuration based on user requirements
 const formSections = [
@@ -58,15 +63,17 @@ const formSections = [
         type: "dropdown", 
         required: true,
         description: "Primary sector your business operates in",
-        help: "Choose the sector that best represents your core business activities"
+        help: "Choose the sector that best represents your core business activities",
+        options: getSectorOptions()
       },
       { 
-        name: "businessInfo.industry", 
-        label: "Industry", 
+        name: "businessInfo.productStage", 
+        label: "Product Stage", 
         type: "dropdown", 
         required: true,
-        description: "Specific industry within the sector",
-        help: "Select the specific industry that matches your business model"
+        description: "Current stage of product development",
+        help: "Select the stage that best describes your product's current status",
+        options: getProductStageOptions()
       },
       {
         name: "businessInfo.businessModel",
@@ -74,7 +81,8 @@ const formSections = [
         type: "dropdown",
         required: true,
         description: "How your business generates revenue",
-        help: "Common examples: SaaS, E-commerce, Marketplace, etc."
+        help: "Select the model that best describes your revenue generation",
+        options: getBusinessModelOptions()
       }
     ]
   },
@@ -170,7 +178,7 @@ const formSections = [
         type: "dropdown", 
         required: true,
         description: "Current development stage of your product",
-        options: Object.entries(productStages)
+        options: getProductStageOptions()
       },
       { 
         name: "productDetails.technologyStack", 
@@ -261,7 +269,7 @@ const AUTOSAVE_DELAY = 1000; // 1 second
 const defaultValues: ValuationFormData = {
   businessInfo: {
     name: "",
-    sector: "",
+    sector: "enterprise",
     industry: "",
     location: "",
     productStage: "concept",
@@ -282,7 +290,7 @@ const defaultValues: ValuationFormData = {
     runway: 0
   },
   productDetails: {
-    maturity: "",
+    maturity: "concept",
     roadmap: "",
     technologyStack: "",
     differentiators: ""
