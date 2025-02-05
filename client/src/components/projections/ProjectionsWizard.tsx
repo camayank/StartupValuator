@@ -10,7 +10,7 @@ import { ProjectionsReviewStep } from "./ProjectionsReviewStep";
 import { MarketValidationStep } from "./MarketValidationStep";
 import type { FinancialProjectionData } from "@/lib/validations";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, Sparkles, BarChart } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, Sparkles, LineChart, Calculator, Target, Coins, ClipboardCheck } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -24,29 +24,54 @@ const steps = [
   {
     title: "Revenue Projections",
     description: "Forecast your revenue streams and growth",
-    icon: BarChart
+    icon: LineChart
   },
   {
     title: "Expense Planning",
     description: "Plan your operational and capital expenses",
-    icon: BarChart
+    icon: Calculator
   },
   {
     title: "Market Validation",
     description: "Validate projections against market data",
-    icon: BarChart
+    icon: Target
   },
   {
     title: "Fund Utilization",
     description: "Plan how you'll utilize funding",
-    icon: BarChart
+    icon: Coins
   },
   {
     title: "Review & Finalize",
     description: "Review and confirm your projections",
-    icon: CheckCircle2
+    icon: ClipboardCheck
   }
 ] as const;
+
+interface ProjectionsReviewStepProps {
+  data: FinancialProjectionData;
+  onUpdate: (data: Partial<FinancialProjectionData>) => Promise<void>;
+  onSubmit: (data: FinancialProjectionData) => Promise<void>;
+  onBack: () => void;
+  isSubmitting: boolean;
+}
+
+interface FundUtilizationStepProps {
+  data: {
+    totalFunding: number;
+    burnRate: number;
+    runway: number;
+    allocation: {
+      category: string;
+      percentage: number;
+      amount: number;
+      description: string;
+    }[];
+  };
+  onUpdate: (data: Partial<FinancialProjectionData>) => Promise<void>;
+  onNext: () => void;
+  onBack: () => void;
+}
 
 export function ProjectionsWizard() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -197,8 +222,8 @@ export function ProjectionsWizard() {
               </div>
             ))}
           </div>
-          <Progress 
-            value={((currentStep + 1) / steps.length) * 100} 
+          <Progress
+            value={((currentStep + 1) / steps.length) * 100}
             className="h-2"
           />
         </div>

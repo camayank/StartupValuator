@@ -18,7 +18,7 @@ import {
   YAxis,
   Tooltip,
   Legend,
-  PieChart,
+  PieChart as RechartsPC,
   Pie,
   Cell,
 } from "recharts";
@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { currencies, sectors, businessStages } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { calculateValuation } from "@/lib/api";
-import { Check, Info, Sun, Moon } from "lucide-react";
+import { Check, Info, Sun, Moon, DollarSign, TrendingUp, Percent, Building2, Milestone, HelpCircle, BarChart2 } from "lucide-react";
 import {
   HoverCard,
   HoverCardContent,
@@ -41,6 +41,7 @@ const STANDARD_COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 // Help content for each field
 const fieldHelp = {
   revenue: {
+    icon: DollarSign,
     title: "Annual Revenue",
     description: "Your company's total annual revenue in the selected currency.",
     tips: [
@@ -51,6 +52,7 @@ const fieldHelp = {
     example: "Example: If you make $100,000 per month, enter $1,200,000",
   },
   growthRate: {
+    icon: TrendingUp,
     title: "Growth Rate",
     description: "Your company's year-over-year revenue growth rate as a percentage.",
     tips: [
@@ -61,6 +63,7 @@ const fieldHelp = {
     example: "Example: If revenue doubled, enter 100%",
   },
   margins: {
+    icon: Percent,
     title: "Operating Margins",
     description: "Your operating profit margin as a percentage of revenue.",
     tips: [
@@ -71,6 +74,7 @@ const fieldHelp = {
     example: "Example: If you make $200K profit on $1M revenue, enter 20%",
   },
   sector: {
+    icon: Building2,
     title: "Business Sector",
     description: "The primary industry sector your business operates in.",
     tips: [
@@ -80,6 +84,7 @@ const fieldHelp = {
     ],
   },
   stage: {
+    icon: Milestone,
     title: "Business Stage",
     description: "Your company's current stage of development.",
     tips: [
@@ -88,7 +93,7 @@ const fieldHelp = {
       "Be realistic about your current stage",
     ],
   },
-};
+} as const;
 
 // Default values that match our validation schema
 const defaultValues: Partial<ValuationFormData> = {
@@ -185,13 +190,16 @@ export function InteractiveValuationCalculator() {
 
   const FieldLabel = ({ field, children }: { field: keyof typeof fieldHelp, children: React.ReactNode }) => {
     const help = fieldHelp[field];
+    const IconComponent = help.icon;
+
     return (
       <div className="flex items-center gap-2 mb-2">
+        <IconComponent className="h-4 w-4 text-muted-foreground" />
         <Label>{children}</Label>
         <HoverCard>
           <HoverCardTrigger asChild>
             <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-              <Info className="h-4 w-4 text-muted-foreground" />
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
             </Button>
           </HoverCardTrigger>
           <HoverCardContent className="w-80">
@@ -421,7 +429,7 @@ export function InteractiveValuationCalculator() {
                   {/* Pie Chart with improved accessibility */}
                   <div className="h-[400px]" role="figure" aria-label="Valuation breakdown pie chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
+                      <RechartsPC>
                         <Pie
                           data={breakdownData}
                           dataKey="value"
@@ -452,7 +460,7 @@ export function InteractiveValuationCalculator() {
                         <Legend
                           formatter={(value) => <span style={{ color: highContrast ? "#000000" : undefined }}>{value}</span>}
                         />
-                      </PieChart>
+                      </RechartsPC>
                     </ResponsiveContainer>
                   </div>
                 </div>
