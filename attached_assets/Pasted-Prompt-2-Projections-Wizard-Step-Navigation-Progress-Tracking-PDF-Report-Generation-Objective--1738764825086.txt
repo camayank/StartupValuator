@@ -1,0 +1,82 @@
+Prompt 2: Projections Wizard – Step Navigation, Progress Tracking & PDF Report Generation
+Objective:
+Validate that the Projections Wizard (file: ProjectionsWizard.tsx) guides users smoothly through all steps of the projection process, accurately tracks progress, and generates a comprehensive PDF report at the end. This prompt also ensures that transitions and animations between steps work correctly.
+
+Steps to Execute:
+
+Launch the Projections Wizard Screen:
+
+Open the Projections Wizard in your Replit environment.
+Verify that the initial step (Revenue Projections) is displayed.
+Confirm that a visible progress tracker or step indicator shows the current step and the total number of steps (typically 5 steps: Revenue Projections, Expense Planning, Market Validation, Fund Utilization, and Review & Finalize).
+Step-by-Step Navigation:
+
+Step 1 – Revenue Projections:
+
+Action: Enter realistic revenue projection values. For instance, input a series of projected revenue figures for the next 5 years.
+Validation: Confirm that the input fields enforce numeric-only values and the correct currency format if applicable.
+Progress Tracker: Check that the progress indicator highlights the current step correctly.
+Transition: Click “Next” or use the provided navigation control to proceed to the next step.
+Step 2 – Expense Planning:
+
+Action: Enter key expense data. Ensure that you include all mandatory fields (such as operating expenses, cost of goods sold, etc.).
+Validation: Verify any numeric or percentage validations are enforced.
+Navigation: Use “Previous” to confirm that you can navigate back to the Revenue Projections step without losing your entered data.
+Transition: Navigate forward again.
+Step 3 – Market Validation:
+
+Action: Input market validation metrics (e.g., market size, growth trends, or competitor data as required by the form).
+Visual Feedback: Ensure that any animations between steps are smooth.
+Navigation: Use the step navigation controls to jump between this and adjacent steps, ensuring data persistence.
+Step 4 – Fund Utilization:
+
+Action: Enter planned fund utilization details. Include breakdowns if required.
+Validation: Check that all validations (e.g., numeric ranges or required fields) trigger appropriately.
+Navigation: Verify that you can move back and forth between steps without data loss.
+Step 5 – Review & Finalize:
+
+Action: On reaching the final step, review all the entered data.
+Validation: Check that the system highlights any missing or inconsistent inputs before final submission.
+Transition: Confirm that the review section aggregates data from previous steps in a clear, organized manner.
+Progress Tracking & User Feedback:
+
+Action: Throughout the wizard, observe the progress tracker’s responsiveness to your navigation actions.
+Expectation: The tracker should update accurately as you move from one step to another (e.g., “Step 3 of 5” should update when you are on the third step).
+PDF Report Generation:
+
+Action: At the end of the wizard (Review & Finalize step), trigger the PDF report generation.
+Validation:
+Ensure that the generated PDF includes data from all previous steps (Revenue Projections, Expense Planning, Market Validation, Fund Utilization).
+Verify that the report displays formatted charts, tables, or any visualizations provided in the projections.
+Check that the PDF contains all summary data, and that the layout is clear and professional.
+Test: Download or preview the PDF report and verify consistency with the on-screen data.
+Animations & Transition Effects:
+
+Action: Observe any animations when moving between steps.
+Expectation:
+Transitions should be smooth with no jarring effects.
+All dynamic elements (e.g., fading in/out or sliding transitions) should complete within a reasonable time (e.g., 300–500ms).
+Edge Case: Incomplete Data & Error Handling:
+
+Action: On one of the steps (for example, Expense Planning), intentionally leave a required field blank or enter an invalid value.
+Expectation:
+The system should not allow you to proceed to the next step.
+Appropriate error messages should be displayed, guiding you to correct the error before moving on.
+Expected Outcomes:
+
+Step Navigation & Progress:
+
+Each step (Revenue Projections, Expense Planning, Market Validation, Fund Utilization, and Review & Finalize) loads correctly with a clear progress indicator.
+Navigation between steps (both forward and backward) retains the entered data without loss.
+Validations & Error Handling:
+
+Required fields are validated, and any missing or erroneous input prevents progression.
+Error messages appear when invalid data is detected, ensuring that users know what to correct.
+PDF Report:
+
+Upon finalizing the wizard, a PDF report is generated that accurately compiles data from all steps.
+The layout and formatting of the PDF are consistent with the data displayed on the screen.
+Smooth Animations & Transitions:
+
+Transitions between steps are animated smoothly.
+User experience is enhanced through responsive progress tracking and dynamic visual feedback.
