@@ -43,8 +43,7 @@ export async function analyzePitchDeck(
       response_format: { type: "json_object" },
     });
 
-    const analysis = JSON.parse(response.choices[0].message.content || "{}");
-    return analysis;
+    return JSON.parse(response.choices[0].message.content || "{}");
   } catch (error) {
     console.error("Pitch deck analysis error:", error);
     throw new Error("Failed to analyze pitch deck");

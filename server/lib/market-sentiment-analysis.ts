@@ -3,11 +3,11 @@ import { openai } from '../services/ai-service';
 export async function analyzeMarketSentiment(company: string, industry: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o",  // Using latest model
       messages: [
         {
           role: "system",
-          content: "Analyze market sentiment and trends for the specified company and industry.",
+          content: "Analyze market sentiment and trends for the specified company and industry. Provide a detailed analysis with sentiment scores, key trends, and market indicators in JSON format.",
         },
         {
           role: "user",

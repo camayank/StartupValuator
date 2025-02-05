@@ -1,17 +1,10 @@
 import { OpenAI } from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ValuationFormData } from "../../client/src/lib/validations";
+import { openAIService, anthropicService } from "./ai-service";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 // the newest Anthropic model is "claude-3-5-sonnet-20241022" which was released October 22, 2024
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 export interface MarketAnalysisResult {
   trends: {
@@ -121,22 +114,7 @@ export interface IPAssessmentResult {
 export class AIAnalysisService {
   async analyzeMarket(data: ValuationFormData): Promise<MarketAnalysisResult> {
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a market research expert. Analyze the business data and generate a detailed market analysis including trends, competitors, and market size estimates. Focus on actionable insights.`,
-          },
-          {
-            role: "user",
-            content: JSON.stringify(data),
-          },
-        ],
-        response_format: { type: "json_object" },
-      });
-
-      return JSON.parse(response.choices[0].message.content || "{}");
+      return await openAIService.analyzeMarket(data);
     } catch (error) {
       console.error("Market analysis error:", error);
       throw new Error("Failed to analyze market data");
@@ -145,18 +123,7 @@ export class AIAnalysisService {
 
   async assessRisks(data: ValuationFormData): Promise<RiskAssessmentResult> {
     try {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: JSON.stringify(data) }],
-        system: `You are a risk assessment specialist. Analyze the business data and provide a detailed risk assessment including overall risk score, category breakdown, and mitigation strategies. Output in JSON format matching the RiskAssessmentResult type.`,
-      });
-
-      return JSON.parse(
-        typeof response.content === "string"
-          ? response.content
-          : response.content[0]?.text || "{}"
-      );
+      return await anthropicService.analyzeRisks(data);
     } catch (error) {
       console.error("Risk assessment error:", error);
       throw new Error("Failed to assess risks");
@@ -165,22 +132,7 @@ export class AIAnalysisService {
 
   async generateGrowthProjections(data: ValuationFormData): Promise<GrowthProjectionResult> {
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are a financial analyst specializing in startup growth projections. Generate detailed growth projections including revenue forecasts, growth drivers, and sensitivity analysis.`,
-          },
-          {
-            role: "user",
-            content: JSON.stringify(data),
-          },
-        ],
-        response_format: { type: "json_object" },
-      });
-
-      return JSON.parse(response.choices[0].message.content || "{}");
+      return await openAIService.generateGrowthProjections(data);
     } catch (error) {
       console.error("Growth projections error:", error);
       throw new Error("Failed to generate growth projections");
@@ -189,18 +141,7 @@ export class AIAnalysisService {
 
   async analyzeTeam(data: ValuationFormData): Promise<TeamAnalysisResult> {
     try {
-      const response = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: JSON.stringify(data) }],
-        system: `You are a talent assessment expert. Analyze the team's expertise, experience, and capabilities. Identify strengths and gaps. Output in JSON format matching the TeamAnalysisResult type.`,
-      });
-
-      return JSON.parse(
-        typeof response.content === "string"
-          ? response.content
-          : response.content[0]?.text || "{}"
-      );
+      return await anthropicService.analyzeTeam(data);
     } catch (error) {
       console.error("Team analysis error:", error);
       throw new Error("Failed to analyze team");
@@ -214,7 +155,7 @@ export class AIAnalysisService {
         messages: [
           {
             role: "system",
-            content: `You are an intellectual property expert. Analyze the company's IP assets including patents, trademarks, and technical IP. Provide valuation and recommendations.`,
+            content: "You are an intellectual property expert. Analyze the company's IP assets including patents, trademarks, and technical IP. Provide valuation and recommendations.",
           },
           {
             role: "user",

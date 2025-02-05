@@ -13,6 +13,7 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Types for responses
 export interface AIValuationResponse {
   valuation: {
     base: number;
@@ -39,11 +40,11 @@ export interface AIValuationResponse {
   };
 }
 
-export class AIService {
+// OpenAI-based analysis service
+export class OpenAIService {
   async generateValuation(data: ValuationFormData): Promise<AIValuationResponse> {
     try {
-      // Get OpenAI's valuation
-      const openaiResponse = await openai.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
@@ -58,55 +59,13 @@ export class AIService {
         response_format: { type: "json_object" },
       });
 
-      // Get Anthropic's valuation
-      const anthropicResponse = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: JSON.stringify(data) }],
-        system: "You are an expert startup valuator. Analyze the provided business data and generate a detailed valuation with confidence scores. Output in JSON format.",
-      });
-
-      // Parse both responses
-      const openaiValuation = JSON.parse(openaiResponse.choices[0].message.content || "{}");
-      const anthropicValuation = JSON.parse(
-        typeof anthropicResponse.content === "string"
-          ? anthropicResponse.content
-          : Array.isArray(anthropicResponse.content)
-          ? anthropicResponse.content[0].text
-          : "{}"
-      );
-
-      // Combine and average the valuations
-      return {
-        valuation: {
-          base: (openaiValuation.valuation.base + anthropicValuation.valuation.base) / 2,
-          low: Math.min(openaiValuation.valuation.low, anthropicValuation.valuation.low),
-          high: Math.max(openaiValuation.valuation.high, anthropicValuation.valuation.high),
-          confidence: (openaiValuation.valuation.confidence + anthropicValuation.valuation.confidence) / 2,
-        },
-        analysis: {
-          strengths: Array.from(new Set([...openaiValuation.analysis.strengths, ...anthropicValuation.analysis.strengths])),
-          weaknesses: Array.from(new Set([...openaiValuation.analysis.weaknesses, ...anthropicValuation.analysis.weaknesses])),
-          opportunities: Array.from(new Set([...openaiValuation.analysis.opportunities, ...anthropicValuation.analysis.opportunities])),
-          threats: Array.from(new Set([...openaiValuation.analysis.threats, ...anthropicValuation.analysis.threats])),
-        },
-        recommendations: Array.from(new Set([...openaiValuation.recommendations, ...anthropicValuation.recommendations])),
-        methodology: {
-          weights: {
-            revenue: (openaiValuation.methodology.weights.revenue + anthropicValuation.methodology.weights.revenue) / 2,
-            market: (openaiValuation.methodology.weights.market + anthropicValuation.methodology.weights.market) / 2,
-            team: (openaiValuation.methodology.weights.team + anthropicValuation.methodology.weights.team) / 2,
-            technology: (openaiValuation.methodology.weights.technology + anthropicValuation.methodology.weights.technology) / 2,
-            traction: (openaiValuation.methodology.weights.traction + anthropicValuation.methodology.weights.traction) / 2,
-          },
-          adjustments: {},
-        },
-      };
+      return JSON.parse(response.choices[0].message.content || "{}");
     } catch (error) {
-      console.error("AI Valuation error:", error);
-      throw new Error("Failed to generate AI valuation");
+      console.error("OpenAI Valuation error:", error);
+      throw new Error("Failed to generate OpenAI valuation");
     }
   }
+
   async analyzeMarket(data: ValuationFormData) {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -165,4 +124,64 @@ export class AIService {
   }
 }
 
-export const aiService = new AIService();
+// Anthropic-based analysis service
+export class AnthropicService {
+  async generateValuation(data: ValuationFormData): Promise<AIValuationResponse> {
+    try {
+      const response = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: JSON.stringify(data) }],
+        system: "You are an expert startup valuator. Analyze the provided business data and generate a detailed valuation with confidence scores. Output in JSON format matching the AIValuationResponse type.",
+      });
+
+      const content = typeof response.content === "string" 
+        ? response.content 
+        : Array.isArray(response.content) 
+        ? response.content[0].text 
+        : "{}";
+
+      return JSON.parse(content);
+    } catch (error) {
+      console.error("Anthropic Valuation error:", error);
+      throw new Error("Failed to generate Anthropic valuation");
+    }
+  }
+
+  async analyzeRisks(data: ValuationFormData) {
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: JSON.stringify(data) }],
+      system: "You are a risk assessment specialist. Analyze the business data and provide a detailed risk assessment including overall risk score, category breakdown, and mitigation strategies. Output in JSON format.",
+    });
+
+    const content = typeof response.content === "string" 
+      ? response.content 
+      : Array.isArray(response.content) 
+      ? response.content[0].text 
+      : "{}";
+
+    return JSON.parse(content);
+  }
+
+  async analyzeTeam(data: ValuationFormData) {
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: JSON.stringify(data) }],
+      system: "You are a talent assessment expert. Analyze the team's expertise, experience, and capabilities. Identify strengths and gaps. Output in JSON format.",
+    });
+
+    const content = typeof response.content === "string" 
+      ? response.content 
+      : Array.isArray(response.content) 
+      ? response.content[0].text 
+      : "{}";
+
+    return JSON.parse(content);
+  }
+}
+
+export const openAIService = new OpenAIService();
+export const anthropicService = new AnthropicService();

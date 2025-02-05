@@ -5,7 +5,7 @@ import type { ValuationFormData } from '../../client/src/lib/validations';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
 import { ValuationCalculator } from '../services/valuation';
-import { aiService } from '../services/ai-service';
+import { openAIService, anthropicService } from '../services/ai-service';
 import { ReportGenerator } from '../services/report-generation';
 
 const router = Router();
@@ -38,10 +38,10 @@ function checkRateLimit(ip: string): boolean {
 router.post('/api/valuations', async (req, res) => {
   try {
     // Check rate limit
-    if (!checkRateLimit(req.ip)) {
+    if (!checkRateLimit(req.ip || '')) {
       return res.status(429).json({ 
         message: 'Rate limit exceeded. Please try again in a few moments.',
-        retryAfter: Math.ceil((RATE_LIMIT_WINDOW - (Date.now() - (requestCounts.get(req.ip)?.timestamp || 0))) / 1000)
+        retryAfter: Math.ceil((RATE_LIMIT_WINDOW - (Date.now() - (requestCounts.get(req.ip || '')?.timestamp || 0))) / 1000)
       });
     }
 
@@ -70,19 +70,18 @@ router.post('/api/valuations', async (req, res) => {
 
     console.log('Starting valuation process for:', formData.businessInfo.name);
 
-    // Get AI insights
+    // Get AI insights using both services
     const [marketAnalysis, riskAssessment, growthProjections] = await Promise.all([
-      aiService.analyzeMarket(formData),
-      aiService.assessRisks(formData),
-      aiService.generateGrowthProjections(formData)
+      openAIService.analyzeMarket(formData),
+      anthropicService.analyzeRisks(formData),
+      openAIService.generateGrowthProjections(formData)
     ]);
 
     // Calculate valuation
     const calculatedValuation = await calculator.calculateValuation(formData);
 
-    // Store the valuation record with AI insights
-    const record = await db.insert(valuationRecords).values({
-      userId: req.user?.id || 1, // Default user ID if not logged in
+    // Prepare the record
+    const valuationRecord = {
       businessInfo: formData.businessInfo,
       marketData: formData.marketData,
       financialData: formData.financialData,
@@ -105,11 +104,16 @@ router.post('/api/valuations', async (req, res) => {
       },
       createdAt: new Date(),
       updatedAt: new Date()
-    }).returning();
+    };
+
+    // Store the valuation record with AI insights
+    const [record] = await db.insert(valuationRecords)
+      .values(valuationRecord)
+      .returning();
 
     // Return the response
     res.json({
-      id: record[0].id,
+      id: record.id,
       message: 'Valuation calculated successfully with AI insights',
       valuation: calculatedValuation,
       aiInsights: {
@@ -117,7 +121,7 @@ router.post('/api/valuations', async (req, res) => {
         riskAssessment,
         growthProjections
       },
-      record: record[0]
+      record
     });
 
   } catch (error: any) {

@@ -4,11 +4,11 @@ import { openai } from '../services/ai-service';
 export async function generateComplianceReport(data: any) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o",  // Using latest model
       messages: [
         {
           role: "system",
-          content: "Generate a compliance report for the given business data, focusing on regulatory requirements, risks, and recommendations.",
+          content: "Generate a compliance report for the given business data, focusing on regulatory requirements, risks, and recommendations. Output in JSON format.",
         },
         {
           role: "user",
