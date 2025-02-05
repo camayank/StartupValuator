@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -15,9 +15,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { ValuationFormData } from "@/lib/validations";
-import ValidationEngine from "@/lib/validation-engine";
-import ErrorHandler from "@/lib/error-handler";
-import DebugHelper from "@/lib/debug-helper";
+import { useSmartValidation } from "@/hooks/use-smart-validation";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
 interface ReviewAssumptionsProps {
   data: ValuationFormData & {
@@ -34,15 +34,6 @@ interface ReviewAssumptionsProps {
   onRegenerate: () => void;
   onBack: () => void;
 }
-
-// Validation rules for the assumptions
-const validationRules = {
-  discountRate: { min: 0.05, max: 0.3 },
-  growthRate: { min: 0, max: 1 },
-  terminalGrowthRate: { min: 0.01, max: 0.05 },
-  beta: { min: 0.5, max: 2.0 },
-  marketRiskPremium: { min: 0.04, max: 0.08 }
-};
 
 export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: ReviewAssumptionsProps) {
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -62,71 +53,46 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
     },
   });
 
-  // Validate assumption values using ValidationEngine
-  const validateAssumption = (field: string, value: number): boolean => {
-    const rules = validationRules[field as keyof typeof validationRules];
-    if (!rules) return true;
-    return ValidationEngine.validateNumber(value, rules);
-  };
+  // Use our enhanced validation hook
+  const { validateField, validationState, getSmartSuggestions } = useSmartValidation({
+    sector: data.businessInfo?.sector,
+    stage: data.businessInfo?.productStage,
+    revenue: data.financialData?.revenue
+  });
 
-  // Update handlers with type-safe assumption updates and validation
+  // Validate assumption values
   const handleAssumptionUpdate = async (field: keyof typeof assumptions, value: number) => {
-    try {
-      // Validate the new value
-      if (!validateAssumption(field, value)) {
-        const error = ErrorHandler.handleValidationError({
-          message: `Invalid value for ${field}. Please check the allowed range.`,
-          suggestions: [`Value must be between ${validationRules[field].min} and ${validationRules[field].max}`]
-        });
-        error.toast();
-        return;
-      }
-
-      // Track state change
-      const prevAssumptions = { ...assumptions };
+    const isValid = validateField(field, value, data);
+    if (isValid) {
       const newAssumptions = { ...assumptions, [field]: value };
-
-      DebugHelper.trackStateChange(prevAssumptions, newAssumptions);
-
-      // Update state and notify parent
-      await DebugHelper.trackAPICall(
-        async () => await onUpdate({ assumptions: newAssumptions }),
-        `Update ${field}`
-      );
-
-    } catch (error) {
-      if (error instanceof Error) {
-        ErrorHandler.logError(error, {
-          context: 'handleAssumptionUpdate',
-          field,
-          value,
-          previousValue: assumptions[field]
-        });
-      }
+      await onUpdate({ assumptions: newAssumptions });
     }
   };
 
   const handleSubmit = async (values: Partial<ValuationFormData>) => {
     setIsRegenerating(true);
     try {
-      // Track API calls with DebugHelper
-      await DebugHelper.trackAPICall(
-        async () => {
-          await onUpdate(values);
-          await onRegenerate();
-        },
-        'Regenerate Valuation'
-      );
-    } catch (error) {
-      if (error instanceof Error) {
-        ErrorHandler.logError(error, {
-          context: 'ReviewAssumptions.handleSubmit',
-          formData: values
-        });
-      }
+      await onUpdate(values);
+      await onRegenerate();
     } finally {
       setIsRegenerating(false);
     }
+  };
+
+  // Helper to render smart suggestions
+  const renderSuggestions = (field: string) => {
+    const suggestions = getSmartSuggestions(field, form.getValues(field));
+    if (!suggestions?.length) return null;
+
+    return (
+      <div className="mt-2 space-y-1">
+        {suggestions.map((suggestion, index) => (
+          <Badge key={index} variant="outline" className="mr-2">
+            {suggestion}
+          </Badge>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -134,7 +100,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Review and adjust the valuation assumptions below. Changes will automatically update the valuation and regenerate the report.
+          Review and adjust the valuation assumptions below. Changes will automatically update the valuation.
         </AlertDescription>
       </Alert>
 
@@ -147,10 +113,19 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
               name="growthRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Growth Rate (%)</FormLabel>
-                  <FormDescription>
-                    Expected annual revenue growth rate
-                  </FormDescription>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Growth Rate (%)</FormLabel>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Expected annual revenue growth rate
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <FormControl>
                     <Input
                       type="number"
@@ -159,12 +134,14 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                       onChange={(e) => {
                         const value = Number(e.target.value);
                         field.onChange(value);
+                        validateField('growthRate', value, data);
                         onUpdate({ growthRate: value });
                       }}
-                      required
+                      className={validationState['growthRate']?.isValid ? '' : 'border-red-500'}
                     />
                   </FormControl>
                   <FormMessage />
+                  {renderSuggestions('growthRate')}
                 </FormItem>
               )}
             />
@@ -175,10 +152,19 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
               name="margins"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Operating Margins (%)</FormLabel>
-                  <FormDescription>
-                    Expected operating profit margin
-                  </FormDescription>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Operating Margins (%)</FormLabel>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Expected operating profit margin
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <FormControl>
                     <Input
                       type="number"
@@ -187,19 +173,33 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                       onChange={(e) => {
                         const value = Number(e.target.value);
                         field.onChange(value);
+                        validateField('margins', value, data);
                         onUpdate({ margins: value });
                       }}
-                      required
+                      className={validationState['margins']?.isValid ? '' : 'border-red-500'}
                     />
                   </FormControl>
                   <FormMessage />
+                  {renderSuggestions('margins')}
                 </FormItem>
               )}
             />
 
             {/* Discount Rate Slider */}
             <div className="space-y-2">
-              <FormLabel>Discount Rate (%)</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Discount Rate (%)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Required rate of return for the investment
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <FormDescription>
                 Current value: {(assumptions.discountRate * 100).toFixed(1)}%
               </FormDescription>
@@ -211,12 +211,26 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={5}
                 max={30}
                 step={0.5}
+                className={validationState['discountRate']?.isValid ? '' : 'border-red-500'}
               />
+              {renderSuggestions('discountRate')}
             </div>
 
             {/* Terminal Growth Rate Slider */}
             <div className="space-y-2">
-              <FormLabel>Terminal Growth Rate (%)</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Terminal Growth Rate (%)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Long-term sustainable growth rate
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <FormDescription>
                 Current value: {(assumptions.terminalGrowthRate * 100).toFixed(1)}%
               </FormDescription>
@@ -228,12 +242,26 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={1}
                 max={5}
                 step={0.1}
+                className={validationState['terminalGrowthRate']?.isValid ? '' : 'border-red-500'}
               />
+              {renderSuggestions('terminalGrowthRate')}
             </div>
 
             {/* Beta Slider */}
             <div className="space-y-2">
-              <FormLabel>Beta (Market Risk)</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Beta (Market Risk)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Measure of systematic risk
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <FormDescription>
                 Current value: {assumptions.beta.toFixed(2)}
               </FormDescription>
@@ -245,12 +273,26 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={0.5}
                 max={2}
                 step={0.1}
+                className={validationState['beta']?.isValid ? '' : 'border-red-500'}
               />
+              {renderSuggestions('beta')}
             </div>
 
             {/* Market Risk Premium Slider */}
             <div className="space-y-2">
-              <FormLabel>Market Risk Premium (%)</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Market Risk Premium (%)</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Excess return of the market over the risk-free rate
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <FormDescription>
                 Current value: {(assumptions.marketRiskPremium * 100).toFixed(1)}%
               </FormDescription>
@@ -262,7 +304,9 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                 min={4}
                 max={8}
                 step={0.1}
+                className={validationState['marketRiskPremium']?.isValid ? '' : 'border-red-500'}
               />
+              {renderSuggestions('marketRiskPremium')}
             </div>
           </div>
 
