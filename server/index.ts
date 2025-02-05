@@ -54,7 +54,6 @@ app.use((req, res, next) => {
     }
 
     res.status(status).json({ message });
-    throw err;
   });
 
   if (app.get("env") === "development") {
@@ -66,8 +65,16 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const PORT = 5000;
+  const PORT = process.env.PORT || 3000;
   server.listen(PORT, "0.0.0.0", () => {
     log(`Server running on port ${PORT}`);
+  }).on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      log(`Port ${PORT} is already in use. Please try a different port.`);
+      process.exit(1);
+    } else {
+      log(`Failed to start server: ${error.message}`);
+      throw error;
+    }
   });
 })();
