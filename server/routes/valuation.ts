@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '@db';
-import { valuationRecords, type InsertValuationRecord, generatedReports } from '@db/schema';
+import { valuationRecords, type InsertValuationRecord, generatedReports, valuationDrafts } from '@db/schema';
 import type { ValuationFormData } from '../../client/src/lib/validations';
 import { z } from 'zod';
 import { eq, desc } from 'drizzle-orm';
@@ -173,6 +173,72 @@ router.get('/api/valuations', async (req, res) => {
 
     res.json(valuations);
   } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+// Add draft routes
+router.post('/api/valuations/draft', async (req, res) => {
+  try {
+    const draftData = req.body;
+
+    // Get existing draft or create new one
+    const [existingDraft] = await db
+      .select()
+      .from(valuationDrafts)
+      .where(eq(valuationDrafts.userId, req.user?.id || 0))
+      .where(eq(valuationDrafts.isActive, true))
+      .limit(1);
+
+    if (existingDraft) {
+      // Update existing draft
+      const [updatedDraft] = await db
+        .update(valuationDrafts)
+        .set({
+          draftData,
+          lastAutosaved: new Date(),
+        })
+        .where(eq(valuationDrafts.id, existingDraft.id))
+        .returning();
+
+      res.json(updatedDraft);
+    } else {
+      // Create new draft
+      const [newDraft] = await db
+        .insert(valuationDrafts)
+        .values({
+          userId: req.user?.id || 0,
+          draftData,
+          isActive: true,
+        })
+        .returning();
+
+      res.json(newDraft);
+    }
+  } catch (error: any) {
+    console.error('Draft save error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/api/valuations/draft', async (req, res) => {
+  try {
+    const [draft] = await db
+      .select()
+      .from(valuationDrafts)
+      .where(eq(valuationDrafts.userId, req.user?.id || 0))
+      .where(eq(valuationDrafts.isActive, true))
+      .orderBy(desc(valuationDrafts.lastAutosaved))
+      .limit(1);
+
+    if (!draft) {
+      return res.status(404).json({ message: 'No draft found' });
+    }
+
+    res.json(draft.draftData);
+  } catch (error: any) {
+    console.error('Draft load error:', error);
     res.status(500).json({ message: error.message });
   }
 });

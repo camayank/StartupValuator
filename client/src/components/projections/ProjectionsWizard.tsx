@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RevenueProjectionsStep } from "./RevenueProjectionsStep";
 import { ExpensesProjectionsStep } from "./ExpensesProjectionsStep";
 import { FundUtilizationStep } from "./FundUtilizationStep";
@@ -11,7 +12,7 @@ import { MarketValidationStep } from "./MarketValidationStep";
 import { MethodSelectionStep } from "./MethodSelectionStep";
 import type { FinancialProjectionData } from "@/lib/validations";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, LineChart, Calculator, Target, Coins, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, HelpCircle, LineChart, Calculator, Target, Coins, ClipboardCheck, Save } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +21,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { debounce } from "lodash";
 
 const steps = [
   {
@@ -55,7 +58,6 @@ const steps = [
   {
     title: "Review & Finalize",
     description: "Review and confirm your projections",
-    icon: ClipboardCheck,
     validationFields: []
   }
 ] as const;
@@ -66,51 +68,110 @@ export function ProjectionsWizard() {
   const [data, setData] = useState<Partial<FinancialProjectionData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  // Load draft data on mount
+  const { data: draftData } = useQuery<Partial<FinancialProjectionData>>({
+    queryKey: ["valuation-draft"],
+    queryFn: async () => {
+      const res = await fetch("/api/valuations/draft");
+      if (!res.ok) throw new Error("Failed to load draft");
+      return res.json();
+    },
+    onError: (error) => {
+      console.error("Error loading draft:", error);
+    },
+  });
+
+  useEffect(() => {
+    if (draftData) {
+      setData(draftData);
+      // Calculate completed steps based on draft data
+      const completed = steps.reduce((acc, step, index) => {
+        const isComplete = validateStep(index, draftData);
+        return isComplete ? [...acc, index] : acc;
+      }, [] as number[]);
+      setCompletedSteps(completed);
+    }
+  }, [draftData]);
+
+  // Auto-save mutation
+  const autoSaveMutation = useMutation({
+    mutationFn: async (formData: Partial<FinancialProjectionData>) => {
+      const res = await fetch("/api/valuations/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Failed to save draft");
+      return res.json();
+    },
+    onMutate: () => {
+      setIsSaving(true);
+    },
+    onSuccess: () => {
+      setIsSaving(false);
+    },
+    onError: (error) => {
+      console.error("Auto-save error:", error);
+      setIsSaving(false);
+      toast({
+        title: "Auto-save failed",
+        description: "Your changes couldn't be saved. Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Debounced auto-save function
+  const debouncedAutoSave = useCallback(
+    debounce((formData: Partial<FinancialProjectionData>) => {
+      autoSaveMutation.mutate(formData);
+    }, 2000),
+    []
+  );
+
+  // Update handler with auto-save
+  const handleUpdate = async (newData: Partial<FinancialProjectionData>) => {
+    setData((prev) => {
+      const updated = { ...prev, ...newData };
+      debouncedAutoSave(updated);
+      return updated;
+    });
+  };
 
   // Current step icon component
   const CurrentStepIcon = steps[currentStep].icon;
 
-  const validateStep = (stepIndex: number): boolean => {
+  const validateStep = (stepIndex: number, dataToUse: Partial<FinancialProjectionData> = data): boolean => {
     const step = steps[stepIndex];
     const errors: string[] = [];
 
     // Skip validation for the review step
     if (stepIndex === steps.length - 1) return true;
 
-    // Add debug logging
-    console.log("Current step data:", data);
-
     step.validationFields.forEach(field => {
       let value;
       if (field.includes('.')) {
         const [parent, child] = field.split('.');
-        value = data[parent as keyof typeof data]?.[child];
+        value = dataToUse[parent as keyof typeof dataToUse]?.[child];
       } else {
-        value = data[field as keyof typeof data];
+        value = dataToUse[field as keyof typeof dataToUse];
       }
 
-      // Add debug logging
-      console.log(`Validating field ${field}:`, value);
-
-      // Special validation for arrays
       if (field === 'assumptions.expenseAssumptions') {
-        const assumptions = data.assumptions?.expenseAssumptions;
+        const assumptions = dataToUse.assumptions?.expenseAssumptions;
         if (!assumptions || !Array.isArray(assumptions) || assumptions.length === 0) {
           errors.push('Expense assumptions are required');
         }
-      }
-      // Standard validation for other fields
-      else if (value === undefined || value === null ||
-          (Array.isArray(value) && value.length === 0) ||
-          (typeof value === 'string' && value.trim() === '') ||
-          (typeof value === 'number' && isNaN(value))) {
+      } else if (value === undefined || value === null ||
+        (Array.isArray(value) && value.length === 0) ||
+        (typeof value === 'string' && value.trim() === '') ||
+        (typeof value === 'number' && isNaN(value))) {
         errors.push(`${field.split('.').pop()} is required`);
       }
     });
-
-    // Add debug logging
-    console.log("Validation errors:", errors);
 
     setStepErrors(prev => ({ ...prev, [stepIndex]: errors }));
     return errors.length === 0;
@@ -143,10 +204,6 @@ export function ProjectionsWizard() {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
-  };
-
-  const handleUpdate = async (newData: Partial<FinancialProjectionData>) => {
-    setData(prev => ({ ...prev, ...newData }));
   };
 
   const handleSubmit = async (finalData: FinancialProjectionData) => {
@@ -247,32 +304,40 @@ export function ProjectionsWizard() {
               {steps[currentStep].description}
             </CardDescription>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <HelpCircle className="h-5 w-5" />
-                  {stepErrors[currentStep]?.length > 0 && (
-                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="space-y-2">
-                  <p className="font-medium">Step Requirements</p>
-                  {stepErrors[currentStep]?.length > 0 ? (
-                    <ul className="text-sm space-y-1 text-destructive">
-                      {stepErrors[currentStep].map((error, i) => (
-                        <li key={i}>• {error}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm">All required fields are complete.</p>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-2">
+            {isSaving && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Save className="h-4 w-4 animate-spin" />
+                Saving...
+              </div>
+            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <HelpCircle className="h-5 w-5" />
+                    {stepErrors[currentStep]?.length > 0 && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div className="space-y-2">
+                    <p className="font-medium">Step Requirements</p>
+                    {stepErrors[currentStep]?.length > 0 ? (
+                      <ul className="text-sm space-y-1 text-destructive">
+                        {stepErrors[currentStep].map((error, i) => (
+                          <li key={i}>• {error}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm">All required fields are complete.</p>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -396,6 +461,21 @@ export function ProjectionsWizard() {
             </motion.div>
           </AnimatePresence>
         </div>
+
+        {draftData && !data && (
+          <Alert className="mb-6">
+            <AlertDescription>
+              We found a saved draft of your projections. Would you like to restore it?
+              <Button
+                variant="link"
+                className="ml-2"
+                onClick={() => setData(draftData)}
+              >
+                Restore Draft
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="flex justify-between mt-8">
           {currentStep > 0 && (
