@@ -34,6 +34,7 @@ import { Info, FileText, CheckCircle2, AlertCircle, HelpCircle, ChevronRight } f
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { FormLoadingSkeleton } from "@/components/ui/form-loading-skeleton";
 
 // Enhanced form sections configuration based on user requirements
 const formSections = [
@@ -415,12 +416,16 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     <div className="max-w-[800px] mx-auto p-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold mb-1">Startup Valuation Assessment</h1>
-          <p className="text-sm text-muted-foreground">Complete all sections for a comprehensive valuation report</p>
+          <h1 className="text-2xl font-bold mb-1 transition-colors hover:text-primary">
+            Startup Valuation Assessment
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Complete all sections for a comprehensive valuation report
+          </p>
         </div>
       </div>
 
-      {/* Enhanced progress indicator */}
+      {/* Enhanced progress indicator with animation */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Progress</span>
@@ -438,188 +443,210 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         </div>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-8">
-          <Accordion type="single" defaultValue={`section-${currentStep}`} collapsible>
-            {formSections.map((section, index) => (
-              <AccordionItem 
-                key={section.id} 
-                value={`section-${index + 1}`}
-                className={cn(
-                  "border rounded-lg overflow-hidden transition-all",
-                  getSectionColor(section.id),
-                  stepsCompleted[index + 1] && "border-green-500/50"
-                )}
-              >
-                <AccordionTrigger className="px-4 py-2 hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    {getSectionIcon(section.id)}
-                    <div>
-                      <h3 className="text-lg font-medium text-left">{section.title}</h3>
-                      <p className="text-sm text-muted-foreground text-left">{section.subtitle}</p>
-                    </div>
-                    {stepsCompleted[index + 1] && (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 ml-auto" />
+      {mutation.isPending ? (
+        <FormLoadingSkeleton />
+      ) : (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-8">
+            <Accordion type="single" defaultValue={`section-${currentStep}`} collapsible>
+              {formSections.map((section, index) => (
+                <AccordionItem 
+                  key={section.id} 
+                  value={`section-${index + 1}`}
+                  className={cn(
+                    "border rounded-lg overflow-hidden transition-all duration-200",
+                    "hover:shadow-md",
+                    getSectionColor(section.id),
+                    stepsCompleted[index + 1] && "border-green-500/50"
+                  )}
+                >
+                  <AccordionTrigger 
+                    className={cn(
+                      "px-4 py-2 hover:no-underline",
+                      "transition-all duration-200",
+                      "hover:bg-accent/50"
                     )}
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
-                  <Card className="border-0 shadow-none bg-transparent">
-                    <CardContent className="p-0 pt-4">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={`section-${index}`}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{ duration: 0.2 }}
-                          className="space-y-6"
-                        >
-                          <div className="grid gap-6">
-                            {section.fields.map((field) => (
-                              <FormField
-                                key={field.name}
-                                control={form.control}
-                                name={field.name as keyof ValuationFormData}
-                                render={({ field: formField }) => (
-                                  <FormItem className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <FormLabel className="text-sm font-medium">
-                                        {field.label}
-                                        {field.required && <span className="text-red-500 ml-1">*</span>}
-                                      </FormLabel>
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <div className="space-y-2">
-                                              <p className="font-medium">{field.description}</p>
-                                              {field.help && (
-                                                <p className="text-sm text-muted-foreground">{field.help}</p>
-                                              )}
-                                            </div>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </div>
+                  >
+                    <div className="flex items-center gap-3">
+                      {getSectionIcon(section.id)}
+                      <div>
+                        <h3 className="text-lg font-medium text-left">{section.title}</h3>
+                        <p className="text-sm text-muted-foreground text-left">{section.subtitle}</p>
+                      </div>
+                      {stepsCompleted[index + 1] && (
+                        <CheckCircle2 className="h-5 w-5 text-green-500 ml-auto" />
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent 
+                    className={cn(
+                      "px-4 pb-4",
+                      "transition-all duration-200"
+                    )}
+                  >
+                    <Card className="border-0 shadow-none bg-transparent">
+                      <CardContent className="p-0 pt-4">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={`section-${index}`}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-6"
+                          >
+                            <div className="grid gap-6">
+                              {section.fields.map((field) => (
+                                <FormField
+                                  key={field.name}
+                                  control={form.control}
+                                  name={field.name as keyof ValuationFormData}
+                                  render={({ field: formField }) => (
+                                    <FormItem className="space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <FormLabel className="text-sm font-medium">
+                                          {field.label}
+                                          {field.required && <span className="text-red-500 ml-1">*</span>}
+                                        </FormLabel>
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <div className="space-y-2">
+                                                <p className="font-medium">{field.description}</p>
+                                                {field.help && (
+                                                  <p className="text-sm text-muted-foreground">{field.help}</p>
+                                                )}
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </div>
 
-                                    <FormControl>
-                                      {field.type === "text" && (
-                                        <Input 
-                                          {...formField}
-                                          className="w-full"
-                                        />
+                                      <FormControl>
+                                        {field.type === "text" && (
+                                          <Input 
+                                            {...formField}
+                                            className="w-full"
+                                          />
+                                        )}
+                                        {field.type === "number" && (
+                                          <Input
+                                            type="number"
+                                            {...formField}
+                                            className="w-full"
+                                            onChange={(e) => {
+                                              const value = e.target.value ? Number(e.target.value) : 0;
+                                              formField.onChange(value);
+                                            }}
+                                          />
+                                        )}
+                                        {field.type === "dropdown" && (
+                                          <Select
+                                            onValueChange={formField.onChange}
+                                            defaultValue={formField.value}
+                                          >
+                                            <FormControl>
+                                              <SelectTrigger className="w-full">
+                                                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                                              </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                              {field.options?.map(([key, value]) => (
+                                                <SelectItem key={key} value={key}>
+                                                  {value}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        )}
+                                        {field.type === "textarea" && (
+                                          <textarea
+                                            {...formField}
+                                            className="w-full min-h-[100px] p-2 rounded-md border border-input"
+                                            placeholder={field.placeholder}
+                                          />
+                                        )}
+                                      </FormControl>
+                                      <FormMessage />
+                                      {field.help && (
+                                        <FormDescription className="text-xs">
+                                          {field.help}
+                                        </FormDescription>
                                       )}
-                                      {field.type === "number" && (
-                                        <Input
-                                          type="number"
-                                          {...formField}
-                                          className="w-full"
-                                          onChange={(e) => {
-                                            const value = e.target.value ? Number(e.target.value) : 0;
-                                            formField.onChange(value);
-                                          }}
-                                        />
-                                      )}
-                                      {field.type === "dropdown" && (
-                                        <Select
-                                          onValueChange={formField.onChange}
-                                          defaultValue={formField.value}
-                                        >
-                                          <FormControl>
-                                            <SelectTrigger className="w-full">
-                                              <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                                            </SelectTrigger>
-                                          </FormControl>
-                                          <SelectContent>
-                                            {field.options?.map(([key, value]) => (
-                                              <SelectItem key={key} value={key}>
-                                                {value}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      )}
-                                      {field.type === "textarea" && (
-                                        <textarea
-                                          {...formField}
-                                          className="w-full min-h-[100px] p-2 rounded-md border border-input"
-                                          placeholder={field.placeholder}
-                                        />
-                                      )}
-                                    </FormControl>
-                                    <FormMessage />
-                                    {field.help && (
-                                      <FormDescription className="text-xs">
-                                        {field.help}
-                                      </FormDescription>
-                                    )}
-                                  </FormItem>
-                                )}
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
-                      </AnimatePresence>
-                    </CardContent>
-                  </Card>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                                    </FormItem>
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          </motion.div>
+                        </AnimatePresence>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
 
-          <div className="flex justify-between mt-6 pt-6 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-              disabled={currentStep === 1}
-            >
-              Previous
-            </Button>
-            {currentStep < totalSteps ? (
+            <div className="flex justify-between mt-6 pt-6 border-t">
               <Button
                 type="button"
-                onClick={() => {
-                  if (stepsCompleted[currentStep]) {
-                    setCurrentStep(Math.min(totalSteps, currentStep + 1));
-                  } else {
-                    toast({
-                      title: "Incomplete Step",
-                      description: "Please fill in all required fields before proceeding",
-                      variant: "destructive"
-                    });
-                  }
-                }}
+                variant="outline"
+                onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                disabled={currentStep === 1}
+                className="transition-all duration-200 hover:shadow-md"
               >
-                Next
+                Previous
               </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !Object.values(stepsCompleted).every(Boolean)}
-                className="gap-2"
-              >
-                {mutation.isPending ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                    </motion.div>
-                    Generating Report...
-                  </>
-                ) : (
-                  'Generate Valuation Report'
-                )}
-              </Button>
-            )}
-          </div>
-        </form>
-      </Form>
+              {currentStep < totalSteps ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (stepsCompleted[currentStep]) {
+                      setCurrentStep(Math.min(totalSteps, currentStep + 1));
+                    } else {
+                      toast({
+                        title: "Incomplete Step",
+                        description: "Please fill in all required fields before proceeding",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="transition-all duration-200 hover:shadow-md"
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={mutation.isPending || !Object.values(stepsCompleted).every(Boolean)}
+                  className={cn(
+                    "gap-2 transition-all duration-200",
+                    "hover:shadow-md",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                      </motion.div>
+                      Generating Report...
+                    </>
+                  ) : (
+                    'Generate Valuation Report'
+                  )}
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
+      )}
     </div>
   );
 }
