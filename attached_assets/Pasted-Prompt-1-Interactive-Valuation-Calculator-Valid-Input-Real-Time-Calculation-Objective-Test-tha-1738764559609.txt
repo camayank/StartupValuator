@@ -1,0 +1,68 @@
+Prompt 1: Interactive Valuation Calculator – Valid Input & Real-Time Calculation
+Objective:
+Test that all fields on the Interactive Valuation Calculator screen accept valid inputs, trigger real-time calculations, and update visualizations accordingly. Ensure that tooltips and accessibility features (like high contrast mode) function as expected.
+
+Steps to Execute:
+
+Launch & Inspect the Screen:
+
+Open the Interactive Valuation Calculator (file: InteractiveValuationCalculator.tsx) in your Replit environment.
+Verify that the following fields are visible:
+Annual Revenue (numeric input with currency formatting)
+Currency Selection (options include USD, EUR, GBP)
+Growth Rate (percentage)
+Operating Margins (percentage)
+Sector Selection (dropdown or selection field)
+Business Stage (dropdown or selection field)
+Input Valid Data:
+
+Annual Revenue: Enter 1,000,000 (ensure the input accepts only numeric values with proper currency formatting).
+Currency Selection: Select USD from the available options.
+Growth Rate: Input 10% (ensure the value is within the allowed range, e.g., -100% to 1000%).
+Operating Margins: Input 15% (within the allowed range of -100% to 100%).
+Sector Selection: Choose an appropriate sector (e.g., "Technology").
+Business Stage: Select a stage that matches the business profile (e.g., "Growth Stage").
+Verify Field Validations:
+
+Confirm that all required fields are filled.
+Check that the numeric fields enforce the correct range validations (no error messages should appear since all values are within acceptable limits).
+Ensure the currency format is applied correctly to the Annual Revenue input.
+Test Real-Time Calculations & Visualizations:
+
+As you input or modify any of the above values, observe that:
+The real-time calculation logic updates the underlying valuation metrics immediately.
+Both Bar and Pie chart visualizations update dynamically to reflect the new data.
+Make a small change (for example, change the Growth Rate from 10% to 12%) and verify that the charts and calculated outputs adjust instantly.
+Check Tooltip Explanations:
+
+Hover your mouse over each field.
+Confirm that each hover card tooltip appears and displays detailed explanations (e.g., for Annual Revenue, the tooltip might read: “Enter your annual revenue in the selected currency. Use numeric values only.”).
+Test Accessibility Features (High Contrast Mode):
+
+Locate and toggle the High Contrast Mode switch.
+Verify that:
+The entire interface (fields, texts, charts) is legible in high contrast.
+All interactive elements retain proper focus states (keyboard navigation should work seamlessly).
+Expected Outcomes:
+
+Field Input & Validation:
+
+All fields accept the provided values without triggering any error messages.
+Currency formatting is correct, and numeric range validations pass without issues.
+Real-Time Calculation & Visuals:
+
+The valuation calculations update immediately when any input changes.
+Bar and Pie chart visualizations accurately reflect the new data in real time.
+Tooltip & Accessibility:
+
+Hovering over each input field displays clear, contextual tooltips.
+High contrast mode ensures all elements remain accessible and visually clear.
+This comprehensive prompt helps you ensure that the Interactive Valuation Calculator screen functions robustly under typical user interactions.
+
+Let me know when you’re ready for the next comprehensive prompt!
+
+
+
+
+
+
