@@ -54,35 +54,35 @@ import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
 const navigationConfig = {
   startup: {
     mainTools: [
-      { href: "/integrated-workflow", label: "Start Business Journey", description: "Complete business planning and valuation", icon: Calculator },
-      { href: "/valuation", label: "Valuation Only", description: "Comprehensive startup valuation", icon: Calculator },
-      { href: "/business-plan", label: "Business Plan Only", description: "Generate detailed business plan", icon: FileText },
+      { href: "/calculator", label: "Quick Calculator", description: "Basic valuation estimation", icon: Calculator },
+      { href: "/valuation", label: "Full Valuation", description: "Comprehensive startup valuation", icon: FileText },
       { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
-      { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor-ready presentations", icon: FileText },
+      { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor presentations", icon: FileText },
+      { href: "/business-plan", label: "Business Plan", description: "Create detailed business plan", icon: FileText },
     ],
     analytics: [
-      { href: "/dashboard", label: "Health Dashboard", description: "Monitor your startup's vital metrics", icon: PieChart },
-      { href: "/compliance", label: "Compliance Check", description: "Ensure regulatory compliance", icon: ClipboardCheck },
+      { href: "/dashboard", label: "Health Dashboard", description: "Monitor startup metrics", icon: PieChart },
+      { href: "/compliance", label: "Compliance Check", description: "Regulatory compliance", icon: ClipboardCheck },
     ]
   },
   investor: {
     mainTools: [
       { href: "/valuation", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
-      { href: "/calculator", label: "Interactive Calculator", description: "Quick valuation estimates", icon: Calculator },
-      { href: "/portfolio", label: "Portfolio", description: "Manage your investment portfolio", icon: PieChart },
+      { href: "/calculator", label: "Quick Calculator", description: "Quick valuation estimates", icon: Calculator },
+      { href: "/portfolio", label: "Portfolio", description: "Manage investments", icon: PieChart },
     ],
     analytics: [
-      { href: "/dashboard", label: "Investment Dashboard", description: "Monitor your portfolio performance", icon: PieChart },
-      { href: "/market-analysis", label: "Market Analysis", description: "Analyze market trends", icon: BarChart3 },
+      { href: "/dashboard", label: "Investment Dashboard", description: "Portfolio performance", icon: PieChart },
+      { href: "/market-analysis", label: "Market Analysis", description: "Market trends", icon: BarChart3 },
     ]
   },
   default: {
     mainTools: [
-      { href: "/valuation", label: "Full Valuation", description: "Access valuation tools", icon: Calculator },
-      { href: "/calculator", label: "Quick Calculator", description: "Basic valuation calculator", icon: Calculator },
+      { href: "/valuation", label: "Full Valuation", description: "Complete valuation", icon: Calculator },
+      { href: "/calculator", label: "Quick Calculator", description: "Basic calculator", icon: Calculator },
     ],
     analytics: [
-      { href: "/dashboard", label: "Dashboard", description: "View your analytics", icon: PieChart },
+      { href: "/dashboard", label: "Dashboard", description: "View analytics", icon: PieChart },
     ]
   }
 } as const;
@@ -140,13 +140,13 @@ function App() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">
-            {showLoadingError 
+            {showLoadingError
               ? "Taking longer than expected... Please refresh the page."
               : "Loading your workspace..."}
           </p>
           {showLoadingError && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => window.location.reload()}
               className="mt-2"
             >
