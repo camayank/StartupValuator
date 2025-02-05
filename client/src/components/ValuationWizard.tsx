@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, CheckCircle2, Brain, Target, FileText } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2, Brain, Target, FileText, ChartBar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
 import { IndustryMetricsForm } from "./IndustryMetricsForm";
 import { ReviewStep } from "./wizard-steps/ReviewStep";
+import { AIAnalysisDashboard } from "./AIAnalysisDashboard";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +30,6 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   // Consolidated steps for efficiency
@@ -39,17 +39,24 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
       title: "Business Profile",
       description: "Company information and market position",
       icon: Target,
-      validationKeys: ['businessName', 'sector', 'industry', 'stage']
+      validationKeys: ['businessInfo']
     },
     { 
       number: 2, 
       title: "Financial & Metrics",
       description: "Key metrics and financial data",
       icon: Brain,
-      validationKeys: ['revenue', 'margins', 'growthRate', 'metrics']
+      validationKeys: ['financialData', 'marketData']
+    },
+    {
+      number: 3,
+      title: "AI Analysis",
+      description: "AI-powered insights and analysis",
+      icon: ChartBar,
+      validationKeys: []  // No validation needed as this is analysis display
     },
     { 
-      number: 3, 
+      number: 4, 
       title: "Review & Generate",
       description: "Verify and generate valuation",
       icon: FileText,
@@ -68,6 +75,7 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
   const validateStep = (step: number, data: Partial<ValuationFormData> = formData): boolean => {
     const requiredKeys = steps[step - 1].validationKeys;
     if (requiredKeys[0] === 'all') return true;
+    if (requiredKeys.length === 0) return true;
     return requiredKeys.every(key => data[key as keyof ValuationFormData]);
   };
 
@@ -125,33 +133,33 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
     <ScrollArea className="h-[calc(100vh-4rem)]">
       <div className="p-6 space-y-6">
         <h3 className="text-lg font-semibold">Valuation Summary</h3>
-        {formData.businessName && (
+        {formData.businessInfo && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Company</p>
-            <p className="text-sm text-muted-foreground">{formData.businessName}</p>
+            <p className="text-sm text-muted-foreground">{formData.businessInfo.name}</p>
           </div>
         )}
-        {formData.sector && (
+        {formData.businessInfo && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Sector & Industry</p>
             <p className="text-sm text-muted-foreground">
-              {formData.sector} - {formData.industry}
+              {formData.businessInfo.sector} - {formData.businessInfo.industry}
             </p>
           </div>
         )}
-        {formData.stage && (
+        {formData.businessInfo && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Business Stage</p>
-            <p className="text-sm text-muted-foreground">{formData.stage}</p>
+            <p className="text-sm text-muted-foreground">{formData.businessInfo.productStage}</p>
           </div>
         )}
-        {formData.revenue !== undefined && (
+        {formData.financialData && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Financial Overview</p>
             <p className="text-sm text-muted-foreground">
-              Revenue: ${formData.revenue.toLocaleString()}<br />
-              Growth Rate: {formData.growthRate}%<br />
-              Margins: {formData.margins}%
+              Revenue: ${formData.financialData.revenue?.toLocaleString()}<br />
+              Growth Rate: {formData.financialData.growthRate}%<br />
+              Margins: {formData.financialData.margins}%
             </p>
           </div>
         )}
@@ -244,12 +252,12 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                   totalSteps={steps.length}
                 />
               )}
-              {currentStep === 2 && formData.sector && formData.industry && (
+              {currentStep === 2 && formData.businessInfo && (
                 <IndustryMetricsForm
-                  sector={formData.sector}
-                  industry={formData.industry}
+                  sector={formData.businessInfo.sector}
+                  industry={formData.businessInfo.industry}
                   onMetricsUpdate={(metrics) => {
-                    updateFormData({ industryMetrics: metrics });
+                    updateFormData({ marketData: { ...formData.marketData, ...metrics } });
                     handleNext();
                   }}
                   onNext={handleNext}
@@ -258,8 +266,11 @@ export function ValuationWizard({ onSubmit }: ValuationWizardProps) {
                 />
               )}
               {currentStep === 3 && (
+                <AIAnalysisDashboard formData={formData as ValuationFormData} />
+              )}
+              {currentStep === 4 && (
                 <ReviewStep
-                  data={formData}
+                  data={formData as ValuationFormData}
                   onUpdate={updateFormData}
                   onSubmit={handleSubmit}
                   onBack={handleBack}

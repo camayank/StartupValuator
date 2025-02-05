@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
+import analysisRoutes from "./routes/analysis";
 import { setupAuth } from "./auth";
 import { userProfiles } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -9,6 +10,20 @@ import { valuationFormSchema } from "../client/src/lib/validations";
 import { setupCache } from "./lib/cache";
 import { z } from "zod";
 import { valuationRecords } from "@db/schema";
+import { ActivityTracker } from "./lib/activity-tracker";
+import { pitchDeckAnalysisRequestSchema, analyzePitchDeck } from "./lib/pitch-deck-analysis";
+import { reportDataSchema, generatePdfReport } from "./lib/report-generator";
+import { generateComplianceReport } from "./lib/compliance-report";
+import { generateComplianceChecklist } from "./lib/compliance-checklist";
+import { assessBusinessModel } from "./lib/business-model-assessment";
+import { evaluateTeamExpertise } from "./lib/team-evaluation";
+import { analyzeMarketSentiment } from "./lib/market-sentiment-analysis";
+import { assessIntellectualProperty } from "./lib/ip-assessment";
+import { validateMetrics } from "./lib/metrics-validation";
+import { validateRevenueModel } from "./lib/revenue-model-validation";
+import XLSX from "xlsx";
+import { Parser } from "json2csv";
+
 
 export function registerRoutes(app: Express): Server {
   // Set up cache
@@ -17,8 +32,9 @@ export function registerRoutes(app: Express): Server {
   // Setup authentication first
   setupAuth(app);
 
-  // Register all other routes
+  // Register all routes
   app.use(valuationRoutes);
+  app.use(analysisRoutes);
 
   // Enhanced valuation route with proper validation
   app.post("/api/valuation", async (req, res) => {

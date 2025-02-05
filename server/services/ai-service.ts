@@ -5,11 +5,11 @@ import type { ValuationFormData } from "../../client/src/lib/validations";
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 // the newest Anthropic model is "claude-3-5-sonnet-20241022" which was released October 22, 2024
 
-const openai = new OpenAI({
+export const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const anthropic = new Anthropic({
+export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
@@ -71,7 +71,9 @@ export class AIService {
       const anthropicValuation = JSON.parse(
         typeof anthropicResponse.content === "string"
           ? anthropicResponse.content
-          : anthropicResponse.content[0]?.text || "{}"
+          : Array.isArray(anthropicResponse.content)
+          ? anthropicResponse.content[0].text
+          : "{}"
       );
 
       // Combine and average the valuations
@@ -105,8 +107,6 @@ export class AIService {
       throw new Error("Failed to generate AI valuation");
     }
   }
-
-  // Additional AI-powered analysis methods
   async analyzeMarket(data: ValuationFormData) {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
