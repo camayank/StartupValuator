@@ -5,7 +5,6 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -18,22 +17,22 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { BUSINESS_SECTORS, sectorOperations } from "@/lib/constants/business-sectors";
+import { BUSINESS_SECTORS, sectorOperations, businessModelOptions, productStageOptions } from "@/lib/constants/business-sectors";
 import { useState, useEffect } from "react";
 
 export function BusinessProfileForm() {
   const form = useFormContext();
-  const [availableSegments, setAvailableSegments] = useState<string[]>([]);
-  const [availableSubSegments, setAvailableSubSegments] = useState<string[]>([]);
+  const [availableSegments, setAvailableSegments] = useState<Array<{ value: string; label: string }>>([]);
+  const [availableSubSegments, setAvailableSubSegments] = useState<Array<{ value: string; label: string }>>([]);
 
-  // Watch for sector changes
+  // Watch for sector and segment changes
   const selectedSector = form.watch("businessInfo.sector");
   const selectedSegment = form.watch("businessInfo.segment");
 
   // Update available segments when sector changes
   useEffect(() => {
     if (selectedSector) {
-      const segments = Object.keys(BUSINESS_SECTORS[selectedSector] || {});
+      const segments = sectorOperations.getSegmentsForSector(selectedSector);
       setAvailableSegments(segments);
       // Reset segment and sub-segment when sector changes
       form.setValue("businessInfo.segment", "");
@@ -46,7 +45,7 @@ export function BusinessProfileForm() {
   // Update available sub-segments when segment changes
   useEffect(() => {
     if (selectedSector && selectedSegment) {
-      const subSegments = BUSINESS_SECTORS[selectedSector]?.[selectedSegment] || [];
+      const subSegments = sectorOperations.getSubSegments(selectedSector, selectedSegment);
       setAvailableSubSegments(subSegments);
       // Reset sub-segment when segment changes
       form.setValue("businessInfo.subSegment", "");
@@ -108,16 +107,16 @@ export function BusinessProfileForm() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a sector" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {Object.keys(BUSINESS_SECTORS).map((sector) => (
-                    <SelectItem key={sector} value={sector}>
-                      {sector}
+                  {sectorOperations.getAllSectors().map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -148,7 +147,7 @@ export function BusinessProfileForm() {
               </div>
               <Select 
                 onValueChange={field.onChange} 
-                value={field.value}
+                value={field.value || ""}
                 disabled={!selectedSector}
               >
                 <FormControl>
@@ -157,9 +156,9 @@ export function BusinessProfileForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableSegments.map((segment) => (
-                    <SelectItem key={segment} value={segment}>
-                      {segment}
+                  {availableSegments.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -190,7 +189,7 @@ export function BusinessProfileForm() {
               </div>
               <Select 
                 onValueChange={field.onChange} 
-                value={field.value}
+                value={field.value || ""}
                 disabled={!selectedSegment}
               >
                 <FormControl>
@@ -199,9 +198,85 @@ export function BusinessProfileForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableSubSegments.map((subSegment) => (
-                    <SelectItem key={subSegment} value={subSegment}>
-                      {subSegment}
+                  {availableSubSegments.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Business Model Field */}
+        <FormField
+          control={form.control}
+          name="businessInfo.businessModel"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Business Model</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Select your primary business model</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a business model" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {businessModelOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Product Stage Field */}
+        <FormField
+          control={form.control}
+          name="businessInfo.productStage"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Product Stage</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Select your current product development stage</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a product stage" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {productStageOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

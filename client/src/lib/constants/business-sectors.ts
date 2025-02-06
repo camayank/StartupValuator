@@ -11,11 +11,11 @@ export const BUSINESS_SECTORS: BusinessSectorData = {
   "Technology & Software": {
     "Enterprise Software": ["ERP", "CRM", "HRM"],
     "Cloud Computing": ["IaaS", "PaaS", "SaaS"],
-    "AI & ML": ["NLP", "Computer Vision", "AI Analytics"],
-    "Cybersecurity": ["Network Security", "Endpoint Security", "Cloud Security"]
+    "AI & ML": ["NLP", "Computer Vision", "AI Analytics", "Conversational AI"],
+    "Cybersecurity": ["Network Security", "Endpoint Security", "Cloud Security", "IoT Security"]
   },
   "Healthcare & Life Sciences": {
-    "Digital Health": ["Telehealth", "Mobile Health", "Health Analytics"],
+    "Digital Health": ["Telehealth", "Mobile Health", "Health Analytics", "Health Informatics"],
     "Biotech": ["Gene Therapy", "Molecular Diagnostics", "Bioinformatics"],
     "Medical Devices": ["Diagnostic Devices", "Wearable Tech", "Surgical Robotics"]
   },
@@ -86,6 +86,32 @@ export const sectorOperations = {
     }));
   }
 };
+
+// Type definitions for business profile
+export const businessModelOptions = [
+  { value: "subscription", label: "Subscription" },
+  { value: "transactional", label: "Transactional" },
+  { value: "marketplace", label: "Marketplace" },
+  { value: "advertising", label: "Advertising" },
+  { value: "licensing", label: "Licensing" },
+  { value: "freemium", label: "Freemium" },
+  { value: "saas", label: "SaaS" },
+  { value: "enterprise", label: "Enterprise" },
+  { value: "direct_sales", label: "Direct Sales" },
+  { value: "hardware", label: "Hardware" },
+  { value: "hybrid", label: "Hybrid" }
+];
+
+export const productStageOptions = [
+  { value: "concept", label: "Concept" },
+  { value: "prototype", label: "Prototype" },
+  { value: "mvp", label: "MVP" },
+  { value: "beta", label: "Beta" },
+  { value: "market_ready", label: "Market Ready" },
+  { value: "scaling", label: "Scaling" },
+  { value: "mature", label: "Mature" },
+  { value: "next_gen", label: "Next Generation" }
+];
 
 // Zod schema for validation
 export const businessSectorSchema = z.object({
