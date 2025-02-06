@@ -1,131 +1,129 @@
-import { type BusinessInformation, validateBusinessStageRequirements, stageRequirements } from "../types/startup-business";
-import { sectors, industries } from "../validations";
+import { type BusinessInformation } from "../types/startup-business";
+
+// Industry to Sector mapping
+const industrySectorMap: Record<string, string[]> = {
+  "healthcare": ["saas", "hardware", "service", "research"],
+  "finance": ["saas", "platform", "service", "consulting"],
+  "retail": ["marketplace", "platform", "distribution"],
+  "manufacturing": ["hardware", "manufacturing", "distribution"],
+  "technology": ["saas", "platform", "hardware", "consulting"],
+  "education": ["saas", "platform", "service", "consulting"],
+  "transportation": ["platform", "service", "distribution"],
+  "energy": ["hardware", "service", "research", "manufacturing"],
+  "agriculture": ["hardware", "platform", "manufacturing", "distribution"],
+  "real_estate": ["platform", "service", "marketplace"]
+};
+
+// Industry segments with subcategories
+export const industrySegments = {
+  healthcare: [
+    "Medical Devices",
+    "Digital Health",
+    "Biotechnology",
+    "Healthcare Services",
+    "Pharmaceuticals"
+  ],
+  finance: [
+    "Payment Processing",
+    "Lending",
+    "Insurance",
+    "Wealth Management",
+    "Banking"
+  ],
+  retail: [
+    "E-commerce",
+    "Direct-to-Consumer",
+    "Retail Technology",
+    "Supply Chain",
+    "Omnichannel"
+  ],
+  technology: [
+    "Enterprise Software",
+    "Consumer Apps",
+    "Cloud Services",
+    "Cybersecurity",
+    "AI/ML"
+  ],
+  // Add more industries and their segments
+};
 
 export class BusinessInformationHandler {
-  // Sector-specific validations and requirements
-  private static sectorSpecificValidations = {
-    fintech: {
-      requiresRegulatory: true,
-      minTeamSize: 3,
-      recommendedCertifications: ["PCI DSS", "SOC 2", "ISO 27001"],
-      riskFactors: ["Regulatory Compliance", "Cybersecurity", "Market Competition"]
-    },
-    healthtech: {
-      requiresRegulatory: true,
-      minTeamSize: 3,
-      recommendedCertifications: ["HIPAA", "FDA", "ISO 13485"],
-      riskFactors: ["Regulatory Approval", "Clinical Validation", "Data Privacy"]
-    },
-    enterprise: {
-      requiresRegulatory: false,
-      minTeamSize: 2,
-      recommendedCertifications: ["ISO 9001", "ISO 27001"],
-      riskFactors: ["Enterprise Adoption", "Integration Complexity", "Sales Cycle"]
-    }
-  };
+  // Get available sectors for an industry
+  static getAvailableSectors(industry: string): string[] {
+    return industrySectorMap[industry] || [];
+  }
+
+  // Get industry segments
+  static getIndustrySegments(industry: string): string[] {
+    return industrySegments[industry as keyof typeof industrySegments] || [];
+  }
+
+  // Validate industry-sector combination
+  static validateIndustrySector(industry: string, sector: string): boolean {
+    const availableSectors = this.getAvailableSectors(industry);
+    return availableSectors.includes(sector);
+  }
+
+  // Get recommended team size based on industry and sector
+  static getRecommendedTeamSize(industry: string, sector: string): number {
+    const baseSize = 2;
+    const industryMultipliers: Record<string, number> = {
+      technology: 1.5,
+      healthcare: 1.3,
+      finance: 1.2,
+      manufacturing: 1.4
+    };
+    const sectorMultipliers: Record<string, number> = {
+      saas: 1.3,
+      hardware: 1.5,
+      platform: 1.4,
+      research: 1.2
+    };
+
+    const industryMult = industryMultipliers[industry] || 1;
+    const sectorMult = sectorMultipliers[sector] || 1;
+
+    return Math.ceil(baseSize * industryMult * sectorMult);
+  }
 
   // Validate complete business information
-  static validateBusinessInformation(data: BusinessInformation) {
+  static validateBusinessInformation(data: BusinessInformation): {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    suggestions: string[];
+  } {
     const errors: string[] = [];
     const warnings: string[] = [];
     const suggestions: string[] = [];
 
-    // Basic validation
-    if (!data.name || data.name.trim().length === 0) {
-      errors.push("Business name is required");
+    // Required fields validation
+    if (!data.industrySegment) {
+      errors.push("Industry segment is required");
     }
 
-    if (!data.sector || !Object.keys(sectors).includes(data.sector)) {
-      errors.push("Valid business sector is required");
+    if (!data.sector) {
+      errors.push("Business sector is required");
+    } else if (!this.validateIndustrySector(data.industrySegment, data.sector)) {
+      errors.push("Selected sector is not valid for this industry");
     }
 
-    // Stage-specific validation
-    const stageValidation = validateBusinessStageRequirements(data, data.stage);
-    if (!stageValidation.isValid) {
-      errors.push(...stageValidation.errors);
+    // Team size validation
+    const recommendedTeamSize = this.getRecommendedTeamSize(data.industrySegment, data.sector);
+    if (data.teamSize < recommendedTeamSize) {
+      warnings.push(`Recommended team size for ${data.industrySegment} ${data.sector} businesses is ${recommendedTeamSize}`);
     }
 
-    // Sector-specific validation
-    const sectorRules = this.sectorSpecificValidations[data.sector as keyof typeof this.sectorSpecificValidations];
-    if (sectorRules) {
-      if (sectorRules.requiresRegulatory && data.regulatoryStatus.compliance === "notRequired") {
-        errors.push(`${data.sector} businesses typically require regulatory compliance`);
-      }
-
-      if (data.teamSize < sectorRules.minTeamSize) {
-        warnings.push(`${data.sector} businesses typically require a minimum team size of ${sectorRules.minTeamSize}`);
-      }
-
-      // Add certification suggestions
-      const missingCertifications = sectorRules.recommendedCertifications.filter(
-        cert => !data.regulatoryStatus.certifications.includes(cert)
-      );
-      if (missingCertifications.length > 0) {
-        suggestions.push(`Consider obtaining these certifications: ${missingCertifications.join(", ")}`);
-      }
+    // Description validation
+    if (data.description.length < 50) {
+      errors.push("Business description must be at least 50 characters");
     }
-
-    // Business model validation based on sector
-    this.validateBusinessModelForSector(data, warnings);
 
     return {
       isValid: errors.length === 0,
       errors,
       warnings,
       suggestions
-    };
-  }
-
-  // Validate business model compatibility with sector
-  private static validateBusinessModelForSector(data: BusinessInformation, warnings: string[]) {
-    const sectorBusinessModels = {
-      fintech: ["saas", "transaction_fees", "subscription"],
-      healthtech: ["saas", "licensing", "subscription"],
-      enterprise: ["saas", "licensing", "subscription", "consulting"]
-    };
-
-    const recommendedModels = sectorBusinessModels[data.sector as keyof typeof sectorBusinessModels];
-    if (recommendedModels && !recommendedModels.includes(data.businessModel)) {
-      warnings.push(
-        `${data.businessModel} is an unusual business model for ${data.sector}. Consider: ${recommendedModels.join(", ")}`
-      );
-    }
-  }
-
-  // Get growth stage requirements for next stage
-  static getGrowthRequirements(currentStage: keyof typeof stageRequirements) {
-    const nextRequiredFields = getNextRequiredFields(currentStage);
-    const currentReqs = stageRequirements[currentStage];
-    const nextStageKey = Object.keys(stageRequirements)[
-      Object.keys(stageRequirements).indexOf(currentStage) + 1
-    ] as keyof typeof stageRequirements;
-    
-    if (!nextStageKey) return null;
-
-    const nextReqs = stageRequirements[nextStageKey];
-    
-    return {
-      additionalFields: nextRequiredFields,
-      teamGrowth: nextReqs.minTeamSize - currentReqs.minTeamSize,
-      enhancedDescription: nextReqs.minDescription - currentReqs.minDescription,
-      newRequirements: {
-        requiresFinancials: nextReqs.requiresFinancials || false,
-        requiresCustomerBase: nextReqs.requiresCustomerBase || false,
-        requiresTechnologyStack: nextReqs.requiresTechnologyStack || false
-      }
-    };
-  }
-
-  // Get sector-specific recommendations
-  static getSectorRecommendations(sector: keyof typeof sectors) {
-    const sectorRules = this.sectorSpecificValidations[sector];
-    if (!sectorRules) return null;
-
-    return {
-      recommendedTeamSize: sectorRules.minTeamSize,
-      certifications: sectorRules.recommendedCertifications,
-      keyRiskFactors: sectorRules.riskFactors,
-      regulatoryRequirements: sectorRules.requiresRegulatory
     };
   }
 }

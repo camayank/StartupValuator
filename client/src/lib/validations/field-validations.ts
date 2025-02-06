@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { sectors, industries, businessStages, regions, currencies, valuationPurposes } from "@/lib/validations";
 
 type ValidationRule = {
   required: boolean;
@@ -11,120 +10,109 @@ type ValidationRule = {
     recommendedValue?: string;
     warning?: string;
   }>;
-  stageSpecificRules?: Record<string, {
-    required?: boolean;
-    minLength?: number;
-    minimumValue?: number;
-    warning?: string;
-    focusAreas?: string[];
-  }>;
   defaultValue?: any;
 };
 
 export const fieldValidations: Record<string, ValidationRule> = {
-  businessName: {
+  industrySegment: {
     required: true,
-    rules: z.string().min(1, "Business name is required"),
+    rules: z.string().min(1, "Industry segment is required"),
     dependencies: [],
-    businessLogic: "Required for all stages and sectors"
+    businessLogic: "Primary industry classification"
   },
 
   sector: {
     required: true,
-    rules: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
-    dependencies: ["industry"],
-    businessLogic: "Required to proceed with industry selection"
+    rules: z.enum([
+      "saas",
+      "marketplace",
+      "platform",
+      "hardware",
+      "service",
+      "consulting",
+      "research",
+      "manufacturing",
+      "distribution"
+    ]),
+    dependencies: ["industrySegment"],
+    businessLogic: "Business sector must align with selected industry"
   },
 
-  industry: {
-    required: false, 
-    rules: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>]),
+  businessName: {
+    required: true,
+    rules: z.string().min(1, "Business name is required"),
+    dependencies: [],
+    businessLogic: "Required for all industries and sectors"
+  },
+
+  businessModel: {
+    required: true,
+    rules: z.enum([
+      "b2b",
+      "b2c",
+      "b2b2c",
+      "c2c",
+      "subscription",
+      "transactional",
+      "advertising",
+      "licensing"
+    ]),
     dependencies: ["sector"],
-    businessLogic: "Must be within selected sector's subsectors"
+    businessLogic: "Must align with chosen sector"
+  },
+
+  location: {
+    required: true,
+    rules: z.string().min(1, "Location is required"),
+    dependencies: [],
+    businessLogic: "Required for regional market analysis"
+  },
+
+  teamSize: {
+    required: true,
+    rules: z.number().min(1, "Team size must be at least 1"),
+    dependencies: ["sector", "stage"],
+    businessLogic: "Minimum team size varies by sector and stage",
+    sectorSpecificRules: {
+      "technology": {
+        required: true,
+        warning: "Tech startups typically require larger initial teams"
+      },
+      "service": {
+        required: true,
+        warning: "Service businesses scale with team size"
+      }
+    }
+  },
+
+  description: {
+    required: true,
+    rules: z.string().min(50, "Description must be at least 50 characters"),
+    dependencies: [],
+    businessLogic: "Comprehensive business description required"
   },
 
   stage: {
     required: true,
-    rules: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
-    dependencies: ["revenue", "customerBase", "teamExperience"],
-    businessLogic: "Determines validation requirements and field dependencies",
-    defaultValue: "ideation_validated"
-  },
-
-  competitorAnalysis: {
-    required: false, 
-    rules: z.string().optional(), 
-    dependencies: ["sector", "stage"],
-    businessLogic: "Can be filled in later stages",
-    stageSpecificRules: {
-      "revenue_growing": {
-        minLength: 100,
-        focusAreas: ["direct competitors", "market positioning", "competitive advantage"]
-      }
-    }
-  },
-
-  intellectualProperty: {
-    required: false,
-    rules: z.enum(["none", "pending", "registered"]),
-    dependencies: ["sector"],
-    businessLogic: "IP protection requirements vary by sector",
-    defaultValue: "none"
-  },
-
-  revenue: {
-    required: false,
-    rules: z.number().min(0).optional(),
-    dependencies: ["stage"],
-    businessLogic: "Revenue requirements increase with business stage",
-    defaultValue: 0
-  },
-
-  customerBase: {
-    required: false,
-    rules: z.number().min(0),
-    dependencies: ["stage"],
-    businessLogic: "Customer base requirements vary by stage",
-    defaultValue: 0,
-    stageSpecificRules: {
-      "revenue_growing": {
-        minimumValue: 10,
-        warning: "Growing companies should have an established customer base"
-      },
-      "revenue_scaling": {
-        minimumValue: 100,
-        warning: "Scaling companies need significant customer traction"
-      }
-    }
-  },
-  regulatoryCompliance: {
-    required: false,
-    rules: z.enum(["notRequired", "inProgress", "compliant"]),
-    dependencies: ["sector"],
-    businessLogic: "Regulatory requirements vary by sector",
-    defaultValue: "notRequired",
-    sectorSpecificRules: {
-      "healthtech": {
-        required: true,
-        recommendedValue: "inProgress",
-        warning: "Healthcare startups typically require regulatory compliance"
-      },
-      "fintech": {
-        required: true,
-        recommendedValue: "inProgress",
-        warning: "Financial services typically require regulatory compliance"
-      }
-    }
+    rules: z.enum([
+      "ideation",
+      "validation",
+      "mvp",
+      "early_revenue",
+      "growth",
+      "scaling"
+    ]),
+    dependencies: ["revenue", "teamSize"],
+    businessLogic: "Stage affects validation requirements"
   }
 };
 
 // Export types
 export type FieldValidation = typeof fieldValidations[keyof typeof fieldValidations];
 export type ValidationContext = {
+  industrySegment?: string;
   sector?: string;
   stage?: string;
-  industry?: string;
-  region?: string;
 };
 
 // Validation helper function
@@ -157,13 +145,6 @@ export const validateField = (fieldName: keyof typeof fieldValidations, value: a
       validation.sectorSpecificRules && 
       validation.sectorSpecificRules[context.sector]?.warning) {
     warnings.push(validation.sectorSpecificRules[context.sector].warning!);
-  }
-
-  // Add stage-specific warnings if applicable
-  if (context.stage && 
-      validation.stageSpecificRules && 
-      validation.stageSpecificRules[context.stage]?.warning) {
-    warnings.push(validation.stageSpecificRules[context.stage].warning!);
   }
 
   return {

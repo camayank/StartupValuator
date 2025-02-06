@@ -20,8 +20,8 @@ import {
 import { Info } from "lucide-react";
 import { businessInformationSchema, type BusinessInformation } from "@/lib/types/startup-business";
 import { useToast } from "@/hooks/use-toast";
-import { sectors, businessModels, productStages } from "@/lib/validations";
-import { useCallback, useEffect } from "react";
+import { BusinessInformationHandler, industrySegments } from "@/lib/handlers/business-information-handler";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface BusinessInformationFormProps {
@@ -36,50 +36,69 @@ export function BusinessInformationForm({
   className
 }: BusinessInformationFormProps) {
   const { toast } = useToast();
+  const [availableSectors, setAvailableSectors] = useState<string[]>([]);
+
   const form = useForm<BusinessInformation>({
     resolver: zodResolver(businessInformationSchema),
     defaultValues: {
-      name: initialData?.name || "",
-      sector: initialData?.sector || "technology",
       industrySegment: initialData?.industrySegment || "",
-      businessModel: initialData?.businessModel || "saas",
+      sector: initialData?.sector || "",
+      name: initialData?.name || "",
+      businessModel: initialData?.businessModel || "b2b",
       location: initialData?.location || "",
       teamSize: initialData?.teamSize || 1,
       description: initialData?.description || "",
-      productStage: initialData?.productStage || "concept",
-      businessMaturity: {
-        monthsOperating: 0,
-        revenueStatus: "pre_revenue",
-        customerBase: 0,
-        marketValidation: "none"
-      }
+      stage: initialData?.stage || "ideation"
     }
   });
 
-  // Watch sector for industry segment auto-population
-  const selectedSector = form.watch("sector");
+  // Update available sectors when industry changes
+  const handleIndustryChange = useCallback((industry: string) => {
+    const sectors = BusinessInformationHandler.getAvailableSectors(industry);
+    setAvailableSectors(sectors);
 
-  const getIndustrySegments = useCallback((sector: string) => {
-    const sectorData = sectors[sector as keyof typeof sectors];
-    if (!sectorData?.subsectors) return [];
-    return Object.entries(sectorData.subsectors).map(([value, label]) => ({
-      value,
-      label: label as string
-    }));
-  }, []);
-
-  // Auto-populate industry segment when sector changes
-  useEffect(() => {
-    if (selectedSector) {
-      const segments = getIndustrySegments(selectedSector);
-      if (segments.length > 0) {
-        form.setValue("industrySegment", segments[0].value);
-      }
+    // Clear sector if current selection is invalid for new industry
+    const currentSector = form.getValues("sector");
+    if (!sectors.includes(currentSector)) {
+      form.setValue("sector", sectors[0] || "");
     }
-  }, [selectedSector, form, getIndustrySegments]);
+  }, [form]);
+
+  // Watch for industry changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "industrySegment") {
+        handleIndustryChange(value.industrySegment as string);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, handleIndustryChange]);
 
   const handleSubmit = async (data: BusinessInformation) => {
     try {
+      const validation = BusinessInformationHandler.validateBusinessInformation(data);
+
+      if (!validation.isValid) {
+        validation.errors.forEach(error => {
+          toast({
+            title: "Validation Error",
+            description: error,
+            variant: "destructive",
+          });
+        });
+        return;
+      }
+
+      if (validation.warnings.length > 0) {
+        validation.warnings.forEach(warning => {
+          toast({
+            title: "Warning",
+            description: warning,
+            variant: "warning",
+          });
+        });
+      }
+
       await onSubmit(data);
       toast({
         title: "Success",
@@ -97,6 +116,79 @@ export function BusinessInformationForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className={cn("space-y-6", className)}>
+        {/* Industry Segment */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label htmlFor="industrySegment" className="text-sm font-medium">
+              Industry Segment *
+            </label>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Select your primary industry segment
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <Select
+            onValueChange={(value) => form.setValue("industrySegment", value)}
+            defaultValue={form.getValues("industrySegment")}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select your industry segment" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(industrySegments).map(([industry, segments]) => (
+                segments.map((segment) => (
+                  <SelectItem key={segment} value={segment}>
+                    {segment}
+                  </SelectItem>
+                ))
+              ))}
+            </SelectContent>
+          </Select>
+          {form.formState.errors.industrySegment && (
+            <p className="text-sm text-destructive">{form.formState.errors.industrySegment.message}</p>
+          )}
+        </div>
+
+        {/* Business Sector */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label htmlFor="sector" className="text-sm font-medium">
+              Business Sector *
+            </label>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Select the type of business opportunity in your industry
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <Select
+            onValueChange={(value) => form.setValue("sector", value)}
+            defaultValue={form.getValues("sector")}
+            disabled={!form.getValues("industrySegment")}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select your business sector" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSectors.map((sector) => (
+                <SelectItem key={sector} value={sector}>
+                  {sector.charAt(0).toUpperCase() + sector.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {form.formState.errors.sector && (
+            <p className="text-sm text-destructive">{form.formState.errors.sector.message}</p>
+          )}
+        </div>
+
         {/* Business Name */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -122,76 +214,6 @@ export function BusinessInformationForm({
           )}
         </div>
 
-        {/* Business Sector */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="sector" className="text-sm font-medium">
-              Business Sector *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Select the primary sector your business operates in
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            onValueChange={(value) => form.setValue("sector", value)}
-            defaultValue={form.getValues("sector")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your sector" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(sectors).map(([key, value]) => (
-                <SelectItem key={key} value={key}>
-                  {value.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.sector && (
-            <p className="text-sm text-destructive">{form.formState.errors.sector.message}</p>
-          )}
-        </div>
-
-        {/* Industry Segment */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="industrySegment" className="text-sm font-medium">
-              Industry Segment *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Select your specific industry segment within the chosen sector
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            onValueChange={(value) => form.setValue("industrySegment", value)}
-            defaultValue={form.getValues("industrySegment")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your industry segment" />
-            </SelectTrigger>
-            <SelectContent>
-              {getIndustrySegments(selectedSector).map((segment) => (
-                <SelectItem key={segment.value} value={segment.value}>
-                  {segment.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.industrySegment && (
-            <p className="text-sm text-destructive">{form.formState.errors.industrySegment.message}</p>
-          )}
-        </div>
-
         {/* Business Model */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -203,7 +225,7 @@ export function BusinessInformationForm({
                 <Info className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent>
-                Select how your business generates revenue
+                Select your primary business model
               </TooltipContent>
             </Tooltip>
           </div>
@@ -215,11 +237,14 @@ export function BusinessInformationForm({
               <SelectValue placeholder="Select your business model" />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(businessModels).map(([key, value]) => (
-                <SelectItem key={key} value={key}>
-                  {value}
-                </SelectItem>
-              ))}
+              <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
+              <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
+              <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
+              <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
+              <SelectItem value="subscription">Subscription</SelectItem>
+              <SelectItem value="transactional">Transactional</SelectItem>
+              <SelectItem value="advertising">Advertising</SelectItem>
+              <SelectItem value="licensing">Licensing</SelectItem>
             </SelectContent>
           </Select>
           {form.formState.errors.businessModel && (
@@ -254,7 +279,7 @@ export function BusinessInformationForm({
           )}
         </div>
 
-        {/* Description */}
+        {/* Business Description */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <label htmlFor="description" className="text-sm font-medium">
@@ -280,41 +305,7 @@ export function BusinessInformationForm({
           )}
         </div>
 
-        {/* Product Stage */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="productStage" className="text-sm font-medium">
-              Product Stage *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Select the current development stage of your product
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            onValueChange={(value) => form.setValue("productStage", value)}
-            defaultValue={form.getValues("productStage")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your product stage" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(productStages).map(([key, value]) => (
-                <SelectItem key={key} value={key}>
-                  {value}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.productStage && (
-            <p className="text-sm text-destructive">{form.formState.errors.productStage.message}</p>
-          )}
-        </div>
-
+        {/* Form Actions */}
         <div className="flex justify-end space-x-4 pt-6">
           <Button
             variant="outline"
