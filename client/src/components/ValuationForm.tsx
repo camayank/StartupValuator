@@ -465,26 +465,23 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   }, [form.watch(), currentStep, formSections]);
 
 
+  // Add handlers for dropdown changes
+  const handleSectorChange = (selectedSector: string) => {
+    console.log("Handling sector change:", selectedSector);
+    form.setValue("businessInfo.segment", ""); // Reset segment
+    form.setValue("businessInfo.subSegment", ""); // Reset sub-segment
+    setTimeout(() => form.setValue("businessInfo.sector", selectedSector), 0); // Update sector
+  };
+
+  const handleSegmentChange = (selectedSegment: string) => {
+    console.log("Handling segment change:", selectedSegment);
+    form.setValue("businessInfo.subSegment", ""); // Reset sub-segment
+    setTimeout(() => form.setValue("businessInfo.segment", selectedSegment), 0); // Update segment
+  };
+
   // Watch sector and segment values directly
   const sector = form.watch("businessInfo.sector");
   const segment = form.watch("businessInfo.segment");
-
-  // Clear dependent fields when sector changes
-  useEffect(() => {
-    if (sector === "") {
-      console.log("Sector cleared - resetting segment and subsegment");
-      form.setValue("businessInfo.segment", "");
-      form.setValue("businessInfo.subSegment", "");
-    }
-  }, [sector, form]);
-
-  // Clear subsegment when segment changes
-  useEffect(() => {
-    if (segment === "") {
-      console.log("Segment cleared - resetting subsegment");
-      form.setValue("businessInfo.subSegment", "");
-    }
-  }, [segment, form]);
 
   // Keep debug logging
   useEffect(() => {
@@ -494,25 +491,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       subSegment: form.watch("businessInfo.subSegment"),
     });
   }, [sector, segment, form]);
-
-  // Existing reset logic with improved error handling
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      try {
-        if (name === "businessInfo.sector") {
-          console.log("Resetting segment and subsegment due to sector change");
-          form.setValue("businessInfo.segment", "", { shouldValidate: true });
-          form.setValue("businessInfo.subSegment", "", { shouldValidate: true });
-        } else if (name === "businessInfo.segment") {
-          console.log("Resetting subsegment due to segment change");
-          form.setValue("businessInfo.subSegment", "", { shouldValidate: true });
-        }
-      } catch (error) {
-        console.error("Error in dropdown reset logic:", error);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
 
 
   const mutation = useMutation({
@@ -584,8 +562,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           <div className="w-full">
             <Select
               onValueChange={(newValue) => {
-                console.log(`Dropdown value changed: ${fieldConfig.name} =`, newValue);
-                formField.onChange(newValue);
+                console.log(`Dropdown change initiated: ${fieldConfig.name} =`, newValue);
+                if (fieldConfig.name === "businessInfo.sector") {
+                  handleSectorChange(newValue);
+                } else if (fieldConfig.name === "businessInfo.segment") {
+                  handleSegmentChange(newValue);
+                } else {
+                  formField.onChange(newValue);
+                }
               }}
               value={formField.value || ""}
               disabled={fieldConfig.disabled}
