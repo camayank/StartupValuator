@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { sectorOperations, SectorSchema } from "@/lib/constants/business-sectors";
 
@@ -20,6 +20,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [selectedSegment, setSelectedSegment] = useState<string>("");
   const [selectedSubSegment, setSelectedSubSegment] = useState<string>("");
+  const [outputMessage, setOutputMessage] = useState<string>("");
   const { toast } = useToast();
 
   const [segments, setSegments] = useState<Array<{ value: string; label: string }>>([]);
@@ -31,6 +32,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
       setSegments(sectorOperations.getSegmentsForSector(selectedSector));
       setSelectedSegment("");
       setSelectedSubSegment("");
+      setOutputMessage("");
     }
   }, [selectedSector]);
 
@@ -64,6 +66,9 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
       subSegment: selectedSubSegment
     });
 
+    // Display selection in output area
+    setOutputMessage(`Selected: ${selectedSector} > ${selectedSegment} > ${selectedSubSegment}`);
+
     // Log selection to console as required
     console.log({
       sector: selectedSector,
@@ -73,8 +78,17 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
 
     toast({
       title: "Selection Complete",
-      description: `Selected: ${selectedSector} > ${selectedSegment} > ${selectedSubSegment}`,
+      description: "Your business sector selection has been recorded",
     });
+  };
+
+  const handleReset = () => {
+    setSelectedSector("");
+    setSelectedSegment("");
+    setSelectedSubSegment("");
+    setOutputMessage("");
+    setSegments([]);
+    setSubSegments([]);
   };
 
   return (
@@ -90,7 +104,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
             onValueChange={setSelectedSector}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a sector" />
+              <SelectValue placeholder="Select a Business Sector" />
             </SelectTrigger>
             <SelectContent>
               {sectorOperations.getAllSectors().map(({ value, label }) => (
@@ -110,7 +124,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
             disabled={!selectedSector}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={selectedSector ? "Select a segment" : "First select a sector"} />
+              <SelectValue placeholder={selectedSector ? "Select an Industry Segment" : "First select a Business Sector"} />
             </SelectTrigger>
             <SelectContent>
               {segments.map(({ value, label }) => (
@@ -130,7 +144,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
             disabled={!selectedSegment}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder={selectedSegment ? "Select a sub-segment" : "First select a segment"} />
+              <SelectValue placeholder={selectedSegment ? "Select a Sub-Segment" : "First select an Industry Segment"} />
             </SelectTrigger>
             <SelectContent>
               {subSegments.map(({ value, label }) => (
@@ -142,14 +156,28 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
           </Select>
         </div>
 
+        {outputMessage && (
+          <div className="mt-4 p-4 bg-secondary rounded-lg">
+            <p className="text-sm font-medium">{outputMessage}</p>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex gap-2">
         <Button 
           onClick={handleSubmit}
-          className="w-full"
+          className="flex-1"
           disabled={!selectedSector || !selectedSegment || !selectedSubSegment}
         >
           Submit Selection
         </Button>
-      </CardContent>
+        <Button 
+          onClick={handleReset}
+          variant="outline"
+          className="flex-1"
+        >
+          Reset
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
