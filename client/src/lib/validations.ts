@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ValidationResult } from "./types";
+import { BUSINESS_SECTORS } from "./constants/business-sectors";
 
 export const currencies = {
   USD: { symbol: "$", name: "US Dollar" },
@@ -206,165 +207,29 @@ export const productStages = {
   next_gen: "Next Generation Development"
 } as const;
 
-// Reorganized industry classifications with sector-subsector structure
-export const sectors = {
-  technology: {
-    name: "Technology",
-    subsectors: {
-      software_enterprise: "Enterprise Software & Solutions",
-      software_consumer: "Consumer Software & Apps",
-      cloud_computing: "Cloud Computing & Services",
-      ai_ml: "AI & Machine Learning",
-      cybersecurity: "Cybersecurity",
-      iot_embedded: "IoT & Embedded Systems",
-      semiconductors: "Semiconductors & Hardware",
-      blockchain: "Blockchain & Crypto",
+// Get all sectors as an array of strings
+const sectorKeys = Object.keys(BUSINESS_SECTORS);
+
+// Update the sectors object to match BUSINESS_SECTORS structure
+export const sectors = Object.fromEntries(
+  sectorKeys.map(sector => [
+    sector.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+    {
+      name: sector,
+      subsectors: Object.fromEntries(
+        Object.entries(BUSINESS_SECTORS[sector]).map(([segment, subSegments]) => [
+          segment.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+          {
+            name: segment,
+            description: `${segment} within ${sector}`,
+            subSegments: subSegments
+          }
+        ])
+      )
     }
-  },
-  healthtech: {
-    name: "Healthcare & Life Sciences",
-    subsectors: {
-      biotech: "Biotechnology",
-      medtech: "Medical Devices & Equipment",
-      healthtech: "Digital Health & Telemedicine",
-      pharma: "Pharmaceuticals",
-      diagnostics: "Diagnostics & Testing",
-      healthcare_services: "Healthcare Services",
-      mental_health: "Mental Health Solutions",
-      wellness: "Wellness & Prevention",
-    }
-  },
-  fintech: {
-    name: "Financial Technology",
-    subsectors: {
-      payments: "Payment Solutions",
-      lending: "Digital Lending",
-      insurtech: "Insurance Technology",
-      wealth_management: "Wealth Management Tech",
-      regtech: "Regulatory Technology",
-      blockchain_finance: "Blockchain Finance",
-      banking_tech: "Banking Technology",
-      personal_finance: "Personal Finance Solutions",
-    }
-  },
-  ecommerce: {
-    name: "E-commerce & Retail",
-    subsectors: {
-      marketplace: "Online Marketplaces",
-      d2c: "Direct-to-Consumer",
-      retail_tech: "Retail Technology",
-      logistics_fulfillment: "Logistics & Fulfillment",
-      subscription_commerce: "Subscription Commerce",
-      social_commerce: "Social Commerce",
-      omnichannel: "Omnichannel Retail",
-      luxury_premium: "Luxury & Premium E-commerce",
-    }
-  },
-  enterprise: {
-    name: "Enterprise Solutions",
-    subsectors: {
-      crm_sales: "CRM & Sales Tools",
-      hr_workforce: "HR & Workforce Management",
-      erp_systems: "ERP Systems",
-      collaboration_tools: "Collaboration & Productivity",
-      business_intelligence: "Business Intelligence & Analytics",
-      marketing_automation: "Marketing Automation",
-      supply_chain: "Supply Chain Solutions",
-      customer_service: "Customer Service Solutions",
-    }
-  },
-  deeptech: {
-    name: "Deep Technology",
-    subsectors: {
-      quantum_computing: "Quantum Computing",
-      robotics_automation: "Robotics & Automation",
-      advanced_materials: "Advanced Materials",
-      space_tech: "Space Technology",
-      energy_tech: "Energy Technology",
-      biocomputing: "Biocomputing",
-      nanotech: "Nanotechnology",
-      photonics: "Photonics & Optics",
-    }
-  },
-  cleantech: {
-    name: "Clean Technology",
-    subsectors: {
-      renewable_energy: "Renewable Energy",
-      energy_storage: "Energy Storage",
-      smart_grid: "Smart Grid & Utilities",
-      carbon_capture: "Carbon Capture & Offset",
-      waste_management: "Waste Management",
-      water_tech: "Water Technology",
-      sustainable_transport: "Sustainable Transportation",
-      green_building: "Green Building Tech",
-    }
-  },
-  consumer_digital: {
-    name: "Consumer Digital",
-    subsectors: {
-      social_media: "Social Media & Networks",
-      gaming: "Gaming & Esports",
-      streaming_media: "Streaming & Digital Media",
-      edtech: "Educational Technology",
-      digital_content: "Digital Content & Publishing",
-      mobile_apps: "Mobile Applications",
-      ar_vr: "AR/VR & Metaverse",
-      digital_entertainment: "Digital Entertainment",
-    }
-  },
-  industrial_tech: {
-    name: "Industrial Technology",
-    subsectors: {
-      industry_4_0: "Industry 4.0",
-      smart_manufacturing: "Smart Manufacturing",
-      industrial_iot: "Industrial IoT",
-      predictive_maintenance: "Predictive Maintenance",
-      industrial_automation: "Industrial Automation",
-      quality_control: "Quality Control & Testing",
-      digital_twin: "Digital Twin Technology",
-      industrial_safety: "Industrial Safety & Security",
-    }
-  },
-  agritech: {
-    name: "Agriculture Technology",
-    subsectors: {
-      precision_farming: "Precision Farming",
-      agri_biotech: "Agricultural Biotechnology",
-      smart_farming: "Smart Farming Solutions",
-      vertical_farming: "Vertical & Urban Farming",
-      food_tech: "Food Technology",
-      supply_chain_agri: "Agricultural Supply Chain",
-      farm_management: "Farm Management Systems",
-      sustainable_agri: "Sustainable Agriculture",
-    }
-  },
-  proptech: {
-    name: "Property Technology",
-    subsectors: {
-      real_estate_platforms: "Real Estate Platforms",
-      construction_tech: "Construction Technology",
-      property_management: "Property Management Solutions",
-      smart_buildings: "Smart Buildings",
-      mortgage_tech: "Mortgage Technology",
-      co_living_working: "Co-living & Co-working",
-      facility_management: "Facility Management",
-      real_estate_analytics: "Real Estate Analytics",
-    }
-  },
-  mobility: {
-    name: "Mobility & Transportation",
-    subsectors: {
-      ev_tech: "Electric Vehicle Technology",
-      autonomous_vehicles: "Autonomous Vehicles",
-      mobility_services: "Mobility Services",
-      logistics_tech: "Logistics Technology",
-      fleet_management: "Fleet Management",
-      urban_mobility: "Urban Mobility Solutions",
-      delivery_tech: "Delivery Technology",
-      transport_analytics: "Transportation Analytics",
-    }
-  }
-} as const;
+  ])
+);
+
 
 // Create a flat map of all industries for backward compatibility
 export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
