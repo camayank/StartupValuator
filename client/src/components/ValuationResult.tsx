@@ -15,6 +15,11 @@ import { calculateFundingReadiness } from "@/lib/fundingReadiness";
 import { ExportButton } from "./ExportButton";
 import { FinancialTooltip } from "@/components/ui/financial-tooltip";
 import { useState, useCallback } from "react";
+import { MonteCarloSimulationDashboard } from "./MonteCarloSimulationDashboard";
+import { motion } from "framer-motion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BarChart, Bar, CartesianGrid, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface ValuationResultProps {
   data: ValuationFormData | null;
@@ -382,6 +387,21 @@ export function ValuationResult({ data }: ValuationResultProps) {
           <EcosystemNetwork data={data.ecosystemNetwork} />
         </motion.div>
       )}
+
+      {/* Add Monte Carlo Simulation Dashboard */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <MonteCarloSimulationDashboard
+          data={data}
+          onSimulationComplete={(results) => {
+            // Update other components or state if needed
+            console.log("Simulation complete:", results);
+          }}
+        />
+      </motion.div>
     </div>
   );
 }
