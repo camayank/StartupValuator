@@ -1,170 +1,132 @@
-import type { BusinessSector, SectorSegment, SubSegment, Metrics } from '@/lib/types';
+import type { BusinessSector, BusinessSegment, BusinessSubSegment } from '@/lib/types';
 
-export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
-  TECHNOLOGY: {
-    name: "Technology & Software",
-    segments: {
-      ENTERPRISE_SOFTWARE: {
-        name: "Enterprise Software",
-        subSegments: ["ERP", "CRM", "HRM"],
-        metrics: {
-          key: ["ARR", "CAC", "LTV", "Churn Rate"],
-          valuation: ["Revenue Multiple", "ARR Multiple"]
-        }
-      },
-      CLOUD_COMPUTING: {
-        name: "Cloud Computing",
-        subSegments: ["IaaS", "PaaS", "SaaS"],
-        metrics: {
-          key: ["Monthly Active Users", "Server Uptime", "Resource Utilization"],
-          valuation: ["Revenue Multiple", "Growth Multiple"]
-        }
-      },
-      AI_ML: {
-        name: "AI & Machine Learning",
-        subSegments: ["NLP", "Computer Vision", "AI Analytics"],
-        metrics: {
-          key: ["Model Accuracy", "Training Data Size", "Inference Speed"],
-          valuation: ["Technology Premium", "IP Value"]
-        }
-      }
-    }
-  },
-  HEALTHCARE: {
-    name: "Healthcare & Life Sciences",
-    segments: {
-      DIGITAL_HEALTH: {
-        name: "Digital Health",
-        subSegments: ["Telehealth", "Mobile Health", "Health Analytics"],
-        metrics: {
-          key: ["Patient Engagement", "Clinical Outcomes", "User Retention"],
-          valuation: ["Revenue Multiple", "Patient Multiple"]
-        }
-      },
-      BIOTECH: {
-        name: "Biotech",
-        subSegments: ["Gene Therapy", "Molecular Diagnostics", "Bioinformatics"],
-        metrics: {
-          key: ["Clinical Trial Success", "Patent Portfolio", "Research Pipeline"],
-          valuation: ["Clinical Stage Multiple", "IP Value"]
-        }
-      },
-      MEDICAL_DEVICES: {
-        name: "Medical Devices",
+export const BUSINESS_SECTORS: BusinessSector[] = [
+  {
+    id: 'TECH',
+    name: 'Technology & Software',
+    segments: [
+      {
+        id: 'ENTERPRISE_SOFTWARE',
+        name: 'Enterprise Software',
         subSegments: [
-          "Diagnostic Devices",
-          "Wearable Technology",
-          "Surgical Robotics"
-        ],
-        metrics: {
-          key: ["FDA Approval Stage", "Clinical Validation", "Manufacturing Cost"],
-          valuation: ["Regulatory Stage Multiple", "Revenue Multiple"]
-        }
-      }
-    }
-  },
-  FINTECH: {
-    name: "Financial Technology",
-    segments: {
-      DIGITAL_BANKING: {
-        name: "Digital Banking",
+          {
+            id: 'ERP',
+            name: 'ERP Systems',
+            examples: 'SAP, Oracle ERP',
+            metrics: {
+              keyMetrics: ['Annual Recurring Revenue', 'Customer Churn Rate', 'Customer Acquisition Cost'],
+              valuationMetrics: ['Revenue Multiple', 'Growth Rate']
+            }
+          },
+          {
+            id: 'CRM',
+            name: 'CRM Systems',
+            examples: 'Salesforce, HubSpot',
+            metrics: {
+              keyMetrics: ['User Adoption Rate', 'Sales Efficiency', 'Customer Retention'],
+              valuationMetrics: ['ARR Multiple', 'Customer LTV']
+            }
+          },
+          {
+            id: 'HRM',
+            name: 'HR Management',
+            examples: 'Workday, BambooHR',
+            metrics: {
+              keyMetrics: ['Employee Satisfaction', 'HR Process Efficiency', 'Cost per Hire'],
+              valuationMetrics: ['SaaS Metrics', 'Efficiency Ratios']
+            }
+          }
+        ]
+      },
+      {
+        id: 'CLOUD_COMPUTING',
+        name: 'Cloud Computing',
         subSegments: [
-          "Neo Banking",
-          "Open Banking",
-          "Embedded Finance"
-        ],
-        metrics: {
-          key: ["User Acquisition Cost", "Transaction Volume", "Customer Lifetime Value"],
-          valuation: ["User Multiple", "Transaction Multiple"]
-        }
-      },
-      PAYMENTS: {
-        name: "Payments & Transfers",
-        subSegments: ["Digital Payments", "Cross-Border Payments", "BNPL"],
-        metrics: {
-          key: ["Processing Volume", "Take Rate", "Payment Success Rate"],
-          valuation: ["GTV Multiple", "Transaction Multiple"]
-        }
-      },
-      WEALTHTECH: {
-        name: "WealthTech",
-        subSegments: ["Robo-Advisory", "Investment Platforms", "Personal Finance"],
-        metrics: {
-          key: ["AUM", "Investment Performance", "Client Retention"],
-          valuation: ["AUM Multiple", "Revenue Multiple"]
-        }
+          {
+            id: 'IAAS',
+            name: 'Infrastructure as a Service',
+            examples: 'AWS EC2, Google Compute Engine',
+            metrics: {
+              keyMetrics: ['Server Uptime', 'Resource Utilization', 'Customer Usage'],
+              valuationMetrics: ['Usage-based Metrics', 'Infrastructure Scale']
+            }
+          },
+          {
+            id: 'PAAS',
+            name: 'Platform as a Service',
+            examples: 'Heroku, Google App Engine',
+            metrics: {
+              keyMetrics: ['Developer Adoption', 'Platform Usage', 'Service Reliability'],
+              valuationMetrics: ['Developer Economics', 'Platform Scale']
+            }
+          }
+        ]
       }
-    }
+    ]
   },
-  ECOMMERCE: {
-    name: "E-Commerce & Retail",
-    segments: {
-      MARKETPLACE: {
-        name: "Online Marketplace",
-        subSegments: ["Multi-Vendor", "Social Commerce", "Niche Markets"],
-        metrics: {
-          key: ["GMV", "Take Rate", "Seller Retention"],
-          valuation: ["GMV Multiple", "Revenue Multiple"]
-        }
-      },
-      DTC: {
-        name: "Direct-to-Consumer",
-        subSegments: ["Brand Commerce", "Subscription Commerce", "Custom Products"],
-        metrics: {
-          key: ["CAC", "AOV", "Repeat Purchase Rate"],
-          valuation: ["Revenue Multiple", "Customer Multiple"]
-        }
-      },
-      RETAILTECH: {
-        name: "RetailTech",
+  {
+    id: 'HEALTHCARE',
+    name: 'Healthcare & Life Sciences',
+    segments: [
+      {
+        id: 'DIGITAL_HEALTH',
+        name: 'Digital Health',
         subSegments: [
-          "POS Systems",
-          "Retail Analytics",
-          "Inventory Management"
-        ],
-        metrics: {
-          key: ["Transaction Volume", "Store Coverage", "Analytics Adoption"],
-          valuation: ["SaaS Multiple", "Transaction Multiple"]
-        }
+          {
+            id: 'TELEHEALTH',
+            name: 'Telehealth',
+            examples: 'Teladoc, Amwell',
+            metrics: {
+              keyMetrics: ['Patient Visits', 'Provider Network', 'Patient Satisfaction'],
+              valuationMetrics: ['Patient Economics', 'Network Effects']
+            }
+          },
+          {
+            id: 'HEALTH_ANALYTICS',
+            name: 'Health Analytics',
+            examples: 'Health Catalyst, Clarify Health',
+            metrics: {
+              keyMetrics: ['Data Accuracy', 'Analytics Adoption', 'Clinical Outcomes'],
+              valuationMetrics: ['Data Value', 'Clinical Impact']
+            }
+          }
+        ]
       }
-    }
+    ]
   }
-};
+];
 
-// Utility functions for sector and segment operations
+// Utility functions for sector operations
 export const sectorOperations = {
   getAllSectors() {
-    return Object.entries(BUSINESS_SECTORS).map(([key, sector]) => ({
-      value: key,
+    return BUSINESS_SECTORS.map(sector => ({
+      value: sector.id,
       label: sector.name
     }));
   },
 
-  getSegmentsForSector(sectorKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey];
-    if (!sector) return [];
-
-    return Object.entries(sector.segments).map(([key, segment]) => ({
-      value: key,
+  getSegmentsForSector(sectorId: string) {
+    const sector = BUSINESS_SECTORS.find(s => s.id === sectorId);
+    return sector?.segments.map(segment => ({
+      value: segment.id,
       label: segment.name
-    }));
+    })) || [];
   },
 
-  getSubSegments(sectorKey: string, segmentKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey];
-    const segment = sector?.segments[segmentKey];
-
-    if (!segment?.subSegments) return [];
-
-    return segment.subSegments.map(sub => ({
-      value: sub.toLowerCase().replace(/\s+/g, '_'),
-      label: sub
-    }));
+  getSubSegments(sectorId: string, segmentId: string) {
+    const sector = BUSINESS_SECTORS.find(s => s.id === sectorId);
+    const segment = sector?.segments.find(seg => seg.id === segmentId);
+    return segment?.subSegments.map(sub => ({
+      value: sub.id,
+      label: sub.name,
+      description: sub.examples
+    })) || [];
   },
 
-  getMetrics(sectorKey: string, segmentKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey];
-    const segment = sector?.segments[segmentKey];
-    return segment?.metrics || null;
+  getMetrics(sectorId: string, segmentId: string, subSegmentId: string) {
+    const sector = BUSINESS_SECTORS.find(s => s.id === sectorId);
+    const segment = sector?.segments.find(seg => seg.id === segmentId);
+    const subSegment = segment?.subSegments.find(sub => sub.id === subSegmentId);
+    return subSegment?.metrics || null;
   }
 };
