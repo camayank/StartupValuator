@@ -151,7 +151,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     },
   });
 
-  // Define businessInfoFields inside the component to have access to form
+  // Update the businessInfoFields configuration
   const businessInfoFields = [
     {
       name: "businessInfo.name",
@@ -538,6 +538,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }
   };
 
+  // Update the Select component rendering
   const renderField = ({ field: formField, fieldConfig }: { field: any, fieldConfig: any }) => {
     switch (fieldConfig.type) {
       case "text":
@@ -558,6 +559,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         );
       case "dropdown":
         const options = typeof fieldConfig.options === 'function' ? fieldConfig.options() : fieldConfig.options;
+        const isDisabled = fieldConfig.disabled;
+
+        console.log(`Rendering dropdown ${fieldConfig.name}:`, {
+          isDisabled,
+          currentValue: formField.value,
+          options: options
+        });
+
         return (
           <div className="w-full">
             <Select
@@ -572,7 +581,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                 }
               }}
               value={formField.value || ""}
-              disabled={fieldConfig.disabled}
+              disabled={isDisabled}
             >
               <FormControl>
                 <SelectTrigger>
@@ -773,6 +782,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                           </TooltipTrigger>
                                           <TooltipContent>
                                             <p>{fieldConfig.description}</p>
+                                            {fieldConfig.help && <p>{fieldConfig.help}</p>}
                                           </TooltipContent>
                                         </Tooltip>
                                       </TooltipProvider>
@@ -781,11 +791,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                                       {renderField({ field, fieldConfig })}
                                     </FormControl>
                                     <FormMessage />
-                                    {fieldConfig.help && (
-                                      <FormDescription className="text-xs">
-                                        {fieldConfig.help}
-                                      </FormDescription>
-                                    )}
                                   </FormItem>
                                 )}
                               />
