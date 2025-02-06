@@ -464,20 +464,36 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }));
   }, [form.watch(), currentStep, formSections]);
 
-  // Add debug logging effect after the form initialization
+
+  // Watch sector and segment values directly
+  const sector = form.watch("businessInfo.sector");
+  const segment = form.watch("businessInfo.segment");
+
+  // Clear dependent fields when sector changes
   useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      console.log("Form field changed:", { 
-        field: name, 
-        value: value,
-        type,
-        currentSector: form.getValues("businessInfo.sector"),
-        currentSegment: form.getValues("businessInfo.segment"),
-        currentSubSegment: form.getValues("businessInfo.subSegment")
-      });
+    if (sector === "") {
+      console.log("Sector cleared - resetting segment and subsegment");
+      form.setValue("businessInfo.segment", "");
+      form.setValue("businessInfo.subSegment", "");
+    }
+  }, [sector, form]);
+
+  // Clear subsegment when segment changes
+  useEffect(() => {
+    if (segment === "") {
+      console.log("Segment cleared - resetting subsegment");
+      form.setValue("businessInfo.subSegment", "");
+    }
+  }, [segment, form]);
+
+  // Keep debug logging
+  useEffect(() => {
+    console.log("Current form state:", {
+      sector,
+      segment,
+      subSegment: form.watch("businessInfo.subSegment"),
     });
-    return () => subscription.unsubscribe();
-  }, [form]);
+  }, [sector, segment, form]);
 
   // Existing reset logic with improved error handling
   useEffect(() => {
@@ -624,8 +640,8 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   };
 
   const { businessInfo } = form.getValues();
-  const { sector, businessModel, productStage } = businessInfo;
-  const marketMetrics = calculateMarketMetrics(sector, productStage);
+  const { sector: businessSector, businessModel, productStage } = businessInfo;
+  const marketMetrics = calculateMarketMetrics(businessSector, productStage);
 
   useEffect(() => {
     form.setValue("marketData.tam", marketMetrics.tam);
@@ -643,7 +659,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         form.setValue("valuationInputs.metrics", metrics);
       }
     }
-  }, [form.watch("businessInfo.sector"), form.watch("businessInfo.segment")]);
+  }, [sector, segment]);
 
   useEffect(() => {
     const fundUtilizationSuggestions = suggestFundUtilization(productStage, form.getValues().valuationInputs.fundingRequired);
@@ -653,14 +669,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
   }, [productStage, form.watch("valuationInputs.fundingRequired"), form]);
 
-  const techStackSuggestions = suggestTechnologyStack(businessModel, sector);
+  const techStackSuggestions = suggestTechnologyStack(businessModel, businessSector);
   const technologyStackOptions = getTechnologyStackOptions();
   const suggestedTechnologyStack = technologyStackOptions.filter(option => Object.values(techStackSuggestions).flat().includes(option.value));
 
 
   useEffect(() => {
     form.setValue("productDetails.technologyStack", suggestedTechnologyStack.map(o => o.value));
-  }, [businessInfo, sector, businessModel, form]);
+  }, [businessInfo, businessSector, businessModel, form]);
 
   // Add effect for auto-calculating financial metrics
   useEffect(() => {
@@ -682,7 +698,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       setValidationWarnings(warnings);
     }
   }, [
-    form.watch("businessInfo.sector"),
+    sector,
     form.watch("businessInfo.productStage"),
     form.watch("financialData.revenue"),
     form
