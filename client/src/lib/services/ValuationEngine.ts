@@ -1,3 +1,5 @@
+import { getMarketInsights, validateFinancialMetrics } from "./ai-service";
+
 interface ValuationResult {
   methods: {
     scorecard: number;
@@ -36,16 +38,24 @@ interface ValuationResult {
 }
 
 export class ValuationEngine {
-  private static readonly INDUSTRY_MULTIPLIERS = {
-    software_enterprise: { revenue: 12, users: 500, growth: 1.5 },
-    software_consumer: { revenue: 10, users: 200, growth: 1.3 },
-    ai_ml: { revenue: 15, users: 800, growth: 2.0 },
-    biotech: { revenue: 8, users: 1000, growth: 1.8 },
-    fintech: { revenue: 11, users: 300, growth: 1.4 },
-    healthtech: { revenue: 9, users: 400, growth: 1.6 },
-    ecommerce: { revenue: 7, users: 150, growth: 1.2 },
-    saas: { revenue: 13, users: 600, growth: 1.7 }
-  };
+  // Dynamic industry multipliers updated based on market conditions
+  private static async getIndustryMultipliers(industry: string) {
+    try {
+      const marketData = await getMarketInsights(industry, "all");
+      return {
+        revenue: marketData.metrics.revenueMultiple || 10,
+        users: marketData.metrics.userMultiple || 500,
+        growth: marketData.metrics.growthMultiple || 1.5
+      };
+    } catch (error) {
+      console.error("Error fetching market multipliers:", error);
+      return {
+        revenue: 10,
+        users: 500,
+        growth: 1.5
+      };
+    }
+  }
 
   private static readonly STAGE_MULTIPLIERS = {
     ideation_unvalidated: 0.2,
@@ -58,22 +68,25 @@ export class ValuationEngine {
     revenue_scaling: 2.0
   };
 
-  static calculateValuation(data: any, aiInsights: any): ValuationResult {
-    // Calculate different valuation methods
-    const scorecardValue = this.calculateScorecardValue(data);
-    const riskAdjustedValue = this.calculateRiskAdjustedValue(data);
-    const vcValue = this.calculateVCValue(data);
-    const dcfValue = this.calculateDCFValue(data);
-    const comparablesValue = this.calculateComparablesValue(data);
+  static async calculateValuation(data: any, aiInsights: any): Promise<ValuationResult> {
+    // Get dynamic industry multipliers
+    const industryMultipliers = await this.getIndustryMultipliers(data.basicInfo.industry);
 
-    // Calculate industry benchmarks
-    const benchmarks = this.calculateIndustryBenchmarks(data);
+    // Calculate different valuation methods with dynamic multipliers
+    const scorecardValue = await this.calculateScorecardValue(data, industryMultipliers);
+    const riskAdjustedValue = await this.calculateRiskAdjustedValue(data);
+    const vcValue = await this.calculateVCValue(data, industryMultipliers);
+    const dcfValue = await this.calculateDCFValue(data);
+    const comparablesValue = await this.calculateComparablesValue(data, industryMultipliers);
 
-    // Perform risk analysis
-    const riskAnalysis = this.performRiskAnalysis(data);
+    // Calculate industry benchmarks with real-time data
+    const benchmarks = await this.calculateIndustryBenchmarks(data);
 
-    // Calculate confidence based on data quality and consistency
-    const confidence = this.calculateConfidenceScore(data, [
+    // Perform comprehensive risk analysis
+    const riskAnalysis = await this.performRiskAnalysis(data);
+
+    // Calculate confidence based on data quality and market conditions
+    const confidence = await this.calculateConfidenceScore(data, [
       scorecardValue,
       riskAdjustedValue,
       vcValue,
@@ -100,7 +113,7 @@ export class ValuationEngine {
     };
   }
 
-  private static calculateScorecardValue(data: any): number {
+  private static async calculateScorecardValue(data: any, industryMultipliers: any): Promise<number> {
     const weights = {
       team: 0.30,
       marketSize: 0.25,
@@ -110,33 +123,38 @@ export class ValuationEngine {
       businessModel: 0.10
     };
 
+    // Validate metrics before calculation
+    const validationResult = await validateFinancialMetrics(data);
+    if (!validationResult.isValid) {
+      console.warn("Financial metrics validation warnings:", validationResult.feedback);
+    }
+
     let score = 0;
 
-    // Team Score
+    // Enhanced team score calculation
     score += weights.team * (data.basicInfo.founderExperience / 10);
 
-    // Market Size Score
+    // Market size score with TAM validation
     const tamScore = Math.min(data.marketMetrics.marketSize.tam / 1000000000, 10);
     score += weights.marketSize * (tamScore / 10);
 
-    // Technology Score
+    // Technology readiness score
     score += weights.technology * (data.marketMetrics.solutionReadiness / 100);
 
-    // Competition Score
-    const totalCompetitorShare = data.competitive.competitors.reduce(
+    // Competition analysis
+    const competitorShare = data.competitive.competitors.reduce(
       (acc: number, comp: any) => acc + (comp.marketShare || 0), 
       0
     );
-    score += weights.competition * ((100 - totalCompetitorShare) / 100);
+    score += weights.competition * ((100 - competitorShare) / 100);
 
-    // Industry & Stage Adjustments
-    const industryMultiplier = this.INDUSTRY_MULTIPLIERS[data.basicInfo.industry as keyof typeof ValuationEngine.INDUSTRY_MULTIPLIERS]?.revenue || 10;
+    // Apply industry and stage multipliers
     const stageMultiplier = this.STAGE_MULTIPLIERS[data.basicInfo.stage as keyof typeof ValuationEngine.STAGE_MULTIPLIERS] || 1;
 
-    return 2500000 * score * industryMultiplier * stageMultiplier;
+    return 2500000 * score * industryMultipliers.revenue * stageMultiplier;
   }
 
-  private static calculateRiskAdjustedValue(data: any): number {
+  private static async calculateRiskAdjustedValue(data: any): Promise<number> {
     const baseValue = 2500000;
     const riskFactors = [
       { name: 'Management', weight: 0.20 },
@@ -150,31 +168,39 @@ export class ValuationEngine {
     ];
 
     let riskScore = 0;
-    riskScore += this.calculateRiskScore('Management', data.basicInfo.founderExperience) * 0.20;
-    riskScore += this.calculateStageRiskScore(data.basicInfo.stage) * 0.15;
-    riskScore += (data.marketMetrics.solutionReadiness / 100) * 0.15;
-    riskScore += ((100 - this.calculateCompetitionIntensity(data.competitive)) / 100) * 0.10;
-    riskScore += (data.financials.runwayMonths > 12 ? 0.8 : 0.5) * 0.10;
+
+    // Enhanced risk calculations
+    const managementScore = await this.calculateManagementRisk(data);
+    const stageScore = this.calculateStageRisk(data.basicInfo.stage);
+    const techScore = data.marketMetrics.solutionReadiness / 100;
+    const competitionScore = 1 - (await this.calculateCompetitionIntensity(data.competitive)) / 100;
+    const fundingScore = data.financials.runwayMonths > 12 ? 0.8 : 0.5;
+
+    riskScore += managementScore * 0.20;
+    riskScore += stageScore * 0.15;
+    riskScore += techScore * 0.15;
+    riskScore += competitionScore * 0.10;
+    riskScore += fundingScore * 0.10;
 
     return baseValue * (1 + riskScore);
   }
 
-  private static calculateDCFValue(data: any): number {
+  private static async calculateDCFValue(data: any): Promise<number> {
     const projectionYears = 5;
-    const wacc = 0.15; // Weighted Average Cost of Capital
+    const wacc = await this.calculateWACC(data);
     let dcfValue = 0;
 
-    // Project cash flows
+    // Enhanced cash flow projections
     for (let year = 1; year <= projectionYears; year++) {
       const growthRate = Math.max(0.1, data.marketMetrics.marketGrowth / 100);
       const projectedRevenue = data.financials.projectedRevenue * Math.pow(1 + growthRate, year);
-      const projectedMargin = 0.15; // Assumed margin
-      const freeCashFlow = projectedRevenue * projectedMargin;
+      const margin = await this.calculateProjectedMargin(data, year);
+      const freeCashFlow = projectedRevenue * margin;
 
       dcfValue += freeCashFlow / Math.pow(1 + wacc, year);
     }
 
-    // Terminal value
+    // Terminal value calculation
     const terminalGrowthRate = 0.03;
     const terminalValue = (dcfValue * (1 + terminalGrowthRate)) / (wacc - terminalGrowthRate);
     dcfValue += terminalValue / Math.pow(1 + wacc, projectionYears);
@@ -182,32 +208,76 @@ export class ValuationEngine {
     return dcfValue;
   }
 
-  private static calculateVCValue(data: any): number {
+  private static async calculateVCValue(data: any, industryMultipliers: any): Promise<number> {
     const exitYear = 5;
-    const targetROI = 10;
+    const targetROI = await this.calculateTargetROI(data);
     const projectedRevenue = data.financials.projectedRevenue;
-    const industryMultiple = this.INDUSTRY_MULTIPLIERS[data.basicInfo.industry as keyof typeof ValuationEngine.INDUSTRY_MULTIPLIERS]?.revenue || 10;
 
-    const terminalValue = projectedRevenue * industryMultiple;
+    const terminalValue = projectedRevenue * industryMultipliers.revenue;
     const presentValue = terminalValue / Math.pow(targetROI, exitYear);
 
     return presentValue;
   }
 
-  private static calculateComparablesValue(data: any): number {
-    // Implement comparables analysis using industry benchmarks
-    const industryMetrics = this.INDUSTRY_MULTIPLIERS[data.basicInfo.industry as keyof typeof ValuationEngine.INDUSTRY_MULTIPLIERS];
-    if (!industryMetrics) return 0;
+  private static async calculateComparablesValue(data: any, industryMultipliers: any): Promise<number> {
+    // Enhanced comparables analysis
+    const revenueValue = data.financials.projectedRevenue * industryMultipliers.revenue;
+    const userValue = (data.metrics?.activeUsers || 0) * industryMultipliers.users;
 
-    const revenueValue = data.financials.projectedRevenue * industryMetrics.revenue;
-    const userValue = (data.metrics?.activeUsers || 0) * industryMetrics.users;
-    const growthAdjustedValue = revenueValue * (1 + (data.marketMetrics.marketGrowth / 100 * industryMetrics.growth));
+    const marketGrowthAdjustment = 1 + (data.marketMetrics.marketGrowth / 100 * industryMultipliers.growth);
+    const growthAdjustedValue = revenueValue * marketGrowthAdjustment;
 
     return (revenueValue + userValue + growthAdjustedValue) / 3;
   }
 
-  private static calculateIndustryBenchmarks(data: any): any {
-    const industryMetrics = this.INDUSTRY_MULTIPLIERS[data.basicInfo.industry as keyof typeof ValuationEngine.INDUSTRY_MULTIPLIERS];
+  // Helper methods with enhanced calculations
+  private static async calculateWACC(data: any): Promise<number> {
+    const riskFreeRate = 0.03; // Treasury rate
+    const marketRiskPremium = 0.06;
+    const beta = await this.calculateIndustryBeta(data.basicInfo.industry);
+
+    return riskFreeRate + beta * marketRiskPremium;
+  }
+
+  private static async calculateProjectedMargin(data: any, year: number): Promise<number> {
+    const baseMargin = 0.15;
+    const scaleEfficiency = Math.min(0.05 * year, 0.15); // Max 15% improvement
+    return baseMargin + scaleEfficiency;
+  }
+
+  private static async calculateTargetROI(data: any): Promise<number> {
+    const baseROI = 10;
+    const riskPremium = await this.calculateRiskPremium(data);
+    return baseROI + riskPremium;
+  }
+
+  private static async calculateIndustryBeta(industry: string): Promise<number> {
+    const marketData = await getMarketInsights(industry, "all");
+    return marketData.metrics.beta || 1.2;
+  }
+
+  private static async calculateRiskPremium(data: any): Promise<number> {
+    const riskAnalysis = await this.performRiskAnalysis(data);
+    return Math.max(0, (riskAnalysis.overallRisk - 0.5) * 10);
+  }
+
+  private static async calculateManagementRisk(data: any): Promise<number> {
+    return data.basicInfo.founderExperience / 10;
+  }
+
+  private static async calculateCompetitionIntensity(competitive: any): Promise<number> {
+    return competitive.competitors.reduce(
+      (acc: number, comp: any) => acc + (comp.marketShare || 0), 
+      0
+    );
+  }
+
+  private static calculateStageRisk(stage: string): number {
+    return this.STAGE_MULTIPLIERS[stage as keyof typeof ValuationEngine.STAGE_MULTIPLIERS] || 0.5;
+  }
+
+  private static async calculateIndustryBenchmarks(data: any): Promise<any> {
+    const industryMetrics = await this.getIndustryMultipliers(data.basicInfo.industry);
     if (!industryMetrics) return {};
 
     return {
@@ -219,34 +289,34 @@ export class ValuationEngine {
       comparable: [
         {
           name: "Industry Average",
-          valuation: this.calculateComparablesValue(data),
+          valuation: await this.calculateComparablesValue(data, industryMetrics),
           multiple: industryMetrics.revenue
         }
       ]
     };
   }
 
-  private static performRiskAnalysis(data: any): any {
+  private static async performRiskAnalysis(data: any): Promise<any> {
     const riskFactors = [
       {
         name: "Market Risk",
-        score: this.calculateMarketRisk(data),
-        impact: this.determineImpact(this.calculateMarketRisk(data))
+        score: await this.calculateMarketRisk(data),
+        impact: this.determineImpact(await this.calculateMarketRisk(data))
       },
       {
         name: "Execution Risk",
-        score: this.calculateExecutionRisk(data),
-        impact: this.determineImpact(this.calculateExecutionRisk(data))
+        score: await this.calculateExecutionRisk(data),
+        impact: this.determineImpact(await this.calculateExecutionRisk(data))
       },
       {
         name: "Financial Risk",
-        score: this.calculateFinancialRisk(data),
-        impact: this.determineImpact(this.calculateFinancialRisk(data))
+        score: await this.calculateFinancialRisk(data),
+        impact: this.determineImpact(await this.calculateFinancialRisk(data))
       },
       {
         name: "Competition Risk",
-        score: this.calculateCompetitionRisk(data),
-        impact: this.determineImpact(this.calculateCompetitionRisk(data))
+        score: await this.calculateCompetitionRisk(data),
+        impact: this.determineImpact(await this.calculateCompetitionRisk(data))
       }
     ];
 
@@ -258,29 +328,30 @@ export class ValuationEngine {
     };
   }
 
-  private static calculateConfidenceScore(data: any, valuations: number[]): number {
-    const variance = this.calculateVariance(valuations);
+  private static async calculateConfidenceScore(data: any, valuations: number[]): Promise<number> {
+    const variance = await this.calculateVariance(valuations);
     const dataCompleteness = this.assessDataCompleteness(data);
     const marketValidation = data.marketMetrics.marketResearchScore / 100;
 
     return (1 - variance) * 0.4 + dataCompleteness * 0.3 + marketValidation * 0.3;
   }
 
-  // Helper methods for risk calculations
-  private static calculateMarketRisk(data: any): number {
+
+  // Helper methods for risk calculations.  Many are now async.
+  private static async calculateMarketRisk(data: any): Promise<number> {
     return 1 - (data.marketMetrics.marketResearchScore / 100);
   }
 
-  private static calculateExecutionRisk(data: any): number {
+  private static async calculateExecutionRisk(data: any): Promise<number> {
     return 1 - (data.basicInfo.founderExperience / 10);
   }
 
-  private static calculateFinancialRisk(data: any): number {
+  private static async calculateFinancialRisk(data: any): Promise<number> {
     return data.financials.runwayMonths < 12 ? 0.8 : 0.4;
   }
 
-  private static calculateCompetitionRisk(data: any): number {
-    return this.calculateCompetitionIntensity(data.competitive) / 100;
+  private static async calculateCompetitionRisk(data: any): Promise<number> {
+    return (await this.calculateCompetitionIntensity(data.competitive)) / 100;
   }
 
   private static determineImpact(score: number): 'low' | 'medium' | 'high' {
@@ -289,7 +360,7 @@ export class ValuationEngine {
     return 'high';
   }
 
-  private static calculateVariance(values: number[]): number {
+  private static async calculateVariance(values: number[]): Promise<number> {
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
     const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
     return Math.min(variance / Math.pow(mean, 2), 1);
@@ -316,20 +387,5 @@ export class ValuationEngine {
     });
 
     return completedFields.length / requiredFields.length;
-  }
-
-  private static calculateRiskScore(factor: string, value: number): number {
-    return Math.min(value / 10, 1);
-  }
-
-  private static calculateStageRiskScore(stage: string): number {
-    return this.STAGE_MULTIPLIERS[stage as keyof typeof ValuationEngine.STAGE_MULTIPLIERS] || 0.5;
-  }
-
-  private static calculateCompetitionIntensity(competitive: any): number {
-    return competitive.competitors.reduce(
-      (acc: number, comp: any) => acc + (comp.marketShare || 0), 
-      0
-    );
   }
 }
