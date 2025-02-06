@@ -176,15 +176,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           placeholder: "e.g., TechStart Solutions Inc."
         },
         {
-          name: "businessInfo.sector",
-          label: "Business Sector",
-          type: "dropdown",
-          required: true,
-          description: "Primary sector your business operates in",
-          help: "Choose the sector that best represents your core business activities",
-          options: Object.entries(sectors)
-        },
-        {
           name: "businessInfo.industrySegment",
           label: "Industry Segment",
           type: "dropdown",
@@ -192,6 +183,15 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           description: "Specific segment within your sector",
           help: "Select your specific industry segment",
           options: getIndustrySegments(form.getValues().businessInfo.sector as keyof typeof industrySegments)
+        },
+        {
+          name: "businessInfo.sector",
+          label: "Business Sector",
+          type: "dropdown",
+          required: true,
+          description: "Primary sector your business operates in",
+          help: "Choose the sector that best represents your core business activities",
+          options: Object.entries(sectors)
         },
         {
           name: "businessInfo.businessModel",
