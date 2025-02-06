@@ -1,0 +1,310 @@
+const BUSINESS_SECTORS = {
+  TECHNOLOGY: {
+    name: "Technology",
+    segments: {
+      SOFTWARE: {
+        name: "Software",
+        subSegments: [
+          "Enterprise Software (SaaS)",
+          "Mobile Applications",
+          "Developer Tools",
+          "Security Software",
+          "Business Intelligence & Analytics",
+          "CRM & Customer Experience",
+          "Cloud Infrastructure",
+          "DevOps & IT Management"
+        ],
+        metrics: {
+          key: ["ARR", "CAC", "LTV", "Churn Rate"],
+          valuation: ["Revenue Multiple", "ARR Multiple"]
+        }
+      },
+      HARDWARE: {
+        name: "Hardware",
+        subSegments: [
+          "Consumer Electronics",
+          "Industrial Hardware",
+          "IoT Devices",
+          "Semiconductors",
+          "Networking Equipment",
+          "Storage Devices",
+          "Wearable Technology"
+        ],
+        metrics: {
+          key: ["Gross Margin", "R&D Ratio", "Inventory Turnover"],
+          valuation: ["EBITDA Multiple", "Revenue Multiple"]
+        }
+      },
+      AI_ML: {
+        name: "AI & Machine Learning",
+        subSegments: [
+          "Computer Vision",
+          "Natural Language Processing",
+          "Predictive Analytics",
+          "Robotics & Automation",
+          "Deep Learning",
+          "AI Infrastructure",
+          "AI Consulting"
+        ],
+        metrics: {
+          key: ["Data Processing Capacity", "Model Accuracy", "Inference Speed"],
+          valuation: ["Revenue Multiple", "Technology Premium"]
+        }
+      }
+    }
+  },
+
+  HEALTHCARE: {
+    name: "Healthcare",
+    segments: {
+      DIGITAL_HEALTH: {
+        name: "Digital Health",
+        subSegments: [
+          "Telemedicine",
+          "Health Analytics",
+          "Electronic Health Records",
+          "Mobile Health Apps",
+          "Remote Patient Monitoring",
+          "Digital Therapeutics",
+          "Healthcare AI"
+        ],
+        metrics: {
+          key: ["Patient Acquisition Cost", "Patient Lifetime Value", "Clinical Outcomes"],
+          valuation: ["Revenue Multiple", "Patient Multiple"]
+        }
+      },
+      BIOTECH: {
+        name: "Biotech",
+        subSegments: [
+          "Drug Discovery",
+          "Genomics",
+          "Personalized Medicine",
+          "Cell & Gene Therapy",
+          "Bioinformatics",
+          "Clinical Trials",
+          "Bioprocessing"
+        ],
+        metrics: {
+          key: ["R&D Pipeline", "Clinical Trial Success Rate", "Patent Portfolio"],
+          valuation: ["Risk-Adjusted NPV", "Platform Value"]
+        }
+      },
+      MEDICAL_DEVICES: {
+        name: "Medical Devices",
+        subSegments: [
+          "Diagnostic Equipment",
+          "Surgical Devices",
+          "Patient Monitoring",
+          "Implantable Devices",
+          "Rehabilitation Equipment",
+          "Medical Imaging",
+          "Point-of-Care Devices"
+        ],
+        metrics: {
+          key: ["FDA Approval Stage", "Manufacturing Margin", "Market Penetration"],
+          valuation: ["EBITDA Multiple", "Revenue Multiple"]
+        }
+      }
+    }
+  },
+
+  FINTECH: {
+    name: "Financial Technology",
+    segments: {
+      PAYMENTS: {
+        name: "Payments & Transfers",
+        subSegments: [
+          "Payment Processing",
+          "Digital Wallets",
+          "Cross-border Payments",
+          "Point of Sale Systems",
+          "Cryptocurrency Payments",
+          "B2B Payments",
+          "Payment Infrastructure"
+        ],
+        metrics: {
+          key: ["Transaction Volume", "Take Rate", "Processing Fees"],
+          valuation: ["GTV Multiple", "Revenue Multiple"]
+        }
+      },
+      LENDING: {
+        name: "Lending & Credit",
+        subSegments: [
+          "P2P Lending",
+          "Buy Now Pay Later",
+          "SME Lending",
+          "Credit Scoring",
+          "Supply Chain Finance",
+          "Mortgage Tech",
+          "Consumer Lending"
+        ],
+        metrics: {
+          key: ["Loan Book Size", "Default Rate", "Net Interest Margin"],
+          valuation: ["Book Value Multiple", "Revenue Multiple"]
+        }
+      },
+      BANKING: {
+        name: "Digital Banking",
+        subSegments: [
+          "Neobanks",
+          "Banking-as-a-Service",
+          "Personal Finance",
+          "Business Banking",
+          "Investment Platforms",
+          "Wealth Management",
+          "Insurtech"
+        ],
+        metrics: {
+          key: ["Customer Acquisition Cost", "Deposits", "Active Users"],
+          valuation: ["Customer Multiple", "AUM Multiple"]
+        }
+      }
+    }
+  },
+
+  ECOMMERCE: {
+    name: "E-Commerce & Retail",
+    segments: {
+      B2C: {
+        name: "B2C E-Commerce",
+        subSegments: [
+          "Marketplace",
+          "Direct-to-Consumer",
+          "Subscription Commerce",
+          "Social Commerce",
+          "Mobile Commerce",
+          "Live Shopping",
+          "Cross-border E-commerce"
+        ],
+        metrics: {
+          key: ["GMV", "Take Rate", "Customer Acquisition Cost"],
+          valuation: ["GMV Multiple", "Revenue Multiple"]
+        }
+      },
+      B2B: {
+        name: "B2B E-Commerce",
+        subSegments: [
+          "Wholesale Marketplace",
+          "Procurement Solutions",
+          "Supply Chain Platforms",
+          "Industrial E-commerce",
+          "Distributor Platforms",
+          "Trade Finance",
+          "Inventory Management"
+        ],
+        metrics: {
+          key: ["Transaction Volume", "Supplier Network", "Buyer Retention"],
+          valuation: ["GTV Multiple", "Revenue Multiple"]
+        }
+      }
+    }
+  },
+
+  ENTERPRISE: {
+    name: "Enterprise Solutions",
+    segments: {
+      BUSINESS_SOFTWARE: {
+        name: "Business Software",
+        subSegments: [
+          "ERP Systems",
+          "HR Management",
+          "Supply Chain Management",
+          "Project Management",
+          "Collaboration Tools",
+          "Marketing Automation",
+          "Customer Support"
+        ],
+        metrics: {
+          key: ["Enterprise Customers", "Contract Value", "Renewal Rate"],
+          valuation: ["ARR Multiple", "Customer Multiple"]
+        }
+      },
+      PROFESSIONAL_SERVICES: {
+        name: "Professional Services",
+        subSegments: [
+          "Consulting",
+          "IT Services",
+          "Business Process Outsourcing",
+          "Systems Integration",
+          "Managed Services",
+          "Training & Development",
+          "Digital Transformation"
+        ],
+        metrics: {
+          key: ["Billable Hours", "Project Success Rate", "Client Retention"],
+          valuation: ["EBITDA Multiple", "Revenue Multiple"]
+        }
+      }
+    }
+  },
+
+  DEEPTECH: {
+    name: "Deep Technology",
+    segments: {
+      ADVANCED_COMPUTING: {
+        name: "Advanced Computing",
+        subSegments: [
+          "Quantum Computing",
+          "Edge Computing",
+          "Supercomputing",
+          "Neuromorphic Computing",
+          "Distributed Systems",
+          "High-Performance Computing",
+          "Quantum Software"
+        ],
+        metrics: {
+          key: ["Computing Power", "Energy Efficiency", "Technical Breakthrough"],
+          valuation: ["IP Value", "Technology Premium"]
+        }
+      },
+      ADVANCED_MATERIALS: {
+        name: "Advanced Materials",
+        subSegments: [
+          "Nanomaterials",
+          "Smart Materials",
+          "Biomaterials",
+          "Energy Materials",
+          "Composites",
+          "Manufacturing Materials",
+          "Sustainable Materials"
+        ],
+        metrics: {
+          key: ["Patent Portfolio", "Material Performance", "Production Scalability"],
+          valuation: ["IP Value", "Market Potential"]
+        }
+      }
+    }
+  }
+};
+
+// Utility functions for sector and segment operations
+const sectorOperations = {
+  getAllSectors() {
+    return Object.keys(BUSINESS_SECTORS).map(key => ({
+      key,
+      name: BUSINESS_SECTORS[key].name
+    }));
+  },
+
+  getSegmentsForSector(sectorKey) {
+    const sector = BUSINESS_SECTORS[sectorKey];
+    return sector ? Object.keys(sector.segments).map(key => ({
+      key,
+      name: sector.segments[key].name
+    })) : [];
+  },
+
+  getSubSegments(sectorKey, segmentKey) {
+    const sector = BUSINESS_SECTORS[sectorKey];
+    const segment = sector?.segments[segmentKey];
+    return segment ? segment.subSegments : [];
+  },
+
+  getMetrics(sectorKey, segmentKey) {
+    const sector = BUSINESS_SECTORS[sectorKey];
+    const segment = sector?.segments[segmentKey];
+    return segment ? segment.metrics : null;
+  }
+};
+
+export { BUSINESS_SECTORS, sectorOperations };

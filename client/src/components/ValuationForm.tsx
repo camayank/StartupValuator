@@ -42,6 +42,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
+import { BUSINESS_SECTORS, sectorOperations } from "@/lib/constants/business-sectors";
 
 // Constants
 const AUTOSAVE_DELAY = 2000; // 2 seconds delay for autosave
@@ -114,6 +115,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         productStage: "concept",
         businessModel: "subscription",
         industrySegment: "",
+        subSegment:"",
       },
       marketData: {
         tam: 0,
@@ -145,20 +147,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         targetValuation: 0,
         fundingRequired: 0,
         expectedROI: [],
+        metrics: {}
       },
     },
   });
-
-  const getIndustrySegments = useCallback((sector: keyof typeof industrySegments) => {
-    const segments = industrySegments[sector];
-    if (!segments) {
-      return [{ value: "Other", label: "Other" }];
-    }
-    return segments.map(segment => ({
-      value: segment,
-      label: segment
-    }));
-  }, []);
 
   const formSections = useCallback(() => [
     {
@@ -176,22 +168,39 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           placeholder: "e.g., TechStart Solutions Inc."
         },
         {
-          name: "businessInfo.industrySegment",
-          label: "Industry Segment",
-          type: "dropdown",
-          required: true,
-          description: "Specific segment within your sector",
-          help: "Select your specific industry segment",
-          options: getIndustrySegments(form.getValues().businessInfo.sector as keyof typeof industrySegments)
-        },
-        {
           name: "businessInfo.sector",
           label: "Business Sector",
           type: "dropdown",
           required: true,
           description: "Primary sector your business operates in",
           help: "Choose the sector that best represents your core business activities",
-          options: Object.entries(sectors)
+          options: sectorOperations.getAllSectors()
+        },
+        {
+          name: "businessInfo.segment",
+          label: "Industry Segment",
+          type: "dropdown",
+          required: true,
+          description: "Specific segment within your sector",
+          help: "Select your specific industry segment",
+          options: () => {
+            const sector = form.getValues().businessInfo.sector;
+            return sector ? sectorOperations.getSegmentsForSector(sector) : [];
+          }
+        },
+        {
+          name: "businessInfo.subSegment",
+          label: "Sub-Segment",
+          type: "dropdown",
+          required: true,
+          description: "Specific sub-segment within your industry segment",
+          help: "Select the most specific category for your business",
+          options: () => {
+            const { sector, segment } = form.getValues().businessInfo;
+            return (sector && segment) 
+              ? sectorOperations.getSubSegments(sector, segment)
+              : [];
+          }
         },
         {
           name: "businessInfo.businessModel",
@@ -396,10 +405,15 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           description: "Planned use of raised funds",
           help: "Select how you plan to use the funding",
           options: getFundUtilizationOptions()
+        },
+        {
+          name: "valuationInputs.metrics",
+          label: "Sector Metrics",
+          type: "hidden"
         }
       ]
     }
-  ], [form, getIndustrySegments]);
+  ], [form]);
 
   useEffect(() => {
     const savedData = localStorage.getItem('valuationFormData');
@@ -579,14 +593,33 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     form.setValue("marketData.growthRate", marketMetrics.growthRate);
   }, [businessInfo, form]);
 
+
   useEffect(() => {
-    const { sector } = form.getValues().businessInfo;
-    if (sector) {
-      const segments = getIndustrySegments(sector as keyof typeof industrySegments);
-      const defaultSegment = segments.find(s => s.value !== "Other") || segments[0];
-      form.setValue("businessInfo.industrySegment", defaultSegment.value);
+    const { sector, segment } = form.getValues().businessInfo;
+    if (sector && segment) {
+      const metrics = sectorOperations.getMetrics(sector, segment);
+      if (metrics) {
+        // Update the form with sector-specific metrics and multipliers
+        form.setValue("valuationInputs.metrics", metrics);
+      }
     }
-  }, [form.watch("businessInfo.sector"), getIndustrySegments, form]);
+  }, [form.watch("businessInfo.sector"), form.watch("businessInfo.segment")]);
+
+  useEffect(() => {
+    const sector = form.watch("businessInfo.sector");
+    if (sector) {
+      // Clear segment and sub-segment when sector changes
+      form.setValue("businessInfo.segment", "");
+      form.setValue("businessInfo.subSegment", "");
+    }
+  }, [form.watch("businessInfo.sector")]);
+
+  useEffect(() => {
+    const segment = form.watch("businessInfo.segment");
+    if (segment) {
+      form.setValue("businessInfo.subSegment", "");
+    }
+  }, [form.watch("businessInfo.segment")]);
 
   useEffect(() => {
     const fundUtilizationSuggestions = suggestFundUtilization(productStage, form.getValues().valuationInputs.fundingRequired);
