@@ -94,7 +94,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     },
   });
 
-  // Helper functions moved inside component
   const getIndustrySegments = useCallback((sector: keyof typeof industrySegments) => {
     const segments = industrySegments[sector];
     if (!segments) {
@@ -332,7 +331,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }
   ], [form, getIndustrySegments]);
 
-  // Load saved form data on mount
   useEffect(() => {
     const savedData = localStorage.getItem('valuationFormData');
     if (savedData) {
@@ -345,7 +343,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }
   }, [form]);
 
-  // Auto-save with status indicator
   useEffect(() => {
     const subscription = form.watch((value) => {
       const timeoutId = setTimeout(() => {
@@ -362,7 +359,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     return () => subscription.unsubscribe();
   }, [form.watch, toast]);
 
-  // Step completion check
   useEffect(() => {
     const currentFields = formSections()[currentStep - 1].fields;
     const formValues = form.getValues();
@@ -448,6 +444,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
             <Select
               onValueChange={formField.onChange}
               defaultValue={formField.value}
+              disabled={fieldConfig.disabled}
             >
               <FormControl>
                 <SelectTrigger>
@@ -455,11 +452,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {fieldConfig.options?.map(([key, value]: [string, string]) => (
-                  <SelectItem key={key} value={key}>
-                    {value}
-                  </SelectItem>
-                ))}
+                {Array.isArray(fieldConfig.options) && fieldConfig.options.map((option: any) => {
+                  const [value, label] = Array.isArray(option) ? option : [option.value, option.label];
+                  return (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -477,7 +477,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {fieldConfig.options?.map((option) => (
+              {Array.isArray(fieldConfig.options) && fieldConfig.options.map((option: any) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -513,7 +513,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     const { sector } = form.getValues().businessInfo;
     if (sector) {
       const segments = getIndustrySegments(sector as keyof typeof industrySegments);
-      // Always select the first non-Other option if available
       const defaultSegment = segments.find(s => s.value !== "Other") || segments[0];
       form.setValue("businessInfo.industrySegment", defaultSegment.value);
     }
@@ -704,7 +703,6 @@ const calculateMarketMetrics = (sector: keyof typeof marketSizeMultipliers, stag
 
 // Technology stack suggestions based on business model and sector
 const suggestTechnologyStack = (businessModel: string, sector: string) => {
-  // Default suggestions
   const suggestions = {
     frontend: ["React", "TypeScript"],
     backend: ["Node.js"],
@@ -713,7 +711,6 @@ const suggestTechnologyStack = (businessModel: string, sector: string) => {
     mobile: []
   };
 
-  // Add specific suggestions based on business model and sector
   if (businessModel === "subscription") {
     suggestions.backend.push("Python/Django");
     suggestions.database.push("MongoDB");
