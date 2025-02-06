@@ -6,11 +6,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
     segments: {
       ENTERPRISE_SOFTWARE: {
         name: "Enterprise Software",
-        subSegments: [
-          "ERP Systems",
-          "CRM Systems",
-          "HRM Systems"
-        ],
+        subSegments: ["ERP", "CRM", "HRM"],
         metrics: {
           key: ["ARR", "CAC", "LTV", "Churn Rate"],
           valuation: ["Revenue Multiple", "ARR Multiple"]
@@ -18,11 +14,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
       },
       CLOUD_COMPUTING: {
         name: "Cloud Computing",
-        subSegments: [
-          "IaaS",
-          "PaaS",
-          "SaaS"
-        ],
+        subSegments: ["IaaS", "PaaS", "SaaS"],
         metrics: {
           key: ["Monthly Active Users", "Server Uptime", "Resource Utilization"],
           valuation: ["Revenue Multiple", "Growth Multiple"]
@@ -30,26 +22,10 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
       },
       AI_ML: {
         name: "AI & Machine Learning",
-        subSegments: [
-          "Natural Language Processing",
-          "Computer Vision",
-          "AI Analytics"
-        ],
+        subSegments: ["NLP", "Computer Vision", "AI Analytics"],
         metrics: {
           key: ["Model Accuracy", "Training Data Size", "Inference Speed"],
           valuation: ["Technology Premium", "IP Value"]
-        }
-      },
-      CYBERSECURITY: {
-        name: "Cybersecurity",
-        subSegments: [
-          "Network Security",
-          "Endpoint Security",
-          "Cloud Security"
-        ],
-        metrics: {
-          key: ["Threat Detection Rate", "Response Time", "Security Score"],
-          valuation: ["ARR Multiple", "Security Premium"]
         }
       }
     }
@@ -59,11 +35,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
     segments: {
       DIGITAL_HEALTH: {
         name: "Digital Health",
-        subSegments: [
-          "Telehealth",
-          "Mobile Health",
-          "Health Analytics"
-        ],
+        subSegments: ["Telehealth", "Mobile Health", "Health Analytics"],
         metrics: {
           key: ["Patient Engagement", "Clinical Outcomes", "User Retention"],
           valuation: ["Revenue Multiple", "Patient Multiple"]
@@ -71,11 +43,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
       },
       BIOTECH: {
         name: "Biotech",
-        subSegments: [
-          "Gene Therapy",
-          "Molecular Diagnostics",
-          "Bioinformatics"
-        ],
+        subSegments: ["Gene Therapy", "Molecular Diagnostics", "Bioinformatics"],
         metrics: {
           key: ["Clinical Trial Success", "Patent Portfolio", "Research Pipeline"],
           valuation: ["Clinical Stage Multiple", "IP Value"]
@@ -112,11 +80,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
       },
       PAYMENTS: {
         name: "Payments & Transfers",
-        subSegments: [
-          "Digital Payments",
-          "Cross-Border Payments",
-          "BNPL"
-        ],
+        subSegments: ["Digital Payments", "Cross-Border Payments", "BNPL"],
         metrics: {
           key: ["Processing Volume", "Take Rate", "Payment Success Rate"],
           valuation: ["GTV Multiple", "Transaction Multiple"]
@@ -124,13 +88,9 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
       },
       WEALTHTECH: {
         name: "WealthTech",
-        subSegments: [
-          "Robo-Advisory",
-          "Investment Platforms",
-          "Personal Finance"
-        ],
+        subSegments: ["Robo-Advisory", "Investment Platforms", "Personal Finance"],
         metrics: {
-          key: ["Assets Under Management", "Investment Performance", "Client Retention"],
+          key: ["AUM", "Investment Performance", "Client Retention"],
           valuation: ["AUM Multiple", "Revenue Multiple"]
         }
       }
@@ -141,11 +101,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
     segments: {
       MARKETPLACE: {
         name: "Online Marketplace",
-        subSegments: [
-          "Multi-Vendor Marketplace",
-          "Social Commerce",
-          "Niche Marketplaces"
-        ],
+        subSegments: ["Multi-Vendor", "Social Commerce", "Niche Markets"],
         metrics: {
           key: ["GMV", "Take Rate", "Seller Retention"],
           valuation: ["GMV Multiple", "Revenue Multiple"]
@@ -153,13 +109,9 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
       },
       DTC: {
         name: "Direct-to-Consumer",
-        subSegments: [
-          "Brand Commerce",
-          "Subscription Commerce",
-          "Custom Products"
-        ],
+        subSegments: ["Brand Commerce", "Subscription Commerce", "Custom Products"],
         metrics: {
-          key: ["Customer Acquisition Cost", "Average Order Value", "Repeat Purchase Rate"],
+          key: ["CAC", "AOV", "Repeat Purchase Rate"],
           valuation: ["Revenue Multiple", "Customer Multiple"]
         }
       },
@@ -179,38 +131,40 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
   }
 };
 
-// Utility functions for working with sectors
+// Utility functions for sector and segment operations
 export const sectorOperations = {
   getAllSectors() {
     return Object.entries(BUSINESS_SECTORS).map(([key, sector]) => ({
-      value: key.toLowerCase(),
+      value: key,
       label: sector.name
     }));
   },
 
   getSegmentsForSector(sectorKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey.toUpperCase()];
+    const sector = BUSINESS_SECTORS[sectorKey];
     if (!sector) return [];
 
     return Object.entries(sector.segments).map(([key, segment]) => ({
-      value: key.toLowerCase(),
-      label: segment.name,
-      metrics: segment.metrics
+      value: key,
+      label: segment.name
     }));
   },
 
   getSubSegments(sectorKey: string, segmentKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey.toUpperCase()];
-    const segment = sector?.segments[segmentKey.toUpperCase()];
-    return segment?.subSegments.map(sub => ({
+    const sector = BUSINESS_SECTORS[sectorKey];
+    const segment = sector?.segments[segmentKey];
+
+    if (!segment?.subSegments) return [];
+
+    return segment.subSegments.map(sub => ({
       value: sub.toLowerCase().replace(/\s+/g, '_'),
       label: sub
-    })) || [];
+    }));
   },
 
   getMetrics(sectorKey: string, segmentKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey.toUpperCase()];
-    const segment = sector?.segments[segmentKey.toUpperCase()];
+    const sector = BUSINESS_SECTORS[sectorKey];
+    const segment = sector?.segments[segmentKey];
     return segment?.metrics || null;
   }
 };

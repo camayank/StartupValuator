@@ -177,7 +177,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       help: "Select your specific industry segment",
       options: () => {
         const sector = form.getValues().businessInfo.sector;
-        return sector ? sectorOperations.getSegmentsForSector(sector) : [];
+        console.log('Current sector:', sector);
+        const segments = sectorOperations.getSegmentsForSector(sector);
+        console.log('Available segments:', segments);
+        return segments;
       }
     },
     {
@@ -189,9 +192,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       help: "Select the most specific category for your business",
       options: () => {
         const { sector, segment } = form.getValues().businessInfo;
-        return (sector && segment)
-          ? sectorOperations.getSubSegments(sector, segment)
-          : [];
+        console.log('Current sector and segment:', { sector, segment });
+        const subSegments = sectorOperations.getSubSegments(sector, segment);
+        console.log('Available subSegments:', subSegments);
+        return subSegments;
       }
     },
     {
