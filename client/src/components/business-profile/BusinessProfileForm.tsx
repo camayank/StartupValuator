@@ -17,45 +17,42 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { BUSINESS_SECTORS, sectorOperations, businessModelOptions, productStageOptions } from "@/lib/constants/business-sectors";
+import { BUSINESS_SECTORS, businessModelOptions, productStageOptions } from "@/lib/constants/business-sectors";
 import { useState, useEffect } from "react";
 
 export function BusinessProfileForm() {
   const form = useFormContext();
-  const [availableSegments, setAvailableSegments] = useState<Array<{ value: string; label: string }>>([]);
-  const [availableSubSegments, setAvailableSubSegments] = useState<Array<{ value: string; label: string }>>([]);
+  const [segments, setSegments] = useState<string[]>([]);
+  const [subSegments, setSubSegments] = useState<string[]>([]);
 
-  // Watch for sector and segment changes
   const selectedSector = form.watch("businessInfo.sector");
   const selectedSegment = form.watch("businessInfo.segment");
 
-  // Update available segments when sector changes
+  // Update segments when sector changes
   useEffect(() => {
     if (selectedSector) {
-      const segments = sectorOperations.getSegmentsForSector(selectedSector);
-      setAvailableSegments(segments);
-      // Reset segment and sub-segment when sector changes
+      const availableSegments = Object.keys(BUSINESS_SECTORS[selectedSector] || {});
+      setSegments(availableSegments);
       form.setValue("businessInfo.segment", "");
       form.setValue("businessInfo.subSegment", "");
     } else {
-      setAvailableSegments([]);
+      setSegments([]);
     }
   }, [selectedSector, form]);
 
-  // Update available sub-segments when segment changes
+  // Update sub-segments when segment changes
   useEffect(() => {
     if (selectedSector && selectedSegment) {
-      const subSegments = sectorOperations.getSubSegments(selectedSector, selectedSegment);
-      setAvailableSubSegments(subSegments);
-      // Reset sub-segment when segment changes
+      const availableSubSegments = BUSINESS_SECTORS[selectedSector]?.[selectedSegment] || [];
+      setSubSegments(availableSubSegments);
       form.setValue("businessInfo.subSegment", "");
     } else {
-      setAvailableSubSegments([]);
+      setSubSegments([]);
     }
   }, [selectedSector, selectedSegment, form]);
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
         <CardTitle>Business Profile</CardTitle>
         <CardDescription>Tell us about your business</CardDescription>
@@ -114,9 +111,9 @@ export function BusinessProfileForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {sectorOperations.getAllSectors().map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {Object.keys(BUSINESS_SECTORS).map((sector) => (
+                    <SelectItem key={sector} value={sector}>
+                      {sector}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -156,9 +153,9 @@ export function BusinessProfileForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableSegments.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {segments.map((segment) => (
+                    <SelectItem key={segment} value={segment}>
+                      {segment}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -198,9 +195,9 @@ export function BusinessProfileForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableSubSegments.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {subSegments.map((subSegment) => (
+                    <SelectItem key={subSegment} value={subSegment}>
+                      {subSegment}
                     </SelectItem>
                   ))}
                 </SelectContent>
