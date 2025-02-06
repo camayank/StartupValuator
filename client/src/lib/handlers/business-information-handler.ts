@@ -1,17 +1,17 @@
 import { type BusinessInformation } from "../types/startup-business";
+import { MarketAnalysisHandler } from "./market-analysis-handler";
 
 // Industry to Sector mapping
 const industrySectorMap: Record<string, string[]> = {
-  "healthcare": ["saas", "hardware", "service", "research"],
-  "finance": ["saas", "platform", "service", "consulting"],
-  "retail": ["marketplace", "platform", "distribution"],
-  "manufacturing": ["hardware", "manufacturing", "distribution"],
-  "technology": ["saas", "platform", "hardware", "consulting"],
-  "education": ["saas", "platform", "service", "consulting"],
-  "transportation": ["platform", "service", "distribution"],
-  "energy": ["hardware", "service", "research", "manufacturing"],
-  "agriculture": ["hardware", "platform", "manufacturing", "distribution"],
-  "real_estate": ["platform", "service", "marketplace"]
+  "Medical Devices": ["hardware", "manufacturing", "research"],
+  "Digital Health": ["saas", "platform", "service"],
+  "Payment Processing": ["saas", "platform", "service"],
+  "Enterprise Software": ["saas", "platform", "consulting"],
+  "E-commerce": ["marketplace", "platform", "service"],
+  "Consumer Apps": ["saas", "platform", "advertising"],
+  "Cloud Services": ["saas", "platform", "service"],
+  "Cybersecurity": ["saas", "platform", "consulting"],
+  "AI/ML": ["saas", "platform", "research"]
 };
 
 // Industry segments with subcategories
@@ -30,13 +30,6 @@ export const industrySegments = {
     "Wealth Management",
     "Banking"
   ],
-  retail: [
-    "E-commerce",
-    "Direct-to-Consumer",
-    "Retail Technology",
-    "Supply Chain",
-    "Omnichannel"
-  ],
   technology: [
     "Enterprise Software",
     "Consumer Apps",
@@ -44,7 +37,13 @@ export const industrySegments = {
     "Cybersecurity",
     "AI/ML"
   ],
-  // Add more industries and their segments
+  retail: [
+    "E-commerce",
+    "Direct-to-Consumer",
+    "Retail Technology",
+    "Supply Chain",
+    "Omnichannel"
+  ]
 };
 
 export class BusinessInformationHandler {
@@ -65,34 +64,31 @@ export class BusinessInformationHandler {
   }
 
   // Get recommended team size based on industry and sector
-  static getRecommendedTeamSize(industry: string, sector: string): number {
+  static async getRecommendedTeamSize(industry: string, sector: string): Promise<number> {
+    const marketData = await MarketAnalysisHandler.analyzeMarketContext({
+      industrySegment: industry,
+      sector,
+      name: "",
+      businessModel: "saas",
+      location: "",
+      teamSize: 1,
+      description: ""
+    } as BusinessInformation);
+
     const baseSize = 2;
-    const industryMultipliers: Record<string, number> = {
-      technology: 1.5,
-      healthcare: 1.3,
-      finance: 1.2,
-      manufacturing: 1.4
-    };
-    const sectorMultipliers: Record<string, number> = {
-      saas: 1.3,
-      hardware: 1.5,
-      platform: 1.4,
-      research: 1.2
-    };
+    const marketSizeMultiplier = Math.log10(marketData.marketSize.total) / 10;
+    const growthMultiplier = marketData.growthMetrics.industryGrowthRate / 10;
 
-    const industryMult = industryMultipliers[industry] || 1;
-    const sectorMult = sectorMultipliers[sector] || 1;
-
-    return Math.ceil(baseSize * industryMult * sectorMult);
+    return Math.ceil(baseSize * (1 + marketSizeMultiplier) * (1 + growthMultiplier));
   }
 
   // Validate complete business information
-  static validateBusinessInformation(data: BusinessInformation): {
+  static async validateBusinessInformation(data: BusinessInformation): Promise<{
     isValid: boolean;
     errors: string[];
     warnings: string[];
     suggestions: string[];
-  } {
+  }> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const suggestions: string[] = [];
@@ -108,15 +104,34 @@ export class BusinessInformationHandler {
       errors.push("Selected sector is not valid for this industry");
     }
 
-    // Team size validation
-    const recommendedTeamSize = this.getRecommendedTeamSize(data.industrySegment, data.sector);
-    if (data.teamSize < recommendedTeamSize) {
-      warnings.push(`Recommended team size for ${data.industrySegment} ${data.sector} businesses is ${recommendedTeamSize}`);
-    }
-
     // Description validation
     if (data.description.length < 50) {
       errors.push("Business description must be at least 50 characters");
+    }
+
+    // Market analysis based validation
+    if (data.industrySegment && data.sector) {
+      const marketAnalysis = await MarketAnalysisHandler.analyzeMarketContext(data);
+
+      // Team size recommendations
+      const recommendedTeamSize = await this.getRecommendedTeamSize(data.industrySegment, data.sector);
+      if (data.teamSize < recommendedTeamSize) {
+        warnings.push(`Recommended team size for ${data.industrySegment} is ${recommendedTeamSize}`);
+      }
+
+      // Market insights
+      if (marketAnalysis.growthMetrics.marketPotential === 'high') {
+        suggestions.push(`${data.industrySegment} shows high growth potential. Consider aggressive scaling strategy.`);
+      }
+
+      // Competition insights
+      const competition = marketAnalysis.competitiveLandscape;
+      if (competition.marketConcentration === 'high') {
+        warnings.push('Market shows high concentration. Strong differentiation strategy recommended.');
+      }
+
+      // Add market recommendations
+      suggestions.push(...marketAnalysis.recommendations);
     }
 
     return {
