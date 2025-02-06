@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FileText, HelpCircle, ChevronRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { FileText, HelpCircle, ChevronRight, AlertCircle, CheckCircle2, Building, TrendingUp, DollarSign, Box, ShieldAlert, Calculator, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 import { FormLoadingSkeleton } from "@/components/ui/form-loading-skeleton";
@@ -37,8 +37,8 @@ import {
   growthRateEstimates
 } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
@@ -106,6 +106,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   const [currentStep, setCurrentStep] = useState(1);
   const [stepsCompleted, setStepsCompleted] = useState<Record<number, boolean>>({});
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
@@ -137,10 +138,12 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         roadmap: "",
         technologyStack: "",
         differentiators: "",
+        intellectualProperty: "none"
       },
       risksAndOpportunities: {
         risks: [],
         opportunities: [],
+        mitigationStrategies: ""
       },
       valuationInputs: {
         targetValuation: 0,
@@ -150,6 +153,153 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       },
     },
   });
+
+  // Simplified section markers for progress tracking
+  const formProgress = {
+    businessInfo: {
+      title: "Business Profile",
+      icon: <Building className="h-5 w-5" />,
+      description: "Tell us about your business"
+    },
+    marketData: {
+      title: "Market Analysis",
+      icon: <TrendingUp className="h-5 w-5" />,
+      description: "Define your market position"
+    },
+    financialData: {
+      title: "Financial Metrics",
+      icon: <DollarSign className="h-5 w-5" />,
+      description: "Key financial indicators"
+    },
+    productDetails: {
+      title: "Product Details",
+      icon: <Box className="h-5 w-5" />,
+      description: "Your product/service offering"
+    },
+    risksOpportunities: {
+      title: "Risk Assessment",
+      icon: <ShieldAlert className="h-5 w-5" />,
+      description: "Evaluate risks and opportunities"
+    },
+    valuationInputs: {
+      title: "Valuation Inputs",
+      icon: <Calculator className="h-5 w-5" />,
+      description: "Final valuation parameters"
+    }
+  };
+
+  // Progress bar component
+  const ProgressIndicator = () => (
+    <div className="mb-8">
+      <div className="flex justify-between mb-2">
+        {Object.entries(formProgress).map(([key, section], index) => (
+          <div
+            key={key}
+            className={cn(
+              "flex flex-col items-center relative",
+              "w-1/6",
+              currentStep === index + 1 && "text-primary",
+              stepsCompleted[index + 1] && "text-green-500"
+            )}
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full border-2 flex items-center justify-center",
+              "transition-all duration-200",
+              currentStep === index + 1 && "border-primary bg-primary/10",
+              stepsCompleted[index + 1] && "border-green-500 bg-green-500/10"
+            )}>
+              {section.icon}
+            </div>
+            <span className="text-xs mt-2 text-center font-medium">{section.title}</span>
+          </div>
+        ))}
+      </div>
+      <Progress value={(currentStep / Object.keys(formProgress).length) * 100} className="h-2" />
+    </div>
+  );
+
+  // Section card with improved styling
+  const SectionCard = ({ children, title, description }: { children: React.ReactNode, title: string, description: string }) => (
+    <Card className="transition-all duration-200 hover:shadow-lg">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">{children}</div>
+      </CardContent>
+    </Card>
+  );
+
+  // Render the active section
+  const renderActiveSection = () => {
+    const sectionKey = Object.keys(formProgress)[currentStep - 1];
+    const section = formProgress[sectionKey];
+    if (!section) return null;
+
+    const fields = getFieldsForSection(sectionKey);
+
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.2 }}
+      >
+        <SectionCard title={section.title} description={section.description}>
+          <div className="grid gap-6">
+            {fields.map((fieldConfig) => (
+              <FormField
+                key={fieldConfig.name}
+                control={form.control}
+                name={fieldConfig.name}
+                render={(field) => (
+                  <FormItem>
+                    <div className="flex items-center gap-2">
+                      <FormLabel>
+                        {fieldConfig.label}
+                        {fieldConfig.required && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                      </FormLabel>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{fieldConfig.description}</p>
+                            {fieldConfig.help && <p>{fieldConfig.help}</p>}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <FormControl>
+                      {renderField({ field, fieldConfig })}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+          </div>
+        </SectionCard>
+      </motion.div>
+    );
+  };
+
+  const getFieldsForSection = (sectionId: string): any[] => {
+    switch (sectionId) {
+      case "businessInfo": return businessInfoFields;
+      case "marketData": return marketDataFields;
+      case "financialData": return financialDataFields;
+      case "productDetails": return productDetailsFields;
+      case "risksOpportunities": return risksOpportunitiesFields;
+      case "valuationInputs": return valuationInputsFields;
+      default: return [];
+    }
+  };
 
   // Update the businessInfoFields configuration
   const businessInfoFields = [
@@ -167,11 +317,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       type: "dropdown",
       required: true,
       description: "Primary sector your business operates in",
-      help: "Choose the sector that best represents your core business activities",
-      options: () => Object.keys(BUSINESS_SECTORS).map(sector => ({
-        value: sector,
-        label: sector
-      }))
+      options: () => Object.keys(BUSINESS_SECTORS).map(sector => ({ value: sector, label: sector }))
     },
     {
       name: "businessInfo.segment",
@@ -179,14 +325,11 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       type: "dropdown",
       required: true,
       description: "Specific segment within your sector",
-      help: "Select your specific industry segment",
-      disabled: !sector, // Use the watched sector value directly
+      disabled: !form.watch("businessInfo.sector"),
       options: () => {
-        if (!sector || !BUSINESS_SECTORS[sector]) return [];
-        return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
-          value: segment,
-          label: segment
-        }));
+        const sector = form.watch("businessInfo.sector");
+        if (!sector) return [];
+        return Object.keys(BUSINESS_SECTORS[sector] || {}).map(segment => ({ value: segment, label: segment }));
       }
     },
     {
@@ -195,345 +338,206 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       type: "dropdown",
       required: true,
       description: "Specific sub-segment within your industry segment",
-      help: "Select the most specific category for your business",
-      disabled: !segment, // Use the watched segment value directly
+      disabled: !form.watch("businessInfo.segment"),
       options: () => {
-        if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
-        return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
-          value: subSegment,
-          label: subSegment
-        }));
+        const sector = form.watch("businessInfo.sector");
+        const segment = form.watch("businessInfo.segment");
+        if (!sector || !segment) return [];
+        return (BUSINESS_SECTORS[sector]?.[segment] || []).map(subSegment => ({ value: subSegment, label: subSegment }));
       }
+    },
+    {
+      name: "businessInfo.businessModel",
+      label: "Business Model",
+      type: "dropdown",
+      required: true,
+      description: "How does your business generate revenue?",
+      options: getBusinessModelOptions
+    },
+    {
+      name: "businessInfo.productStage",
+      label: "Product Stage",
+      type: "dropdown",
+      required: true,
+      description: "Current stage of product development",
+      options: getProductStageOptions
     }
   ];
 
-  const formSections = useCallback(() => [
+  const marketDataFields = [
     {
-      id: "businessInfo",
-      title: "Business Information",
-      subtitle: "Tell us about your business fundamentals",
-      description: "Basic information about your company and its operations",
-      fields: businessInfoFields
+      name: "marketData.tam",
+      label: "Total Addressable Market (TAM)",
+      type: "number",
+      required: true,
+      description: "Total market size in USD",
+      help: "The total market demand for your product/service category"
     },
     {
-      id: "marketData",
-      title: "Market Information",
-      subtitle: "Define your market opportunity and position",
-      description: "Details about your target market and competitive landscape",
-      fields: [
-        {
-          name: "marketData.tam",
-          label: "Total Addressable Market (TAM)",
-          type: "number",
-          required: true,
-          description: "Total market size in USD",
-          help: "The total market demand for your product/service category"
-        },
-        {
-          name: "marketData.sam",
-          label: "Serviceable Addressable Market (SAM)",
-          type: "number",
-          required: true,
-          description: "Portion of TAM you can realistically serve",
-          help: "The segment of TAM that your business can actually reach"
-        },
-        {
-          name: "marketData.som",
-          label: "Serviceable Obtainable Market (SOM)",
-          type: "number",
-          required: true,
-          description: "Market share you can capture",
-          help: "Realistic portion of SAM you can capture in 3-5 years"
-        },
-        {
-          name: "marketData.growthRate",
-          label: "Market Growth Rate (%)",
-          type: "number",
-          required: true,
-          description: "Annual market growth percentage",
-          help: "Expected year-over-year growth rate of your target market"
-        }
-      ]
+      name: "marketData.sam",
+      label: "Serviceable Addressable Market (SAM)",
+      type: "number",
+      required: true,
+      description: "Portion of TAM you can realistically serve",
+      help: "The segment of TAM that your business can actually reach"
     },
     {
-      id: "financialData",
-      title: "Financial Metrics",
-      subtitle: "Key financial indicators and metrics",
-      description: "Current financial performance and metrics",
-      fields: [
-        {
-          name: "financialData.revenue",
-          label: "Monthly Revenue",
-          type: "number",
-          required: true,
-          description: "Current monthly revenue in USD",
-          help: "Average monthly revenue from the last 3 months"
-        },
-        {
-          name: "financialData.cac",
-          label: "Customer Acquisition Cost (CAC)",
-          type: "number",
-          required: true,
-          description: "Cost to acquire one customer",
-          help: "Total sales & marketing costs divided by new customers"
-        },
-        {
-          name: "financialData.ltv",
-          label: "Customer Lifetime Value (LTV)",
-          type: "number",
-          required: true,
-          description: "Average revenue per customer",
-          help: "Expected total revenue from a typical customer"
-        },
-        {
-          name: "financialData.burnRate",
-          label: "Monthly Burn Rate",
-          type: "number",
-          required: true,
-          description: "Monthly cash burn rate",
-          help: "Average monthly expenses excluding one-time costs"
-        },
-        {
-          name: "financialData.runway",
-          label: "Runway (Months)",
-          type: "number",
-          required: true,
-          description: "Number of months runway",
-          help: "Number of months until company runs out of cash"
-        }
-      ]
+      name: "marketData.som",
+      label: "Serviceable Obtainable Market (SOM)",
+      type: "number",
+      required: true,
+      description: "Market share you can capture",
+      help: "Realistic portion of SAM you can capture in 3-5 years"
     },
     {
-      id: "productDetails",
-      title: "Product Information",
-      subtitle: "Details about your product/service offering",
-      description: "Technical and operational aspects of your product",
-      fields: [
-        {
-          name: "productDetails.maturity",
-          label: "Product Stage",
-          type: "dropdown",
-          required: true,
-          description: "Current development stage of your product",
-          options: Object.entries(productStages)
-        },
-        {
-          name: "productDetails.technologyStack",
-          label: "Technology Stack",
-          type: "multiselect",
-          required: true,
-          description: "Key technologies used in your product",
-          help: "Select all major technologies/frameworks used",
-          options: getTechnologyStackOptions()
-        },
-        {
-          name: "productDetails.intellectualProperty",
-          label: "Intellectual Property",
-          type: "dropdown",
-          required: false,
-          description: "Status of IP protection",
-          help: "Patents, trademarks, or other IP protections",
-          options: [
-            ["none", "None"],
-            ["patentPending", "Patent Pending"],
-            ["patented", "Patented"],
-            ["trademark", "Trademark"],
-            ["other", "Other"]
-          ]
-        }
-      ]
+      name: "marketData.growthRate",
+      label: "Market Growth Rate (%)",
+      type: "number",
+      required: true,
+      description: "Annual market growth percentage",
+      help: "Expected year-over-year growth rate of your target market"
+    }
+  ];
+
+  const financialDataFields = [
+    {
+      name: "financialData.revenue",
+      label: "Monthly Revenue",
+      type: "number",
+      required: true,
+      description: "Current monthly revenue in USD",
+      help: "Average monthly revenue from the last 3 months"
     },
     {
-      id: "risksOpportunities",
-      title: "Risks & Opportunities",
-      subtitle: "Evaluate potential risks and growth opportunities",
-      description: "Assessment of business risks and growth potential",
-      fields: [
-        {
-          name: "risksAndOpportunities.risks",
-          label: "Key Business Risks",
-          type: "multiselect",
-          required: true,
-          description: "Major risks facing the business",
-          help: "Select all significant risks to your business",
-          options: getBusinessRisks()
-        },
-        {
-          name: "risksAndOpportunities.mitigationStrategies",
-          label: "Risk Mitigation Strategies",
-          type: "textarea",
-          required: true,
-          description: "Strategies to address key risks",
-          help: "Describe how you plan to address each major risk"
-        },
-        {
-          name: "risksAndOpportunities.opportunities",
-          label: "Growth Opportunities",
-          type: "multiselect",
-          required: true,
-          description: "Potential areas for growth",
-          help: "Select key areas where you see growth potential",
-          options: getBusinessRisks()
-        }
-      ]
+      name: "financialData.cac",
+      label: "Customer Acquisition Cost (CAC)",
+      type: "number",
+      required: true,
+      description: "Cost to acquire one customer",
+      help: "Total sales & marketing costs divided by new customers"
     },
     {
-      id: "valuationInputs",
-      title: "Valuation Parameters",
-      subtitle: "Additional inputs for valuation calculation",
-      description: "Factors affecting the final valuation",
-      fields: [
-        {
-          name: "valuationInputs.targetValuation",
-          label: "Target Valuation",
-          type: "number",
-          required: false,
-          description: "Expected valuation range",
-          help: "Your estimated company valuation (if any)"
-        },
-        {
-          name: "valuationInputs.fundingRequired",
-          label: "Funding Required",
-          type: "number",
-          required: true,
-          description: "Amount of funding needed",
-          help: "How much funding are you looking to raise?"
-        },
-        {
-          name: "valuationInputs.expectedROI",
-          label: "Use of Funds",
-          type: "multiselect",
-          required: true,
-          description: "Planned use of raised funds",
-          help: "Select how you plan to use the funding",
-          options: getFundUtilizationOptions()
-        },
-        {
-          name: "valuationInputs.metrics",
-          label: "Sector Metrics",
-          type: "hidden"
-        }
+      name: "financialData.ltv",
+      label: "Customer Lifetime Value (LTV)",
+      type: "number",
+      required: true,
+      description: "Average revenue per customer",
+      help: "Expected total revenue from a typical customer"
+    },
+    {
+      name: "financialData.burnRate",
+      label: "Monthly Burn Rate",
+      type: "number",
+      required: true,
+      description: "Monthly cash burn rate",
+      help: "Average monthly expenses excluding one-time costs"
+    },
+    {
+      name: "financialData.runway",
+      label: "Runway (Months)",
+      type: "number",
+      required: true,
+      description: "Number of months runway",
+      help: "Number of months until company runs out of cash"
+    }
+  ];
+
+  const productDetailsFields = [
+    {
+      name: "productDetails.maturity",
+      label: "Product Stage",
+      type: "dropdown",
+      required: true,
+      description: "Current development stage of your product",
+      options: getProductStageOptions
+    },
+    {
+      name: "productDetails.technologyStack",
+      label: "Technology Stack",
+      type: "multiselect",
+      required: true,
+      description: "Key technologies used in your product",
+      help: "Select all major technologies/frameworks used",
+      options: getTechnologyStackOptions
+    },
+    {
+      name: "productDetails.intellectualProperty",
+      label: "Intellectual Property",
+      type: "dropdown",
+      required: false,
+      description: "Status of IP protection",
+      help: "Patents, trademarks, or other IP protections",
+      options: [
+        ["none", "None"],
+        ["patentPending", "Patent Pending"],
+        ["patented", "Patented"],
+        ["trademark", "Trademark"],
+        ["other", "Other"]
       ]
     }
-  ], [form]);
+  ];
 
-  useEffect(() => {
-    const savedData = localStorage.getItem('valuationFormData');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        form.reset(parsedData);
-      } catch (error) {
-        console.error('Error loading saved form data:', error);
-      }
+  const risksOpportunitiesFields = [
+    {
+      name: "risksAndOpportunities.risks",
+      label: "Key Business Risks",
+      type: "multiselect",
+      required: true,
+      description: "Major risks facing the business",
+      help: "Select all significant risks to your business",
+      options: getBusinessRisks
+    },
+    {
+      name: "risksAndOpportunities.mitigationStrategies",
+      label: "Risk Mitigation Strategies",
+      type: "textarea",
+      required: true,
+      description: "Strategies to address key risks",
+      help: "Describe how you plan to address each major risk"
+    },
+    {
+      name: "risksAndOpportunities.opportunities",
+      label: "Growth Opportunities",
+      type: "multiselect",
+      required: true,
+      description: "Potential areas for growth",
+      help: "Select key areas where you see growth potential",
+      options: getBusinessRisks
     }
-  }, [form]);
+  ];
 
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      const timeoutId = setTimeout(() => {
-        localStorage.setItem('valuationFormData', JSON.stringify(value));
-        toast({
-          title: "Progress Saved",
-          description: "Your changes have been automatically saved",
-          duration: 2000,
-        });
-      }, AUTOSAVE_DELAY);
-
-      return () => clearTimeout(timeoutId);
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, toast]);
-
-  useEffect(() => {
-    const currentFields = formSections()[currentStep - 1].fields;
-    const formValues = form.getValues();
-
-    const isStepComplete = currentFields.every((field) => {
-      if (!field.required) return true;
-      const value = formValues[field.name as keyof ValuationFormData];
-      return value !== undefined && value !== "" && value !== 0 && (Array.isArray(value) ? value.length > 0 : true);
-    });
-
-    setStepsCompleted((prev) => ({
-      ...prev,
-      [currentStep]: isStepComplete
-    }));
-  }, [form.watch(), currentStep, formSections]);
-
-
-  // Add handlers for dropdown changes
-  const handleSectorChange = (selectedSector: string) => {
-    console.log("Handling sector change:", selectedSector);
-    form.setValue("businessInfo.segment", ""); // Reset segment
-    form.setValue("businessInfo.subSegment", ""); // Reset sub-segment
-    setTimeout(() => form.setValue("businessInfo.sector", selectedSector), 0); // Update sector
-  };
-
-  const handleSegmentChange = (selectedSegment: string) => {
-    console.log("Handling segment change:", selectedSegment);
-    form.setValue("businessInfo.subSegment", ""); // Reset sub-segment
-    setTimeout(() => form.setValue("businessInfo.segment", selectedSegment), 0); // Update segment
-  };
-
-  // Watch sector and segment values directly
-  const sector = form.watch("businessInfo.sector");
-  const segment = form.watch("businessInfo.segment");
-
-  // Keep debug logging
-  useEffect(() => {
-    console.log("Current form state:", {
-      sector,
-      segment,
-      subSegment: form.watch("businessInfo.subSegment"),
-    });
-  }, [sector, segment, form]);
-
-
-  const mutation = useMutation({
-    mutationFn: async (data: ValuationFormData) => {
-      const response = await fetch('/api/valuation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      return response.json();
+  const valuationInputsFields = [
+    {
+      name: "valuationInputs.targetValuation",
+      label: "Target Valuation",
+      type: "number",
+      required: false,
+      description: "Expected valuation range",
+      help: "Your estimated company valuation (if any)"
     },
-    onSuccess: (data) => {
-      onResult(data);
-      localStorage.removeItem('valuationFormData');
-      toast({
-        title: "Success",
-        description: "Your valuation report has been generated successfully.",
-      });
+    {
+      name: "valuationInputs.fundingRequired",
+      label: "Funding Required",
+      type: "number",
+      required: true,
+      description: "Amount of funding needed",
+      help: "How much funding are you looking to raise?"
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate valuation report",
-        variant: "destructive",
-      });
+    {
+      name: "valuationInputs.expectedROI",
+      label: "Use of Funds",
+      type: "multiselect",
+      required: true,
+      description: "Planned use of raised funds",
+      help: "Select how you plan to use the funding",
+      options: getFundUtilizationOptions
     },
-  });
-
-  const getSectionIcon = (sectionId: string) => {
-    switch (sectionId) {
-      case 'businessInfo': return <FileText className="h-5 w-5 text-blue-500" />;
-      case 'marketData': return <ChevronRight className="h-5 w-5 text-green-500" />;
-      case 'financialData': return <FileText className="h-5 w-5 text-purple-500" />;
-      case 'productDetails': return <FileText className="h-5 w-5 text-orange-500" />;
-      case 'risksOpportunities': return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case 'valuationInputs': return <FileText className="h-5 w-5 text-teal-500" />;
-      default: return <FileText className="h-5 w-5" />;
+    {
+      name: "valuationInputs.metrics",
+      label: "Sector Metrics",
+      type: "hidden"
     }
-  };
+  ];
 
   // Update the Select component rendering
   const renderField = ({ field: formField, fieldConfig }: { field: any, fieldConfig: any }) => {
@@ -556,31 +560,12 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         );
       case "dropdown":
         const options = typeof fieldConfig.options === 'function' ? fieldConfig.options() : fieldConfig.options;
-        const isDisabled = fieldConfig.disabled;
-
-        console.log(`Rendering dropdown ${fieldConfig.name}:`, {
-          isDisabled,
-          currentValue: formField.value,
-          parentValue: fieldConfig.name === "businessInfo.segment" ? sector : 
-                      fieldConfig.name === "businessInfo.subSegment" ? segment : null,
-          options: options
-        });
-
         return (
           <div className="w-full">
             <Select
-              onValueChange={(newValue) => {
-                console.log(`Dropdown change initiated: ${fieldConfig.name} =`, newValue);
-                if (fieldConfig.name === "businessInfo.sector") {
-                  handleSectorChange(newValue);
-                } else if (fieldConfig.name === "businessInfo.segment") {
-                  handleSegmentChange(newValue);
-                } else {
-                  formField.onChange(newValue);
-                }
-              }}
+              onValueChange={formField.onChange}
               value={formField.value || ""}
-              disabled={isDisabled}
+              disabled={fieldConfig.disabled}
             >
               <FormControl>
                 <SelectTrigger>
@@ -651,7 +636,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         form.setValue("valuationInputs.metrics", metrics);
       }
     }
-  }, [sector, segment]);
+  }, [form.watch("businessInfo.sector"), form.watch("businessInfo.segment")]);
 
   useEffect(() => {
     const fundUtilizationSuggestions = suggestFundUtilization(productStage, form.getValues().valuationInputs.fundingRequired);
@@ -690,7 +675,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       setValidationWarnings(warnings);
     }
   }, [
-    sector,
+    form.watch("businessInfo.sector"),
     form.watch("businessInfo.productStage"),
     form.watch("financialData.revenue"),
     form
@@ -713,131 +698,153 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     );
   };
 
+  const mutation = useMutation({
+    mutationFn: async (data: ValuationFormData) => {
+      const response = await fetch('/api/valuation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      onResult(data);
+      localStorage.removeItem('valuationFormData');
+      toast({
+        title: "Success",
+        description: "Your valuation report has been generated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate valuation report",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('valuationFormData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        form.reset(parsedData);
+      } catch (error) {
+        console.error('Error loading saved form data:', error);
+      }
+    }
+  }, [form]);
+
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      const timeoutId = setTimeout(() => {
+        localStorage.setItem('valuationFormData', JSON.stringify(value));
+        toast({
+          title: "Progress Saved",
+          description: "Your changes have been automatically saved",
+          duration: 2000,
+        });
+      }, AUTOSAVE_DELAY);
+
+      return () => clearTimeout(timeoutId);
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, toast]);
+
+  useEffect(() => {
+    const currentFields = getFieldsForSection(Object.keys(formProgress)[currentStep -1]);
+    const formValues = form.getValues();
+
+    const isStepComplete = currentFields.every((field) => {
+      if (!field.required) return true;
+      const value = formValues[field.name as keyof ValuationFormData];
+      return value !== undefined && value !== "" && value !== 0 && (Array.isArray(value) ? value.length > 0 : true);
+    });
+
+    setStepsCompleted((prev) => ({ ...prev, [currentStep]: isStepComplete }));
+  }, [form.watch(), currentStep, form]);
+
+
   if (mutation.isPending) {
     return <FormLoadingSkeleton />;
   }
 
-  const totalSteps = formSections().length;
+  const totalSteps = Object.keys(formProgress).length;
   const progress = Math.round((currentStep / totalSteps) * 100);
 
   return (
-    <div className="max-w-[800px] mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-8">
-          <Accordion type="single" defaultValue={`section-${currentStep}`} collapsible>
-            {formSections().map((section, index) => (
-              <AccordionItem
-                key={section.id}
-                value={`section-${index + 1}`}
-                className={cn(
-                  "border rounded-lg overflow-hidden transition-all duration-200",
-                  "hover:shadow-md",
-                  stepsCompleted[index + 1] && "border-green-500/50"
-                )}
-              >
-                <AccordionTrigger className="px-4 py-2 hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    {getSectionIcon(section.id)}
-                    <div>
-                      <h3 className="text-lg font-medium text-left">{section.title}</h3>
-                      <p className="text-sm text-muted-foreground text-left">{section.subtitle}</p>
-                    </div>
-                    {stepsCompleted[index + 1] && (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 ml-auto" />
-                    )}
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
-                  <Card className="border-0 shadow-none bg-transparent">
-                    <CardContent className="p-0 pt-4">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={`section-${index}`}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -20 }}
-                          transition={{ duration: 0.2 }}
-                          className="space-y-6"
-                        >
-                          <div className="grid gap-6">
-                            {section.fields.map((fieldConfig) => (
-                              <FormField
-                                key={fieldConfig.name}
-                                control={form.control}
-                                name={fieldConfig.name}
-                                render={(field) => (
-                                  <FormItem>
-                                    <div className="flex items-center gap-2">
-                                      <FormLabel>
-                                        {fieldConfig.label}
-                                        {fieldConfig.required && (
-                                          <span className="text-red-500 ml-1">*</span>
-                                        )}
-                                      </FormLabel>
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                                          </TooltipTrigger>
-                                          <TooltipContent>
-                                            <p>{fieldConfig.description}</p>
-                                            {fieldConfig.help && <p>{fieldConfig.help}</p>}
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    </div>
-                                    <FormControl>
-                                      {renderField({ field, fieldConfig })}
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
-                      </AnimatePresence>
-                    </CardContent>
-                  </Card>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+        <form onSubmit={form.handleSubmit(async (data) => {
+          setIsSubmitting(true);
+          try {
+            await mutation.mutateAsync(data);
+          } finally {
+            setIsSubmitting(false);
+          }
+        })}>
+          <ProgressIndicator />
+          <AnimatePresence mode="wait">
+            {renderActiveSection()}
+          </AnimatePresence>
 
-          {renderValidationWarnings()}
-
-          <div className="flex justify-between pt-6">
+          {/* Navigation buttons with improved styling */}
+          <div className="flex justify-between mt-8">
             <Button
               type="button"
               variant="outline"
               onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
               disabled={currentStep === 1}
+              className="w-32"
             >
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Previous
             </Button>
-            {currentStep < totalSteps ? (
+
+            {currentStep < Object.keys(formProgress).length ? (
               <Button
                 type="button"
                 onClick={() => {
                   if (stepsCompleted[currentStep]) {
-                    setCurrentStep(Math.min(totalSteps, currentStep + 1));
+                    setCurrentStep(Math.min(Object.keys(formProgress).length, currentStep + 1));
                   } else {
                     toast({
-                      title: "Incomplete Step",
-                      description: "Please fill in all required fields before proceeding",
+                      title: "Please complete all required fields",
+                      description: "Fill in the required information before proceeding",
                       variant: "destructive"
                     });
                   }
                 }}
+                className="w-32"
               >
                 Next
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
               <Button
                 type="submit"
-                disabled={mutation.isPending || !Object.values(stepsCompleted).every(Boolean)}
+                disabled={isSubmitting || !Object.values(stepsCompleted).every(Boolean)}
+                className="w-48"
               >
-                {mutation.isPending ? "Generating Report..." : "Generate Valuation Report"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Report...
+                  </>
+                ) : (
+                  <>
+                    Generate Report
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             )}
           </div>
