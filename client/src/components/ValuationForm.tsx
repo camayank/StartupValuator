@@ -46,10 +46,64 @@ import { AnimatePresence, motion } from "framer-motion";
 // Constants
 const AUTOSAVE_DELAY = 2000; // 2 seconds delay for autosave
 
+// Add new helper functions for intelligent defaults and calculations
+const calculateFinancialMetrics = (revenue: number, stage: string, sector: string) => {
+  const metrics = {
+    cac: 0,
+    ltv: 0,
+    burnRate: 0,
+    runway: 0,
+  };
+
+  // Calculate Customer Acquisition Cost (CAC)
+  metrics.cac = revenue * 0.3; // Assume 30% of revenue goes to customer acquisition
+
+  // Calculate Customer Lifetime Value (LTV)
+  const multipliers = {
+    concept: 2,
+    prototype: 3,
+    mvp: 4,
+    beta: 5,
+    growth: 6,
+    scale: 7,
+  };
+  metrics.ltv = revenue * (multipliers[stage as keyof typeof multipliers] || 3);
+
+  // Calculate Burn Rate based on sector and stage
+  const burnRateFactors = {
+    technology: 1.2,
+    healthtech: 1.5,
+    fintech: 1.3,
+    ecommerce: 1.1,
+  };
+  metrics.burnRate = revenue * (burnRateFactors[sector as keyof typeof burnRateFactors] || 1.2);
+
+  // Calculate Runway (in months)
+  metrics.runway = 12; // Default to 12 months
+
+  return metrics;
+};
+
+// Add validation helper
+const validateFinancialMetrics = (values: any) => {
+  const warnings = [];
+
+  if (values.ltv < values.cac * 3) {
+    warnings.push("LTV should ideally be at least 3x CAC for sustainable growth");
+  }
+
+  if (values.burnRate > values.revenue * 2) {
+    warnings.push("Burn rate is significantly high compared to revenue");
+  }
+
+  return warnings;
+};
+
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [stepsCompleted, setStepsCompleted] = useState<Record<number, boolean>>({});
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
@@ -80,6 +134,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         roadmap: "",
         technologyStack: "",
         differentiators: "",
+        intellectualProperty: ""
       },
       risksAndOpportunities: {
         risks: [],
@@ -226,6 +281,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           required: true,
           description: "Monthly cash burn rate",
           help: "Average monthly expenses excluding one-time costs"
+        },
+        {
+          name: "financialData.runway",
+          label: "Runway (Months)",
+          type: "number",
+          required: true,
+          description: "Number of months runway",
+          help: "Number of months until company runs out of cash"
         }
       ]
     },
@@ -258,7 +321,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           type: "dropdown",
           required: false,
           description: "Status of IP protection",
-          help: "Patents, trademarks, or other IP protections"
+          help: "Patents, trademarks, or other IP protections",
+          options: [
+            ["none", "None"],
+            ["patentPending", "Patent Pending"],
+            ["patented", "Patented"],
+            ["trademark", "Trademark"],
+            ["other", "Other"]
+          ]
         }
       ]
     },
@@ -535,6 +605,49 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     form.setValue("productDetails.technologyStack", suggestedTechnologyStack.map(o => o.value));
   }, [businessInfo, sector, businessModel, form]);
 
+  // Add effect for auto-calculating financial metrics
+  useEffect(() => {
+    const { businessInfo, financialData } = form.getValues();
+    const { revenue } = financialData;
+    const { sector, productStage } = businessInfo;
+
+    if (revenue && sector && productStage) {
+      const metrics = calculateFinancialMetrics(revenue, productStage, sector);
+
+      // Only update if fields are empty or zero
+      if (!financialData.cac || financialData.cac === 0) form.setValue("financialData.cac", metrics.cac);
+      if (!financialData.ltv || financialData.ltv === 0) form.setValue("financialData.ltv", metrics.ltv);
+      if (!financialData.burnRate || financialData.burnRate === 0) form.setValue("financialData.burnRate", metrics.burnRate);
+      if (!financialData.runway || financialData.runway === 0) form.setValue("financialData.runway", metrics.runway);
+
+      // Validate and show warnings
+      const warnings = validateFinancialMetrics(metrics);
+      setValidationWarnings(warnings);
+    }
+  }, [
+    form.watch("businessInfo.sector"),
+    form.watch("businessInfo.productStage"),
+    form.watch("financialData.revenue"),
+    form
+  ]);
+
+  // Update the render function to show validation warnings
+  const renderValidationWarnings = () => {
+    if (validationWarnings.length === 0) return null;
+
+    return (
+      <Alert variant="warning" className="mb-4">
+        <AlertDescription>
+          <ul className="list-disc pl-4">
+            {validationWarnings.map((warning, index) => (
+              <li key={index}>{warning}</li>
+            ))}
+          </ul>
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   if (mutation.isPending) {
     return <FormLoadingSkeleton />;
   }
@@ -629,6 +742,8 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
               </AccordionItem>
             ))}
           </Accordion>
+
+          {renderValidationWarnings()}
 
           <div className="flex justify-between pt-6">
             <Button
