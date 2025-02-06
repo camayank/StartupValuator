@@ -166,10 +166,13 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       required: true,
       description: "Primary sector your business operates in",
       help: "Choose the sector that best represents your core business activities",
-      options: Object.keys(BUSINESS_SECTORS).map(sector => ({
-        value: sector,
-        label: sector
-      }))
+      options: () => {
+        console.log("Available sectors:", Object.keys(BUSINESS_SECTORS));
+        return Object.keys(BUSINESS_SECTORS).map(sector => ({
+          value: sector,
+          label: sector
+        }));
+      }
     },
     {
       name: "businessInfo.segment",
@@ -180,11 +183,17 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       help: "Select your specific industry segment",
       options: () => {
         const sector = form.watch("businessInfo.sector");
-        if (!sector || !BUSINESS_SECTORS[sector]) return [];
-        return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
+        console.log("Current sector:", sector);
+        if (!sector || !BUSINESS_SECTORS[sector]) {
+          console.log("No segments available for sector:", sector);
+          return [];
+        }
+        const segments = Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
           value: segment,
           label: segment
         }));
+        console.log("Available segments:", segments);
+        return segments;
       }
     },
     {
@@ -197,24 +206,18 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       options: () => {
         const sector = form.watch("businessInfo.sector");
         const segment = form.watch("businessInfo.segment");
-        if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
-        return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
+        console.log("Current sector/segment:", { sector, segment });
+        if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) {
+          console.log("No sub-segments available for:", { sector, segment });
+          return [];
+        }
+        const subSegments = BUSINESS_SECTORS[sector][segment].map(subSegment => ({
           value: subSegment,
           label: subSegment
         }));
+        console.log("Available sub-segments:", subSegments);
+        return subSegments;
       }
-    },
-    {
-      name: "businessInfo.businessModel",
-      label: "Business Model",
-      type: "dropdown",
-      required: true,
-      description: "How your business generates revenue",
-      help: "Select the model that best describes your revenue generation",
-      options: Object.entries(businessModels).map(([value, label]) => ({
-        value,
-        label
-      }))
     }
   ];
 
