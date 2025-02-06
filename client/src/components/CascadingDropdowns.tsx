@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { sectorOperations, SectorSchema } from "@/lib/constants/business-sectors";
 
@@ -66,8 +66,8 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
       subSegment: selectedSubSegment
     });
 
-    // Display selection in output area
-    setOutputMessage(`Selected: ${selectedSector} > ${selectedSegment} > ${selectedSubSegment}`);
+    // Update output message
+    setOutputMessage(`Sector: ${selectedSector} | Segment: ${selectedSegment} | Sub-Segment: ${selectedSubSegment}`);
 
     // Log selection to console as required
     console.log({
@@ -82,29 +82,19 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
     });
   };
 
-  const handleReset = () => {
-    setSelectedSector("");
-    setSelectedSegment("");
-    setSelectedSubSegment("");
-    setOutputMessage("");
-    setSegments([]);
-    setSubSegments([]);
-  };
-
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Business Sector Selection</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="max-w-2xl mx-auto p-6">
+      <h2 className="text-2xl font-semibold mb-6">Select Business Information</h2>
+
+      <div className="space-y-6">
         <div className="space-y-2">
-          <Label>Business Sector</Label>
+          <Label htmlFor="sector">Business Sector:</Label>
           <Select
             value={selectedSector}
             onValueChange={setSelectedSector}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a Business Sector" />
+            <SelectTrigger className="w-full" id="sector">
+              <SelectValue placeholder="Select Sector" />
             </SelectTrigger>
             <SelectContent>
               {sectorOperations.getAllSectors().map(({ value, label }) => (
@@ -117,14 +107,14 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
         </div>
 
         <div className="space-y-2">
-          <Label>Industry Segment</Label>
+          <Label htmlFor="segment">Industry Segment:</Label>
           <Select
             value={selectedSegment}
             onValueChange={setSelectedSegment}
             disabled={!selectedSector}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={selectedSector ? "Select an Industry Segment" : "First select a Business Sector"} />
+            <SelectTrigger className="w-full" id="segment">
+              <SelectValue placeholder="Select Segment" />
             </SelectTrigger>
             <SelectContent>
               {segments.map(({ value, label }) => (
@@ -137,14 +127,14 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
         </div>
 
         <div className="space-y-2">
-          <Label>Sub-Segment</Label>
+          <Label htmlFor="subSegment">Sub-Segment:</Label>
           <Select
             value={selectedSubSegment}
             onValueChange={setSelectedSubSegment}
             disabled={!selectedSegment}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={selectedSegment ? "Select a Sub-Segment" : "First select an Industry Segment"} />
+            <SelectTrigger className="w-full" id="subSegment">
+              <SelectValue placeholder="Select Sub-Segment" />
             </SelectTrigger>
             <SelectContent>
               {subSegments.map(({ value, label }) => (
@@ -156,28 +146,21 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
           </Select>
         </div>
 
-        {outputMessage && (
-          <div className="mt-4 p-4 bg-secondary rounded-lg">
-            <p className="text-sm font-medium">{outputMessage}</p>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex gap-2">
         <Button 
           onClick={handleSubmit}
-          className="flex-1"
+          className="w-full"
           disabled={!selectedSector || !selectedSegment || !selectedSubSegment}
         >
-          Submit Selection
+          Submit
         </Button>
-        <Button 
-          onClick={handleReset}
-          variant="outline"
-          className="flex-1"
-        >
-          Reset
-        </Button>
-      </CardFooter>
-    </Card>
+
+        {outputMessage && (
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-2">Selected Values:</h3>
+            <p className="text-sm p-4 bg-secondary rounded-lg">{outputMessage}</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
