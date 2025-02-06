@@ -34,35 +34,46 @@ export const sectors = {
   mobility: "Mobility & Transportation"
 } as const;
 
-// Added industry segments mapped to sectors
+// Enhanced industry segments mapped to sectors
 export const industrySegments = {
+  fintech: [
+    "Digital Banking & Neobanks",
+    "Payment Processing & Gateways",
+    "Investment & Trading Platforms",
+    "Insurance Technology (InsurTech)",
+    "Blockchain & Cryptocurrency",
+    "Lending & Credit Solutions",
+    "Personal Finance Management",
+    "Regulatory Technology (RegTech)",
+    "Financial Analytics & Research",
+    "Wealth Management",
+    "Cross-border Remittance",
+    "Financial Infrastructure",
+    "Other"
+  ],
   enterprise: [
     "Business Intelligence",
     "CRM & Sales",
     "HR & Workforce",
     "Project Management",
-    "ERP Systems"
+    "ERP Systems",
+    "Other"
   ],
   technology: [
     "Cloud Computing",
     "Cybersecurity",
     "AI/ML",
     "IoT",
-    "DevOps"
+    "DevOps",
+    "Other"
   ],
   healthtech: [
     "Telemedicine",
     "Health Records",
     "Medical Devices",
     "Wellness Apps",
-    "Biotech"
-  ],
-  fintech: [
-    "Digital Banking",
-    "Payment Processing",
-    "Investment Tech",
-    "Insurance Tech",
-    "Blockchain"
+    "Biotech",
+    "Other"
   ]
 } as const;
 

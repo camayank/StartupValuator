@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -46,85 +46,9 @@ import { AnimatePresence, motion } from "framer-motion";
 // Constants
 const AUTOSAVE_DELAY = 2000; // 2 seconds delay for autosave
 
-// Helper functions
-const getSectorOptions = () => Object.entries(sectors);
-const getProductStageOptions = () => Object.entries(productStages);
-const getBusinessModelOptions = () => Object.entries(businessModels);
-const getIndustrySegments = (sector: keyof typeof industrySegments) =>
-  industrySegments[sector] || [];
-const getTechnologyStackOptions = () =>
-  Object.entries(technologyStacks).flatMap(([category, techs]) =>
-    techs.map((tech) => ({ value: tech, label: tech, category }))
-  );
-const getBusinessRisks = () =>
-  Object.entries(businessRisks).flatMap(([category, risks]) =>
-    risks.map((risk) => ({ value: risk, label: risk, category }))
-  );
-const getFundUtilizationOptions = () =>
-  Object.entries(fundUtilizationOptions).flatMap(([category, options]) =>
-    options.map((option) => ({ value: option, label: option, category }))
-  );
-
-// Market size calculation helper
-const calculateMarketMetrics = (sector: keyof typeof marketSizeMultipliers, stage: keyof typeof growthRateEstimates) => {
-  const multipliers = marketSizeMultipliers[sector] || marketSizeMultipliers.technology;
-  const growthRates = growthRateEstimates[stage] || growthRateEstimates.concept;
-
-  return {
-    tam: multipliers.tam,
-    sam: multipliers.tam * multipliers.samPercent,
-    som: multipliers.tam * multipliers.samPercent * multipliers.somPercent,
-    growthRate: Math.floor(Math.random() * (growthRates.max - growthRates.min) + growthRates.min)
-  };
-};
-
-// Technology stack suggestions based on business model and sector
-const suggestTechnologyStack = (businessModel: string, sector: string) => {
-  // Default suggestions
-  const suggestions = {
-    frontend: ["React", "TypeScript"],
-    backend: ["Node.js"],
-    database: ["PostgreSQL"],
-    cloud: ["AWS"],
-    mobile: []
-  };
-
-  // Add specific suggestions based on business model and sector
-  if (businessModel === "subscription") {
-    suggestions.backend.push("Python/Django");
-    suggestions.database.push("MongoDB");
-  }
-
-  if (sector === "enterprise") {
-    suggestions.frontend.push("Angular");
-    suggestions.backend.push("Java Spring");
-  }
-
-  return suggestions;
-};
-
-// Fund utilization suggestions based on stage and funding amount
-const suggestFundUtilization = (stage: string, fundingRequired: number) => {
-  const suggestions = [];
-
-  if (stage === "concept" || stage === "prototype") {
-    suggestions.push(...fundUtilizationOptions.product.slice(0, 2));
-    suggestions.push(fundUtilizationOptions.operations[0]);
-  }
-
-  if (fundingRequired > 1000000) {
-    suggestions.push(...fundUtilizationOptions.marketing.slice(0, 2));
-    suggestions.push(...fundUtilizationOptions.growth.slice(0, 2));
-  }
-
-  return suggestions;
-};
-
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = formSections.length;
-  const progress = Math.round((currentStep / totalSteps) * 100);
   const [stepsCompleted, setStepsCompleted] = useState<Record<number, boolean>>({});
 
   const form = useForm<ValuationFormData>({
@@ -156,7 +80,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         roadmap: "",
         technologyStack: "",
         differentiators: "",
-        intellectualProperty: "",
       },
       risksAndOpportunities: {
         risks: [],
@@ -170,6 +93,244 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       },
     },
   });
+
+  // Helper functions moved inside component
+  const getIndustrySegments = useCallback((sector: keyof typeof industrySegments) => {
+    const segments = industrySegments[sector];
+    if (!segments) {
+      return [{ value: "Other", label: "Other" }];
+    }
+    return segments.map(segment => ({
+      value: segment,
+      label: segment
+    }));
+  }, []);
+
+  const formSections = useCallback(() => [
+    {
+      id: "businessInfo",
+      title: "Business Information",
+      subtitle: "Tell us about your business fundamentals",
+      description: "Basic information about your company and its operations",
+      fields: [
+        {
+          name: "businessInfo.name",
+          label: "Business Name",
+          type: "text",
+          required: true,
+          description: "Your company's legal or registered business name",
+          placeholder: "e.g., TechStart Solutions Inc."
+        },
+        {
+          name: "businessInfo.sector",
+          label: "Business Sector",
+          type: "dropdown",
+          required: true,
+          description: "Primary sector your business operates in",
+          help: "Choose the sector that best represents your core business activities",
+          options: Object.entries(sectors)
+        },
+        {
+          name: "businessInfo.industrySegment",
+          label: "Industry Segment",
+          type: "dropdown",
+          required: true,
+          description: "Specific segment within your sector",
+          help: "Select your specific industry segment",
+          options: getIndustrySegments(form.getValues().businessInfo.sector as keyof typeof industrySegments)
+        },
+        {
+          name: "businessInfo.businessModel",
+          label: "Business Model",
+          type: "dropdown",
+          required: true,
+          description: "How your business generates revenue",
+          help: "Select the model that best describes your revenue generation",
+          options: Object.entries(businessModels)
+        }
+      ]
+    },
+    {
+      id: "marketData",
+      title: "Market Information",
+      subtitle: "Define your market opportunity and position",
+      description: "Details about your target market and competitive landscape",
+      fields: [
+        {
+          name: "marketData.tam",
+          label: "Total Addressable Market (TAM)",
+          type: "number",
+          required: true,
+          description: "Total market size in USD",
+          help: "The total market demand for your product/service category"
+        },
+        {
+          name: "marketData.sam",
+          label: "Serviceable Addressable Market (SAM)",
+          type: "number",
+          required: true,
+          description: "Portion of TAM you can realistically serve",
+          help: "The segment of TAM that your business can actually reach"
+        },
+        {
+          name: "marketData.som",
+          label: "Serviceable Obtainable Market (SOM)",
+          type: "number",
+          required: true,
+          description: "Market share you can capture",
+          help: "Realistic portion of SAM you can capture in 3-5 years"
+        },
+        {
+          name: "marketData.growthRate",
+          label: "Market Growth Rate (%)",
+          type: "number",
+          required: true,
+          description: "Annual market growth percentage",
+          help: "Expected year-over-year growth rate of your target market"
+        }
+      ]
+    },
+    {
+      id: "financialData",
+      title: "Financial Metrics",
+      subtitle: "Key financial indicators and metrics",
+      description: "Current financial performance and metrics",
+      fields: [
+        {
+          name: "financialData.revenue",
+          label: "Monthly Revenue",
+          type: "number",
+          required: true,
+          description: "Current monthly revenue in USD",
+          help: "Average monthly revenue from the last 3 months"
+        },
+        {
+          name: "financialData.cac",
+          label: "Customer Acquisition Cost (CAC)",
+          type: "number",
+          required: true,
+          description: "Cost to acquire one customer",
+          help: "Total sales & marketing costs divided by new customers"
+        },
+        {
+          name: "financialData.ltv",
+          label: "Customer Lifetime Value (LTV)",
+          type: "number",
+          required: true,
+          description: "Average revenue per customer",
+          help: "Expected total revenue from a typical customer"
+        },
+        {
+          name: "financialData.burnRate",
+          label: "Monthly Burn Rate",
+          type: "number",
+          required: true,
+          description: "Monthly cash burn rate",
+          help: "Average monthly expenses excluding one-time costs"
+        }
+      ]
+    },
+    {
+      id: "productDetails",
+      title: "Product Information",
+      subtitle: "Details about your product/service offering",
+      description: "Technical and operational aspects of your product",
+      fields: [
+        {
+          name: "productDetails.maturity",
+          label: "Product Stage",
+          type: "dropdown",
+          required: true,
+          description: "Current development stage of your product",
+          options: Object.entries(productStages)
+        },
+        {
+          name: "productDetails.technologyStack",
+          label: "Technology Stack",
+          type: "multiselect",
+          required: true,
+          description: "Key technologies used in your product",
+          help: "Select all major technologies/frameworks used",
+          options: getTechnologyStackOptions()
+        },
+        {
+          name: "productDetails.intellectualProperty",
+          label: "Intellectual Property",
+          type: "dropdown",
+          required: false,
+          description: "Status of IP protection",
+          help: "Patents, trademarks, or other IP protections"
+        }
+      ]
+    },
+    {
+      id: "risksOpportunities",
+      title: "Risks & Opportunities",
+      subtitle: "Evaluate potential risks and growth opportunities",
+      description: "Assessment of business risks and growth potential",
+      fields: [
+        {
+          name: "risksAndOpportunities.risks",
+          label: "Key Business Risks",
+          type: "multiselect",
+          required: true,
+          description: "Major risks facing the business",
+          help: "Select all significant risks to your business",
+          options: getBusinessRisks()
+        },
+        {
+          name: "risksAndOpportunities.mitigationStrategies",
+          label: "Risk Mitigation Strategies",
+          type: "textarea",
+          required: true,
+          description: "Strategies to address key risks",
+          help: "Describe how you plan to address each major risk"
+        },
+        {
+          name: "risksAndOpportunities.opportunities",
+          label: "Growth Opportunities",
+          type: "multiselect",
+          required: true,
+          description: "Potential areas for growth",
+          help: "Select key areas where you see growth potential",
+          options: getBusinessRisks()
+        }
+      ]
+    },
+    {
+      id: "valuationInputs",
+      title: "Valuation Parameters",
+      subtitle: "Additional inputs for valuation calculation",
+      description: "Factors affecting the final valuation",
+      fields: [
+        {
+          name: "valuationInputs.targetValuation",
+          label: "Target Valuation",
+          type: "number",
+          required: false,
+          description: "Expected valuation range",
+          help: "Your estimated company valuation (if any)"
+        },
+        {
+          name: "valuationInputs.fundingRequired",
+          label: "Funding Required",
+          type: "number",
+          required: true,
+          description: "Amount of funding needed",
+          help: "How much funding are you looking to raise?"
+        },
+        {
+          name: "valuationInputs.expectedROI",
+          label: "Use of Funds",
+          type: "multiselect",
+          required: true,
+          description: "Planned use of raised funds",
+          help: "Select how you plan to use the funding",
+          options: getFundUtilizationOptions()
+        }
+      ]
+    }
+  ], [form, getIndustrySegments]);
 
   // Load saved form data on mount
   useEffect(() => {
@@ -203,7 +364,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
   // Step completion check
   useEffect(() => {
-    const currentFields = formSections[currentStep - 1].fields;
+    const currentFields = formSections()[currentStep - 1].fields;
     const formValues = form.getValues();
 
     const isStepComplete = currentFields.every((field) => {
@@ -216,7 +377,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       ...prev,
       [currentStep]: isStepComplete
     }));
-  }, [form.watch(), currentStep]);
+  }, [form.watch(), currentStep, formSections]);
 
   const mutation = useMutation({
     mutationFn: async (data: ValuationFormData) => {
@@ -346,20 +507,17 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     form.setValue("marketData.sam", marketMetrics.sam);
     form.setValue("marketData.som", marketMetrics.som);
     form.setValue("marketData.growthRate", marketMetrics.growthRate);
-  }, [businessInfo]);
+  }, [businessInfo, form]);
 
   useEffect(() => {
-    const industrySegmentOptions = getIndustrySegments(sector);
-    form.setValue("businessInfo.industrySegment", industrySegmentOptions[0]?.value); // Default selection
-    form.setValue("businessInfo.industrySegment", industrySegmentOptions[0]?.value || "");
-    const industrySegmentOptionsArray = industrySegmentOptions.map(([key, value]) => [key, value]);
-    formSections[0].fields.find(f => f.name === "businessInfo.industrySegment")!.options = industrySegmentOptionsArray;
-
-    const techStackSuggestions = suggestTechnologyStack(businessModel, sector);
-    const technologyStackOptions = getTechnologyStackOptions();
-    const suggestedTechnologyStack = technologyStackOptions.filter(option => Object.values(techStackSuggestions).flat().includes(option.value));
-    form.setValue("productDetails.technologyStack", suggestedTechnologyStack.map(o => o.value));
-  }, [businessInfo, sector, businessModel]);
+    const { sector } = form.getValues().businessInfo;
+    if (sector) {
+      const segments = getIndustrySegments(sector as keyof typeof industrySegments);
+      // Always select the first non-Other option if available
+      const defaultSegment = segments.find(s => s.value !== "Other") || segments[0];
+      form.setValue("businessInfo.industrySegment", defaultSegment.value);
+    }
+  }, [form.watch("businessInfo.sector"), getIndustrySegments, form]);
 
   useEffect(() => {
     const fundUtilizationSuggestions = suggestFundUtilization(productStage, form.getValues().valuationInputs.fundingRequired);
@@ -367,18 +525,30 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     const suggestedFundUtilization = fundUtilizationOptions.filter(option => fundUtilizationSuggestions.includes(option.value));
     form.setValue("valuationInputs.expectedROI", suggestedFundUtilization.map(o => o.value));
 
-  }, [productStage, form.watch("valuationInputs.fundingRequired")]);
+  }, [productStage, form.watch("valuationInputs.fundingRequired"), form]);
+
+  const techStackSuggestions = suggestTechnologyStack(businessModel, sector);
+  const technologyStackOptions = getTechnologyStackOptions();
+  const suggestedTechnologyStack = technologyStackOptions.filter(option => Object.values(techStackSuggestions).flat().includes(option.value));
+
+
+  useEffect(() => {
+    form.setValue("productDetails.technologyStack", suggestedTechnologyStack.map(o => o.value));
+  }, [businessInfo, sector, businessModel, form]);
 
   if (mutation.isPending) {
     return <FormLoadingSkeleton />;
   }
+
+  const totalSteps = formSections().length;
+  const progress = Math.round((currentStep / totalSteps) * 100);
 
   return (
     <div className="max-w-[800px] mx-auto p-4">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(mutation.mutate)} className="space-y-8">
           <Accordion type="single" defaultValue={`section-${currentStep}`} collapsible>
-            {formSections.map((section, index) => (
+            {formSections().map((section, index) => (
               <AccordionItem
                 key={section.id}
                 value={`section-${index + 1}`}
@@ -502,226 +672,76 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   );
 }
 
-const formSections = [
-  {
-    id: "businessInfo",
-    title: "Business Information",
-    subtitle: "Tell us about your business fundamentals",
-    description: "Basic information about your company and its operations",
-    fields: [
-      {
-        name: "businessInfo.name",
-        label: "Business Name",
-        type: "text",
-        required: true,
-        description: "Your company's legal or registered business name",
-        placeholder: "e.g., TechStart Solutions Inc."
-      },
-      {
-        name: "businessInfo.sector",
-        label: "Business Sector",
-        type: "dropdown",
-        required: true,
-        description: "Primary sector your business operates in",
-        help: "Choose the sector that best represents your core business activities",
-        options: getSectorOptions()
-      },
-      {
-        name: "businessInfo.industrySegment",
-        label: "Industry Segment",
-        type: "dropdown",
-        required: true,
-        description: "Specific segment within your sector",
-        help: "Select the specific industry segment that best matches your business",
-        options: [] // Will be populated dynamically based on selected sector
-      },
-      {
-        name: "businessInfo.businessModel",
-        label: "Business Model",
-        type: "dropdown",
-        required: true,
-        description: "How your business generates revenue",
-        help: "Select the model that best describes your revenue generation",
-        options: getBusinessModelOptions()
-      }
-    ]
-  },
-  {
-    id: "marketData",
-    title: "Market Information",
-    subtitle: "Define your market opportunity and position",
-    description: "Details about your target market and competitive landscape",
-    fields: [
-      {
-        name: "marketData.tam",
-        label: "Total Addressable Market (TAM)",
-        type: "number",
-        required: true,
-        description: "Total market size in USD",
-        help: "The total market demand for your product/service category"
-      },
-      {
-        name: "marketData.sam",
-        label: "Serviceable Addressable Market (SAM)",
-        type: "number",
-        required: true,
-        description: "Portion of TAM you can realistically serve",
-        help: "The segment of TAM that your business can actually reach"
-      },
-      {
-        name: "marketData.som",
-        label: "Serviceable Obtainable Market (SOM)",
-        type: "number",
-        required: true,
-        description: "Market share you can capture",
-        help: "Realistic portion of SAM you can capture in 3-5 years"
-      },
-      {
-        name: "marketData.growthRate",
-        label: "Market Growth Rate (%)",
-        type: "number",
-        required: true,
-        description: "Annual market growth percentage",
-        help: "Expected year-over-year growth rate of your target market"
-      }
-    ]
-  },
-  {
-    id: "financialData",
-    title: "Financial Metrics",
-    subtitle: "Key financial indicators and metrics",
-    description: "Current financial performance and metrics",
-    fields: [
-      {
-        name: "financialData.revenue",
-        label: "Monthly Revenue",
-        type: "number",
-        required: true,
-        description: "Current monthly revenue in USD",
-        help: "Average monthly revenue from the last 3 months"
-      },
-      {
-        name: "financialData.cac",
-        label: "Customer Acquisition Cost (CAC)",
-        type: "number",
-        required: true,
-        description: "Cost to acquire one customer",
-        help: "Total sales & marketing costs divided by new customers"
-      },
-      {
-        name: "financialData.ltv",
-        label: "Customer Lifetime Value (LTV)",
-        type: "number",
-        required: true,
-        description: "Average revenue per customer",
-        help: "Expected total revenue from a typical customer"
-      },
-      {
-        name: "financialData.burnRate",
-        label: "Monthly Burn Rate",
-        type: "number",
-        required: true,
-        description: "Monthly cash burn rate",
-        help: "Average monthly expenses excluding one-time costs"
-      }
-    ]
-  },
-  {
-    id: "productDetails",
-    title: "Product Information",
-    subtitle: "Details about your product/service offering",
-    description: "Technical and operational aspects of your product",
-    fields: [
-      {
-        name: "productDetails.maturity",
-        label: "Product Stage",
-        type: "dropdown",
-        required: true,
-        description: "Current development stage of your product",
-        options: getProductStageOptions()
-      },
-      {
-        name: "productDetails.technologyStack",
-        label: "Technology Stack",
-        type: "multiselect",
-        required: true,
-        description: "Key technologies used in your product",
-        help: "Select all major technologies/frameworks used"
-      },
-      {
-        name: "productDetails.intellectualProperty",
-        label: "Intellectual Property",
-        type: "dropdown",
-        required: false,
-        description: "Status of IP protection",
-        help: "Patents, trademarks, or other IP protections"
-      }
-    ]
-  },
-  {
-    id: "risksOpportunities",
-    title: "Risks & Opportunities",
-    subtitle: "Evaluate potential risks and growth opportunities",
-    description: "Assessment of business risks and growth potential",
-    fields: [
-      {
-        name: "risksAndOpportunities.risks",
-        label: "Key Business Risks",
-        type: "multiselect",
-        required: true,
-        description: "Major risks facing the business",
-        help: "Select all significant risks to your business"
-      },
-      {
-        name: "risksAndOpportunities.mitigationStrategies",
-        label: "Risk Mitigation Strategies",
-        type: "textarea",
-        required: true,
-        description: "Strategies to address key risks",
-        help: "Describe how you plan to address each major risk"
-      },
-      {
-        name: "risksAndOpportunities.opportunities",
-        label: "Growth Opportunities",
-        type: "multiselect",
-        required: true,
-        description: "Potential areas for growth",
-        help: "Select key areas where you see growth potential"
-      }
-    ]
-  },
-  {
-    id: "valuationInputs",
-    title: "Valuation Parameters",
-    subtitle: "Additional inputs for valuation calculation",
-    description: "Factors affecting the final valuation",
-    fields: [
-      {
-        name: "valuationInputs.targetValuation",
-        label: "Target Valuation",
-        type: "number",
-        required: false,
-        description: "Expected valuation range",
-        help: "Your estimated company valuation (if any)"
-      },
-      {
-        name: "valuationInputs.fundingRequired",
-        label: "Funding Required",
-        type: "number",
-        required: true,
-        description: "Amount of funding needed",
-        help: "How much funding are you looking to raise?"
-      },
-      {
-        name: "valuationInputs.expectedROI",
-        label: "Use of Funds",
-        type: "multiselect",
-        required: true,
-        description: "Planned use of raised funds",
-        help: "Select how you plan to use the funding"
-      }
-    ]
+const getSectorOptions = () => Object.entries(sectors);
+const getProductStageOptions = () => Object.entries(productStages);
+const getBusinessModelOptions = () => Object.entries(businessModels);
+
+const getTechnologyStackOptions = () =>
+  Object.entries(technologyStacks).flatMap(([category, techs]) =>
+    techs.map((tech) => ({ value: tech, label: tech, category }))
+  );
+const getBusinessRisks = () =>
+  Object.entries(businessRisks).flatMap(([category, risks]) =>
+    risks.map((risk) => ({ value: risk, label: risk, category }))
+  );
+const getFundUtilizationOptions = () =>
+  Object.entries(fundUtilizationOptions).flatMap(([category, options]) =>
+    options.map((option) => ({ value: option, label: option, category }))
+  );
+
+// Market size calculation helper
+const calculateMarketMetrics = (sector: keyof typeof marketSizeMultipliers, stage: keyof typeof growthRateEstimates) => {
+  const multipliers = marketSizeMultipliers[sector] || marketSizeMultipliers.technology;
+  const growthRates = growthRateEstimates[stage] || growthRateEstimates.concept;
+
+  return {
+    tam: multipliers.tam,
+    sam: multipliers.tam * multipliers.samPercent,
+    som: multipliers.tam * multipliers.samPercent * multipliers.somPercent,
+    growthRate: Math.floor(Math.random() * (growthRates.max - growthRates.min) + growthRates.min)
+  };
+};
+
+// Technology stack suggestions based on business model and sector
+const suggestTechnologyStack = (businessModel: string, sector: string) => {
+  // Default suggestions
+  const suggestions = {
+    frontend: ["React", "TypeScript"],
+    backend: ["Node.js"],
+    database: ["PostgreSQL"],
+    cloud: ["AWS"],
+    mobile: []
+  };
+
+  // Add specific suggestions based on business model and sector
+  if (businessModel === "subscription") {
+    suggestions.backend.push("Python/Django");
+    suggestions.database.push("MongoDB");
   }
-];
+
+  if (sector === "enterprise") {
+    suggestions.frontend.push("Angular");
+    suggestions.backend.push("Java Spring");
+  }
+
+  return suggestions;
+};
+
+// Fund utilization suggestions based on stage and funding amount
+const suggestFundUtilization = (stage: string, fundingRequired: number) => {
+  const suggestions = [];
+
+  if (stage === "concept" || stage === "prototype") {
+    suggestions.push(...fundUtilizationOptions.product.slice(0, 2));
+    suggestions.push(fundUtilizationOptions.operations[0]);
+  }
+
+  if (fundingRequired > 1000000) {
+    suggestions.push(...fundUtilizationOptions.marketing.slice(0, 2));
+    suggestions.push(...fundUtilizationOptions.growth.slice(0, 2));
+  }
+
+  return suggestions;
+};
 
 export default ValuationForm;
