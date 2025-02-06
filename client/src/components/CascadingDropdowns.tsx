@@ -8,9 +8,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { sectorOperations, SectorSchema } from "@/lib/constants/business-sectors";
+import { BUSINESS_SECTORS, SectorSchema } from "@/lib/constants/business-sectors";
 
 interface CascadingDropdownsProps {
   onSelectionChange: (selection: { sector: string; segment: string; subSegment: string }) => void;
@@ -23,13 +22,31 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
   const [outputMessage, setOutputMessage] = useState<string>("");
   const { toast } = useToast();
 
-  const [segments, setSegments] = useState<Array<{ value: string; label: string }>>([]);
-  const [subSegments, setSubSegments] = useState<Array<{ value: string; label: string }>>([]);
+  // Get all sectors directly from BUSINESS_SECTORS
+  const sectors = Object.keys(BUSINESS_SECTORS).map(sector => ({
+    value: sector,
+    label: sector
+  }));
 
-  // Reset dependent dropdowns when parent selection changes
+  // Get segments for selected sector
+  const segments = selectedSector
+    ? Object.keys(BUSINESS_SECTORS[selectedSector]).map(segment => ({
+        value: segment,
+        label: segment
+      }))
+    : [];
+
+  // Get sub-segments for selected segment
+  const subSegments = selectedSector && selectedSegment
+    ? BUSINESS_SECTORS[selectedSector][selectedSegment].map(subSegment => ({
+        value: subSegment,
+        label: subSegment
+      }))
+    : [];
+
+  // Reset dependent fields when parent selection changes
   useEffect(() => {
     if (selectedSector) {
-      setSegments(sectorOperations.getSegmentsForSector(selectedSector));
       setSelectedSegment("");
       setSelectedSubSegment("");
       setOutputMessage("");
@@ -37,11 +54,10 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
   }, [selectedSector]);
 
   useEffect(() => {
-    if (selectedSector && selectedSegment) {
-      setSubSegments(sectorOperations.getSubSegments(selectedSector, selectedSegment));
+    if (selectedSegment) {
       setSelectedSubSegment("");
     }
-  }, [selectedSector, selectedSegment]);
+  }, [selectedSegment]);
 
   // Handle form submission
   const handleSubmit = () => {
@@ -69,18 +85,16 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
     // Update output message
     setOutputMessage(`Sector: ${selectedSector} | Segment: ${selectedSegment} | Sub-Segment: ${selectedSubSegment}`);
 
-    // Log selection to console as required
-    console.log({
+    console.log("Selection submitted:", {
       sector: selectedSector,
       segment: selectedSegment,
       subSegment: selectedSubSegment
     });
-
-    toast({
-      title: "Selection Complete",
-      description: "Your business sector selection has been recorded",
-    });
   };
+
+  // Debug logging
+  console.log("Available sectors:", sectors);
+  console.log("Current selections:", { selectedSector, selectedSegment, selectedSubSegment });
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -97,7 +111,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
               <SelectValue placeholder="Select Sector" />
             </SelectTrigger>
             <SelectContent>
-              {sectorOperations.getAllSectors().map(({ value, label }) => (
+              {sectors.map(({ value, label }) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>
