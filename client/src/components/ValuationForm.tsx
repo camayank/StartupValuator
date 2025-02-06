@@ -166,7 +166,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       required: true,
       description: "Primary sector your business operates in",
       help: "Choose the sector that best represents your core business activities",
-      options: sectorOperations.getAllSectors()
+      options: Object.keys(BUSINESS_SECTORS).map(sector => ({
+        value: sector,
+        label: sector
+      }))
     },
     {
       name: "businessInfo.segment",
@@ -176,11 +179,12 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       description: "Specific segment within your sector",
       help: "Select your specific industry segment",
       options: () => {
-        const sector = form.getValues().businessInfo.sector;
-        console.log('Current sector:', sector);
-        const segments = sectorOperations.getSegmentsForSector(sector);
-        console.log('Available segments:', segments);
-        return segments;
+        const sector = form.watch("businessInfo.sector");
+        if (!sector || !BUSINESS_SECTORS[sector]) return [];
+        return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
+          value: segment,
+          label: segment
+        }));
       }
     },
     {
@@ -191,11 +195,13 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       description: "Specific sub-segment within your industry segment",
       help: "Select the most specific category for your business",
       options: () => {
-        const { sector, segment } = form.getValues().businessInfo;
-        console.log('Current sector and segment:', { sector, segment });
-        const subSegments = sectorOperations.getSubSegments(sector, segment);
-        console.log('Available subSegments:', subSegments);
-        return subSegments;
+        const sector = form.watch("businessInfo.sector");
+        const segment = form.watch("businessInfo.segment");
+        if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
+        return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
+          value: subSegment,
+          label: subSegment
+        }));
       }
     },
     {
@@ -205,7 +211,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       required: true,
       description: "How your business generates revenue",
       help: "Select the model that best describes your revenue generation",
-      options: Object.entries(businessModels)
+      options: Object.entries(businessModels).map(([value, label]) => ({
+        value,
+        label
+      }))
     }
   ];
 
