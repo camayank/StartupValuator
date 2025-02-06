@@ -1,7 +1,7 @@
 import { type BusinessInformation } from "../types/startup-business";
 import { MarketAnalysisHandler } from "./market-analysis-handler";
 
-// Industry to Sector mapping
+// Industry to Sector mapping with advanced categorization
 const industrySectorMap: Record<string, string[]> = {
   "Medical Devices": ["hardware", "manufacturing", "research"],
   "Digital Health": ["saas", "platform", "service"],
@@ -14,7 +14,7 @@ const industrySectorMap: Record<string, string[]> = {
   "AI/ML": ["saas", "platform", "research"]
 };
 
-// Industry segments with subcategories
+// Industry segments with detailed subcategories
 export const industrySegments = {
   healthcare: [
     "Medical Devices",
@@ -46,24 +46,52 @@ export const industrySegments = {
   ]
 };
 
+// Industry-specific validation requirements
+const industryRequirements: Record<string, {
+  minTeamSize: number;
+  minDescriptionLength: number;
+  requiredCertifications?: string[];
+  riskFactors: string[];
+}> = {
+  "Medical Devices": {
+    minTeamSize: 5,
+    minDescriptionLength: 200,
+    requiredCertifications: ["FDA", "ISO 13485"],
+    riskFactors: ["Regulatory Compliance", "Clinical Validation", "Manufacturing Quality"]
+  },
+  "Digital Health": {
+    minTeamSize: 4,
+    minDescriptionLength: 150,
+    requiredCertifications: ["HIPAA", "SOC 2"],
+    riskFactors: ["Data Privacy", "User Adoption", "Integration"]
+  },
+  "Enterprise Software": {
+    minTeamSize: 3,
+    minDescriptionLength: 150,
+    requiredCertifications: ["ISO 27001"],
+    riskFactors: ["Security", "Scalability", "Enterprise Adoption"]
+  },
+  "AI/ML": {
+    minTeamSize: 4,
+    minDescriptionLength: 200,
+    riskFactors: ["Data Quality", "Model Performance", "Ethical Considerations"]
+  }
+};
+
 export class BusinessInformationHandler {
-  // Get available sectors for an industry
   static getAvailableSectors(industry: string): string[] {
     return industrySectorMap[industry] || [];
   }
 
-  // Get industry segments
   static getIndustrySegments(industry: string): string[] {
     return industrySegments[industry as keyof typeof industrySegments] || [];
   }
 
-  // Validate industry-sector combination
   static validateIndustrySector(industry: string, sector: string): boolean {
     const availableSectors = this.getAvailableSectors(industry);
     return availableSectors.includes(sector);
   }
 
-  // Get recommended team size based on industry and sector
   static async getRecommendedTeamSize(industry: string, sector: string): Promise<number> {
     const marketData = await MarketAnalysisHandler.analyzeMarketContext({
       industrySegment: industry,
@@ -75,14 +103,13 @@ export class BusinessInformationHandler {
       description: ""
     } as BusinessInformation);
 
-    const baseSize = 2;
+    const baseSize = industryRequirements[industry]?.minTeamSize || 2;
     const marketSizeMultiplier = Math.log10(marketData.marketSize.total) / 10;
     const growthMultiplier = marketData.growthMetrics.industryGrowthRate / 10;
 
     return Math.ceil(baseSize * (1 + marketSizeMultiplier) * (1 + growthMultiplier));
   }
 
-  // Validate complete business information
   static async validateBusinessInformation(data: BusinessInformation): Promise<{
     isValid: boolean;
     errors: string[];
@@ -93,7 +120,7 @@ export class BusinessInformationHandler {
     const warnings: string[] = [];
     const suggestions: string[] = [];
 
-    // Required fields validation
+    // Basic validation
     if (!data.industrySegment) {
       errors.push("Industry segment is required");
     }
@@ -104,9 +131,18 @@ export class BusinessInformationHandler {
       errors.push("Selected sector is not valid for this industry");
     }
 
-    // Description validation
-    if (data.description.length < 50) {
-      errors.push("Business description must be at least 50 characters");
+    // Industry-specific validation
+    const industryReqs = industryRequirements[data.industrySegment];
+    if (industryReqs) {
+      if (data.description.length < industryReqs.minDescriptionLength) {
+        errors.push(`${data.industrySegment} businesses require a more detailed description (minimum ${industryReqs.minDescriptionLength} characters)`);
+      }
+
+      if (industryReqs.requiredCertifications) {
+        suggestions.push(`Consider obtaining these certifications: ${industryReqs.requiredCertifications.join(", ")}`);
+      }
+
+      suggestions.push(`Key risk factors to address: ${industryReqs.riskFactors.join(", ")}`);
     }
 
     // Market analysis based validation

@@ -1,0 +1,88 @@
+Here are the sequential prompts that would help build our advanced valuation system step by step:
+
+Initial Setup and Basic Structure:
+
+CopyCreate a base structure for a startup valuation system with key sections: Business Information, Market Information, Financial Metrics, Product Information, Risks & Opportunities, Regulatory & Compliance, and Valuation Parameters.
+
+Integrate External Data Sources:
+
+CopyImplement API connections and data fetchers for Statista, IBISWorld, Crunchbase, and other market data sources to automate TAM/SAM/SOM calculations and market analysis.
+
+Implement AI Market Analysis:
+
+CopyCreate AI models for market analysis including NLP processors for news/social media sentiment analysis, trend detection, and market size prediction algorithms.
+
+Financial Modeling System:
+
+CopyDevelop Monte Carlo simulation system and sensitivity analysis tools for financial projections, including growth predictions and benchmark comparisons.
+
+Risk Assessment Module:
+
+CopyBuild real-time risk monitoring system with regulatory analysis, customized risk profiles, and automated mitigation strategy generation.
+
+Technology Stack Advisor:
+
+CopyCreate an AI-powered technology stack recommendation system that analyzes successful companies and provides implementation roadmaps.
+
+Funding Optimization:
+
+CopyImplement ML-based funding allocation optimizer with historical outcome analysis and ROI prediction models.
+
+User Interface - Dashboard:
+
+CopyDesign and implement the main dashboard interface showing key metrics, real-time updates, and interactive visualizations.
+
+User Interface - Data Input:
+
+CopyCreate smart input forms that minimize user input while maximizing data collection through AI inference.
+
+User Interface - Analysis Views:
+
+CopyDevelop detailed analysis views for market sizing, financial projections, risk assessment, and recommendations.
+
+Continuous Learning System:
+
+CopyImplement feedback processing pipeline and model retraining framework for continuous system improvement.
+
+Data Validation and Quality:
+
+CopyCreate comprehensive data validation system with confidence scoring and data quality assessment.
+
+Industry-Specific Enhancements:
+
+CopyAdd industry-specific valuation modules for different sectors (SaaS, Hardware, Biotech, etc.).
+
+Integration Features:
+
+CopyImplement export/import capabilities and API endpoints for integration with other systems.
+
+Documentation:
+
+CopyCreate detailed documentation for system usage, API integration, and implementation guides.
+Optional Enhancement Prompts:
+
+Advanced Analytics:
+
+CopyAdd predictive analytics for market trends, competitor analysis, and growth projections.
+
+Scenario Planning:
+
+CopyImplement advanced scenario planning tools with AI-driven scenario generation and analysis.
+
+Compliance Module:
+
+CopyCreate industry-specific compliance checkers and regulatory requirement analyzers.
+
+Benchmarking System:
+
+CopyImplement comprehensive benchmarking system with peer comparison and industry standards.
+
+Report Generation:
+
+CopyCreate automated report generation system with customizable templates and insights.
+Each prompt should be implemented sequentially as they build upon each other. Would you like me to:
+
+Start implementing any specific prompt in detail?
+Provide more detailed sub-prompts for any particular area?
+Add more specialized prompts for specific industries?
+Create a development timeline for these implementations?
