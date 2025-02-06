@@ -9,7 +9,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
         subSegments: [
           "Enterprise Software (SaaS)",
           "Mobile Applications",
-          "Developer Tools",
+          "Developer Tools", 
           "Security Software",
           "Business Intelligence & Analytics",
           "CRM & Customer Experience",
@@ -28,7 +28,7 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
           "Industrial Hardware",
           "IoT Devices",
           "Semiconductors",
-          "Networking Equipment",
+          "Networking Equipment", 
           "Storage Devices",
           "Wearable Technology"
         ],
@@ -204,25 +204,25 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
 export const sectorOperations = {
   getAllSectors() {
     return Object.entries(BUSINESS_SECTORS).map(([key, sector]) => ({
-      value: key,
+      value: key.toLowerCase(),
       label: sector.name
     }));
   },
 
   getSegmentsForSector(sectorKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey];
+    const sector = BUSINESS_SECTORS[sectorKey.toUpperCase()];
     if (!sector) return [];
 
     return Object.entries(sector.segments).map(([key, segment]) => ({
-      value: key,
+      value: key.toLowerCase(),
       label: segment.name,
       metrics: segment.metrics
     }));
   },
 
   getSubSegments(sectorKey: string, segmentKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey];
-    const segment = sector?.segments[segmentKey];
+    const sector = BUSINESS_SECTORS[sectorKey.toUpperCase()];
+    const segment = sector?.segments[segmentKey.toUpperCase()];
     return segment?.subSegments.map(sub => ({
       value: sub.toLowerCase().replace(/\s+/g, '_'),
       label: sub
@@ -230,8 +230,8 @@ export const sectorOperations = {
   },
 
   getMetrics(sectorKey: string, segmentKey: string) {
-    const sector = BUSINESS_SECTORS[sectorKey];
-    const segment = sector?.segments[segmentKey];
+    const sector = BUSINESS_SECTORS[sectorKey.toUpperCase()];
+    const segment = sector?.segments[segmentKey.toUpperCase()];
     return segment?.metrics || null;
   }
 };
