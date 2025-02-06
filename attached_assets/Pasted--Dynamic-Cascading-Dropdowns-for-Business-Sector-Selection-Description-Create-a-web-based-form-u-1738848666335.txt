@@ -1,0 +1,52 @@
+“Dynamic Cascading Dropdowns for Business Sector Selection”
+
+Description:
+"Create a web-based form using HTML, JavaScript, and JSON (or a lightweight backend like Flask/Node.js) that allows users to select a Business Sector from a dropdown. Based on their selection, the corresponding Industry Segment dropdown should update dynamically, and further, the Sub-Segment dropdown should populate accordingly. The dataset should include at least 350+ unique sector-segment-sub-segment combinations."
+
+Requirements:
+
+Dropdown Structure:
+
+Dropdown 1: Business Sector
+Dropdown 2: Industry Segment (populated based on selected sector)
+Dropdown 3: Sub-Segment (populated based on selected segment)
+Data Handling:
+
+Use a predefined JSON dataset (or a small database) with at least 350+ unique combinations.
+Ensure efficient filtering when selecting options.
+Functionality:
+
+When the user selects a Business Sector, the Industry Segment dropdown updates accordingly.
+Selecting an Industry Segment updates the Sub-Segment dropdown dynamically.
+Ensure smooth UX (disable dropdowns until a selection is made).
+Tech Stack (Preferred but flexible):
+
+Frontend: HTML, JavaScript (or React if preferred).
+Data Storage: JSON file or a simple backend API (Flask/Node.js) if needed.
+Optional: Include a submit button that logs the final selection to the console or displays it on the screen.
+Performance Considerations:
+
+Ensure that the dropdowns do not reload the page when selecting options.
+Optimize for fast filtering with minimal lag.
+Example JSON Structure for Data Handling
+json
+Copy
+Edit
+{
+  "Technology & Software": {
+    "Enterprise Software": ["ERP", "CRM", "HRM"],
+    "Cloud Computing": ["IaaS", "PaaS", "SaaS"]
+  },
+  "Healthcare & Life Sciences": {
+    "Digital Health": ["Telehealth", "Mobile Health", "Health Analytics"],
+    "Biotech": ["Gene Therapy", "Molecular Diagnostics", "Bioinformatics"]
+  },
+  "Financial Technology": {
+    "Digital Banking": ["Neo Banking", "Open Banking", "Embedded Finance"],
+    "Payments": ["Digital Payments", "Cross-Border Payments", "BNPL"]
+  }
+}
+Expected Output
+✅ User selects "Technology & Software" → Dropdown 2 updates with ["Enterprise Software", "Cloud Computing"]
+✅ User selects "Cloud Computing" → Dropdown 3 updates with ["IaaS", "PaaS", "SaaS"]
+✅ User submits → Logs selection: {Sector: "Technology & Software", Segment: "Cloud Computing", SubSegment: "PaaS"}
