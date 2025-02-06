@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, FormField, FormItem, FormControl, FormLabel, FormMessage } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -44,11 +44,11 @@ export function BusinessInformationForm({
       industrySegment: initialData?.industrySegment || "",
       sector: initialData?.sector || "",
       name: initialData?.name || "",
-      businessModel: initialData?.businessModel || "b2b",
+      businessModel: initialData?.businessModel || "subscription",
       location: initialData?.location || "",
       teamSize: initialData?.teamSize || 1,
       description: initialData?.description || "",
-      stage: initialData?.stage || "ideation"
+      stage: initialData?.stage || "ideation_validated"
     }
   });
 
@@ -190,29 +190,36 @@ export function BusinessInformationForm({
         </div>
 
         {/* Business Name */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="name" className="text-sm font-medium">
-              Business Name *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Enter your company's legal or registered business name
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Input
-            {...form.register("name")}
-            id="name"
-            placeholder="e.g., TechStart Solutions Inc."
-          />
-          {form.formState.errors.name && (
-            <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel className="text-sm font-medium">
+                  Business Name *
+                </FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Enter your company's legal or registered business name
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Input
+                  placeholder="e.g., TechStart Solutions Inc."
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
 
         {/* Business Model */}
         <div className="space-y-2">
