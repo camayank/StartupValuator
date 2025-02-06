@@ -1,40 +1,49 @@
 import _ from 'lodash';
 import type { BusinessInformation } from "../types/startup-business";
 
-export class MarketAnalysisHandler {
-  // Cache for market data
-  private static marketDataCache: Record<string, any> = {};
+class MarketDataCollector {
+  private marketDataCache: Record<string, any> = {};
 
-  static async analyzeMarketContext(data: BusinessInformation) {
-    const marketData = await this.getMarketData(data.industrySegment);
-    
+  private async fetchMarketData(industry: string) {
+    // Mock implementation of data collection
+    // In production, this would connect to actual APIs
     return {
-      marketSize: this.calculateMarketSize(marketData, data),
-      competitiveLandscape: this.analyzeCompetition(marketData, data),
-      growthMetrics: this.calculateGrowthMetrics(marketData, data),
-      recommendations: this.generateRecommendations(marketData, data)
+      marketSize: this.getMockMarketSize(industry),
+      growthRate: this.getMockGrowthRate(industry),
+      competitorCount: this.getMockCompetitorCount(industry),
+      confidence: 0.85
     };
   }
 
-  private static async getMarketData(industry: string) {
-    // Use cached data if available
+  async collectAndNormalizeData(industry: string) {
     if (this.marketDataCache[industry]) {
       return this.marketDataCache[industry];
     }
 
-    // In a real implementation, this would fetch from an API
-    // For now, return mock data based on industry
-    const mockData = {
-      marketSize: this.getMockMarketSize(industry),
-      growthRate: this.getMockGrowthRate(industry),
-      competitorCount: this.getMockCompetitorCount(industry)
-    };
-
-    this.marketDataCache[industry] = mockData;
-    return mockData;
+    const data = await this.fetchMarketData(industry);
+    const normalizedData = this.normalizeData(data);
+    this.marketDataCache[industry] = normalizedData;
+    return normalizedData;
   }
 
-  private static getMockMarketSize(industry: string): number {
+  private normalizeData(data: any) {
+    return {
+      marketSize: {
+        total: data.marketSize,
+        confidence: data.confidence
+      },
+      growth: {
+        rate: data.growthRate,
+        confidence: data.confidence
+      },
+      competition: {
+        count: data.competitorCount,
+        concentration: this.calculateMarketConcentration(data.competitorCount)
+      }
+    };
+  }
+
+  private getMockMarketSize(industry: string): number {
     const baseSizes: Record<string, number> = {
       "Medical Devices": 150000000000,
       "Digital Health": 200000000000,
@@ -45,7 +54,7 @@ export class MarketAnalysisHandler {
     return baseSizes[industry] || 100000000000;
   }
 
-  private static getMockGrowthRate(industry: string): number {
+  private getMockGrowthRate(industry: string): number {
     const baseRates: Record<string, number> = {
       "Medical Devices": 8.5,
       "Digital Health": 15.2,
@@ -56,7 +65,7 @@ export class MarketAnalysisHandler {
     return baseRates[industry] || 10;
   }
 
-  private static getMockCompetitorCount(industry: string): number {
+  private getMockCompetitorCount(industry: string): number {
     const baseCounts: Record<string, number> = {
       "Medical Devices": 250,
       "Digital Health": 500,
@@ -67,37 +76,51 @@ export class MarketAnalysisHandler {
     return baseCounts[industry] || 400;
   }
 
+  private calculateMarketConcentration(competitorCount: number): 'high' | 'medium' | 'low' {
+    if (competitorCount < 100) return 'high';
+    if (competitorCount < 500) return 'medium';
+    return 'low';
+  }
+}
+
+export class MarketAnalysisHandler {
+  private static marketDataCollector = new MarketDataCollector();
+
+  static async analyzeMarketContext(data: BusinessInformation) {
+    const marketData = await this.marketDataCollector.collectAndNormalizeData(data.industrySegment);
+
+    return {
+      marketSize: this.calculateMarketSize(marketData, data),
+      competitiveLandscape: this.analyzeCompetition(marketData, data),
+      growthMetrics: this.calculateGrowthMetrics(marketData, data),
+      recommendations: this.generateRecommendations(marketData, data)
+    };
+  }
+
   private static calculateMarketSize(marketData: any, businessInfo: BusinessInformation) {
     return {
-      total: marketData.marketSize,
-      addressable: marketData.marketSize * 0.3, // Simplified TAM calculation
-      serviceable: marketData.marketSize * 0.1, // Simplified SAM calculation
-      obtainable: marketData.marketSize * 0.02  // Simplified SOM calculation
+      total: marketData.marketSize.total,
+      addressable: marketData.marketSize.total * 0.3, 
+      serviceable: marketData.marketSize.total * 0.1, 
+      obtainable: marketData.marketSize.total * 0.02  
     };
   }
 
   private static analyzeCompetition(marketData: any, businessInfo: BusinessInformation) {
     return {
-      totalCompetitors: marketData.competitorCount,
-      marketConcentration: this.calculateMarketConcentration(marketData.competitorCount),
+      totalCompetitors: marketData.competition.count,
+      marketConcentration: marketData.competition.concentration,
       competitiveAdvantage: this.assessCompetitiveAdvantage(businessInfo)
     };
   }
 
-  private static calculateMarketConcentration(competitorCount: number): 'high' | 'medium' | 'low' {
-    if (competitorCount < 100) return 'high';
-    if (competitorCount < 500) return 'medium';
-    return 'low';
-  }
-
   private static assessCompetitiveAdvantage(businessInfo: BusinessInformation) {
-    // Simplified assessment based on business model and description
     const advantages = [];
-    
+
     if (businessInfo.businessModel === 'saas') {
       advantages.push('Scalable Software Model');
     }
-    
+
     if (businessInfo.teamSize > 5) {
       advantages.push('Strong Team Capacity');
     }
@@ -111,8 +134,8 @@ export class MarketAnalysisHandler {
 
   private static calculateGrowthMetrics(marketData: any, businessInfo: BusinessInformation) {
     return {
-      industryGrowthRate: marketData.growthRate,
-      marketPotential: this.calculateMarketPotential(marketData.growthRate),
+      industryGrowthRate: marketData.growth.rate,
+      marketPotential: this.calculateMarketPotential(marketData.growth.rate),
       scalabilityScore: this.calculateScalabilityScore(businessInfo)
     };
   }
@@ -125,41 +148,34 @@ export class MarketAnalysisHandler {
 
   private static calculateScalabilityScore(businessInfo: BusinessInformation): number {
     let score = 0;
-    
-    // Business model factor
+
     if (['saas', 'platform', 'marketplace'].includes(businessInfo.businessModel)) {
       score += 3;
     }
-    
-    // Team size factor
+
     score += Math.min(businessInfo.teamSize / 2, 3);
-    
-    // Description comprehensiveness
+
     score += Math.min(businessInfo.description.length / 100, 4);
-    
+
     return Math.min(score, 10);
   }
 
   private static generateRecommendations(marketData: any, businessInfo: BusinessInformation) {
     const recommendations = [];
-    
-    // Market size based recommendations
-    if (marketData.marketSize > 200000000000) {
+
+    if (marketData.marketSize.total > 200000000000) {
       recommendations.push('Consider focused market segmentation strategy');
     }
-    
-    // Competition based recommendations
-    if (marketData.competitorCount > 1000) {
+
+    if (marketData.competition.count > 1000) {
       recommendations.push('Focus on unique value proposition differentiation');
     }
-    
-    // Growth based recommendations
-    if (marketData.growthRate > 15) {
+
+    if (marketData.growth.rate > 15) {
       recommendations.push('Prepare scaling strategy to capture market growth');
     }
-    
-    // Team size recommendations
-    const recommendedTeamSize = Math.ceil(marketData.marketSize / 50000000000);
+
+    const recommendedTeamSize = Math.ceil(marketData.marketSize.total / 50000000000);
     if (businessInfo.teamSize < recommendedTeamSize) {
       recommendations.push(`Consider expanding team size to ${recommendedTeamSize} for market opportunity`);
     }
