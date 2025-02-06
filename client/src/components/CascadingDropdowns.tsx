@@ -7,7 +7,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { sectorOperations } from "@/lib/constants/business-sectors";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { sectorOperations, SectorSchema } from "@/lib/constants/business-sectors";
 
 interface CascadingDropdownsProps {
   onSelectionChange: (selection: { sector: string; segment: string; subSegment: string }) => void;
@@ -17,6 +20,7 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [selectedSegment, setSelectedSegment] = useState<string>("");
   const [selectedSubSegment, setSelectedSubSegment] = useState<string>("");
+  const { toast } = useToast();
 
   const [segments, setSegments] = useState<Array<{ value: string; label: string }>>([]);
   const [subSegments, setSubSegments] = useState<Array<{ value: string; label: string }>>([]);
@@ -37,77 +41,115 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
     }
   }, [selectedSector, selectedSegment]);
 
-  // Notify parent component of selection changes
-  useEffect(() => {
-    if (selectedSector && selectedSegment && selectedSubSegment) {
-      onSelectionChange({
-        sector: selectedSector,
-        segment: selectedSegment,
-        subSegment: selectedSubSegment
+  // Handle form submission
+  const handleSubmit = () => {
+    const result = SectorSchema.safeParse({
+      sector: selectedSector,
+      segment: selectedSegment,
+      subSegment: selectedSubSegment
+    });
+
+    if (!result.success) {
+      toast({
+        title: "Validation Error",
+        description: "Please complete all selections",
+        variant: "destructive"
       });
+      return;
     }
-  }, [selectedSector, selectedSegment, selectedSubSegment, onSelectionChange]);
+
+    onSelectionChange({
+      sector: selectedSector,
+      segment: selectedSegment,
+      subSegment: selectedSubSegment
+    });
+
+    // Log selection to console as required
+    console.log({
+      sector: selectedSector,
+      segment: selectedSegment,
+      subSegment: selectedSubSegment
+    });
+
+    toast({
+      title: "Selection Complete",
+      description: `Selected: ${selectedSector} > ${selectedSegment} > ${selectedSubSegment}`,
+    });
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Business Sector</Label>
-        <Select
-          value={selectedSector}
-          onValueChange={setSelectedSector}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a sector" />
-          </SelectTrigger>
-          <SelectContent>
-            {sectorOperations.getAllSectors().map(({ value, label }) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Business Sector Selection</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label>Business Sector</Label>
+          <Select
+            value={selectedSector}
+            onValueChange={setSelectedSector}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a sector" />
+            </SelectTrigger>
+            <SelectContent>
+              {sectorOperations.getAllSectors().map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="space-y-2">
-        <Label>Industry Segment</Label>
-        <Select
-          value={selectedSegment}
-          onValueChange={setSelectedSegment}
-          disabled={!selectedSector}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a segment" />
-          </SelectTrigger>
-          <SelectContent>
-            {segments.map(({ value, label }) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="space-y-2">
+          <Label>Industry Segment</Label>
+          <Select
+            value={selectedSegment}
+            onValueChange={setSelectedSegment}
+            disabled={!selectedSector}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={selectedSector ? "Select a segment" : "First select a sector"} />
+            </SelectTrigger>
+            <SelectContent>
+              {segments.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="space-y-2">
-        <Label>Sub-Segment</Label>
-        <Select
-          value={selectedSubSegment}
-          onValueChange={setSelectedSubSegment}
-          disabled={!selectedSegment}
+        <div className="space-y-2">
+          <Label>Sub-Segment</Label>
+          <Select
+            value={selectedSubSegment}
+            onValueChange={setSelectedSubSegment}
+            disabled={!selectedSegment}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={selectedSegment ? "Select a sub-segment" : "First select a segment"} />
+            </SelectTrigger>
+            <SelectContent>
+              {subSegments.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button 
+          onClick={handleSubmit}
+          className="w-full"
+          disabled={!selectedSector || !selectedSegment || !selectedSubSegment}
         >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a sub-segment" />
-          </SelectTrigger>
-          <SelectContent>
-            {subSegments.map(({ value, label }) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+          Submit Selection
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
