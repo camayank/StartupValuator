@@ -464,14 +464,35 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }));
   }, [form.watch(), currentStep, formSections]);
 
-  // Reset fields when sector/segment changes
+  // Add debug logging effect after the form initialization
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      console.log("Form field changed:", { 
+        field: name, 
+        value: value,
+        type,
+        currentSector: form.getValues("businessInfo.sector"),
+        currentSegment: form.getValues("businessInfo.segment"),
+        currentSubSegment: form.getValues("businessInfo.subSegment")
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Existing reset logic with improved error handling
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name === "businessInfo.sector") {
-        form.setValue("businessInfo.segment", "");
-        form.setValue("businessInfo.subSegment", "");
-      } else if (name === "businessInfo.segment") {
-        form.setValue("businessInfo.subSegment", "");
+      try {
+        if (name === "businessInfo.sector") {
+          console.log("Resetting segment and subsegment due to sector change");
+          form.setValue("businessInfo.segment", "", { shouldValidate: true });
+          form.setValue("businessInfo.subSegment", "", { shouldValidate: true });
+        } else if (name === "businessInfo.segment") {
+          console.log("Resetting subsegment due to segment change");
+          form.setValue("businessInfo.subSegment", "", { shouldValidate: true });
+        }
+      } catch (error) {
+        console.error("Error in dropdown reset logic:", error);
       }
     });
     return () => subscription.unsubscribe();
@@ -546,10 +567,12 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         return (
           <div className="w-full">
             <Select
-              onValueChange={formField.onChange}
-              defaultValue={formField.value}
+              onValueChange={(newValue) => {
+                console.log(`Dropdown value changed: ${fieldConfig.name} =`, newValue);
+                formField.onChange(newValue);
+              }}
+              value={formField.value || ""}
               disabled={fieldConfig.disabled}
-              value={formField.value}
             >
               <FormControl>
                 <SelectTrigger>
