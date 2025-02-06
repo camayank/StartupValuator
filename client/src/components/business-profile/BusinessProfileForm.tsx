@@ -1,4 +1,3 @@
-```typescript
 import { useFormContext } from "react-hook-form";
 import {
   FormField,
@@ -19,8 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { BUSINESS_SECTORS } from "@/lib/constants/business-sectors";
-import { BUSINESS_MODELS, PRODUCT_STAGES } from "@/lib/validations/business-profile";
+import { BUSINESS_SECTORS, sectorOperations } from "@/lib/constants/business-sectors";
 import { useState, useEffect } from "react";
 
 export function BusinessProfileForm() {
@@ -212,84 +210,7 @@ export function BusinessProfileForm() {
             </FormItem>
           )}
         />
-
-        {/* Business Model Field */}
-        <FormField
-          control={form.control}
-          name="businessInfo.businessModel"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Business Model</FormLabel>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Select your primary business model</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a business model" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {BUSINESS_MODELS.map((model) => (
-                    <SelectItem key={model} value={model}>
-                      {model.replace('_', ' ').charAt(0).toUpperCase() + model.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Product Stage Field */}
-        <FormField
-          control={form.control}
-          name="businessInfo.productStage"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Product Stage</FormLabel>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Select your current product development stage</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a product stage" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {PRODUCT_STAGES.map((stage) => (
-                    <SelectItem key={stage} value={stage}>
-                      {stage.replace('_', ' ').charAt(0).toUpperCase() + stage.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </CardContent>
     </Card>
   );
 }
-```
