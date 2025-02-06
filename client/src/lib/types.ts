@@ -1,5 +1,27 @@
 import { z } from "zod";
 
+// Business Sectors Types
+export interface Metrics {
+  key: string[];
+  valuation: string[];
+}
+
+export interface SubSegment {
+  value: string;
+  label: string;
+}
+
+export interface SectorSegment {
+  name: string;
+  subSegments: string[];
+  metrics: Metrics;
+}
+
+export interface BusinessSector {
+  name: string;
+  segments: Record<string, SectorSegment>;
+}
+
 export const ValuationFormSchema = z.object({
   revenue: z.number().min(0, "Revenue must be a positive number"),
   currency: z.enum(["USD", "EUR", "GBP"]),

@@ -89,6 +89,112 @@ export const BUSINESS_SECTORS: Record<string, BusinessSector> = {
           key: ["R&D Pipeline", "Clinical Trial Success Rate", "Patent Portfolio"],
           valuation: ["Risk-Adjusted NPV", "Platform Value"]
         }
+      },
+      MEDICAL_DEVICES: {
+        name: "Medical Devices",
+        subSegments: [
+          "Diagnostic Equipment",
+          "Surgical Devices",
+          "Patient Monitoring",
+          "Implantable Devices",
+          "Rehabilitation Equipment",
+          "Medical Imaging",
+          "Point-of-Care Devices"
+        ],
+        metrics: {
+          key: ["FDA Approval Stage", "Manufacturing Margin", "Market Penetration"],
+          valuation: ["EBITDA Multiple", "Revenue Multiple"]
+        }
+      }
+    }
+  },
+  FINTECH: {
+    name: "Financial Technology",
+    segments: {
+      PAYMENTS: {
+        name: "Payments & Transfers",
+        subSegments: [
+          "Payment Processing",
+          "Digital Wallets",
+          "Cross-border Payments",
+          "Point of Sale Systems",
+          "Cryptocurrency Payments",
+          "B2B Payments",
+          "Payment Infrastructure"
+        ],
+        metrics: {
+          key: ["Transaction Volume", "Take Rate", "Processing Fees"],
+          valuation: ["GTV Multiple", "Revenue Multiple"]
+        }
+      },
+      LENDING: {
+        name: "Lending & Credit",
+        subSegments: [
+          "P2P Lending",
+          "Buy Now Pay Later",
+          "SME Lending",
+          "Credit Scoring",
+          "Supply Chain Finance",
+          "Mortgage Tech",
+          "Consumer Lending"
+        ],
+        metrics: {
+          key: ["Loan Book Size", "Default Rate", "Net Interest Margin"],
+          valuation: ["Book Value Multiple", "Revenue Multiple"]
+        }
+      },
+      BANKING: {
+        name: "Digital Banking",
+        subSegments: [
+          "Neobanks",
+          "Banking-as-a-Service",
+          "Personal Finance",
+          "Business Banking",
+          "Investment Platforms",
+          "Wealth Management",
+          "Insurtech"
+        ],
+        metrics: {
+          key: ["Customer Acquisition Cost", "Deposits", "Active Users"],
+          valuation: ["Customer Multiple", "AUM Multiple"]
+        }
+      }
+    }
+  },
+  ECOMMERCE: {
+    name: "E-Commerce & Retail",
+    segments: {
+      B2C: {
+        name: "B2C E-Commerce",
+        subSegments: [
+          "Marketplace",
+          "Direct-to-Consumer",
+          "Subscription Commerce",
+          "Social Commerce",
+          "Mobile Commerce",
+          "Live Shopping",
+          "Cross-border E-commerce"
+        ],
+        metrics: {
+          key: ["GMV", "Take Rate", "Customer Acquisition Cost"],
+          valuation: ["GMV Multiple", "Revenue Multiple"]
+        }
+      },
+      B2B: {
+        name: "B2B E-Commerce",
+        subSegments: [
+          "Wholesale Marketplace",
+          "Procurement Solutions",
+          "Supply Chain Platforms",
+          "Industrial E-commerce",
+          "Distributor Platforms",
+          "Trade Finance",
+          "Inventory Management"
+        ],
+        metrics: {
+          key: ["Transaction Volume", "Supplier Network", "Buyer Retention"],
+          valuation: ["GTV Multiple", "Revenue Multiple"]
+        }
       }
     }
   }
@@ -106,7 +212,7 @@ export const sectorOperations = {
   getSegmentsForSector(sectorKey: string) {
     const sector = BUSINESS_SECTORS[sectorKey];
     if (!sector) return [];
-    
+
     return Object.entries(sector.segments).map(([key, segment]) => ({
       value: key,
       label: segment.name,
