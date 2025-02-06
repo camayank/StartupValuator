@@ -43,6 +43,9 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
 
+// Constants
+const AUTOSAVE_DELAY = 2000; // 2 seconds delay for autosave
+
 // Helper functions
 const getSectorOptions = () => Object.entries(sectors);
 const getProductStageOptions = () => Object.entries(productStages);
