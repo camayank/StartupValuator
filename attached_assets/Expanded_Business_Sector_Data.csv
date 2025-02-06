@@ -1,0 +1,94 @@
+Sector,SectorID,Segment,SegmentID,SubSegment,SubSegmentID,Examples,KeyMetrics,ValuationMetrics
+Technology & Software,SEC1,Enterprise Software,SEG1,ERP,SUB1,Example of ERP,Example Metrics,Example Valuation
+Technology & Software,SEC2,Enterprise Software,SEG2,CRM,SUB2,Example of CRM,Example Metrics,Example Valuation
+Technology & Software,SEC3,Enterprise Software,SEG3,HRM,SUB3,Example of HRM,Example Metrics,Example Valuation
+Technology & Software,SEC4,Cloud Computing,SEG4,IaaS,SUB4,Example of IaaS,Example Metrics,Example Valuation
+Technology & Software,SEC5,Cloud Computing,SEG5,PaaS,SUB5,Example of PaaS,Example Metrics,Example Valuation
+Technology & Software,SEC6,Cloud Computing,SEG6,SaaS,SUB6,Example of SaaS,Example Metrics,Example Valuation
+Technology & Software,SEC7,AI & ML,SEG7,NLP,SUB7,Example of NLP,Example Metrics,Example Valuation
+Technology & Software,SEC8,AI & ML,SEG8,Computer Vision,SUB8,Example of Computer Vision,Example Metrics,Example Valuation
+Technology & Software,SEC9,AI & ML,SEG9,AI Analytics,SUB9,Example of AI Analytics,Example Metrics,Example Valuation
+Technology & Software,SEC10,Cybersecurity,SEG10,Network Security,SUB10,Example of Network Security,Example Metrics,Example Valuation
+Technology & Software,SEC11,Cybersecurity,SEG11,Endpoint Security,SUB11,Example of Endpoint Security,Example Metrics,Example Valuation
+Technology & Software,SEC12,Cybersecurity,SEG12,Cloud Security,SUB12,Example of Cloud Security,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC13,Digital Health,SEG13,Telehealth,SUB13,Example of Telehealth,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC14,Digital Health,SEG14,Mobile Health,SUB14,Example of Mobile Health,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC15,Digital Health,SEG15,Health Analytics,SUB15,Example of Health Analytics,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC16,Biotech,SEG16,Gene Therapy,SUB16,Example of Gene Therapy,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC17,Biotech,SEG17,Molecular Diagnostics,SUB17,Example of Molecular Diagnostics,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC18,Biotech,SEG18,Bioinformatics,SUB18,Example of Bioinformatics,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC19,Medical Devices,SEG19,Diagnostic Devices,SUB19,Example of Diagnostic Devices,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC20,Medical Devices,SEG20,Wearable Tech,SUB20,Example of Wearable Tech,Example Metrics,Example Valuation
+Healthcare & Life Sciences,SEC21,Medical Devices,SEG21,Surgical Robotics,SUB21,Example of Surgical Robotics,Example Metrics,Example Valuation
+Financial Technology,SEC22,Digital Banking,SEG22,Neo Banking,SUB22,Example of Neo Banking,Example Metrics,Example Valuation
+Financial Technology,SEC23,Digital Banking,SEG23,Open Banking,SUB23,Example of Open Banking,Example Metrics,Example Valuation
+Financial Technology,SEC24,Digital Banking,SEG24,Embedded Finance,SUB24,Example of Embedded Finance,Example Metrics,Example Valuation
+Financial Technology,SEC25,Payments,SEG25,Digital Payments,SUB25,Example of Digital Payments,Example Metrics,Example Valuation
+Financial Technology,SEC26,Payments,SEG26,Cross-Border Payments,SUB26,Example of Cross-Border Payments,Example Metrics,Example Valuation
+Financial Technology,SEC27,Payments,SEG27,BNPL,SUB27,Example of BNPL,Example Metrics,Example Valuation
+Financial Technology,SEC28,WealthTech,SEG28,Robo-Advisory,SUB28,Example of Robo-Advisory,Example Metrics,Example Valuation
+Financial Technology,SEC29,WealthTech,SEG29,Investment Platforms,SUB29,Example of Investment Platforms,Example Metrics,Example Valuation
+Financial Technology,SEC30,WealthTech,SEG30,Personal Finance,SUB30,Example of Personal Finance,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC31,Online Marketplace,SEG31,Multi-Vendor Marketplace,SUB31,Example of Multi-Vendor Marketplace,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC32,Online Marketplace,SEG32,Social Commerce,SUB32,Example of Social Commerce,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC33,Online Marketplace,SEG33,Niche Marketplaces,SUB33,Example of Niche Marketplaces,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC34,Direct-to-Consumer,SEG34,Brand Commerce,SUB34,Example of Brand Commerce,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC35,Direct-to-Consumer,SEG35,Subscription Commerce,SUB35,Example of Subscription Commerce,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC36,Direct-to-Consumer,SEG36,Custom Products,SUB36,Example of Custom Products,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC37,RetailTech,SEG37,POS Systems,SUB37,Example of POS Systems,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC38,RetailTech,SEG38,Retail Analytics,SUB38,Example of Retail Analytics,Example Metrics,Example Valuation
+E-Commerce & Retail,SEC39,RetailTech,SEG39,E-commerce SaaS,SUB39,Example of E-commerce SaaS,Example Metrics,Example Valuation
+Clean Technology,SEC40,Renewable Energy,SEG40,Solar Technology,SUB40,Example of Solar Technology,Example Metrics,Example Valuation
+Clean Technology,SEC41,Renewable Energy,SEG41,Wind Energy,SUB41,Example of Wind Energy,Example Metrics,Example Valuation
+Clean Technology,SEC42,Renewable Energy,SEG42,Hydro Energy,SUB42,Example of Hydro Energy,Example Metrics,Example Valuation
+Clean Technology,SEC43,Energy Storage,SEG43,Battery Technology,SUB43,Example of Battery Technology,Example Metrics,Example Valuation
+Clean Technology,SEC44,Energy Storage,SEG44,Thermal Storage,SUB44,Example of Thermal Storage,Example Metrics,Example Valuation
+Clean Technology,SEC45,Energy Storage,SEG45,Hydrogen Storage,SUB45,Example of Hydrogen Storage,Example Metrics,Example Valuation
+Clean Technology,SEC46,Sustainable Materials,SEG46,Biodegradable Packaging,SUB46,Example of Biodegradable Packaging,Example Metrics,Example Valuation
+Clean Technology,SEC47,Sustainable Materials,SEG47,Green Chemicals,SUB47,Example of Green Chemicals,Example Metrics,Example Valuation
+Clean Technology,SEC48,Sustainable Materials,SEG48,Recycling Tech,SUB48,Example of Recycling Tech,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC49,Industry 4.0,SEG49,Smart Factory,SUB49,Example of Smart Factory,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC50,Industry 4.0,SEG50,Industrial IoT,SUB50,Example of Industrial IoT,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC51,Industry 4.0,SEG51,Predictive Maintenance,SUB51,Example of Predictive Maintenance,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC52,Automation,SEG52,Robotic Process Automation,SUB52,Example of Robotic Process Automation,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC53,Automation,SEG53,Industrial Robotics,SUB53,Example of Industrial Robotics,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC54,Automation,SEG54,Automated Warehousing,SUB54,Example of Automated Warehousing,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC55,3D Printing,SEG55,Metal 3D Printing,SUB55,Example of Metal 3D Printing,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC56,3D Printing,SEG56,Bioprinting,SUB56,Example of Bioprinting,Example Metrics,Example Valuation
+Advanced Manufacturing,SEC57,3D Printing,SEG57,Prototyping,SUB57,Example of Prototyping,Example Metrics,Example Valuation
+Agriculture Technology,SEC58,Precision Agriculture,SEG58,Farm Management,SUB58,Example of Farm Management,Example Metrics,Example Valuation
+Agriculture Technology,SEC59,Precision Agriculture,SEG59,Smart Irrigation,SUB59,Example of Smart Irrigation,Example Metrics,Example Valuation
+Agriculture Technology,SEC60,Precision Agriculture,SEG60,Soil Monitoring,SUB60,Example of Soil Monitoring,Example Metrics,Example Valuation
+Agriculture Technology,SEC61,FoodTech,SEG61,Alternative Protein,SUB61,Example of Alternative Protein,Example Metrics,Example Valuation
+Agriculture Technology,SEC62,FoodTech,SEG62,Food Safety Tech,SUB62,Example of Food Safety Tech,Example Metrics,Example Valuation
+Agriculture Technology,SEC63,FoodTech,SEG63,Food Delivery Tech,SUB63,Example of Food Delivery Tech,Example Metrics,Example Valuation
+Agriculture Technology,SEC64,Agri-Supply Chain,SEG64,Agri-Marketplaces,SUB64,Example of Agri-Marketplaces,Example Metrics,Example Valuation
+Agriculture Technology,SEC65,Agri-Supply Chain,SEG65,Agri-Finance,SUB65,Example of Agri-Finance,Example Metrics,Example Valuation
+Agriculture Technology,SEC66,Agri-Supply Chain,SEG66,Cold Chain Logistics,SUB66,Example of Cold Chain Logistics,Example Metrics,Example Valuation
+Education Technology,SEC67,Online Learning,SEG67,K-12 EdTech,SUB67,Example of K-12 EdTech,Example Metrics,Example Valuation
+Education Technology,SEC68,Online Learning,SEG68,Higher EdTech,SUB68,Example of Higher EdTech,Example Metrics,Example Valuation
+Education Technology,SEC69,Online Learning,SEG69,Vocational Training,SUB69,Example of Vocational Training,Example Metrics,Example Valuation
+Education Technology,SEC70,Skill Development,SEG70,Corporate Training,SUB70,Example of Corporate Training,Example Metrics,Example Valuation
+Education Technology,SEC71,Skill Development,SEG71,Upskilling Platforms,SUB71,Example of Upskilling Platforms,Example Metrics,Example Valuation
+Education Technology,SEC72,Skill Development,SEG72,Job Readiness,SUB72,Example of Job Readiness,Example Metrics,Example Valuation
+Education Technology,SEC73,Corporate Training,SEG73,Leadership Training,SUB73,Example of Leadership Training,Example Metrics,Example Valuation
+Education Technology,SEC74,Corporate Training,SEG74,Sales Training,SUB74,Example of Sales Training,Example Metrics,Example Valuation
+Education Technology,SEC75,Corporate Training,SEG75,Compliance Training,SUB75,Example of Compliance Training,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC76,Smart Buildings,SEG76,Home Automation,SUB76,Example of Home Automation,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC77,Smart Buildings,SEG77,Smart Energy Management,SUB77,Example of Smart Energy Management,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC78,Smart Buildings,SEG78,Building Security,SUB78,Example of Building Security,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC79,Real Estate Financing,SEG79,Mortgage Tech,SUB79,Example of Mortgage Tech,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC80,Real Estate Financing,SEG80,REIT Platforms,SUB80,Example of REIT Platforms,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC81,Real Estate Financing,SEG81,Crowdfunding,SUB81,Example of Crowdfunding,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC82,Property Management,SEG82,Tenant Management,SUB82,Example of Tenant Management,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC83,Property Management,SEG83,Property Analytics,SUB83,Example of Property Analytics,Example Metrics,Example Valuation
+Real Estate & PropTech,SEC84,Property Management,SEG84,PropTech SaaS,SUB84,Example of PropTech SaaS,Example Metrics,Example Valuation
+Media & Entertainment,SEC85,Streaming Platforms,SEG85,OTT Video,SUB85,Example of OTT Video,Example Metrics,Example Valuation
+Media & Entertainment,SEC86,Streaming Platforms,SEG86,Music Streaming,SUB86,Example of Music Streaming,Example Metrics,Example Valuation
+Media & Entertainment,SEC87,Streaming Platforms,SEG87,Podcasting,SUB87,Example of Podcasting,Example Metrics,Example Valuation
+Media & Entertainment,SEC88,Gaming & eSports,SEG88,Mobile Gaming,SUB88,Example of Mobile Gaming,Example Metrics,Example Valuation
+Media & Entertainment,SEC89,Gaming & eSports,SEG89,Console Gaming,SUB89,Example of Console Gaming,Example Metrics,Example Valuation
+Media & Entertainment,SEC90,Gaming & eSports,SEG90,Game Streaming,SUB90,Example of Game Streaming,Example Metrics,Example Valuation
+Media & Entertainment,SEC91,Digital Advertising,SEG91,AdTech Platforms,SUB91,Example of AdTech Platforms,Example Metrics,Example Valuation
+Media & Entertainment,SEC92,Digital Advertising,SEG92,Influencer Marketing,SUB92,Example of Influencer Marketing,Example Metrics,Example Valuation
+Media & Entertainment,SEC93,Digital Advertising,SEG93,Programmatic Advertising,SUB93,Example of Programmatic Advertising,Example Metrics,Example Valuation
