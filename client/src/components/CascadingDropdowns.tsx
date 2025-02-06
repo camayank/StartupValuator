@@ -85,16 +85,11 @@ export function CascadingDropdowns({ onSelectionChange }: CascadingDropdownsProp
     // Update output message
     setOutputMessage(`Sector: ${selectedSector} | Segment: ${selectedSegment} | Sub-Segment: ${selectedSubSegment}`);
 
-    console.log("Selection submitted:", {
-      sector: selectedSector,
-      segment: selectedSegment,
-      subSegment: selectedSubSegment
+    toast({
+      title: "Success",
+      description: "Selection has been recorded",
     });
   };
-
-  // Debug logging
-  console.log("Available sectors:", sectors);
-  console.log("Current selections:", { selectedSector, selectedSegment, selectedSubSegment });
 
   return (
     <div className="max-w-2xl mx-auto p-6">
