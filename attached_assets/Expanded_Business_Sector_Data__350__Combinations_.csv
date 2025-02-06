@@ -1,0 +1,351 @@
+Sector,Segment,SubSegment
+Technology & Software,Enterprise Software,ERP
+Technology & Software,Enterprise Software,CRM
+Technology & Software,Enterprise Software,HRM
+Technology & Software,Cloud Computing,IaaS
+Technology & Software,Cloud Computing,PaaS
+Technology & Software,Cloud Computing,SaaS
+Technology & Software,AI & ML,NLP
+Technology & Software,AI & ML,Computer Vision
+Technology & Software,AI & ML,AI Analytics
+Technology & Software,Cybersecurity,Network Security
+Technology & Software,Cybersecurity,Endpoint Security
+Technology & Software,Cybersecurity,Cloud Security
+Healthcare & Life Sciences,Digital Health,Telehealth
+Healthcare & Life Sciences,Digital Health,Mobile Health
+Healthcare & Life Sciences,Digital Health,Health Analytics
+Healthcare & Life Sciences,Biotech,Gene Therapy
+Healthcare & Life Sciences,Biotech,Molecular Diagnostics
+Healthcare & Life Sciences,Biotech,Bioinformatics
+Healthcare & Life Sciences,Medical Devices,Diagnostic Devices
+Healthcare & Life Sciences,Medical Devices,Wearable Tech
+Healthcare & Life Sciences,Medical Devices,Surgical Robotics
+Financial Technology,Digital Banking,Neo Banking
+Financial Technology,Digital Banking,Open Banking
+Financial Technology,Digital Banking,Embedded Finance
+Financial Technology,Payments,Digital Payments
+Financial Technology,Payments,Cross-Border Payments
+Financial Technology,Payments,BNPL
+Financial Technology,WealthTech,Robo-Advisory
+Financial Technology,WealthTech,Investment Platforms
+Financial Technology,WealthTech,Personal Finance
+E-Commerce & Retail,Online Marketplace,Multi-Vendor Marketplace
+E-Commerce & Retail,Online Marketplace,Social Commerce
+E-Commerce & Retail,Online Marketplace,Niche Marketplaces
+E-Commerce & Retail,Direct-to-Consumer,Brand Commerce
+E-Commerce & Retail,Direct-to-Consumer,Subscription Commerce
+E-Commerce & Retail,Direct-to-Consumer,Custom Products
+E-Commerce & Retail,RetailTech,POS Systems
+E-Commerce & Retail,RetailTech,Retail Analytics
+E-Commerce & Retail,RetailTech,E-commerce SaaS
+Clean Technology,Renewable Energy,Solar Technology
+Clean Technology,Renewable Energy,Wind Energy
+Clean Technology,Renewable Energy,Hydro Energy
+Clean Technology,Energy Storage,Battery Technology
+Clean Technology,Energy Storage,Thermal Storage
+Clean Technology,Energy Storage,Hydrogen Storage
+Clean Technology,Sustainable Materials,Biodegradable Packaging
+Clean Technology,Sustainable Materials,Green Chemicals
+Clean Technology,Sustainable Materials,Recycling Tech
+Advanced Manufacturing,Industry 4.0,Smart Factory
+Advanced Manufacturing,Industry 4.0,Industrial IoT
+Advanced Manufacturing,Industry 4.0,Predictive Maintenance
+Advanced Manufacturing,Automation,Robotic Process Automation
+Advanced Manufacturing,Automation,Industrial Robotics
+Advanced Manufacturing,Automation,Automated Warehousing
+Advanced Manufacturing,3D Printing,Metal 3D Printing
+Advanced Manufacturing,3D Printing,Bioprinting
+Advanced Manufacturing,3D Printing,Prototyping
+Agriculture Technology,Precision Agriculture,Farm Management
+Agriculture Technology,Precision Agriculture,Smart Irrigation
+Agriculture Technology,Precision Agriculture,Soil Monitoring
+Agriculture Technology,FoodTech,Alternative Protein
+Agriculture Technology,FoodTech,Food Safety Tech
+Agriculture Technology,FoodTech,Food Delivery Tech
+Agriculture Technology,Agri-Supply Chain,Agri-Marketplaces
+Agriculture Technology,Agri-Supply Chain,Agri-Finance
+Agriculture Technology,Agri-Supply Chain,Cold Chain Logistics
+Education Technology,Online Learning,K-12 EdTech
+Education Technology,Online Learning,Higher EdTech
+Education Technology,Online Learning,Vocational Training
+Education Technology,Skill Development,Corporate Training
+Education Technology,Skill Development,Upskilling Platforms
+Education Technology,Skill Development,Job Readiness
+Education Technology,Corporate Training,Leadership Training
+Education Technology,Corporate Training,Sales Training
+Education Technology,Corporate Training,Compliance Training
+Real Estate & PropTech,Smart Buildings,Home Automation
+Real Estate & PropTech,Smart Buildings,Smart Energy Management
+Real Estate & PropTech,Smart Buildings,Building Security
+Real Estate & PropTech,Real Estate Financing,Mortgage Tech
+Real Estate & PropTech,Real Estate Financing,REIT Platforms
+Real Estate & PropTech,Real Estate Financing,Crowdfunding
+Real Estate & PropTech,Property Management,Tenant Management
+Real Estate & PropTech,Property Management,Property Analytics
+Real Estate & PropTech,Property Management,PropTech SaaS
+Media & Entertainment,Streaming Platforms,OTT Video
+Media & Entertainment,Streaming Platforms,Music Streaming
+Media & Entertainment,Streaming Platforms,Podcasting
+Media & Entertainment,Gaming & eSports,Mobile Gaming
+Media & Entertainment,Gaming & eSports,Console Gaming
+Media & Entertainment,Gaming & eSports,Game Streaming
+Media & Entertainment,Digital Advertising,AdTech Platforms
+Media & Entertainment,Digital Advertising,Influencer Marketing
+Media & Entertainment,Digital Advertising,Programmatic Advertising
+E-Commerce & Retail,Online Marketplace,Blockchain Tech
+Clean Technology,Renewable Energy,Quantum Computing
+Advanced Manufacturing,Industry 4.0,Edge Computing
+Agriculture Technology,Precision Agriculture,RegTech
+Education Technology,Online Learning,InsurTech
+Real Estate & PropTech,Smart Buildings,Voice AI
+Media & Entertainment,Streaming Platforms,Conversational AI
+Technology & Software,Enterprise Software,Health Informatics
+Healthcare & Life Sciences,Digital Health,MedTech AI
+Financial Technology,Digital Banking,Neuroscience Tech
+E-Commerce & Retail,Online Marketplace,Digital Lending
+Clean Technology,Renewable Energy,Alternative Investments
+Advanced Manufacturing,Industry 4.0,Microfinance Tech
+Agriculture Technology,Precision Agriculture,Luxury E-Commerce
+Education Technology,Online Learning,Last-Mile Delivery
+Real Estate & PropTech,Smart Buildings,Circular Economy
+Media & Entertainment,Streaming Platforms,Green Building Tech
+Technology & Software,Enterprise Software,Smart Cities
+Healthcare & Life Sciences,Digital Health,Space Tech
+Financial Technology,Digital Banking,Autonomous Vehicles
+E-Commerce & Retail,Online Marketplace,Drones & UAVs
+Clean Technology,Renewable Energy,Hyperloop Tech
+Advanced Manufacturing,Industry 4.0,IoT Security
+Agriculture Technology,Precision Agriculture,Bioengineering
+Education Technology,Online Learning,Green Hydrogen
+Real Estate & PropTech,Smart Buildings,Energy Trading
+Media & Entertainment,Streaming Platforms,Personalized Medicine
+Technology & Software,Enterprise Software,AI in Drug Discovery
+Healthcare & Life Sciences,Digital Health,Carbon Capture Tech
+Financial Technology,Digital Banking,Fusion Energy
+E-Commerce & Retail,Online Marketplace,Agri-Robotics
+Clean Technology,Renewable Energy,Climate FinTech
+Advanced Manufacturing,Industry 4.0,Metaverse Applications
+Agriculture Technology,Precision Agriculture,5G Technology
+Education Technology,Online Learning,Digital Identity Solutions
+Real Estate & PropTech,Smart Buildings,Autonomous Retail
+Media & Entertainment,Streaming Platforms,Neobank APIs
+Technology & Software,Enterprise Software,Decentralized Finance (DeFi)
+Healthcare & Life Sciences,Digital Health,Cyber Insurance
+Financial Technology,Digital Banking,Smart Contracts
+E-Commerce & Retail,Online Marketplace,Supply Chain AI
+Clean Technology,Renewable Energy,Retail Predictive Analytics
+Advanced Manufacturing,Industry 4.0,Genomic Data Analytics
+Agriculture Technology,Precision Agriculture,Quantum Cryptography
+Education Technology,Online Learning,Decentralized Cloud Storage
+Real Estate & PropTech,Smart Buildings,AI-powered Chatbots
+Media & Entertainment,Streaming Platforms,Wearable Health Tech
+Technology & Software,Enterprise Software,Mental Health Tech
+Healthcare & Life Sciences,Digital Health,Digital Twins in Healthcare
+Financial Technology,Digital Banking,Cloud Robotics
+E-Commerce & Retail,Online Marketplace,AI-driven Personalization
+Clean Technology,Renewable Energy,Robotic Warehousing
+Advanced Manufacturing,Industry 4.0,AI-powered Lending Platforms
+Agriculture Technology,Precision Agriculture,Predictive Maintenance AI
+Education Technology,Online Learning,Clean Mobility Solutions
+Real Estate & PropTech,Smart Buildings,AI in LegalTech
+Media & Entertainment,Streaming Platforms,PropTech AI
+Technology & Software,Enterprise Software,Digital Twin in Real Estate
+Healthcare & Life Sciences,Digital Health,Virtual Production Tech
+Financial Technology,Digital Banking,AI in Content Creation
+E-Commerce & Retail,Online Marketplace,Neurotech Gaming
+Clean Technology,Renewable Energy,AI for Business Intelligence
+Advanced Manufacturing,Industry 4.0,HR Analytics Software
+Agriculture Technology,Precision Agriculture,AI-based Resume Screening
+Education Technology,Online Learning,Automated Underwriting
+Real Estate & PropTech,Smart Buildings,Smart Farming Solutions
+Media & Entertainment,Streaming Platforms,Precision Medicine AI
+Technology & Software,Enterprise Software,Biometric Authentication
+Healthcare & Life Sciences,Digital Health,Tokenized Real Estate
+Financial Technology,Digital Banking,AI-driven Market Research
+E-Commerce & Retail,Online Marketplace,Predictive AdTech
+Clean Technology,Renewable Energy,Quantum Networking
+Advanced Manufacturing,Industry 4.0,Carbon Credit Marketplaces
+Agriculture Technology,Precision Agriculture,Digital Therapeutics
+Education Technology,Online Learning,Conversational Commerce
+Real Estate & PropTech,Smart Buildings,Regenerative Medicine
+Media & Entertainment,Streaming Platforms,AI in Education
+Technology & Software,Enterprise Software,AI-powered Due Diligence
+Healthcare & Life Sciences,Digital Health,Cyber-Physical Security
+Financial Technology,Digital Banking,Robotic Assisted Surgery
+E-Commerce & Retail,Online Marketplace,AI-driven Drug Pricing
+Clean Technology,Renewable Energy,Neural Interfaces
+Advanced Manufacturing,Industry 4.0,AI-driven Marketing Automation
+Agriculture Technology,Precision Agriculture,Cross-border FinTech
+Education Technology,Online Learning,AI-powered Legal Compliance
+Real Estate & PropTech,Smart Buildings,Biodegradable Electronics
+Media & Entertainment,Streaming Platforms,Climate Risk Modeling
+Technology & Software,Enterprise Software,Predictive Talent Management
+Healthcare & Life Sciences,Digital Health,AI-powered Fraud Detection
+Financial Technology,Digital Banking,Automated Financial Planning
+E-Commerce & Retail,Online Marketplace,AI-based Virtual Shopping
+Clean Technology,Renewable Energy,Web3 Payment Solutions
+Advanced Manufacturing,Industry 4.0,AI in Customer Support
+Agriculture Technology,Precision Agriculture,AI-based Personalized Learning
+Education Technology,Online Learning,AI in Construction Planning
+Real Estate & PropTech,Smart Buildings,Drone-based Agriculture
+Media & Entertainment,Streaming Platforms,Cyber Threat Intelligence
+Technology & Software,Enterprise Software,AI-based Revenue Optimization
+Healthcare & Life Sciences,Digital Health,AI-powered Financial Analytics
+Financial Technology,Digital Banking,Smart Grid Technologies
+E-Commerce & Retail,Online Marketplace,AI-powered Inventory Management
+Clean Technology,Renewable Energy,Blockchain Tech
+Advanced Manufacturing,Industry 4.0,Quantum Computing
+Agriculture Technology,Precision Agriculture,Edge Computing
+Education Technology,Online Learning,RegTech
+Real Estate & PropTech,Smart Buildings,InsurTech
+Media & Entertainment,Streaming Platforms,Voice AI
+Technology & Software,Enterprise Software,Conversational AI
+Healthcare & Life Sciences,Digital Health,Health Informatics
+Financial Technology,Digital Banking,MedTech AI
+E-Commerce & Retail,Online Marketplace,Neuroscience Tech
+Clean Technology,Renewable Energy,Digital Lending
+Advanced Manufacturing,Industry 4.0,Alternative Investments
+Agriculture Technology,Precision Agriculture,Microfinance Tech
+Education Technology,Online Learning,Luxury E-Commerce
+Real Estate & PropTech,Smart Buildings,Last-Mile Delivery
+Media & Entertainment,Streaming Platforms,Circular Economy
+Technology & Software,Enterprise Software,Green Building Tech
+Healthcare & Life Sciences,Digital Health,Smart Cities
+Financial Technology,Digital Banking,Space Tech
+E-Commerce & Retail,Online Marketplace,Autonomous Vehicles
+Clean Technology,Renewable Energy,Drones & UAVs
+Advanced Manufacturing,Industry 4.0,Hyperloop Tech
+Agriculture Technology,Precision Agriculture,IoT Security
+Education Technology,Online Learning,Bioengineering
+Real Estate & PropTech,Smart Buildings,Green Hydrogen
+Media & Entertainment,Streaming Platforms,Energy Trading
+Technology & Software,Enterprise Software,Personalized Medicine
+Healthcare & Life Sciences,Digital Health,AI in Drug Discovery
+Financial Technology,Digital Banking,Carbon Capture Tech
+E-Commerce & Retail,Online Marketplace,Fusion Energy
+Clean Technology,Renewable Energy,Agri-Robotics
+Advanced Manufacturing,Industry 4.0,Climate FinTech
+Agriculture Technology,Precision Agriculture,Metaverse Applications
+Education Technology,Online Learning,5G Technology
+Real Estate & PropTech,Smart Buildings,Digital Identity Solutions
+Media & Entertainment,Streaming Platforms,Autonomous Retail
+Technology & Software,Enterprise Software,Neobank APIs
+Healthcare & Life Sciences,Digital Health,Decentralized Finance (DeFi)
+Financial Technology,Digital Banking,Cyber Insurance
+E-Commerce & Retail,Online Marketplace,Smart Contracts
+Clean Technology,Renewable Energy,Supply Chain AI
+Advanced Manufacturing,Industry 4.0,Retail Predictive Analytics
+Agriculture Technology,Precision Agriculture,Genomic Data Analytics
+Education Technology,Online Learning,Quantum Cryptography
+Real Estate & PropTech,Smart Buildings,Decentralized Cloud Storage
+Media & Entertainment,Streaming Platforms,AI-powered Chatbots
+Technology & Software,Enterprise Software,Wearable Health Tech
+Healthcare & Life Sciences,Digital Health,Mental Health Tech
+Financial Technology,Digital Banking,Digital Twins in Healthcare
+E-Commerce & Retail,Online Marketplace,Cloud Robotics
+Clean Technology,Renewable Energy,AI-driven Personalization
+Advanced Manufacturing,Industry 4.0,Robotic Warehousing
+Agriculture Technology,Precision Agriculture,AI-powered Lending Platforms
+Education Technology,Online Learning,Predictive Maintenance AI
+Real Estate & PropTech,Smart Buildings,Clean Mobility Solutions
+Media & Entertainment,Streaming Platforms,AI in LegalTech
+Technology & Software,Enterprise Software,PropTech AI
+Healthcare & Life Sciences,Digital Health,Digital Twin in Real Estate
+Financial Technology,Digital Banking,Virtual Production Tech
+E-Commerce & Retail,Online Marketplace,AI in Content Creation
+Clean Technology,Renewable Energy,Neurotech Gaming
+Advanced Manufacturing,Industry 4.0,AI for Business Intelligence
+Agriculture Technology,Precision Agriculture,HR Analytics Software
+Education Technology,Online Learning,AI-based Resume Screening
+Real Estate & PropTech,Smart Buildings,Automated Underwriting
+Media & Entertainment,Streaming Platforms,Smart Farming Solutions
+Technology & Software,Enterprise Software,Precision Medicine AI
+Healthcare & Life Sciences,Digital Health,Biometric Authentication
+Financial Technology,Digital Banking,Tokenized Real Estate
+E-Commerce & Retail,Online Marketplace,AI-driven Market Research
+Clean Technology,Renewable Energy,Predictive AdTech
+Advanced Manufacturing,Industry 4.0,Quantum Networking
+Agriculture Technology,Precision Agriculture,Carbon Credit Marketplaces
+Education Technology,Online Learning,Digital Therapeutics
+Real Estate & PropTech,Smart Buildings,Conversational Commerce
+Media & Entertainment,Streaming Platforms,Regenerative Medicine
+Technology & Software,Enterprise Software,AI in Education
+Healthcare & Life Sciences,Digital Health,AI-powered Due Diligence
+Financial Technology,Digital Banking,Cyber-Physical Security
+E-Commerce & Retail,Online Marketplace,Robotic Assisted Surgery
+Clean Technology,Renewable Energy,AI-driven Drug Pricing
+Advanced Manufacturing,Industry 4.0,Neural Interfaces
+Agriculture Technology,Precision Agriculture,AI-driven Marketing Automation
+Education Technology,Online Learning,Cross-border FinTech
+Real Estate & PropTech,Smart Buildings,AI-powered Legal Compliance
+Media & Entertainment,Streaming Platforms,Biodegradable Electronics
+Technology & Software,Enterprise Software,Climate Risk Modeling
+Healthcare & Life Sciences,Digital Health,Predictive Talent Management
+Financial Technology,Digital Banking,AI-powered Fraud Detection
+E-Commerce & Retail,Online Marketplace,Automated Financial Planning
+Clean Technology,Renewable Energy,AI-based Virtual Shopping
+Advanced Manufacturing,Industry 4.0,Web3 Payment Solutions
+Agriculture Technology,Precision Agriculture,AI in Customer Support
+Education Technology,Online Learning,AI-based Personalized Learning
+Real Estate & PropTech,Smart Buildings,AI in Construction Planning
+Media & Entertainment,Streaming Platforms,Drone-based Agriculture
+Technology & Software,Enterprise Software,Cyber Threat Intelligence
+Healthcare & Life Sciences,Digital Health,AI-based Revenue Optimization
+Financial Technology,Digital Banking,AI-powered Financial Analytics
+E-Commerce & Retail,Online Marketplace,Smart Grid Technologies
+Clean Technology,Renewable Energy,AI-powered Inventory Management
+Advanced Manufacturing,Industry 4.0,Blockchain Tech
+Agriculture Technology,Precision Agriculture,Quantum Computing
+Education Technology,Online Learning,Edge Computing
+Real Estate & PropTech,Smart Buildings,RegTech
+Media & Entertainment,Streaming Platforms,InsurTech
+Technology & Software,Enterprise Software,Voice AI
+Healthcare & Life Sciences,Digital Health,Conversational AI
+Financial Technology,Digital Banking,Health Informatics
+E-Commerce & Retail,Online Marketplace,MedTech AI
+Clean Technology,Renewable Energy,Neuroscience Tech
+Advanced Manufacturing,Industry 4.0,Digital Lending
+Agriculture Technology,Precision Agriculture,Alternative Investments
+Education Technology,Online Learning,Microfinance Tech
+Real Estate & PropTech,Smart Buildings,Luxury E-Commerce
+Media & Entertainment,Streaming Platforms,Last-Mile Delivery
+Technology & Software,Enterprise Software,Circular Economy
+Healthcare & Life Sciences,Digital Health,Green Building Tech
+Financial Technology,Digital Banking,Smart Cities
+E-Commerce & Retail,Online Marketplace,Space Tech
+Clean Technology,Renewable Energy,Autonomous Vehicles
+Advanced Manufacturing,Industry 4.0,Drones & UAVs
+Agriculture Technology,Precision Agriculture,Hyperloop Tech
+Education Technology,Online Learning,IoT Security
+Real Estate & PropTech,Smart Buildings,Bioengineering
+Media & Entertainment,Streaming Platforms,Green Hydrogen
+Technology & Software,Enterprise Software,Energy Trading
+Healthcare & Life Sciences,Digital Health,Personalized Medicine
+Financial Technology,Digital Banking,AI in Drug Discovery
+E-Commerce & Retail,Online Marketplace,Carbon Capture Tech
+Clean Technology,Renewable Energy,Fusion Energy
+Advanced Manufacturing,Industry 4.0,Agri-Robotics
+Agriculture Technology,Precision Agriculture,Climate FinTech
+Education Technology,Online Learning,Metaverse Applications
+Real Estate & PropTech,Smart Buildings,5G Technology
+Media & Entertainment,Streaming Platforms,Digital Identity Solutions
+Technology & Software,Enterprise Software,Autonomous Retail
+Healthcare & Life Sciences,Digital Health,Neobank APIs
+Financial Technology,Digital Banking,Decentralized Finance (DeFi)
+E-Commerce & Retail,Online Marketplace,Cyber Insurance
+Clean Technology,Renewable Energy,Smart Contracts
+Advanced Manufacturing,Industry 4.0,Supply Chain AI
+Agriculture Technology,Precision Agriculture,Retail Predictive Analytics
+Education Technology,Online Learning,Genomic Data Analytics
+Real Estate & PropTech,Smart Buildings,Quantum Cryptography
+Media & Entertainment,Streaming Platforms,Decentralized Cloud Storage
+Technology & Software,Enterprise Software,AI-powered Chatbots
+Healthcare & Life Sciences,Digital Health,Wearable Health Tech
+Financial Technology,Digital Banking,Mental Health Tech
+E-Commerce & Retail,Online Marketplace,Digital Twins in Healthcare
+Clean Technology,Renewable Energy,Cloud Robotics
+Advanced Manufacturing,Industry 4.0,AI-driven Personalization
+Agriculture Technology,Precision Agriculture,Robotic Warehousing
+Education Technology,Online Learning,AI-powered Lending Platforms
+Real Estate & PropTech,Smart Buildings,Predictive Maintenance AI
+Media & Entertainment,Streaming Platforms,Clean Mobility Solutions
