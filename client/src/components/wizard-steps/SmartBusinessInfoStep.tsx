@@ -29,9 +29,14 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Info, AlertCircle } from "lucide-react";
-import { sectors, industries } from "@/lib/validations";
 
 interface SmartBusinessInfoStepProps {
   initialData?: Partial<BusinessInformation>;
@@ -50,6 +55,7 @@ export function SmartBusinessInfoStep({
 }: SmartBusinessInfoStepProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableSectors, setAvailableSectors] = useState<string[]>([]);
   const [validationStatus, setValidationStatus] = useState<{
     errors: string[];
     warnings: string[];
@@ -59,52 +65,38 @@ export function SmartBusinessInfoStep({
   const form = useForm<BusinessInformation>({
     resolver: zodResolver(businessInformationSchema),
     defaultValues: {
-      name: initialData?.name || "",
-      sector: initialData?.sector || "technology",
       industrySegment: initialData?.industrySegment || "",
-      businessModel: initialData?.businessModel || "saas",
-      stage: initialData?.stage || "ideation_unvalidated",
-      teamSize: initialData?.teamSize || 1,
+      sector: initialData?.sector || "",
+      name: initialData?.name || "",
+      businessModel: initialData?.businessModel || "b2b",
       location: initialData?.location || "",
-      description: initialData?.description || "",
-      productStage: initialData?.productStage || "concept",
-      businessMaturity: {
-        monthsOperating: 0,
-        revenueStatus: "pre_revenue",
-        customerBase: 0,
-        marketValidation: "none",
-      },
-      regulatoryStatus: {
-        compliance: "notRequired",
-        licenses: [],
-        certifications: [],
-      },
+      teamSize: initialData?.teamSize || 1,
+      description: initialData?.description || ""
     },
   });
 
-  // Watch for sector changes to update recommendations
-  const selectedSector = form.watch("sector");
-  const selectedStage = form.watch("stage");
+  // Handle industry change to update available sectors
+  const handleIndustryChange = (industry: string) => {
+    const sectors = BusinessInformationHandler.getAvailableSectors(industry);
+    setAvailableSectors(sectors);
 
-  useEffect(() => {
-    if (selectedSector) {
-      const recommendations = BusinessInformationHandler.getSectorRecommendations(
-        selectedSector as keyof typeof sectors
-      );
-      if (recommendations) {
-        setValidationStatus(prev => ({
-          ...prev,
-          suggestions: [
-            `Recommended team size: ${recommendations.recommendedTeamSize}`,
-            `Key certifications to consider: ${recommendations.certifications.join(", ")}`,
-            `Key risk factors: ${recommendations.keyRiskFactors.join(", ")}`
-          ]
-        }));
-      }
+    // Clear sector if current selection is invalid for new industry
+    const currentSector = form.getValues("sector");
+    if (!sectors.includes(currentSector)) {
+      form.setValue("sector", sectors[0] || "");
     }
-  }, [selectedSector]);
+  };
 
-  // Handle form submission
+  // Watch for industry changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "industrySegment" && value.industrySegment) {
+        handleIndustryChange(value.industrySegment);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+
   const onSubmit = async (data: BusinessInformation) => {
     setIsSubmitting(true);
     try {
@@ -121,9 +113,8 @@ export function SmartBusinessInfoStep({
       }
 
       await onUpdate(data);
-      
+
       if (validation.warnings.length > 0) {
-        // Show warnings but allow proceeding
         toast({
           title: "Recommendations Available",
           description: "Review suggestions to optimize your business profile.",
@@ -135,7 +126,7 @@ export function SmartBusinessInfoStep({
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save business information. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save business information",
         variant: "destructive",
       });
     } finally {
@@ -147,6 +138,7 @@ export function SmartBusinessInfoStep({
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {/* Progress Indicator */}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Step {currentStep} of {totalSteps}</span>
@@ -155,6 +147,7 @@ export function SmartBusinessInfoStep({
         <Progress value={progressPercentage} className="w-full" />
       </div>
 
+      {/* Validation Feedback */}
       {validationStatus.errors.length > 0 && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -169,14 +162,14 @@ export function SmartBusinessInfoStep({
         </Alert>
       )}
 
-      {validationStatus.warnings.length > 0 && (
-        <Alert variant="warning">
+      {validationStatus.suggestions.length > 0 && (
+        <Alert>
           <Info className="h-4 w-4" />
-          <AlertTitle>Recommendations</AlertTitle>
+          <AlertTitle>Suggestions</AlertTitle>
           <AlertDescription>
             <ul className="list-disc pl-4 mt-2">
-              {validationStatus.warnings.map((warning, index) => (
-                <li key={index} className="text-sm">{warning}</li>
+              {validationStatus.suggestions.map((suggestion, index) => (
+                <li key={index} className="text-sm">{suggestion}</li>
               ))}
             </ul>
           </AlertDescription>
@@ -187,114 +180,232 @@ export function SmartBusinessInfoStep({
         <CardHeader>
           <CardTitle>Business Information</CardTitle>
           <CardDescription>
-            Tell us about your business to begin the valuation process
+            Start by selecting your industry and business opportunity
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Industry & Sector Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Industry Classification</h3>
+
+                {/* Industry Segment */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
+                      Industry Segment *
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Select your primary industry segment to see relevant business opportunities
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select
+                    onValueChange={(value) => {
+                      form.setValue("industrySegment", value);
+                      handleIndustryChange(value);
+                    }}
+                    defaultValue={form.getValues("industrySegment")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(BusinessInformationHandler.industrySegments).map(([industry, segments]) => (
+                        segments.map((segment) => (
+                          <SelectItem key={segment} value={segment}>
+                            {segment}
+                          </SelectItem>
+                        ))
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Business Sector */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
+                      Business Sector *
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Choose your business opportunity type within the selected industry
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select
+                    onValueChange={(value) => form.setValue("sector", value)}
+                    defaultValue={form.getValues("sector")}
+                    disabled={!form.getValues("industrySegment")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select business sector" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSectors.map((sector) => (
+                        <SelectItem key={sector} value={sector}>
+                          {sector.charAt(0).toUpperCase() + sector.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
-                
+
                 {/* Business Name */}
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
                       Business Name *
                     </label>
-                    <Input
-                      {...form.register("name")}
-                      id="name"
-                      placeholder="Enter your business name"
-                    />
-                    {form.formState.errors.name && (
-                      <p className="text-sm text-red-500">
-                        {form.formState.errors.name.message}
-                      </p>
-                    )}
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Enter your company's registered or trading name
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <Input
+                    {...form.register("name")}
+                    placeholder="Enter your business name"
+                  />
+                </div>
 
-                  {/* Sector Selection */}
-                  <div className="space-y-2">
-                    <label htmlFor="sector" className="text-sm font-medium">
-                      Business Sector *
+                {/* Location */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
+                      Location *
                     </label>
-                    <Select
-                      onValueChange={(value) =>
-                        form.setValue("sector", value as keyof typeof sectors)
-                      }
-                      defaultValue={form.getValues("sector")}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your sector" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(sectors).map(([key, value]) => (
-                          <SelectItem key={key} value={key}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Primary location of your business operations
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <Input
+                    {...form.register("location")}
+                    placeholder="e.g., San Francisco, CA"
+                  />
+                </div>
 
-                  {/* Industry Segment */}
-                  <div className="space-y-2">
-                    <label htmlFor="industrySegment" className="text-sm font-medium">
-                      Industry Segment *
+                {/* Team Size */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
+                      Team Size *
                     </label>
-                    <Input
-                      {...form.register("industrySegment")}
-                      id="industrySegment"
-                      placeholder="Enter your industry segment"
-                    />
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Number of full-time team members
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <Input
+                    {...form.register("teamSize", { valueAsNumber: true })}
+                    type="number"
+                    min={1}
+                    placeholder="Enter team size"
+                  />
                 </div>
               </div>
 
-              {/* Business Model and Stage */}
+              {/* Business Model & Description */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Business Model & Stage</h3>
-                
-                {/* Business Model Selection */}
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="businessModel" className="text-sm font-medium">
+                <h3 className="text-lg font-semibold">Business Model & Description</h3>
+
+                {/* Business Model */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
                       Business Model *
                     </label>
-                    <Select
-                      onValueChange={(value) => form.setValue("businessModel", value)}
-                      defaultValue={form.getValues("businessModel")}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your business model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="marketplace">Marketplace</SelectItem>
-                        <SelectItem value="saas">SaaS</SelectItem>
-                        <SelectItem value="subscription">Subscription</SelectItem>
-                        <SelectItem value="ecommerce">E-commerce</SelectItem>
-                        <SelectItem value="advertising">Advertising</SelectItem>
-                        <SelectItem value="licensing">Licensing</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        How your business generates revenue
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <Select
+                    onValueChange={(value) => form.setValue("businessModel", value)}
+                    defaultValue={form.getValues("businessModel")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select business model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
+                      <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
+                      <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
+                      <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
+                      <SelectItem value="subscription">Subscription</SelectItem>
+                      <SelectItem value="transactional">Transactional</SelectItem>
+                      <SelectItem value="advertising">Advertising</SelectItem>
+                      <SelectItem value="licensing">Licensing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">
+                      Business Description *
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Provide a detailed description of your business (minimum 50 characters)
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Textarea
+                    {...form.register("description")}
+                    placeholder="Describe your business, its mission, and unique value proposition..."
+                    className="min-h-[100px]"
+                  />
                 </div>
               </div>
 
-              {/* Submit Buttons */}
-              <div className="flex justify-end space-x-4 pt-6">
+              {/* Form Actions */}
+              <div className="flex justify-between items-center pt-6 border-t">
                 <Button
-                  variant="outline"
                   type="button"
+                  variant="outline"
                   onClick={() => form.reset()}
+                  disabled={isSubmitting}
                 >
                   Reset
                 </Button>
-                <Button
+                <Button 
                   type="submit"
-                  disabled={isSubmitting || Object.keys(form.formState.errors).length > 0}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? "Saving..." : "Continue"}
                 </Button>
