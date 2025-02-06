@@ -1,6 +1,7 @@
 import type { BusinessSector } from '@/lib/types';
+import { z } from "zod";
 
-// Generated from CSV data using simplified structure
+// Parse CSV data into structured format
 export const BUSINESS_SECTORS = {
   "Technology & Software": {
     "Enterprise Software": ["ERP", "CRM", "HRM"],
@@ -17,10 +18,29 @@ export const BUSINESS_SECTORS = {
     "Digital Banking": ["Neo Banking", "Open Banking", "Embedded Finance"],
     "Payments": ["Digital Payments", "Cross-Border Payments", "BNPL"],
     "WealthTech": ["Robo-Advisory", "Investment Platforms", "Personal Finance"]
+  },
+  "E-Commerce & Retail": {
+    "Online Marketplace": ["Multi-Vendor Marketplace", "Social Commerce", "Niche Marketplaces"],
+    "Direct-to-Consumer": ["Brand Commerce", "Subscription Commerce", "Custom Products"],
+    "RetailTech": ["POS Systems", "Retail Analytics", "E-commerce SaaS"]
+  },
+  "Clean Technology": {
+    "Renewable Energy": ["Solar Technology", "Wind Energy", "Hydro Energy"],
+    "Energy Storage": ["Battery Technology", "Thermal Storage", "Hydrogen Storage"],
+    "Sustainable Materials": ["Biodegradable Packaging", "Green Chemicals", "Recycling Tech"]
   }
 };
 
-// Simple utility functions for sector operations
+// Type validation schema
+export const SectorSchema = z.object({
+  sector: z.string().min(1, "Sector is required"),
+  segment: z.string().min(1, "Segment is required"),
+  subSegment: z.string().min(1, "Sub-segment is required")
+});
+
+export type SectorSelection = z.infer<typeof SectorSchema>;
+
+// Utility functions for cascading dropdowns
 export const sectorOperations = {
   getAllSectors() {
     return Object.keys(BUSINESS_SECTORS).map(sector => ({
