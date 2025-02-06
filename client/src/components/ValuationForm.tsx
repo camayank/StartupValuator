@@ -180,9 +180,8 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       required: true,
       description: "Specific segment within your sector",
       help: "Select your specific industry segment",
-      disabled: !form.watch("businessInfo.sector"),
+      disabled: !sector, // Use the watched sector value directly
       options: () => {
-        const sector = form.watch("businessInfo.sector");
         if (!sector || !BUSINESS_SECTORS[sector]) return [];
         return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
           value: segment,
@@ -197,10 +196,8 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       required: true,
       description: "Specific sub-segment within your industry segment",
       help: "Select the most specific category for your business",
-      disabled: !form.watch("businessInfo.segment"),
+      disabled: !segment, // Use the watched segment value directly
       options: () => {
-        const sector = form.watch("businessInfo.sector");
-        const segment = form.watch("businessInfo.segment");
         if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
         return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
           value: subSegment,
@@ -564,6 +561,8 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         console.log(`Rendering dropdown ${fieldConfig.name}:`, {
           isDisabled,
           currentValue: formField.value,
+          parentValue: fieldConfig.name === "businessInfo.segment" ? sector : 
+                      fieldConfig.name === "businessInfo.subSegment" ? segment : null,
           options: options
         });
 
