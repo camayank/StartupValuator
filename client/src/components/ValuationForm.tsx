@@ -150,76 +150,65 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     },
   });
 
-  const businessInfoFields = [
-    {
-      name: "businessInfo.name",
-      label: "Business Name",
-      type: "text",
-      required: true,
-      description: "Your company's legal or registered business name",
-      placeholder: "e.g., TechStart Solutions Inc."
-    },
-    {
-      name: "businessInfo.sector",
-      label: "Business Sector",
-      type: "dropdown",
-      required: true,
-      description: "Primary sector your business operates in",
-      help: "Choose the sector that best represents your core business activities",
-      options: () => {
-        console.log("Available sectors:", Object.keys(BUSINESS_SECTORS));
-        return Object.keys(BUSINESS_SECTORS).map(sector => ({
-          value: sector,
-          label: sector
-        }));
-      }
-    },
-    {
-      name: "businessInfo.segment",
-      label: "Industry Segment",
-      type: "dropdown",
-      required: true,
-      description: "Specific segment within your sector",
-      help: "Select your specific industry segment",
-      options: () => {
-        const sector = form.watch("businessInfo.sector");
-        console.log("Current sector:", sector);
-        if (!sector || !BUSINESS_SECTORS[sector]) {
-          console.log("No segments available for sector:", sector);
-          return [];
-        }
-        const segments = Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
-          value: segment,
-          label: segment
-        }));
-        console.log("Available segments:", segments);
-        return segments;
-      }
-    },
-    {
-      name: "businessInfo.subSegment",
-      label: "Sub-Segment",
-      type: "dropdown",
-      required: true,
-      description: "Specific sub-segment within your industry segment",
-      help: "Select the most specific category for your business",
-      options: () => {
-        const sector = form.watch("businessInfo.sector");
-        const segment = form.watch("businessInfo.segment");
-        console.log("Current sector/segment:", { sector, segment });
-        if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) {
-          console.log("No sub-segments available for:", { sector, segment });
-          return [];
-        }
-        const subSegments = BUSINESS_SECTORS[sector][segment].map(subSegment => ({
-          value: subSegment,
-          label: subSegment
-        }));
-        console.log("Available sub-segments:", subSegments);
-        return subSegments;
-      }
+const businessInfoFields = [
+  {
+    name: "businessInfo.name",
+    label: "Business Name",
+    type: "text",
+    required: true,
+    description: "Your company's legal or registered business name",
+    placeholder: "e.g., TechStart Solutions Inc."
+  },
+  {
+    name: "businessInfo.sector",
+    label: "Business Sector",
+    type: "dropdown",
+    required: true,
+    description: "Primary sector your business operates in",
+    help: "Choose the sector that best represents your core business activities",
+    options: () => {
+      return Object.keys(BUSINESS_SECTORS).map(sector => ({
+        value: sector,
+        label: sector
+      }));
     }
-  ];
+  },
+  {
+    name: "businessInfo.segment",
+    label: "Industry Segment",
+    type: "dropdown",
+    required: true,
+    description: "Specific segment within your sector",
+    help: "Select your specific industry segment",
+    disabled: !form?.watch("businessInfo.sector"),
+    options: () => {
+      const sector = form?.watch("businessInfo.sector");
+      if (!sector || !BUSINESS_SECTORS[sector]) return [];
+      return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
+        value: segment,
+        label: segment
+      }));
+    }
+  },
+  {
+    name: "businessInfo.subSegment",
+    label: "Sub-Segment",
+    type: "dropdown",
+    required: true,
+    description: "Specific sub-segment within your industry segment",
+    help: "Select the most specific category for your business",
+    disabled: !form?.watch("businessInfo.segment"),
+    options: () => {
+      const sector = form?.watch("businessInfo.sector");
+      const segment = form?.watch("businessInfo.segment");
+      if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
+      return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
+        value: subSegment,
+        label: subSegment
+      }));
+    }
+  }
+];
 
   const formSections = useCallback(() => [
     {
@@ -475,6 +464,28 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     }));
   }, [form.watch(), currentStep, formSections]);
 
+  // Reset segment when sector changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "businessInfo.sector") {
+        form.setValue("businessInfo.segment", "");
+        form.setValue("businessInfo.subSegment", "");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Reset sub-segment when segment changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "businessInfo.segment") {
+        form.setValue("businessInfo.subSegment", "");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+
   const mutation = useMutation({
     mutationFn: async (data: ValuationFormData) => {
       const response = await fetch('/api/valuation', {
@@ -539,6 +550,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           />
         );
       case "dropdown":
+        const options = typeof fieldConfig.options === 'function' ? fieldConfig.options() : fieldConfig.options;
         return (
           <div className="w-full">
             <Select
@@ -552,14 +564,11 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {Array.isArray(fieldConfig.options) && fieldConfig.options.map((option: any) => {
-                  const [value, label] = Array.isArray(option) ? option : [option.value, option.label];
-                  return (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  );
-                })}
+                {options.map((option: any) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -609,21 +618,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     form.setValue("marketData.growthRate", marketMetrics.growthRate);
   }, [businessInfo, form]);
 
-
-  useEffect(() => {
-    const sector = form.watch("businessInfo.sector");
-    if (sector) {
-      form.setValue("businessInfo.segment", "");
-      form.setValue("businessInfo.subSegment", "");
-    }
-  }, [form.watch("businessInfo.sector")]);
-
-  useEffect(() => {
-    const segment = form.watch("businessInfo.segment");
-    if (segment) {
-      form.setValue("businessInfo.subSegment", "");
-    }
-  }, [form.watch("businessInfo.segment")]);
 
   useEffect(() => {
     const { sector, segment } = form.getValues().businessInfo;
