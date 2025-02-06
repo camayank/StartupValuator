@@ -25,8 +25,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { pitchDeckFormSchema, type PitchDeckFormData } from "@/lib/validations";
+import type { ValuationFormData } from "@/lib/validations";
 
-export function PitchDeckGenerator() {
+interface PitchDeckGeneratorProps {
+  valuationData?: ValuationFormData;
+  isPremium?: boolean;
+}
+
+export function PitchDeckGenerator({ valuationData, isPremium = false }: PitchDeckGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const { toast } = useToast();
@@ -34,17 +40,17 @@ export function PitchDeckGenerator() {
   const form = useForm<PitchDeckFormData>({
     resolver: zodResolver(pitchDeckFormSchema),
     defaultValues: {
-      companyName: "",
+      companyName: valuationData?.businessInfo?.companyName || "",
       tagline: "",
-      problem: "",
-      solution: "",
-      marketSize: "",
-      businessModel: "",
-      competition: "",
-      traction: "",
-      team: "",
-      financials: "",
-      fundingAsk: "",
+      problem: valuationData?.businessInfo?.problemSolved || "",
+      solution: valuationData?.businessInfo?.solution || "",
+      marketSize: valuationData?.businessInfo?.marketSize?.toString() || "",
+      businessModel: valuationData?.businessInfo?.businessModel || "",
+      competition: valuationData?.businessInfo?.competition || "",
+      traction: valuationData?.businessInfo?.traction || "",
+      team: valuationData?.businessInfo?.team || "",
+      financials: `Revenue: ${valuationData?.financialData?.revenue || 0}\nBurn Rate: ${valuationData?.financialData?.burnRate || 0}\nRunway: ${valuationData?.financialData?.runway || 0} months`,
+      fundingAsk: valuationData?.financialData?.fundingNeeded?.toString() || "",
       useOfFunds: "",
       presentationStyle: "professional",
       colorScheme: "blue",
@@ -53,6 +59,15 @@ export function PitchDeckGenerator() {
   });
 
   const onSubmit = async (data: PitchDeckFormData) => {
+    if (!isPremium) {
+      toast({
+        title: "Premium Feature",
+        description: "AI-enhanced pitch deck generation is a premium feature. Please upgrade your plan to access this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // Get AI-powered suggestions first
@@ -61,7 +76,10 @@ export function PitchDeckGenerator() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          valuationData, // Include valuation data for better context
+        }),
       });
 
       if (!suggestionsResponse.ok) {
@@ -78,8 +96,9 @@ export function PitchDeckGenerator() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          industry: data.marketSize, // Using market size as industry context
+          industry: valuationData?.businessInfo?.sector || data.marketSize,
           businessModel: data.businessModel,
+          valuationMetrics: valuationData?.financialData,
         }),
       });
 
@@ -99,6 +118,11 @@ export function PitchDeckGenerator() {
           ...data,
           aiSuggestions: suggestions,
           industryAnalysis: analysis,
+          valuationInsights: {
+            monteCarlo: valuationData?.monteCarloSimulation,
+            riskAssessment: valuationData?.risksAndOpportunities,
+            marketValidation: valuationData?.marketValidation,
+          },
         }),
       });
 
@@ -123,7 +147,7 @@ export function PitchDeckGenerator() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to generate pitch deck. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate pitch deck",
         variant: "destructive",
       });
     } finally {
@@ -134,18 +158,20 @@ export function PitchDeckGenerator() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>AI-Enhanced Pitch Deck Generator</CardTitle>
+        <CardTitle>AI-Enhanced Pitch Deck Generator {!isPremium && <span className="text-sm text-muted-foreground ml-2">(Premium)</span>}</CardTitle>
         <CardDescription>
-          Generate a professional investor pitch deck with AI-powered personalization
+          Generate a professional investor pitch deck with AI-powered personalization using your valuation data
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Alert className="mb-6">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Fill in the details below to generate your pitch deck. Our AI will analyze your inputs and provide personalized suggestions to make your pitch more compelling.
-          </AlertDescription>
-        </Alert>
+        {!isPremium && (
+          <Alert className="mb-6">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              This is a premium feature. Upgrade your plan to access AI-enhanced pitch deck generation with personalized insights and industry analysis.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -446,7 +472,7 @@ export function PitchDeckGenerator() {
               )}
             />
 
-            <Button type="submit" disabled={isGenerating} className="w-full">
+            <Button type="submit" disabled={isGenerating || !isPremium} className="w-full">
               {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

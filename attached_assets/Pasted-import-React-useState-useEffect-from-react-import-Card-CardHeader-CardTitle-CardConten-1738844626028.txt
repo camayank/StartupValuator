@@ -1,0 +1,247 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import _ from 'lodash';
+
+const PitchDeckGenerator = () => {
+  const [deckData, setDeckData] = useState(null);
+  const [investorType, setInvestorType] = useState('vc');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const generateDeck = async () => {
+      setLoading(true);
+      try {
+        // In real implementation, this would call your AI service
+        const data = {
+          executiveSummary: {
+            valuationRange: { min: 50000000, max: 70000000, confidence: 80 },
+            keyMetrics: [
+              { name: 'Revenue Growth', value: '120%', benchmark: '75%' },
+              { name: 'Gross Margin', value: '85%', benchmark: '65%' },
+              { name: 'CAC Payback', value: '6 months', benchmark: '12 months' }
+            ],
+            criticalRisks: [
+              { type: 'Regulatory', description: 'EU market shift', mitigation: 'APAC expansion' },
+              { type: 'Competition', description: 'New entrant threat', mitigation: 'Patent filing' }
+            ]
+          },
+          marketAnalysis: {
+            tam: { value: 2000000000, growth: 15 },
+            competitiveAdvantage: [
+              { factor: 'Cost', advantage: '30%', description: 'AI-driven optimization' },
+              { factor: 'Technology', advantage: 'Proprietary', description: 'ML patents pending' }
+            ],
+            marketTrends: [
+              { trend: 'AI Adoption', impact: 'Positive', magnitude: 'High' },
+              { trend: 'Remote Work', impact: 'Positive', magnitude: 'Medium' }
+            ]
+          },
+          financialHighlights: {
+            projections: [
+              { year: '2024', revenue: 1000000, ebitda: 200000 },
+              { year: '2025', revenue: 2500000, ebitda: 750000 },
+              { year: '2026', revenue: 5000000, ebitda: 2000000 }
+            ],
+            exits: [
+              { type: 'Strategic Sale', multiple: '5x', probability: 'High' },
+              { type: 'IPO', multiple: '8x', probability: 'Medium' }
+            ]
+          }
+        };
+        setDeckData(data);
+      } catch (error) {
+        console.error('Error generating pitch deck:', error);
+      }
+      setLoading(false);
+    };
+
+    generateDeck();
+  }, [investorType]);
+
+  const ExecutiveSummary = () => (
+    <Card className="w-full mb-6">
+      <CardHeader>
+        <CardTitle>Executive Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Valuation Range */}
+          <Alert className="bg-blue-50">
+            <AlertDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="font-medium">Valuation Range: </span>
+                  ${(deckData.executiveSummary.valuationRange.min / 1000000).toFixed(1)}M - 
+                  ${(deckData.executiveSummary.valuationRange.max / 1000000).toFixed(1)}M
+                </div>
+                <div className="text-sm text-blue-600">
+                  {deckData.executiveSummary.valuationRange.confidence}% Confidence
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-3 gap-4">
+            {deckData.executiveSummary.keyMetrics.map((metric) => (
+              <Card key={metric.name} className="p-4">
+                <h3 className="font-medium mb-2">{metric.name}</h3>
+                <div className="text-2xl font-bold">{metric.value}</div>
+                <div className="text-sm text-gray-600">
+                  Benchmark: {metric.benchmark}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Critical Risks */}
+          <div className="space-y-4">
+            {deckData.executiveSummary.criticalRisks.map((risk) => (
+              <Alert key={risk.type} className="bg-yellow-50">
+                <AlertDescription>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-medium">{risk.type} Risk: </span>
+                      {risk.description}
+                    </div>
+                    <div className="text-sm text-green-600">
+                      Mitigation: {risk.mitigation}
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const MarketAnalysis = () => (
+    <Card className="w-full mb-6">
+      <CardHeader>
+        <CardTitle>Market Opportunity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* TAM */}
+          <Card className="p-4">
+            <div className="text-center">
+              <h3 className="text-xl font-medium mb-2">Total Addressable Market</h3>
+              <div className="text-3xl font-bold">
+                ${(deckData.marketAnalysis.tam.value / 1000000000).toFixed(1)}B
+              </div>
+              <div className="text-sm text-gray-600">
+                {deckData.marketAnalysis.tam.growth}% YoY Growth
+              </div>
+            </div>
+          </Card>
+
+          {/* Competitive Advantages */}
+          <div className="grid grid-cols-2 gap-4">
+            {deckData.marketAnalysis.competitiveAdvantage.map((advantage) => (
+              <Card key={advantage.factor} className="p-4">
+                <h3 className="font-medium mb-2">{advantage.factor} Advantage</h3>
+                <div className="text-2xl font-bold">{advantage.advantage}</div>
+                <div className="text-sm text-gray-600">
+                  {advantage.description}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Market Trends */}
+          <div className="space-y-4">
+            {deckData.marketAnalysis.marketTrends.map((trend) => (
+              <Alert key={trend.trend} className={`bg-${trend.impact === 'Positive' ? 'green' : 'yellow'}-50`}>
+                <AlertDescription>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="font-medium">{trend.trend}</span>
+                    </div>
+                    <div className="text-sm">
+                      Impact: <span className="font-medium">{trend.magnitude}</span>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const FinancialProjections = () => (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Financial Projections & Exit Potential</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Growth Chart */}
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={deckData.financialHighlights.projections}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="revenue" stroke="#2563eb" name="Revenue" />
+                <Line type="monotone" dataKey="ebitda" stroke="#059669" name="EBITDA" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Exit Scenarios */}
+          <div className="grid grid-cols-2 gap-4">
+            {deckData.financialHighlights.exits.map((exit) => (
+              <Card key={exit.type} className="p-4">
+                <h3 className="font-medium mb-2">{exit.type}</h3>
+                <div className="text-2xl font-bold">{exit.multiple} Return</div>
+                <div className="text-sm text-gray-600">
+                  Probability: {exit.probability}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  if (loading) {
+    return <div>Generating investor pitch deck...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">AI-Generated Pitch Deck</h2>
+        <div className="space-x-4">
+          <Button
+            variant={investorType === 'vc' ? 'default' : 'outline'}
+            onClick={() => setInvestorType('vc')}
+          >
+            VC Mode
+          </Button>
+          <Button
+            variant={investorType === 'pe' ? 'default' : 'outline'}
+            onClick={() => setInvestorType('pe')}
+          >
+            PE Mode
+          </Button>
+        </div>
+      </div>
+      <ExecutiveSummary />
+      <MarketAnalysis />
+      <FinancialProjections />
+    </div>
+  );
+};
+
+export default PitchDeckGenerator;
