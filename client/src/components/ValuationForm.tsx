@@ -100,6 +100,7 @@ const validateFinancialMetrics = (values: any) => {
   return warnings;
 };
 
+
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -150,65 +151,64 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     },
   });
 
-const businessInfoFields = [
-  {
-    name: "businessInfo.name",
-    label: "Business Name",
-    type: "text",
-    required: true,
-    description: "Your company's legal or registered business name",
-    placeholder: "e.g., TechStart Solutions Inc."
-  },
-  {
-    name: "businessInfo.sector",
-    label: "Business Sector",
-    type: "dropdown",
-    required: true,
-    description: "Primary sector your business operates in",
-    help: "Choose the sector that best represents your core business activities",
-    options: () => {
-      return Object.keys(BUSINESS_SECTORS).map(sector => ({
+  // Define businessInfoFields inside the component to have access to form
+  const businessInfoFields = [
+    {
+      name: "businessInfo.name",
+      label: "Business Name",
+      type: "text",
+      required: true,
+      description: "Your company's legal or registered business name",
+      placeholder: "e.g., TechStart Solutions Inc."
+    },
+    {
+      name: "businessInfo.sector",
+      label: "Business Sector",
+      type: "dropdown",
+      required: true,
+      description: "Primary sector your business operates in",
+      help: "Choose the sector that best represents your core business activities",
+      options: () => Object.keys(BUSINESS_SECTORS).map(sector => ({
         value: sector,
         label: sector
-      }));
+      }))
+    },
+    {
+      name: "businessInfo.segment",
+      label: "Industry Segment",
+      type: "dropdown",
+      required: true,
+      description: "Specific segment within your sector",
+      help: "Select your specific industry segment",
+      disabled: !form.watch("businessInfo.sector"),
+      options: () => {
+        const sector = form.watch("businessInfo.sector");
+        if (!sector || !BUSINESS_SECTORS[sector]) return [];
+        return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
+          value: segment,
+          label: segment
+        }));
+      }
+    },
+    {
+      name: "businessInfo.subSegment",
+      label: "Sub-Segment",
+      type: "dropdown",
+      required: true,
+      description: "Specific sub-segment within your industry segment",
+      help: "Select the most specific category for your business",
+      disabled: !form.watch("businessInfo.segment"),
+      options: () => {
+        const sector = form.watch("businessInfo.sector");
+        const segment = form.watch("businessInfo.segment");
+        if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
+        return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
+          value: subSegment,
+          label: subSegment
+        }));
+      }
     }
-  },
-  {
-    name: "businessInfo.segment",
-    label: "Industry Segment",
-    type: "dropdown",
-    required: true,
-    description: "Specific segment within your sector",
-    help: "Select your specific industry segment",
-    disabled: !form?.watch("businessInfo.sector"),
-    options: () => {
-      const sector = form?.watch("businessInfo.sector");
-      if (!sector || !BUSINESS_SECTORS[sector]) return [];
-      return Object.keys(BUSINESS_SECTORS[sector]).map(segment => ({
-        value: segment,
-        label: segment
-      }));
-    }
-  },
-  {
-    name: "businessInfo.subSegment",
-    label: "Sub-Segment",
-    type: "dropdown",
-    required: true,
-    description: "Specific sub-segment within your industry segment",
-    help: "Select the most specific category for your business",
-    disabled: !form?.watch("businessInfo.segment"),
-    options: () => {
-      const sector = form?.watch("businessInfo.sector");
-      const segment = form?.watch("businessInfo.segment");
-      if (!sector || !segment || !BUSINESS_SECTORS[sector]?.[segment]) return [];
-      return BUSINESS_SECTORS[sector][segment].map(subSegment => ({
-        value: subSegment,
-        label: subSegment
-      }));
-    }
-  }
-];
+  ];
 
   const formSections = useCallback(() => [
     {
@@ -464,21 +464,13 @@ const businessInfoFields = [
     }));
   }, [form.watch(), currentStep, formSections]);
 
-  // Reset segment when sector changes
+  // Reset fields when sector/segment changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === "businessInfo.sector") {
         form.setValue("businessInfo.segment", "");
         form.setValue("businessInfo.subSegment", "");
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  // Reset sub-segment when segment changes
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "businessInfo.segment") {
+      } else if (name === "businessInfo.segment") {
         form.setValue("businessInfo.subSegment", "");
       }
     });
@@ -557,6 +549,7 @@ const businessInfoFields = [
               onValueChange={formField.onChange}
               defaultValue={formField.value}
               disabled={fieldConfig.disabled}
+              value={formField.value}
             >
               <FormControl>
                 <SelectTrigger>

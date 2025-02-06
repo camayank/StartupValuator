@@ -2,7 +2,7 @@ import type { BusinessSector } from '@/lib/types';
 import { z } from "zod";
 
 // Define type for the business data structure
-type BusinessDataStructure = {
+export type BusinessDataStructure = {
   [sector: string]: {
     [segment: string]: string[];
   };
@@ -10,31 +10,26 @@ type BusinessDataStructure = {
 
 // Business sectors data
 export const BUSINESS_SECTORS: BusinessDataStructure = {
-  "Technology & Software": {
+  "Technology": {
     "Enterprise Software": ["ERP", "CRM", "HRM"],
     "Cloud Computing": ["IaaS", "PaaS", "SaaS"],
     "AI & ML": ["NLP", "Computer Vision", "AI Analytics"],
     "Cybersecurity": ["Network Security", "Endpoint Security", "Cloud Security"]
   },
-  "Healthcare & Life Sciences": {
+  "Healthcare": {
     "Digital Health": ["Telehealth", "Mobile Health", "Health Analytics"],
     "Biotech": ["Gene Therapy", "Molecular Diagnostics", "Bioinformatics"],
     "Medical Devices": ["Diagnostic Devices", "Wearable Tech", "Surgical Robotics"]
   },
-  "Financial Technology": {
+  "FinTech": {
     "Digital Banking": ["Neo Banking", "Open Banking", "Embedded Finance"],
     "Payments": ["Digital Payments", "Cross-Border Payments", "BNPL"],
     "WealthTech": ["Robo-Advisory", "Investment Platforms", "Personal Finance"]
   },
-  "E-Commerce & Retail": {
+  "E-Commerce": {
     "Online Marketplace": ["Multi-Vendor Marketplace", "Social Commerce", "Niche Marketplaces"],
     "Direct-to-Consumer": ["Brand Commerce", "Subscription Commerce", "Custom Products"],
     "RetailTech": ["POS Systems", "Retail Analytics", "E-commerce SaaS"]
-  },
-  "Clean Technology": {
-    "Renewable Energy": ["Solar Technology", "Wind Energy", "Hydro Energy"],
-    "Energy Storage": ["Battery Technology", "Thermal Storage", "Hydrogen Storage"],
-    "Sustainable Materials": ["Biodegradable Packaging", "Green Chemicals", "Recycling Tech"]
   }
 };
 
