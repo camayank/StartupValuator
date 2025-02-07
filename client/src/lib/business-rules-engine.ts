@@ -7,7 +7,8 @@ class BusinessRulesEngine {
     employeeCount: {
       id: 'employee_validation',
       condition: (data: ValuationFormData): boolean => {
-        if (data.stage === 'revenue_growing' && (data.employeeCount ?? 0) < 3) {
+        if (data.businessInfo.stage === 'revenue_growing' && 
+            (data.businessInfo.teamSize ?? 0) < 3) {
           return false;
         }
         return true;
@@ -17,8 +18,10 @@ class BusinessRulesEngine {
     customerBase: {
       id: 'customerBase_validation',
       condition: (data: ValuationFormData): boolean => {
-        if (data.stage === 'revenue_growing' && (data.customerBase ?? 0) < 100) return false;
-        if ((data.employeeCount ?? 0) > 10 && (data.customerBase ?? 0) < 50) return false;
+        if (data.businessInfo.stage === 'revenue_growing' && 
+            (data.marketData.customerBase ?? 0) < 100) return false;
+        if ((data.businessInfo.teamSize ?? 0) > 10 && 
+            (data.marketData.customerBase ?? 0) < 50) return false;
         return true;
       },
       message: 'Customer base seems insufficient for your stage or team size'
@@ -26,10 +29,12 @@ class BusinessRulesEngine {
     revenue: {
       id: 'revenue_validation',
       condition: (data: ValuationFormData): boolean => {
-        if (data.stage === 'revenue_growing' && !data.revenue) {
+        if (data.businessInfo.stage === 'revenue_growing' && 
+            !data.financialData.revenue) {
           return false;
         }
-        if ((data.customerBase ?? 0) > 1000 && (data.revenue ?? 0) < 1000) return false;
+        if ((data.marketData.customerBase ?? 0) > 1000 && 
+            (data.financialData.revenue ?? 0) < 1000) return false;
         return true;
       },
       message: 'Revenue seems low for your stated growth stage or customer base'
@@ -37,7 +42,9 @@ class BusinessRulesEngine {
     intellectualProperty: {
       id: 'intellectualProperty_validation',
       condition: (data: ValuationFormData): boolean => {
-        if (data.sector === 'technology' && data.intellectualProperty === 'none' && data.stage !== 'ideation_unvalidated') {
+        if (data.businessInfo.sector === 'technology' && 
+            !data.businessInfo.intellectualProperty && 
+            data.businessInfo.stage !== 'ideation_unvalidated') {
           return false;
         }
         return true;
@@ -47,15 +54,22 @@ class BusinessRulesEngine {
     regulatoryCompliance: {
       id: 'regulatoryCompliance_validation',
       condition: (data: ValuationFormData): boolean => {
-        if ((data.sector === 'fintech' || data.sector === 'healthtech') && data.regulatoryCompliance === 'notRequired') return false;
-        if (data.stage === 'revenue_growing' && data.regulatoryCompliance !== 'compliant') return false;
+        const sector = data.businessInfo.sector;
+        if ((sector === 'fintech' || sector === 'healthtech') && 
+            !data.businessInfo.regulatoryCompliance) return false;
+        if (data.businessInfo.stage === 'revenue_growing' && 
+            data.businessInfo.regulatoryCompliance !== 'compliant') return false;
         return true;
       },
       message: 'Regulatory compliance is crucial for your sector or growth stage'
     }
   } as const;
 
-  static validateField(field: keyof typeof BusinessRulesEngine.rules, _value: any, formData: ValuationFormData): ValidationResult {
+  static validateField(
+    field: keyof typeof BusinessRulesEngine.rules, 
+    _value: any, 
+    formData: ValuationFormData
+  ): ValidationResult {
     const rule = this.rules[field];
     if (!rule) {
       return { isValid: true, severity: 'info' };

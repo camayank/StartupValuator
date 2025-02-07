@@ -107,8 +107,8 @@ export class AIValidationService {
       // Prepare comprehensive context for AI validation
       const validationContext = {
         data,
-        industryBenchmarks: industryBenchmarks[data.sector],
-        regionRules: enhancedRegionRules[data.region],
+        industryBenchmarks: industryBenchmarks[data.businessInfo.sector],
+        regionRules: enhancedRegionRules[data.businessInfo.location],
         cashFlowStability,
         stabilityRules,
         complianceChecks,

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { sectors, industries, businessStages, regions, currencies } from "@/lib/validations";
+import { sectors, businessStages } from "@/lib/validations";
 
 export type ValidationRule = {
   required: boolean;
@@ -20,223 +20,130 @@ export type ValidationRule = {
     warning?: string;
   }>;
   dependencies?: string[];
+  default_value?: any;
 };
 
+// Update validation rules to match the actual form structure
 export const fieldValidationRules: Record<string, ValidationRule> = {
-  // Core Identity Fields
-  businessName: {
+  // Business Info Section
+  "businessInfo.name": {
     required: true,
     validation: z.string().min(1, "Business name is required"),
     business_logic: "Required for all stages and sectors",
   },
 
-  sector: {
+  "businessInfo.sector": {
     required: true,
-    validation: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
-    affects_fields: ["industry", "regulatoryCompliance", "intellectualProperty", "scalability"],
+    validation: z.enum(Object.keys(sectors) as [string, ...string[]]),
+    affects_fields: ["businessInfo.industry", "regulatoryCompliance", "intellectualProperty"],
     business_logic: "Determines available industries and validation rules",
   },
 
-  // STAGE AND MATURITY
-  stage: {
+  "businessInfo.stage": {
     required: true,
-    validation: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
-    default: "ideation_validated",
-    affects_fields: ["revenue", "customerBase", "competitorAnalysis"],
+    validation: z.enum(Object.keys(businessStages) as [string, ...string[]]),
+    affects_fields: ["financialData.revenue", "marketData.customerBase"],
     stage_specific_rules: {
       "ideation_unvalidated": {
-        required_fields: ["businessName", "sector"],
+        required_fields: ["businessInfo.name", "businessInfo.sector"],
         min_competitor_analysis: 30
       },
       "revenue_early": {
-        required_fields: ["revenue", "customerBase"],
+        required_fields: ["financialData.revenue", "marketData.customerBase"],
         min_revenue: 1000,
         min_customers: 1
       },
       "revenue_growing": {
-        required_fields: ["revenue", "customerBase", "teamExperience"],
+        required_fields: ["financialData.revenue", "marketData.customerBase", "teamExperience"],
         min_revenue: 10000,
         min_customers: 10,
         min_team_experience: 2
-      },
-      "revenue_scaling": {
-        required_fields: ["revenue", "customerBase", "teamExperience", "growthRate"],
-        min_revenue: 100000,
-        min_customers: 100,
-        min_team_experience: 5,
-        min_growth_rate: 20
-      }
-    }
-  },
-
-  // BUSINESS CHARACTERISTICS
-  intellectualProperty: {
-    required: false,
-    default: "none",
-    validation: z.enum(["none", "pending", "registered"]),
-    sector_specific_rules: {
-      "deeptech": {
-        recommended: "pending",
-        warning: "IP protection is highly recommended for deep tech startups"
-      },
-      "technology": {
-        recommended: "pending"
-      }
-    }
-  },
-
-  competitorAnalysis: {
-    required: true,
-    validation: z.string(),
-    stage_specific_rules: {
-      "ideation_unvalidated": {
-        min_length: 30,
-        focus_areas: ["potential competitors", "market gaps"]
-      },
-      "revenue_growing": {
-        min_length: 100,
-        focus_areas: ["direct competitors", "market positioning", "competitive advantage"]
-      }
-    }
-  },
-
-  // REGULATORY AND COMPLIANCE
-  regulatoryCompliance: {
-    required: false,
-    default: "notRequired",
-    validation: z.enum(["notRequired", "inProgress", "compliant"]),
-    sector_specific_rules: {
-      "healthtech": {
-        required: true,
-        recommended: "inProgress",
-        warning: "Healthcare startups typically require regulatory compliance"
-      },
-      "fintech": {
-        required: true,
-        recommended: "inProgress",
-        warning: "Financial services typically require regulatory compliance"
-      }
-    }
-  },
-
-  // FINANCIAL METRICS
-  revenue: {
-    required: false,
-    default: 0,
-    validation: z.number().min(0),
-    stage_specific_rules: {
-      "revenue_early": {
-        required: true,
-        min: 1000
-      },
-      "revenue_growing": {
-        required: true,
-        min: 10000
-      },
-      "revenue_scaling": {
-        required: true,
-        min: 100000
-      }
-    }
-  },
-
-  growthRate: {
-    required: false,
-    default: 0,
-    validation: z.number().min(-100).max(1000),
-    stage_specific_rules: {
-      "revenue_early": {
-        target: 20
-      },
-      "revenue_growing": {
-        min: 20,
-        target: 50
-      },
-      "revenue_scaling": {
-        min: 50,
-        target: 100
-      }
-    }
-  },
-
-  // MARKET AND GROWTH
-  scalability: {
-    required: false,
-    default: "moderate",
-    validation: z.enum(["limited", "moderate", "high"]),
-    sector_specific_rules: {
-      "technology": { recommended: "high" },
-      "fintech": { recommended: "high" },
-      "retail": { recommended: "moderate" },
-      "manufacturing": { recommended: "limited" }
-    }
-  },
-
-  // METRICS AND PERFORMANCE
-  customerBase: {
-    required: false,
-    default: 0,
-    validation: z.number().min(0),
-    stage_specific_rules: {
-      "revenue_growing": {
-        min: 10,
-        warning: "Growing companies should have an established customer base"
-      },
-      "revenue_scaling": {
-        min: 100,
-        warning: "Scaling companies need significant customer traction"
-      }
-    }
-  },
-
-  // Cross-field Dependencies
-  dependencies: {
-    // Fields that affect other fields
-    sector: ["industry", "regulatoryCompliance", "intellectualProperty"],
-    stage: ["revenue", "customerBase", "competitorAnalysis"],
-    revenue: ["growthRate", "scalability"],
-
-    // Validation chains
-    validation_chains: [
-      {
-        if_field: "sector",
-        equals: "healthtech",
-        then_require: ["regulatoryCompliance"],
-        with_value: "inProgress"
-      },
-      {
-        if_field: "stage",
-        equals: "revenue_growing",
-        then_require: ["revenue", "customerBase"],
-        with_minimum: {
-          revenue: 10000,
-          customerBase: 10
-        }
-      }
-    ]
-  },
-
-  // Smart Defaults Based on Context
-  smart_defaults: {
-    by_sector: {
-      technology: {
-        intellectualProperty: "pending",
-        scalability: "high"
-      },
-      healthtech: {
-        regulatoryCompliance: "inProgress",
-        scalability: "moderate"
       }
     },
-    by_stage: {
-      ideation_unvalidated: {
-        revenue: 0,
-        customerBase: 0
+    default_value: "ideation_unvalidated"
+  },
+
+  // Financial Data Section
+  "financialData.revenue": {
+    required: false,
+    validation: z.number().min(0),
+    dependencies: ["businessInfo.stage"],
+    stage_specific_rules: {
+      "revenue_early": {
+        required_fields: ["financialData.margins"],
+        min_revenue: 1000
       },
-      revenue_growing: {
-        growthRate: 20
+      "revenue_growing": {
+        required_fields: ["financialData.margins", "financialData.growthRate"],
+        min_revenue: 10000
       }
-    }
+    },
+    default_value: 0
+  },
+
+  "financialData.margins": {
+    required: false,
+    validation: z.number().min(-100).max(100),
+    dependencies: ["financialData.revenue"],
+    default_value: 0
+  },
+
+  "financialData.growthRate": {
+    required: false,
+    validation: z.number().min(-100).max(1000),
+    dependencies: ["financialData.revenue"],
+    stage_specific_rules: {
+      "revenue_growing": {
+        required_fields: ["financialData.revenue"],
+        min_growth_rate: 20
+      }
+    },
+    default_value: 0
+  },
+
+  // Market Data Section
+  "marketData.tam": {
+    required: true,
+    validation: z.number().min(0),
+    business_logic: "Total Addressable Market must be defined",
+    default_value: 0
+  },
+
+  "marketData.sam": {
+    required: true,
+    validation: z.number().min(0),
+    business_logic: "Serviceable Addressable Market must be defined",
+    default_value: 0
+  },
+
+  "marketData.som": {
+    required: true,
+    validation: z.number().min(0),
+    business_logic: "Serviceable Obtainable Market must be defined",
+    default_value: 0
+  },
+
+  // Competitive Analysis Section
+  "competitiveData.competitors": {
+    required: true,
+    validation: z.array(z.string()).min(1, "At least one competitor must be identified"),
+    business_logic: "Competitive landscape analysis is required",
+    default_value: []
+  },
+
+  "competitiveData.advantages": {
+    required: true,
+    validation: z.array(z.string()).min(1, "At least one competitive advantage must be identified"),
+    business_logic: "Competitive advantages must be defined",
+    default_value: []
+  },
+
+  // Growth Strategy Section
+  "growthStrategy.plans": {
+    required: true,
+    validation: z.array(z.string()).min(1, "At least one growth plan must be defined"),
+    business_logic: "Growth strategy must be outlined",
+    default_value: []
   }
 };
 
@@ -259,6 +166,18 @@ export function getValidationRequirements(
     warnings: [] as string[],
     dependencies: fieldRules.affects_fields || [],
   };
+
+  // Add stage-specific rules
+  if (context.stage && fieldRules.stage_specific_rules?.[context.stage]) {
+    const stageRules = fieldRules.stage_specific_rules[context.stage];
+    requirements.required = fieldRules.required || stageRules.required || false; // Handle optional fields becoming required based on stage.
+    if (stageRules.min_revenue && context.revenue && context.revenue < stageRules.min_revenue) {
+      requirements.warnings.push(`Minimum revenue of ${stageRules.min_revenue} required for ${context.stage} stage`);
+    }
+    if (stageRules.min_customers && context.revenue && context.revenue < stageRules.min_customers) {
+        requirements.warnings.push(`Minimum customer base of ${stageRules.min_customers} required for ${context.stage} stage`);
+    }
+  }
 
   // Add sector-specific rules
   if (context.sector && fieldRules.sector_specific_rules?.[context.sector]) {
