@@ -2,33 +2,111 @@ import { z } from "zod";
 import type { ValidationResult } from "./types";
 import { BUSINESS_SECTORS } from "./constants/business-sectors";
 
+// Core enums
+export const businessStages = {
+  ideation_unvalidated: "Ideation Stage (Concept Only)",
+  ideation_validated: "Ideation Stage (Market Validated)", 
+  mvp_development: "MVP Development",
+  mvp_early_traction: "MVP with Early Traction",
+  beta_testing: "Beta Testing",
+  revenue_early: "Early Revenue Stage",
+  revenue_growing: "Growing Revenue Stage",
+  revenue_scaling: "Scaling Revenue Stage"
+} as const;
+
+export const productStages = {
+  concept: "Concept / Ideation",
+  prototype: "Prototype / POC",
+  mvp: "Minimum Viable Product",
+  beta: "Beta Version",
+  market_ready: "Market Ready",
+  scaling: "Scaling / Growth",
+  mature: "Mature Product"
+} as const;
+
+export const revenueModels = {
+  subscription: "Subscription Model",
+  transactional: "Transactional / One-time Sales",
+  marketplace: "Marketplace / Commission",
+  advertising: "Advertising Revenue",
+  licensing: "Licensing / Royalties",
+  saas: "Software as a Service",
+  freemium: "Freemium Model"
+} as const;
+
+// Define sector types
+export type SectorId = keyof typeof BUSINESS_SECTORS;
+export type IndustryId = string;
+
+// Create type-safe sector and industry maps
+export const sectors = BUSINESS_SECTORS;
+
+// Flatten industries for easier access
+export const industries = Object.entries(sectors).reduce((acc, [sectorId, sectorData]) => {
+  const sectorIndustries = sectorData.subsectors || {};
+  return { ...acc, ...sectorIndustries };
+}, {} as Record<string, { name: string; description: string; subSegments: string[] }>);
+
+// Business Info Step Schema
+export const businessInfoSchema = z.object({
+  businessName: z.string()
+    .min(1, "Business name is required")
+    .max(100, "Business name must be less than 100 characters"),
+
+  sector: z.string({
+    required_error: "Sector is required",
+    invalid_type_error: "Please select a valid sector"
+  }),
+
+  industry: z.string({
+    required_error: "Industry is required",
+    invalid_type_error: "Please select a valid industry"
+  }),
+
+  stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>], {
+    required_error: "Business stage is required"
+  }),
+
+  employeeCount: z.number({
+    required_error: "Number of employees is required",
+    invalid_type_error: "Please enter a valid number"
+  }).min(1, "Must have at least 1 employee"),
+
+  teamExperience: z.number().min(0).max(50).optional(),
+  customerBase: z.number().min(0).optional(),
+
+  revenueModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>], {
+    required_error: "Revenue model is required"
+  }),
+
+  productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>], {
+    required_error: "Product stage is required"
+  }),
+
+  scalability: z.enum(["limited", "moderate", "high"] as const),
+  intellectualProperty: z.enum(["none", "pending", "registered"] as const),
+  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"] as const)
+});
+
+export type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
+
+// Helper function for currency formatting
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+    notation: value >= 1000000 ? 'compact' : 'standard'
+  }).format(value);
+}
+
+
 export const currencies = {
   USD: { symbol: "$", name: "US Dollar" },
   EUR: { symbol: "€", name: "Euro" },
   GBP: { symbol: "£", name: "British Pound" },
   JPY: { symbol: "¥", name: "Japanese Yen" },
   INR: { symbol: "₹", name: "Indian Rupee" },
-} as const;
-
-// Update the business stages to match the actual values used
-export const businessStages = {
-  ideation_unvalidated: "Ideation Stage (Concept Only)",
-  ideation_validated: "Ideation Stage (Market Validated)",
-  mvp_development: "MVP Development",
-  mvp_early_traction: "MVP with Early Traction",
-  beta_testing: "Beta Testing",
-  revenue_early: "Early Revenue Stage",
-  revenue_growing: "Growing Revenue Stage",
-  revenue_scaling: "Scaling Revenue Stage",
-  growth_regional: "Regional Growth",
-  growth_national: "National Expansion",
-  growth_international: "International Expansion",
-  mature_stable: "Mature & Stable",
-  mature_expanding: "Mature & Expanding",
-  pre_ipo: "Pre-IPO Stage",
-  acquisition_target: "Acquisition Target",
-  restructuring: "Restructuring",
-  turnaround: "Turnaround Stage"
 } as const;
 
 // Add regions with their compliance standards and default currency
@@ -168,21 +246,6 @@ export const fundUtilizationSchema = z.object({
   })),
 });
 
-// Revenue models for businesses
-export const revenueModels = {
-  subscription: "Subscription Model",
-  transactional: "Transactional / One-time Sales",
-  marketplace: "Marketplace / Commission",
-  advertising: "Advertising Revenue",
-  licensing: "Licensing / Royalties",
-  saas: "Software as a Service",
-  freemium: "Freemium Model",
-  consulting: "Professional Services / Consulting",
-  hardware: "Hardware Sales",
-  usage_based: "Usage-Based Pricing",
-  hybrid: "Hybrid Model"
-} as const;
-
 // Geographic market definitions
 export const geographicMarkets = {
   local: "Local / City-specific",
@@ -195,23 +258,12 @@ export const geographicMarkets = {
   online_only: "Online / Digital Only"
 } as const;
 
-// Product development stages
-export const productStages = {
-  concept: "Concept / Ideation",
-  prototype: "Prototype / POC",
-  mvp: "Minimum Viable Product",
-  beta: "Beta Version",
-  market_ready: "Market Ready",
-  scaling: "Scaling / Growth",
-  mature: "Mature Product",
-  next_gen: "Next Generation Development"
-} as const;
 
 // Get all sectors as an array of strings
 const sectorKeys = Object.keys(BUSINESS_SECTORS);
 
 // Update the sectors type definition to match database schema
-export const sectors = BUSINESS_SECTORS as Record<string, {
+export const sectors2 = BUSINESS_SECTORS as Record<string, {
   name: string;
   subsectors: Record<string, {
     name: string;
@@ -221,7 +273,7 @@ export const sectors = BUSINESS_SECTORS as Record<string, {
 }>;
 
 // Create a flat map of all industries for easier validation
-export const industries = Object.entries(sectors).reduce<Record<string, {
+export const industries2 = Object.entries(sectors2).reduce<Record<string, {
   name: string;
   description: string;
   subSegments: string[];
@@ -494,14 +546,6 @@ export const valuationFormSchema = z.object({
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
 
-export function formatCurrency(value: number, currency: keyof typeof currencies = "USD"): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-    notation: value >= 1000000 ? 'compact' : 'standard'
-  }).format(value);
-}
 
 // PitchDeck Types and Validation
 export const pitchDeckFormSchema = z.object({
