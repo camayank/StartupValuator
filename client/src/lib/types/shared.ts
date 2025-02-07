@@ -1,19 +1,6 @@
 import { z } from "zod";
 
 // Core validation interfaces
-export interface ValidationRule {
-  field: string;
-  type: string;
-  message: string;
-  validate: (value: any) => boolean;
-}
-
-export interface BusinessRule {
-  id: string;
-  condition: (data: any) => boolean;
-  message: string;
-}
-
 export interface ValidationResult {
   isValid: boolean;
   severity: 'info' | 'warning' | 'error';
@@ -22,11 +9,12 @@ export interface ValidationResult {
   impact?: 'low' | 'medium' | 'high';
 }
 
-// Core business information schema
+// Core business information schema aligned with UI and database
 export const businessInfoSchema = z.object({
   name: z.string().min(1, "Business name is required"),
-  sector: z.string(),
-  industry: z.string(),
+  sector: z.string().min(1, "Sector is required"),
+  industry: z.string().min(1, "Industry is required"),
+  location: z.string().min(1, "Location is required"),
   stage: z.enum([
     'ideation_unvalidated',
     'ideation_validated',
@@ -43,16 +31,23 @@ export const businessInfoSchema = z.object({
   regulatoryCompliance: z.enum(['notRequired', 'inProgress', 'compliant']).optional()
 });
 
-// Financial data schema with enhanced validation
+// Financial data schema with enhanced validation and proper typing
 export const financialDataSchema = z.object({
-  revenue: z.number().min(0),
-  expenses: z.number().min(0),
-  profits: z.number().min(0),
+  revenue: z.number().min(0, "Revenue must be non-negative"),
+  expenses: z.number().min(0, "Expenses must be non-negative"),
+  profits: z.number(),
   cashFlow: z.number(),
-  burnRate: z.number().optional(),
-  runway: z.number().optional(),
+  burnRate: z.number().min(0).optional(),
+  runway: z.number().min(0).optional(),
   margins: z.number().min(-100).max(100),
   growthRate: z.number().min(-100).max(1000),
+  assumptions: z.object({
+    discountRate: z.number(),
+    growthRate: z.number(),
+    terminalGrowthRate: z.number(),
+    beta: z.number(),
+    marketRiskPremium: z.number(),
+  }).optional(),
   fundingHistory: z.array(z.object({
     round: z.string(),
     amount: z.number(),
@@ -61,7 +56,7 @@ export const financialDataSchema = z.object({
   })).optional(),
 });
 
-// Market analysis schema with proper validation
+// Market analysis schema with proper validation and typing
 export const marketAnalysisSchema = z.object({
   targetMarket: z.string(),
   marketSize: z.object({
@@ -78,7 +73,7 @@ export const marketAnalysisSchema = z.object({
     weaknesses: z.array(z.string()),
     marketShare: z.number().optional()
   })),
-  growthStrategy: z.string(),
+  growthStrategy: z.string()
 });
 
 // Business model schema with enhanced validation

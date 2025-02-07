@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,7 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, ChevronDown, ChevronUp } from "lucide-react";
 import { useForm } from "react-hook-form";
-import type { ValuationFormData } from "@/lib/validations";
+import type { ValuationFormData, FinancialData } from "@/lib/types/shared";
 import { useSmartValidation } from "@/hooks/use-smart-validation";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -29,16 +29,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface ReviewAssumptionsProps {
-  data: ValuationFormData & {
-    assumptions?: {
-      discountRate: number;
-      growthRate: number;
-      terminalGrowthRate: number;
-      beta: number;
-      marketRiskPremium: number;
-    };
-    valuation?: number;
-  };
+  data: ValuationFormData;
   onUpdate: (data: Partial<ValuationFormData>) => Promise<void>;
   onRegenerate: () => void;
   onBack: () => void;
@@ -48,7 +39,8 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
-  const assumptions = data.assumptions || {
+
+  const assumptions = data.financialData?.assumptions || {
     discountRate: 0.1,
     growthRate: 0.05,
     terminalGrowthRate: 0.02,
@@ -61,22 +53,21 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
     const years = Array.from({ length: 5 }, (_, i) => i + 1);
     return years.map(year => ({
       year,
-      dcf: data.valuation ? (data.valuation * Math.pow(1 + assumptions.growthRate, year)).toFixed(2) : 0,
-      market: data.valuation ? (data.valuation * Math.pow(1 + assumptions.marketRiskPremium, year)).toFixed(2) : 0,
+      dcf: data.valuation ? (data.valuation.amount * Math.pow(1 + assumptions.growthRate, year)).toFixed(2) : 0,
+      market: data.valuation ? (data.valuation.amount * Math.pow(1 + assumptions.marketRiskPremium, year)).toFixed(2) : 0,
     }));
   };
 
-  const form = useForm<Partial<ValuationFormData>>({
+  const form = useForm<Partial<FinancialData>>({
     defaultValues: {
-      ...data,
-      growthRate: data.growthRate || 0,
-      margins: data.margins || 0,
+      ...data.financialData,
+      assumptions
     },
   });
 
   const { validateField, validationState, getSmartSuggestions } = useSmartValidation({
     sector: data.businessInfo?.sector,
-    stage: data.businessInfo?.productStage,
+    stage: data.businessInfo?.stage,
     revenue: data.financialData?.revenue
   });
 
@@ -85,23 +76,27 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
     const isValid = validateField(field, value, data);
     if (isValid) {
       const newAssumptions = { ...assumptions, [field]: value };
-      await onUpdate({ assumptions: newAssumptions });
+      await onUpdate({ 
+        financialData: {
+          ...data.financialData,
+          assumptions: newAssumptions
+        }
+      });
     }
   };
 
-  const handleSubmit = async (values: Partial<ValuationFormData>) => {
+  const handleSubmit = async (values: Partial<FinancialData>) => {
     setIsRegenerating(true);
     try {
-      await onUpdate(values);
+      await onUpdate({ financialData: values });
       await onRegenerate();
     } finally {
       setIsRegenerating(false);
     }
   };
 
-  // Helper to render smart suggestions
   const renderSuggestions = (field: string) => {
-    const suggestions = getSmartSuggestions(field, form.getValues(field));
+    const suggestions = getSmartSuggestions(field, form.getValues(field) as number);
     if (!suggestions?.length) return null;
 
     return (
@@ -171,7 +166,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                         const value = Number(e.target.value);
                         field.onChange(value);
                         validateField('growthRate', value, data);
-                        onUpdate({ growthRate: value });
+                        onUpdate({ financialData: { ...data.financialData, growthRate: value } });
                       }}
                       className={validationState['growthRate']?.isValid ? '' : 'border-red-500'}
                     />
@@ -210,7 +205,7 @@ export function ReviewAssumptions({ data, onUpdate, onRegenerate, onBack }: Revi
                         const value = Number(e.target.value);
                         field.onChange(value);
                         validateField('margins', value, data);
-                        onUpdate({ margins: value });
+                        onUpdate({ financialData: { ...data.financialData, margins: value } });
                       }}
                       className={validationState['margins']?.isValid ? '' : 'border-red-500'}
                     />
