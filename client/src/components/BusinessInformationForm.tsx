@@ -48,14 +48,27 @@ export function BusinessInformationForm({
   const form = useForm<BusinessInformation>({
     resolver: zodResolver(businessInformationSchema),
     defaultValues: {
-      industrySegment: initialData?.industrySegment || "",
-      sector: initialData?.sector || "",
       name: initialData?.name || "",
-      businessModel: initialData?.businessModel || "subscription",
-      location: initialData?.location || "",
+      sector: initialData?.sector || "technology",
+      industrySegment: initialData?.industrySegment || "",
+      businessModel: initialData?.businessModel || "saas",
+      stage: initialData?.stage || "ideation_validated",
       teamSize: initialData?.teamSize || 1,
       description: initialData?.description || "",
-      stage: initialData?.stage || "ideation_validated"
+      foundingDate: initialData?.foundingDate,
+      location: initialData?.location || "",
+      productStage: initialData?.productStage || "concept",
+      businessMaturity: initialData?.businessMaturity || {
+        monthsOperating: 0,
+        revenueStatus: "pre_revenue",
+        customerBase: 0,
+        marketValidation: "none"
+      },
+      regulatoryStatus: initialData?.regulatoryStatus || {
+        compliance: "notRequired",
+        licenses: [],
+        certifications: []
+      }
     }
   });
 
@@ -67,7 +80,7 @@ export function BusinessInformationForm({
     // Clear sector if current selection is invalid for new industry
     const currentSector = form.getValues("sector");
     if (currentSector && !sectors.includes(currentSector)) {
-      form.setValue("sector", "");
+      form.setValue("sector", "technology");
     }
   }, [form]);
 
@@ -122,14 +135,41 @@ export function BusinessInformationForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className={cn("space-y-6", className)}>
+        {/* Business Name */}
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                Business Name *
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Enter your company's legal or registered business name
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="e.g., TechStart Solutions Inc." />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         {/* Industry Segment */}
         <FormField
           control={form.control}
           name="industrySegment"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Industry Segment *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Industry Segment *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -140,26 +180,26 @@ export function BusinessInformationForm({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
-              <Select 
-                onValueChange={field.onChange} 
-                defaultValue={field.value}
-              >
-                <FormControl>
+              </FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your industry segment" />
                   </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(industrySegments).map(([industry, segments]) => (
-                    segments.map((segment) => (
-                      <SelectItem key={segment} value={segment}>
-                        {segment}
-                      </SelectItem>
-                    ))
-                  ))}
-                </SelectContent>
-              </Select>
+                  <SelectContent>
+                    {Object.entries(industrySegments).map(([industry, segments]) => (
+                      segments.map((segment) => (
+                        <SelectItem key={segment} value={segment}>
+                          {segment}
+                        </SelectItem>
+                      ))
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -171,8 +211,8 @@ export function BusinessInformationForm({
           name="sector"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Business Sector *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Business Sector *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -183,11 +223,11 @@ export function BusinessInformationForm({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
+              </FormLabel>
               <FormControl>
-                <Select 
-                  onValueChange={field.onChange} 
-                  value={field.value}
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
                   disabled={!form.getValues("industrySegment")}
                 >
                   <SelectTrigger>
@@ -207,44 +247,14 @@ export function BusinessInformationForm({
           )}
         />
 
-        {/* Business Name */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Business Name *</FormLabel>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Enter your company's legal or registered business name
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <FormControl>
-                <Input
-                  placeholder="e.g., TechStart Solutions Inc."
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         {/* Business Model */}
         <FormField
           control={form.control}
           name="businessModel"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Business Model *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Business Model *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -255,27 +265,26 @@ export function BusinessInformationForm({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
-              <Select 
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
-                <FormControl>
+              </FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your business model" />
                   </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
-                  <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
-                  <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
-                  <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
-                  <SelectItem value="subscription">Subscription</SelectItem>
-                  <SelectItem value="transactional">Transactional</SelectItem>
-                  <SelectItem value="advertising">Advertising</SelectItem>
-                  <SelectItem value="licensing">Licensing</SelectItem>
-                </SelectContent>
-              </Select>
+                  <SelectContent>
+                    <SelectItem value="saas">Software as a Service (SaaS)</SelectItem>
+                    <SelectItem value="marketplace">Marketplace</SelectItem>
+                    <SelectItem value="subscription">Subscription</SelectItem>
+                    <SelectItem value="advertising">Advertising</SelectItem>
+                    <SelectItem value="hardware">Hardware</SelectItem>
+                    <SelectItem value="licensing">Licensing</SelectItem>
+                    <SelectItem value="consulting">Consulting</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -287,8 +296,8 @@ export function BusinessInformationForm({
           name="teamSize"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Team Size *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Team Size *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -299,7 +308,7 @@ export function BusinessInformationForm({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -320,8 +329,8 @@ export function BusinessInformationForm({
           name="description"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center gap-2">
-                <FormLabel>Business Description *</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Business Description *
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -332,7 +341,7 @@ export function BusinessInformationForm({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
+              </FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Describe your business, its mission, and unique value proposition..."
