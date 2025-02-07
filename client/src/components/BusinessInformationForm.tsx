@@ -1,6 +1,13 @@
-import { useForm, FormField, FormItem, FormControl, FormLabel, FormMessage } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  TooltipProvider,
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
@@ -117,77 +124,86 @@ export function BusinessInformationForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className={cn("space-y-6", className)}>
         {/* Industry Segment */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="industrySegment" className="text-sm font-medium">
-              Industry Segment *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Select your primary industry segment
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            onValueChange={(value) => form.setValue("industrySegment", value)}
-            defaultValue={form.getValues("industrySegment")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your industry segment" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(industrySegments).map(([industry, segments]) => (
-                segments.map((segment) => (
-                  <SelectItem key={segment} value={segment}>
-                    {segment}
-                  </SelectItem>
-                ))
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.industrySegment && (
-            <p className="text-sm text-destructive">{form.formState.errors.industrySegment.message}</p>
+        <FormField
+          control={form.control}
+          name="industrySegment"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Industry Segment *</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Select your primary industry segment
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your industry segment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(industrySegments).map(([industry, segments]) => (
+                      segments.map((segment) => (
+                        <SelectItem key={segment} value={segment}>
+                          {segment}
+                        </SelectItem>
+                      ))
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
 
         {/* Business Sector */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="sector" className="text-sm font-medium">
-              Business Sector *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Select the type of business opportunity in your industry
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            onValueChange={(value) => form.setValue("sector", value)}
-            defaultValue={form.getValues("sector")}
-            disabled={!form.getValues("industrySegment")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your business sector" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableSectors.map((sector) => (
-                <SelectItem key={sector} value={sector}>
-                  {sector.charAt(0).toUpperCase() + sector.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.sector && (
-            <p className="text-sm text-destructive">{form.formState.errors.sector.message}</p>
+        <FormField
+          control={form.control}
+          name="sector"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Business Sector *</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Select the type of business opportunity in your industry
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Select 
+                  onValueChange={field.onChange} 
+                  value={field.value}
+                  disabled={!form.getValues("industrySegment")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your business sector" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSectors.map((sector) => (
+                      <SelectItem key={sector} value={sector}>
+                        {sector.charAt(0).toUpperCase() + sector.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
 
         {/* Business Name */}
         <FormField
@@ -196,9 +212,7 @@ export function BusinessInformationForm({
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center gap-2">
-                <FormLabel className="text-sm font-medium">
-                  Business Name *
-                </FormLabel>
+                <FormLabel>Business Name *</FormLabel>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -222,95 +236,109 @@ export function BusinessInformationForm({
         />
 
         {/* Business Model */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="businessModel" className="text-sm font-medium">
-              Business Model *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Select your primary business model
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            onValueChange={(value) => form.setValue("businessModel", value)}
-            defaultValue={form.getValues("businessModel")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your business model" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
-              <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
-              <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
-              <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
-              <SelectItem value="subscription">Subscription</SelectItem>
-              <SelectItem value="transactional">Transactional</SelectItem>
-              <SelectItem value="advertising">Advertising</SelectItem>
-              <SelectItem value="licensing">Licensing</SelectItem>
-            </SelectContent>
-          </Select>
-          {form.formState.errors.businessModel && (
-            <p className="text-sm text-destructive">{form.formState.errors.businessModel.message}</p>
+        <FormField
+          control={form.control}
+          name="businessModel"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Business Model *</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Select your primary business model
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your business model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
+                    <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
+                    <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
+                    <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
+                    <SelectItem value="subscription">Subscription</SelectItem>
+                    <SelectItem value="transactional">Transactional</SelectItem>
+                    <SelectItem value="advertising">Advertising</SelectItem>
+                    <SelectItem value="licensing">Licensing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
 
         {/* Team Size */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="teamSize" className="text-sm font-medium">
-              Team Size *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Enter the total number of full-time team members
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Input
-            {...form.register("teamSize", { valueAsNumber: true })}
-            id="teamSize"
-            type="number"
-            min={1}
-            placeholder="e.g., 5"
-          />
-          {form.formState.errors.teamSize && (
-            <p className="text-sm text-destructive">{form.formState.errors.teamSize.message}</p>
+        <FormField
+          control={form.control}
+          name="teamSize"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Team Size *</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Enter the total number of full-time team members
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="e.g., 5"
+                  {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
 
         {/* Business Description */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="description" className="text-sm font-medium">
-              Business Description *
-            </label>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                Provide a detailed description of your business (minimum 50 characters)
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Textarea
-            {...form.register("description")}
-            id="description"
-            placeholder="Describe your business, its mission, and unique value proposition..."
-            className="min-h-[100px]"
-          />
-          {form.formState.errors.description && (
-            <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center gap-2">
+                <FormLabel>Business Description *</FormLabel>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Provide a detailed description of your business (minimum 50 characters)
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe your business, its mission, and unique value proposition..."
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-4 pt-6">
