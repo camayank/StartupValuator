@@ -210,32 +210,24 @@ export const productStages = {
 // Get all sectors as an array of strings
 const sectorKeys = Object.keys(BUSINESS_SECTORS);
 
-// Update the sectors object to match BUSINESS_SECTORS structure
-export const sectors = Object.fromEntries(
-  sectorKeys.map(sector => [
-    sector.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-    {
-      name: sector,
-      subsectors: Object.fromEntries(
-        Object.entries(BUSINESS_SECTORS[sector]).map(([segment, subSegments]) => [
-          segment.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
-          {
-            name: segment,
-            description: `${segment} within ${sector}`,
-            subSegments: subSegments
-          }
-        ])
-      )
-    }
-  ])
-);
+// Update the sectors type definition to match database schema
+export const sectors = BUSINESS_SECTORS as Record<string, {
+  name: string;
+  subsectors: Record<string, {
+    name: string;
+    description: string;
+    subSegments: string[];
+  }>;
+}>;
 
-
-// Create a flat map of all industries for backward compatibility
-export const industries = Object.entries(sectors).reduce((acc, [_, sector]) => {
+// Create a flat map of all industries for easier validation
+export const industries = Object.entries(sectors).reduce<Record<string, {
+  name: string;
+  description: string;
+  subSegments: string[];
+}>>((acc, [_, sector]) => {
   return { ...acc, ...sector.subsectors };
-}, {} as Record<string, string>);
-
+}, {});
 
 export const valuationPurposes = {
   fundraising: "Fundraising",
@@ -455,21 +447,14 @@ export const regionSchema = z.object({
 });
 
 export const valuationFormSchema = z.object({
-  // Business Information
   businessInfo: z.object({
     name: z.string().min(1, "Business name is required"),
-    sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>], {
-      required_error: "Sector is required"
-    }),
-    industry: z.enum(Object.keys(industries) as [keyof typeof industries, ...Array<keyof typeof industries>], {
-      required_error: "Industry is required"
-    }),
+    sector: z.string().min(1, "Sector is required"),
+    industry: z.string().min(1, "Industry is required"),
     location: z.string().min(1, "Location is required"),
     productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
     businessModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>])
   }),
-
-  // Market Data
   marketData: z.object({
     tam: z.number().min(0, "TAM must be a positive number"),
     sam: z.number().min(0, "SAM must be a positive number"),
@@ -480,8 +465,6 @@ export const valuationFormSchema = z.object({
     message: "Market sizes must follow TAM ≥ SAM ≥ SOM",
     path: ["marketData"]
   }),
-
-  // Financial Data
   financialData: z.object({
     revenue: z.number().min(0, "Revenue must be a positive number"),
     cac: z.number().min(0, "CAC must be a positive number"),
@@ -492,22 +475,16 @@ export const valuationFormSchema = z.object({
     message: "LTV should be greater than CAC for a sustainable business model",
     path: ["financialData"]
   }),
-
-  // Product Details
   productDetails: z.object({
     maturity: z.string().min(1, "Product maturity level is required"),
     roadmap: z.string().min(1, "Product roadmap is required"),
     technologyStack: z.string().min(1, "Technology stack is required"),
     differentiators: z.string().min(1, "Product differentiators are required")
   }),
-
-  // Risks and Opportunities
   risksAndOpportunities: z.object({
     risks: z.array(z.string()).min(1, "At least one risk must be identified"),
     opportunities: z.array(z.string()).min(1, "At least one opportunity must be identified")
   }),
-
-  // Valuation Inputs
   valuationInputs: z.object({
     targetValuation: z.number().min(0, "Target valuation must be a positive number"),
     fundingRequired: z.number().min(0, "Funding required must be a positive number"),

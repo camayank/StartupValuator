@@ -39,148 +39,80 @@ import { useToast } from "@/hooks/use-toast";
 import { useApiWithRetry } from "@/hooks/use-api-with-retry";
 import ValidationEngine from "@/lib/validation-engine";
 import ErrorHandler from "@/lib/error-handler";
-import type { ValuationFormData } from "@/lib/validations";
-import { sectors, businessStages, revenueModels, geographicMarkets, productStages } from "@/lib/validations";
+import { sectors, industries, productStages, revenueModels, businessStages } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import DebugHelper from "@/lib/debug-helper";
+import type { ValuationFormData } from "@/lib/validations";
 
-const createFormSchema = (selectedSector: keyof typeof sectors) => z.object({
+// Create a type-safe schema for this step
+const businessInfoSchema = z.object({
   businessName: z.string()
     .min(1, "Business name is required")
-    .max(100, "Business name must be less than 100 characters")
-    .regex(/^[a-zA-Z0-9\s\-&'.]+$/, "Business name can only contain letters, numbers, spaces, and basic punctuation"),
-
-  sector: z.enum(Object.keys(sectors) as [keyof typeof sectors, ...Array<keyof typeof sectors>]),
-
-  industry: z.string()
-    .min(1, "Please select an industry")
-    .refine((val) => {
-      const sector = sectors[selectedSector];
-      return sector?.subsectors && Object.keys(sector.subsectors).includes(val);
-    }, "Invalid industry for selected sector"),
-
+    .max(100, "Business name must be less than 100 characters"),
+  sector: z.string().min(1, "Sector is required"),
+  industry: z.string().min(1, "Industry is required"),
   stage: z.enum(Object.keys(businessStages) as [keyof typeof businessStages, ...Array<keyof typeof businessStages>]),
-
-  employeeCount: z.coerce.number().min(1, "Must have at least 1 employee"),
-
-  fundingHistory: z.object({
-    rounds: z.array(z.string()),
-    totalRaised: z.number().optional(),
-    lastRound: z.string().optional()
-  }).optional(),
-
-  revenueModel: z.enum([...Object.keys(revenueModels)] as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
-
-  geographicMarkets: z.array(
-    z.enum([...Object.keys(geographicMarkets)] as [keyof typeof geographicMarkets, ...Array<keyof typeof geographicMarkets>])
-  ),
-
-  productStage: z.enum([...Object.keys(productStages)] as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
-
-  intellectualProperty: z.enum(["none", "pending", "registered"] as const),
-  competitiveDifferentiation: z.enum(["low", "medium", "high"] as const),
-  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"] as const),
-  scalability: z.enum(["limited", "moderate", "high"] as const),
-
+  employeeCount: z.number().min(1, "Must have at least 1 employee"),
   teamExperience: z.number().min(0).max(50).optional(),
   customerBase: z.number().min(0).optional(),
+  revenueModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>]),
+  productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
+  scalability: z.enum(["limited", "moderate", "high"] as const),
+  intellectualProperty: z.enum(["none", "pending", "registered"] as const),
+  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"] as const),
 });
 
-// Validation rules for ValidationEngine
-const validationRules = {
-  businessName: { minLength: 1, maxLength: 100 },
-  teamExperience: { min: 0, max: 50 },
-  customerBase: { min: 0, max: 1000000 },
-  employeeCount: { min: 1, max: 1000000 }
-};
+type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
 
 interface BusinessInfoStepProps {
-  data: Partial<ValuationFormData>;
-  onUpdate: (data: Partial<ValuationFormData>) => Promise<void>;
+  data: Partial<BusinessInfoFormData>;
+  onUpdate: (data: BusinessInfoFormData) => Promise<void>;
   onNext: () => void;
   currentStep: number;
   totalSteps: number;
 }
 
 export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSteps }: BusinessInfoStepProps) {
-  const [selectedSector, setSelectedSector] = useState<keyof typeof sectors>(data.sector as keyof typeof sectors || Object.keys(sectors)[0]);
+  const [selectedSector, setSelectedSector] = useState<string>(data.sector || Object.keys(sectors)[0]);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { callApiWithRetry } = useApiWithRetry();
 
-  const form = useForm<ValuationFormData>({
-    resolver: zodResolver(createFormSchema(selectedSector)),
-    mode: "onChange",
+  const form = useForm<BusinessInfoFormData>({
+    resolver: zodResolver(businessInfoSchema),
     defaultValues: {
       businessName: data.businessName || "",
-      sector: data.sector as keyof typeof sectors || Object.keys(sectors)[0],
-      industry: data.industry || Object.keys(sectors[selectedSector]?.subsectors || {})[0] || "",
-      stage: data.stage as keyof typeof businessStages || Object.keys(businessStages)[0],
-      intellectualProperty: data.intellectualProperty || "none",
+      sector: data.sector || Object.keys(sectors)[0],
+      industry: data.industry || "",
+      stage: data.stage || Object.keys(businessStages)[0],
+      employeeCount: data.employeeCount || 1,
       teamExperience: data.teamExperience || 0,
       customerBase: data.customerBase || 0,
-      competitiveDifferentiation: data.competitiveDifferentiation || "medium",
-      regulatoryCompliance: data.regulatoryCompliance || "notRequired",
-      scalability: data.scalability || "moderate",
-      employeeCount: data.employeeCount || 1,
-      fundingHistory: data.fundingHistory || { rounds: [], totalRaised: 0, lastRound: undefined },
       revenueModel: data.revenueModel || Object.keys(revenueModels)[0],
-      geographicMarkets: data.geographicMarkets || [Object.keys(geographicMarkets)[0]],
       productStage: data.productStage || Object.keys(productStages)[0],
-    }
+      scalability: data.scalability || "moderate",
+      intellectualProperty: data.intellectualProperty || "none",
+      regulatoryCompliance: data.regulatoryCompliance || "notRequired",
+    },
+    mode: "onChange"
   });
 
   const formErrors = form.formState.errors;
   const hasErrors = Object.keys(formErrors).length > 0;
 
-  const handleSectorChange = (value: keyof typeof sectors) => {
-    const prevState = form.getValues();
+  const handleSectorChange = (value: string) => {
     setSelectedSector(value);
     form.setValue("sector", value, { shouldValidate: true });
-    const firstIndustry = Object.keys(sectors[value]?.subsectors || {})[0] || "";
-    form.setValue("industry", firstIndustry, { shouldValidate: true });
-
-    DebugHelper.trackStateChange(prevState, {
-      ...prevState,
-      sector: value,
-      industry: firstIndustry
-    });
+    // Industry selection is now handled by the schema, no need for manual update here.
+    DebugHelper.trackStateChange(form.getValues(), {...form.getValues(), sector: value, industry: ""});
   };
 
-  const validateField = (name: string, value: any) => {
-    if (name in validationRules) {
-      const rules = validationRules[name as keyof typeof validationRules];
-      if (typeof value === 'number') {
-        return ValidationEngine.validateNumber(value, rules);
-      }
-      if (typeof value === 'string') {
-        return ValidationEngine.validateString(value, rules);
-      }
-    }
-    return true;
-  };
-
-  const handleSubmit = async (values: ValuationFormData) => {
+  const handleSubmit = async (values: BusinessInfoFormData) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-      const validationErrors: string[] = [];
-      Object.entries(values).forEach(([field, value]) => {
-        if (!validateField(field, value)) {
-          validationErrors.push(`Invalid value for ${field}`);
-        }
-      });
-
-      if (validationErrors.length > 0) {
-        ErrorHandler.handleValidationError({
-          message: validationErrors.join(', '),
-          suggestions: ['Check the input values', 'Ensure all required fields are filled']
-        }).toast();
-        return;
-      }
-
       const result = await DebugHelper.trackAPICall(
         async () => await callApiWithRetry(
           () => onUpdate(values),
@@ -321,7 +253,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                               <SelectValue placeholder="Select your sector" />
                             </SelectTrigger>
                             <SelectContent>
-                              {Object.entries(sectors).map(([key, { name }]) => (
+                              {Object.entries(sectors).map(([key, name]) => (
                                 <SelectItem key={key} value={key}>{name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -342,20 +274,15 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           </div>
                           <Select
                             value={field.value}
-                            onValueChange={(value) => {
-                              form.setValue("industry", value, { shouldValidate: true });
-                            }}
-                            disabled={!selectedSector}
+                            onValueChange={(value) => form.setValue("industry", value)}
                           >
                             <SelectTrigger aria-required="true">
-                              <SelectValue placeholder={selectedSector ? "Select your industry" : "Select sector first"} />
+                              <SelectValue placeholder="Select your industry" />
                             </SelectTrigger>
                             <SelectContent>
-                              {selectedSector && sectors[selectedSector]?.subsectors &&
-                                Object.entries(sectors[selectedSector].subsectors).map(([key, name]) => (
-                                  <SelectItem key={key} value={key}>{name}</SelectItem>
-                                ))
-                              }
+                              {Object.entries(industries).map(([key, name]) => (
+                                <SelectItem key={key} value={key}>{name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -366,23 +293,23 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
 
                   <FormField
                     control={form.control}
-                    name="geographicMarkets"
+                    name="stage"
                     render={({ field }) => (
                       <FormItem>
                         <div className="flex items-center">
-                          <FormLabel>Geographic Markets *</FormLabel>
-                          <FieldTooltip content="Select your target markets" />
+                          <FormLabel>Business Stage *</FormLabel>
+                          <FieldTooltip content="Choose the stage of your business" />
                         </div>
                         <Select
-                          value={field.value[0]}
-                          onValueChange={(value) => form.setValue("geographicMarkets", [value])}
+                          value={field.value}
+                          onValueChange={value => form.setValue('stage', value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select markets" />
+                            <SelectValue placeholder="Select business stage" />
                           </SelectTrigger>
                           <SelectContent>
-                            {Object.entries(geographicMarkets).map(([key, name]) => (
-                              <SelectItem key={key} value={key}>{name}</SelectItem>
+                            {Object.entries(businessStages).map(([key, value]) => (
+                              <SelectItem key={key} value={key}>{value}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -468,7 +395,7 @@ export function BusinessInfoStep({ data, onUpdate, onNext, currentStep, totalSte
                           <Input
                             type="number"
                             {...field}
-                            onChange={(e) => form.setValue("employeeCount", parseInt(e.target.value))}
+                            onChange={(e) => form.setValue("employeeCount", parseInt(e.target.value, 10))}
                             min={1}
                             className="max-w-md"
                           />
