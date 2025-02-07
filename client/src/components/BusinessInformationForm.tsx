@@ -66,8 +66,8 @@ export function BusinessInformationForm({
 
     // Clear sector if current selection is invalid for new industry
     const currentSector = form.getValues("sector");
-    if (!sectors.includes(currentSector)) {
-      form.setValue("sector", sectors[0] || "");
+    if (currentSector && !sectors.includes(currentSector)) {
+      form.setValue("sector", "");
     }
   }, [form]);
 
@@ -81,12 +81,12 @@ export function BusinessInformationForm({
     return () => subscription.unsubscribe();
   }, [form.watch, handleIndustryChange]);
 
-  const handleSubmit = async (data: BusinessInformation) => {
+  const handleFormSubmit = async (data: BusinessInformation) => {
     try {
-      const validation = BusinessInformationHandler.validateBusinessInformation(data);
+      const validationResult = await BusinessInformationHandler.validateBusinessInformation(data);
 
-      if (!validation.isValid) {
-        validation.errors.forEach(error => {
+      if (!validationResult.isValid) {
+        validationResult.errors.forEach(error => {
           toast({
             title: "Validation Error",
             description: error,
@@ -96,12 +96,11 @@ export function BusinessInformationForm({
         return;
       }
 
-      if (validation.warnings.length > 0) {
-        validation.warnings.forEach(warning => {
+      if (validationResult.warnings?.length > 0) {
+        validationResult.warnings.forEach(warning => {
           toast({
             title: "Warning",
             description: warning,
-            variant: "warning",
           });
         });
       }
@@ -122,7 +121,7 @@ export function BusinessInformationForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className={cn("space-y-6", className)}>
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className={cn("space-y-6", className)}>
         {/* Industry Segment */}
         <FormField
           control={form.control}
@@ -142,22 +141,25 @@ export function BusinessInformationForm({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <FormControl>
-                <Select onValueChange={field.onChange} value={field.value}>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your industry segment" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(industrySegments).map(([industry, segments]) => (
-                      segments.map((segment) => (
-                        <SelectItem key={segment} value={segment}>
-                          {segment}
-                        </SelectItem>
-                      ))
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
+                </FormControl>
+                <SelectContent>
+                  {Object.entries(industrySegments).map(([industry, segments]) => (
+                    segments.map((segment) => (
+                      <SelectItem key={segment} value={segment}>
+                        {segment}
+                      </SelectItem>
+                    ))
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -254,23 +256,26 @@ export function BusinessInformationForm({
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <FormControl>
-                <Select onValueChange={field.onChange} value={field.value}>
+              <Select 
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your business model" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
-                    <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
-                    <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
-                    <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
-                    <SelectItem value="subscription">Subscription</SelectItem>
-                    <SelectItem value="transactional">Transactional</SelectItem>
-                    <SelectItem value="advertising">Advertising</SelectItem>
-                    <SelectItem value="licensing">Licensing</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormControl>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="b2b">Business to Business (B2B)</SelectItem>
+                  <SelectItem value="b2c">Business to Consumer (B2C)</SelectItem>
+                  <SelectItem value="b2b2c">Business to Business to Consumer (B2B2C)</SelectItem>
+                  <SelectItem value="c2c">Consumer to Consumer (C2C)</SelectItem>
+                  <SelectItem value="subscription">Subscription</SelectItem>
+                  <SelectItem value="transactional">Transactional</SelectItem>
+                  <SelectItem value="advertising">Advertising</SelectItem>
+                  <SelectItem value="licensing">Licensing</SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -301,7 +306,7 @@ export function BusinessInformationForm({
                   min={1}
                   placeholder="e.g., 5"
                   {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                  onChange={(e) => field.onChange(Number(e.target.value) || 1)}
                 />
               </FormControl>
               <FormMessage />
