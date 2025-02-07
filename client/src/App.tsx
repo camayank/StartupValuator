@@ -1,36 +1,28 @@
 import { Switch, Route, Link, useLocation } from "wouter";
-import { Home } from "./pages/Home";
-import { Documentation } from "./pages/Documentation";
-import { Profile } from "./pages/Profile";
+import { LandingPage } from "./pages/LandingPage";
 import ValuationCalculatorPage from "./pages/ValuationCalculatorPage";
 import { Card } from "@/components/ui/card";
 import {
   AlertCircle,
-  BarChart3,
-  Calculator,
-  FileText,
+  ChevronRight,
   Settings,
-  Users,
-  Building2,
-  PieChart,
-  ClipboardCheck,
-  BookOpen,
   LogOut,
   Menu,
   ChevronDown,
-  Loader2
+  Loader2,
+  Home,
+  Calculator,
+  FileText,
+  BarChart3,
+  Users,
+  HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
-import { ProjectionsWizard } from "@/components/projections/ProjectionsWizard";
-import { StartupHealthDashboard } from "@/components/StartupHealthDashboard";
-import { ComplianceChecker } from "@/components/ComplianceChecker";
-import { PricingPage } from "./pages/PricingPage";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
-import { ValuationForm } from "@/components/ValuationForm"; // Updated import path
+import { ValuationForm } from "@/components/ValuationForm";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,76 +31,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DashboardContainer } from "@/components/DashboardContainer";
 import AuthPage from "./pages/AuthPage";
-import { RoleAccessVisualization } from "@/components/RoleAccessVisualization";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect } from "react";
-import { WorkflowSuggestions } from "@/components/WorkflowSuggestions";
 import { TourGuide } from "@/components/TourGuide";
-import { LandingPage } from "./pages/LandingPage";
-import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
 
-const navigationConfig = {
-  startup: {
-    mainTools: [
-      { href: "/valuation-form", label: "Full Valuation", description: "Comprehensive startup valuation", icon: FileText },
-      { href: "/calculator", label: "Quick Calculator", description: "Basic valuation estimation", icon: Calculator },
-      { href: "/projections", label: "Financial Projections", description: "Create detailed financial forecasts", icon: BarChart3 },
-      { href: "/pitch-deck", label: "Pitch Deck", description: "Generate investor presentations", icon: FileText },
-      { href: "/business-plan", label: "Business Plan", description: "Create detailed business plan", icon: FileText },
-    ],
-    analytics: [
-      { href: "/dashboard", label: "Health Dashboard", description: "Monitor startup metrics", icon: PieChart },
-      { href: "/compliance", label: "Compliance Check", description: "Regulatory compliance", icon: ClipboardCheck },
-    ],
-    resources: [
-      { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
-      { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
-    ]
+const navigationItems = [
+  { 
+    href: "/dashboard", 
+    label: "Dashboard", 
+    icon: Home,
+    description: "Overview of your startup metrics"
   },
-  investor: {
-    mainTools: [
-      { href: "/valuation-form", label: "Full Valuation", description: "Evaluate investment opportunities", icon: Calculator },
-      { href: "/calculator", label: "Quick Calculator", description: "Quick valuation estimates", icon: Calculator },
-      { href: "/portfolio", label: "Portfolio", description: "Manage investments", icon: PieChart },
-    ],
-    analytics: [
-      { href: "/dashboard", label: "Investment Dashboard", description: "Portfolio performance", icon: PieChart },
-      { href: "/market-analysis", label: "Market Analysis", description: "Market trends", icon: BarChart3 },
-    ],
-    resources: [
-      { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
-      { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
-    ]
+  { 
+    href: "/valuation", 
+    label: "Valuation Form", 
+    icon: FileText,
+    description: "Complete startup valuation"
   },
-  default: {
-    mainTools: [
-      { href: "/valuation-form", label: "Full Valuation", description: "Complete valuation", icon: Calculator },
-      { href: "/calculator", label: "Quick Calculator", description: "Basic calculator", icon: Calculator },
-      { href: "/projections", label: "Financial Projections", description: "Create forecasts", icon: BarChart3 },
-      { href: "/pitch-deck", label: "Pitch Deck", description: "Create presentations", icon: FileText },
-      { href: "/business-plan", label: "Business Plan", description: "Create business plan", icon: FileText },
-    ],
-    analytics: [
-      { href: "/dashboard", label: "Dashboard", description: "View analytics", icon: PieChart },
-      { href: "/compliance", label: "Compliance Check", description: "View compliance", icon: ClipboardCheck },
-    ],
-    resources: [
-      { href: "/pricing", label: "Pricing", description: "View our subscription plans", icon: Building2 },
-      { href: "/docs", label: "API Docs", description: "Access our API documentation", icon: FileText },
-    ]
+  { 
+    href: "/calculator", 
+    label: "Quick Calculator", 
+    icon: Calculator,
+    description: "Quick valuation estimate"
+  },
+  { 
+    href: "/metrics", 
+    label: "Key Metrics", 
+    icon: BarChart3,
+    description: "Track important KPIs"
+  },
+  { 
+    href: "/team", 
+    label: "Team", 
+    icon: Users,
+    description: "Manage team and roles"
   }
-} as const;
-
-type UserRole = keyof typeof navigationConfig | string;
-
-function getNavigation(role: UserRole) {
-  if (role in navigationConfig) {
-    return navigationConfig[role as keyof typeof navigationConfig];
-  }
-  return navigationConfig.default;
-}
+];
 
 function App() {
   const { user, isLoading, error, logout } = useUser();
@@ -130,9 +88,7 @@ function App() {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isLoading) {
-      timer = setTimeout(() => {
-        setShowLoadingError(true);
-      }, 5000);
+      timer = setTimeout(() => setShowLoadingError(true), 5000);
     } else {
       setShowLoadingError(false);
     }
@@ -165,16 +121,17 @@ function App() {
     );
   }
 
-  if (!user && !location.startsWith('/auth')) {
+  // Handle public routes
+  if (!user) {
     if (location === '/calculator') {
       return (
         <div className="min-h-screen bg-background">
-          <header className="border-b bg-card/80 backdrop-blur">
-            <div className="flex h-16 items-center justify-between px-4 container mx-auto">
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container flex h-16 items-center">
               <Link href="/">
                 <span className="text-xl font-bold">StartupValuator</span>
               </Link>
-              <div className="flex items-center gap-4">
+              <div className="ml-auto flex items-center gap-4">
                 <ThemeToggle />
                 <Link href="/auth?mode=login">
                   <Button variant="ghost">Sign In</Button>
@@ -189,16 +146,11 @@ function App() {
         </div>
       );
     }
+    if (location.startsWith('/auth')) {
+      return <AuthPage />;
+    }
     return <LandingPage />;
   }
-
-  if (!user && location.startsWith('/auth')) {
-    return <AuthPage />;
-  }
-
-  if (!user) return null;
-
-  const userNavigation = user ? getNavigation(user.role) : navigationConfig.default;
 
   const handleLogout = async () => {
     try {
@@ -213,245 +165,170 @@ function App() {
     }
   };
 
-  const NavLink = ({ href, label, description, icon: Icon }: {
-    href: string;
-    label: string;
-    description: string;
-    icon: any;
-  }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Link href={href}>
-          <div
-            className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
-              location === href
-                ? 'bg-primary/10 text-primary'
-                : 'hover:bg-accent text-foreground'
-            }`}
-          >
-            <Icon className="h-5 w-5" />
-            <span>{label}</span>
-          </div>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent side="right">
-        <p>{description}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-
-  const MobileNavItem = ({ href, label, icon: Icon }: { href: string; label: string; icon: any }) => (
-    <Link href={href}>
-      <div
-        className={`flex items-center gap-3 px-4 py-2 ${
-          location === href
-            ? "bg-primary/10 text-primary"
-            : "hover:bg-accent"
-        }`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      >
-        <Icon className="h-5 w-5" />
-        <span>{label}</span>
-      </div>
-    </Link>
-  );
-
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-background">
-        <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r bg-card lg:block">
-          <div className="flex h-full flex-col">
-            <div className="border-b p-4 flex items-center justify-between">
-              <Link href="/">
-                <span className="text-xl font-bold cursor-pointer hover:text-primary transition-colors">
-                  StartupValuator
+    <div className="min-h-screen bg-background flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 flex-col fixed inset-y-0 z-50">
+        <div className="flex flex-col flex-grow bg-card border-r">
+          <div className="flex items-center h-16 px-4 border-b">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="font-bold text-xl">StartupValuator</span>
+            </Link>
+          </div>
+
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+            {navigationItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <span className={`
+                  flex items-center px-3 py-2 rounded-md text-sm
+                  ${location === item.href 
+                    ? 'bg-primary/10 text-primary' 
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  }
+                `}>
+                  <item.icon className="h-5 w-5 mr-3" />
+                  {item.label}
                 </span>
               </Link>
-              <ThemeToggle />
-            </div>
+            ))}
+          </nav>
 
-            <nav className="flex-1 space-y-6 p-4 overflow-y-auto">
-              <div>
-                <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Main Tools</h2>
-                <div className="space-y-1">
-                  {userNavigation.mainTools.map((item) => (
-                    <NavLink key={item.href} {...item} />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Analytics</h2>
-                <div className="space-y-1">
-                  {userNavigation.analytics.map((item) => (
-                    <NavLink key={item.href} {...item} />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h2 className="mb-2 px-3 text-sm font-semibold text-muted-foreground">Resources</h2>
-                <div className="space-y-1">
-                  {userNavigation.resources.map((item) => (
-                    <NavLink key={item.href} {...item} />
-                  ))}
-                </div>
-              </div>
-            </nav>
-
-            <div className="border-t p-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Settings className="h-5 w-5" />
-                    <span className="flex-1 text-left">{user.username}</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuItem className="text-muted-foreground">
-                    Role: {user.role}
+          <div className="p-4 border-t">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Settings className="h-5 w-5" />
+                  <span className="flex-1 text-left">{user.username}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuItem className="text-muted-foreground">
+                  Role: {user.role}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <Link href={`/profile/${user.id}`}>
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <Link href={`/profile/${user.id}`}>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Profile Settings
-                    </DropdownMenuItem>
+                </Link>
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Header */}
+      <header className="lg:hidden sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72">
+              <nav className="flex flex-col gap-2 mt-4">
+                {navigationItems.map((item) => (
+                  <Link key={item.href} href={item.href}>
+                    <span
+                      className={`
+                        flex items-center gap-3 px-4 py-2 rounded-md
+                        ${location === item.href 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'hover:bg-accent'
+                        }
+                      `}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </span>
                   </Link>
-                  <DropdownMenuItem
-                    className="cursor-pointer text-destructive focus:text-destructive"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
+          <Link href="/" className="ml-4">
+            <span className="font-bold text-xl">StartupValuator</span>
+          </Link>
+
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{user.username}</DropdownMenuLabel>
+                <DropdownMenuItem className="text-muted-foreground">
+                  Role: {user.role}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <Link href={`/profile/${user.id}`}>
+                  <DropdownMenuItem>Settings</DropdownMenuItem>
+                </Link>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </aside>
+        </div>
+      </header>
 
-        <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur lg:hidden">
-          <div className="flex h-16 items-center justify-between px-4">
-            <Link href="/">
-              <span className="text-xl font-bold">StartupValuator</span>
-            </Link>
+      {/* Main Content */}
+      <main className="flex-1 lg:pl-64">
+        <div className="container mx-auto px-4 py-8">
+          <Switch>
+            <Route path="/auth">
+              <AuthPage />
+            </Route>
+            <Route path="/calculator">
+              <ValuationCalculatorPage />
+            </Route>
+            <Route path="/valuation">
+              <ValuationForm onResult={(data) => {
+                console.log('Valuation form data:', data);
+                toast({
+                  title: "Success",
+                  description: "Valuation data saved successfully.",
+                });
+              }} />
+            </Route>
+            <Route path="/">
+              <ValuationForm onResult={(data) => {
+                console.log('Valuation form data:', data);
+                toast({
+                  title: "Success",
+                  description: "Valuation data saved successfully.",
+                });
+              }} />
+            </Route>
+            <Route>
+              <NotFound />
+            </Route>
+          </Switch>
+        </div>
+      </main>
 
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-80">
-                  <nav className="mt-8 space-y-6">
-                    <div>
-                      <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Main Tools</h2>
-                      {userNavigation.mainTools.map((item) => (
-                        <MobileNavItem key={item.href} {...item} />
-                      ))}
-                    </div>
-
-                    <div>
-                      <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Analytics</h2>
-                      {userNavigation.analytics.map((item) => (
-                        <MobileNavItem key={item.href} {...item} />
-                      ))}
-                    </div>
-
-                    <div>
-                      <h2 className="mb-2 px-4 text-sm font-semibold text-muted-foreground">Resources</h2>
-                      {userNavigation.resources.map((item) => (
-                        <MobileNavItem key={item.href} {...item} />
-                      ))}
-                    </div>
-
-                    <div className="border-t pt-6">
-                      <div className="px-4 py-2 text-sm text-muted-foreground">
-                        Signed in as: {user.username}
-                      </div>
-                      <MobileNavItem
-                        href={`/profile/${user.id}`}
-                        label="Profile Settings"
-                        icon={Settings}
-                      />
-                      <button
-                        className="flex w-full items-center gap-3 px-4 py-2 text-destructive hover:bg-accent"
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="h-5 w-5" />
-                        Logout
-                      </button>
-                    </div>
-                  </nav>
-                </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-        </header>
-
-        <main className="lg:pl-64">
-          <div className="min-h-[calc(100vh-4rem)] p-4 lg:p-8">
-            <Switch>
-              <Route path="/auth">
-                <AuthPage />
-              </Route>
-              <Route path="/calculator">
-                <ValuationCalculatorPage />
-              </Route>
-              <Route path="/valuation-form">
-                <ValuationForm
-                  onResult={(data) => {
-                    console.log('Valuation form data:', data);
-                  }}
-                />
-              </Route>
-              <Route path="/projections">
-                <ProjectionsWizard />
-              </Route>
-              <Route path="/pitch-deck">
-                <PitchDeckGenerator />
-              </Route>
-              <Route path="/dashboard">
-                <DashboardContainer />
-              </Route>
-              <Route path="/compliance">
-                <ComplianceChecker />
-              </Route>
-              <Route path="/pricing">
-                <PricingPage />
-              </Route>
-              <Route path="/docs">
-                <Documentation />
-              </Route>
-              <Route path="/profile/:userId">
-                <Profile />
-              </Route>
-              <Route path="/business-plan">
-                <BusinessPlanWizard />
-              </Route>
-              <Route path="/">
-                <ValuationForm
-                  onResult={(data) => {
-                    console.log('Valuation form data:', data);
-                  }}
-                />
-              </Route>
-              <Route>
-                <NotFound />
-              </Route>
-            </Switch>
-          </div>
-        </main>
-
-        <WorkflowSuggestions />
-        <TourGuide />
-      </div>
-    </TooltipProvider>
+      <TourGuide />
+    </div>
   );
 }
 
@@ -460,17 +337,18 @@ function NotFound() {
     <div className="flex items-center justify-center min-h-[60vh]">
       <Card className="w-full max-w-md mx-4">
         <div className="p-6">
-          <div className="flex mb-4 gap-2">
+          <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="h-8 w-8 text-destructive" />
             <h1 className="text-2xl font-bold">404 Page Not Found</h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             The page you're looking for doesn't exist.
           </p>
           <Link href="/">
-            <span className="mt-4 inline-block text-primary hover:underline cursor-pointer">
+            <Button variant="default" className="w-full">
               Return to Home
-            </span>
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
           </Link>
         </div>
       </Card>
