@@ -1,7 +1,10 @@
 import type { ValuationFormData } from "../../client/src/lib/validations";
 
 // Industry-specific multipliers and adjustments
-const industryMultipliers = {
+const industryMultipliers: Record<string, {
+  baseMultiple: number;
+  adjustments: Record<string, (value: number) => number>;
+}> = {
   SaaS: {
     baseMultiple: 10,
     adjustments: {
@@ -18,8 +21,7 @@ const industryMultipliers = {
       inventoryTurnover: (rate: number) => Math.min(1.3, rate / 12),
       customerRetention: (rate: number) => 1 + (rate - 50) / 100
     }
-  },
-  // Add more industries as needed
+  }
 };
 
 // Risk categories and their weights for Risk Factor Summation method

@@ -1,0 +1,100 @@
+<form method="POST">
+  <input type="text" name="industry">
+  <button>Submit</button>
+</form>
+```"
+
+---
+
+### **3. AI Model Integration**  
+**Prompt**:  
+*"Avoid overcomplicating the AI. For now:  
+1. In `valuation_model.py`, create a function that takes industry and revenue.  
+2. Return revenue × 25 if AI, ×10 if SaaS.  
+3. Call this from your `/calculate` route.  
+🛑 **Checkpoint**: Does entering $100K revenue for AI return $2.5M? If not, debug the math.*"  
+
+**Common Detour Alert**:  
+*"Don’t try web scraping yet – use hardcoded multiples for now."*
+
+---
+
+### **4. Database Focus**  
+**Prompt**:  
+*"Stay on Replit DB – no external databases yet.  
+1. Store each valuation in `db["history"]` as a dictionary with industry/revenue/valuation.  
+2. Show the last 3 entries below the form.  
+🛑 **Checkpoint**: Does submitting the form update the history section?*"  
+
+**Timebox Warning**:  
+*"Spend max 15 minutes on this. If stuck, use this snippet:*  
+```python
+from replit import db
+if 'history' not in db: db['history'] = []
+db['history'].append({"industry": "ai", "valuation": 2500000})
+```"
+
+---
+
+### **5. Course Correction Examples**  
+
+#### **Scenario**: Learner starts adding blockchain support  
+**Prompt**:  
+*"Pause – our MVP only handles AI/SaaS.  
+1. Comment out the blockchain code.  
+2. Add a `// TODO: Expand to Web3` note.  
+3. Return to testing core industries.*"  
+
+#### **Scenario**: Learner obsesses over login systems  
+**Prompt**:  
+*"Temporarily skip authentication:  
+1. Hardcode a test user with `user_id = "demo"`.  
+2. Add a `# SECURITY FIX NEEDED` comment.  
+3. Focus on making the valuation form functional.*"  
+
+---
+
+### **6. Progress-Linked Prompts**  
+**After Basic Valuation Works**:  
+*"Now you can enhance:  
+1. Add a simple CSS style for the form (max 10 minutes).  
+2. Include a ‘Team Size’ field that adds $500K per member if >3.  
+🛑 **Checkpoint**: Does a 5-person team add $1M to valuation?*"  
+
+**Post-MVP**:  
+*"Great job on the core! Now pick **one** extension:  
+A) Add a pie chart with Plotly  
+B) Scrape Crunchbase for real multiples  
+C) Style the landing page  
+⚠️ **Warning**: Only choose one to avoid scope creep.*"
+
+---
+
+### **7. Distraction-Proof Debugging**  
+**Prompt**:  
+*"If your app crashes:  
+1. Check **only** these in order:  
+   a) Routes in `main.py` have correct decorators (e.g., `@app.route`).  
+   b) HTML files are in the `templates` folder.  
+   c) No typos in variable names (e.g., `db` vs `DB`).  
+2. If unresolved, share your Replit link for help.*"
+
+---
+
+### **8. Final Consolidation**  
+**Prompt**:  
+*"Before adding new features:  
+1. List what’s working:  
+   - [ ] Landing page  
+   - [ ] Valuation form  
+   - [ ] History tracking  
+2. Fix **one** broken item from the list above.  
+3. Commit your code with message ‘Stable MVP’."*
+
+---
+
+These prompts enforce **vertical progress** (depth over breadth) and include:  
+1. Explicit checkpoints to validate direction.  
+2. Timeboxing to prevent over-engineering.  
+3. Pre-built snippets for quick recovery from detours.  
+4. Scenario-specific troubleshooting.
