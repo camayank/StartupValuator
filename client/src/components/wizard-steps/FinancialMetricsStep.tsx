@@ -11,30 +11,38 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
+import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { DollarSign, TrendingUp, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DollarSign, TrendingUp, Info, Percent, Calculator } from "lucide-react";
 import { NumericInput } from "@/components/ui/numeric-input";
 
-// Schema with helpful error messages
 const financialMetricsSchema = z.object({
-  annualRevenue: z.number({
-    required_error: "Annual revenue is required",
-    invalid_type_error: "Please enter a valid number",
-  }).min(0, "Revenue must be positive"),
-
-  annualExpenses: z.number({
-    required_error: "Annual expenses are required",
-    invalid_type_error: "Please enter a valid number",
-  }).min(0, "Expenses must be positive"),
-
-  burnRate: z.number({
-    required_error: "Monthly burn rate is required",
-    invalid_type_error: "Please enter a valid number",
-  }).min(0, "Burn rate must be positive"),
-
-  growthRate: z.number({
-    required_error: "Growth rate is required",
-    invalid_type_error: "Please enter a valid number",
+  revenue: z.object({
+    current: z.number({
+      required_error: "Current revenue is required",
+      invalid_type_error: "Please enter a valid number",
+    }).min(0, "Revenue must be positive"),
+    projected: z.number().min(0, "Projected revenue must be positive").optional(),
+  }),
+  expenses: z.object({
+    fixed: z.number().min(0, "Fixed expenses must be positive"),
+    variable: z.number().min(0, "Variable expenses must be positive"),
+    rnd: z.number().min(0, "R&D expenses must be positive").optional(),
+  }),
+  margins: z.object({
+    gross: z.number().min(-100).max(100, "Gross margin must be between -100% and 100%"),
+    operating: z.number().min(-100).max(100, "Operating margin must be between -100% and 100%"),
+  }),
+  growth: z.object({
+    historical: z.number(),
+    projected: z.number(),
+  }),
+  metrics: z.object({
+    burnRate: z.number().min(0, "Burn rate must be positive"),
+    runway: z.number().min(0, "Runway must be positive"),
+    cac: z.number().min(0, "CAC must be positive").optional(),
+    ltv: z.number().min(0, "LTV must be positive").optional(),
   }),
 });
 
@@ -49,30 +57,54 @@ export function FinancialMetricsStep({
   onUpdate,
   initialData = {},
 }: FinancialMetricsStepProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   const form = useForm<FinancialMetricsFormData>({
     resolver: zodResolver(financialMetricsSchema),
     defaultValues: {
-      annualRevenue: initialData.annualRevenue || 0,
-      annualExpenses: initialData.annualExpenses || 0,
-      burnRate: initialData.burnRate || 0,
-      growthRate: initialData.growthRate || 0,
+      revenue: {
+        current: initialData.revenue?.current || 0,
+        projected: initialData.revenue?.projected || 0,
+      },
+      expenses: {
+        fixed: initialData.expenses?.fixed || 0,
+        variable: initialData.expenses?.variable || 0,
+        rnd: initialData.expenses?.rnd || 0,
+      },
+      margins: {
+        gross: initialData.margins?.gross || 0,
+        operating: initialData.margins?.operating || 0,
+      },
+      growth: {
+        historical: initialData.growth?.historical || 0,
+        projected: initialData.growth?.projected || 0,
+      },
+      metrics: {
+        burnRate: initialData.metrics?.burnRate || 0,
+        runway: initialData.metrics?.runway || 0,
+        cac: initialData.metrics?.cac || 0,
+        ltv: initialData.metrics?.ltv || 0,
+      },
     },
   });
 
   const handleSubmit = async (values: FinancialMetricsFormData) => {
     try {
-      setIsSubmitting(true);
-      // Calculate burn rate if not provided
-      if (!values.burnRate && values.annualExpenses) {
-        values.burnRate = values.annualExpenses / 12;
+      setIsCalculating(true);
+
+      // Calculate derived metrics
+      const totalExpenses = values.expenses.fixed + values.expenses.variable + (values.expenses.rnd || 0);
+      values.metrics.burnRate = totalExpenses / 12;
+
+      if (values.revenue.current > 0) {
+        values.metrics.runway = (values.revenue.current - totalExpenses) / values.metrics.burnRate;
       }
+
       await onUpdate(values);
     } catch (error) {
-      console.error('Error submitting financial metrics:', error);
+      console.error("Error submitting financial metrics:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsCalculating(false);
     }
   };
 
@@ -81,128 +113,186 @@ export function FinancialMetricsStep({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Enter your company's financial metrics. These numbers help us calculate an accurate valuation.
+          Provide your key financial metrics to help us calculate an accurate valuation.
+          We'll automatically calculate some derived metrics for you.
         </AlertDescription>
       </Alert>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-          <div className="grid gap-6">
-            <FormField
-              control={form.control}
-              name="annualRevenue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Annual Revenue
-                  </FormLabel>
-                  <FormDescription>
-                    Total revenue for the last 12 months
-                  </FormDescription>
-                  <FormControl>
-                    <NumericInput
-                      {...field}
-                      onValueChange={field.onChange}
-                      prefix="$"
-                      thousandSeparator=","
-                      decimalScale={0}
-                      placeholder="Enter annual revenue"
-                      className="text-lg"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {/* Revenue Section */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Revenue</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="revenue.current"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current Annual Revenue</FormLabel>
+                    <FormDescription>
+                      Total revenue for the last 12 months
+                    </FormDescription>
+                    <FormControl>
+                      <NumericInput
+                        {...field}
+                        onValueChange={field.onChange}
+                        prefix="$"
+                        thousandSeparator=","
+                        decimalScale={0}
+                        placeholder="Enter current revenue"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="revenue.projected"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Projected Annual Revenue</FormLabel>
+                    <FormDescription>
+                      Expected revenue for the next 12 months
+                    </FormDescription>
+                    <FormControl>
+                      <NumericInput
+                        {...field}
+                        onValueChange={field.onChange}
+                        prefix="$"
+                        thousandSeparator=","
+                        decimalScale={0}
+                        placeholder="Enter projected revenue"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </Card>
 
-            <FormField
-              control={form.control}
-              name="annualExpenses"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Annual Expenses
-                  </FormLabel>
-                  <FormDescription>
-                    Total expenses for the last 12 months
-                  </FormDescription>
-                  <FormControl>
-                    <NumericInput
-                      {...field}
-                      onValueChange={field.onChange}
-                      prefix="$"
-                      thousandSeparator=","
-                      decimalScale={0}
-                      placeholder="Enter annual expenses"
-                      className="text-lg"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {/* Expenses Section */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Calculator className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Expenses</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="expenses.fixed"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fixed Expenses</FormLabel>
+                    <FormDescription>
+                      Monthly fixed costs (rent, salaries, etc.)
+                    </FormDescription>
+                    <FormControl>
+                      <NumericInput
+                        {...field}
+                        onValueChange={field.onChange}
+                        prefix="$"
+                        thousandSeparator=","
+                        decimalScale={0}
+                        placeholder="Enter fixed expenses"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="expenses.variable"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Variable Expenses</FormLabel>
+                    <FormDescription>
+                      Monthly variable costs (materials, commissions, etc.)
+                    </FormDescription>
+                    <FormControl>
+                      <NumericInput
+                        {...field}
+                        onValueChange={field.onChange}
+                        prefix="$"
+                        thousandSeparator=","
+                        decimalScale={0}
+                        placeholder="Enter variable expenses"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </Card>
 
-            <FormField
-              control={form.control}
-              name="burnRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Monthly Burn Rate
-                  </FormLabel>
-                  <FormDescription>
-                    Average monthly cash spent (expenses minus revenue)
-                  </FormDescription>
-                  <FormControl>
-                    <NumericInput
-                      {...field}
-                      onValueChange={field.onChange}
-                      prefix="$"
-                      thousandSeparator=","
-                      decimalScale={0}
-                      placeholder="Enter monthly burn rate"
-                      className="text-lg"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {/* Growth & Metrics Section */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Growth & Metrics</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="growth.historical"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Historical Growth Rate</FormLabel>
+                    <FormDescription>
+                      Past 12 months growth rate
+                    </FormDescription>
+                    <FormControl>
+                      <NumericInput
+                        {...field}
+                        onValueChange={field.onChange}
+                        suffix="%"
+                        decimalScale={1}
+                        allowNegative
+                        placeholder="Enter historical growth"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="growth.projected"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Projected Growth Rate</FormLabel>
+                    <FormDescription>
+                      Expected annual growth rate
+                    </FormDescription>
+                    <FormControl>
+                      <NumericInput
+                        {...field}
+                        onValueChange={field.onChange}
+                        suffix="%"
+                        decimalScale={1}
+                        allowNegative
+                        placeholder="Enter projected growth"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </Card>
 
-            <FormField
-              control={form.control}
-              name="growthRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Growth Rate (%)
-                  </FormLabel>
-                  <FormDescription>
-                    Year-over-year revenue growth rate
-                  </FormDescription>
-                  <FormControl>
-                    <NumericInput
-                      {...field}
-                      onValueChange={field.onChange}
-                      suffix="%"
-                      decimalScale={1}
-                      allowNegative
-                      placeholder="Enter growth rate"
-                      className="text-lg"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isCalculating}>
+              {isCalculating ? "Calculating..." : "Save & Continue"}
+            </Button>
           </div>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Continue"}
-          </Button>
         </form>
       </Form>
     </div>

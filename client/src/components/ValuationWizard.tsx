@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -8,9 +9,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 import { Info } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { ValuationFormData } from "@/lib/validations";
+
+// Import step components
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
 import { FinancialMetricsStep } from "./wizard-steps/FinancialMetricsStep";
 import { MarketAnalysisStep } from "./wizard-steps/MarketAnalysisStep";
@@ -19,169 +23,211 @@ import { RiskAssessmentStep } from "./wizard-steps/RiskAssessmentStep";
 import { ValuationSimulationStep } from "./wizard-steps/ValuationSimulationStep";
 import { ReportGenerationStep } from "./wizard-steps/ReportGenerationStep";
 
+const steps = [
+  {
+    id: "businessInfo",
+    title: "Business Profile",
+    description: "Tell us about your startup",
+    component: BusinessInfoStep,
+    validation: ["companyName", "industry", "stage"]
+  },
+  {
+    id: "financialMetrics",
+    title: "Financial Overview",
+    description: "Key financial metrics and projections",
+    component: FinancialMetricsStep,
+    validation: ["revenue", "expenses", "growth"]
+  },
+  {
+    id: "marketAnalysis",
+    title: "Market Analysis",
+    description: "Market size and positioning",
+    component: MarketAnalysisStep,
+    validation: ["targetMarket", "marketSize"]
+  },
+  {
+    id: "competitiveAnalysis",
+    title: "Competition",
+    description: "Competitive landscape analysis",
+    component: CompetitiveAnalysisStep,
+    validation: ["competitors"]
+  },
+  {
+    id: "riskAssessment",
+    title: "Risk Profile",
+    description: "Risk assessment and mitigation",
+    component: RiskAssessmentStep,
+    validation: ["risks", "mitigation"]
+  },
+  {
+    id: "valuationSimulation",
+    title: "Valuation",
+    description: "Value calculation and scenarios",
+    component: ValuationSimulationStep,
+    validation: ["methodology"]
+  },
+  {
+    id: "reportGeneration",
+    title: "Final Report",
+    description: "Comprehensive valuation report",
+    component: ReportGenerationStep,
+    validation: ["reportType"]
+  }
+];
 
 interface ValuationWizardProps {
   onComplete: (data: ValuationFormData) => void;
   sessionData?: any;
 }
 
-const steps = [
-  {
-    id: "businessInfo",
-    title: "Business Information",
-    description: "Tell us about your business",
-    component: BusinessInfoStep,
-  },
-  {
-    id: "financialMetrics",
-    title: "Financial Metrics",
-    description: "Key financial indicators",
-    component: FinancialMetricsStep,
-  },
-  {
-    id: "marketAnalysis",
-    title: "Market Analysis",
-    description: "Market size and position",
-    component: MarketAnalysisStep,
-  },
-  {
-    id: "competitiveAnalysis",
-    title: "Competitive Analysis",
-    description: "Competitive landscape",
-    component: CompetitiveAnalysisStep,
-  },
-  {
-    id: "riskAssessment",
-    title: "Risk Assessment",
-    description: "Risk evaluation",
-    component: RiskAssessmentStep,
-  },
-  {
-    id: "valuationSimulation",
-    title: "Valuation Simulation",
-    description: "Calculate company value",
-    component: ValuationSimulationStep,
-  },
-  {
-    id: "reportGeneration",
-    title: "Report Generation",
-    description: "Generate detailed reports",
-    component: ReportGenerationStep,
-  }
-];
-
 export function ValuationWizard({ onComplete, sessionData }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
+  const [stepValidation, setStepValidation] = useState<Record<number, boolean>>({});
   const { toast } = useToast();
 
+  const validateStep = (stepIndex: number, data: any): boolean => {
+    const requiredFields = steps[stepIndex].validation;
+    const isValid = requiredFields.every(field => {
+      const value = data[field];
+      return value !== undefined && value !== null && value !== '';
+    });
+
+    setStepValidation(prev => ({
+      ...prev,
+      [stepIndex]: isValid
+    }));
+
+    return isValid;
+  };
+
   const handleStepUpdate = async (stepId: string, data: any) => {
+    const stepIndex = steps.findIndex(s => s.id === stepId);
+
+    if (!validateStep(stepIndex, data)) {
+      toast({
+        title: "Validation Error",
+        description: "Please complete all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [stepId]: data
     }));
 
-    // Show success message
     toast({
-      title: "Saved",
-      description: "Your progress has been saved",
+      title: "Progress Saved",
+      description: "Your information has been saved successfully"
     });
 
-    // Move to next step if available
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
+    if (stepIndex < steps.length - 1) {
+      setCurrentStep(stepIndex + 1);
     }
   };
 
-  const handleComplete = () => {
-    if (Object.keys(formData).length < steps.length) {
-      toast({
-        title: "Incomplete",
-        description: "Please complete all steps before submitting",
-        variant: "destructive"
-      });
-      return;
-    }
-    onComplete(formData as ValuationFormData);
+  const calculateProgress = () => {
+    const validSteps = Object.values(stepValidation).filter(Boolean).length;
+    return (validSteps / steps.length) * 100;
   };
 
   const StepComponent = steps[currentStep].component;
-  const stepId = steps[currentStep].id;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Step Indicator */}
-      <div className="flex justify-between items-center py-4 px-6 bg-background rounded-lg border">
+    <div className="max-w-4xl mx-auto px-4">
+      {/* Progress Tracker */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">
+            Step {currentStep + 1} of {steps.length}
+          </h2>
+          <span className="text-sm text-muted-foreground">
+            {Math.round(calculateProgress())}% Complete
+          </span>
+        </div>
+        <Progress value={calculateProgress()} className="h-2" />
+      </div>
+
+      {/* Step Navigation */}
+      <div className="flex space-x-2 mb-6 overflow-x-auto pb-2">
         {steps.map((step, index) => (
-          <div
+          <Button
             key={step.id}
-            className={`flex flex-col items-center ${
-              index === currentStep
-                ? "text-primary"
-                : index < currentStep
-                ? "text-muted-foreground"
-                : "text-muted"
-            }`}
+            variant={currentStep === index ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (stepValidation[index] || index <= currentStep) {
+                setCurrentStep(index);
+              }
+            }}
+            disabled={!stepValidation[index] && index > currentStep}
+            className="whitespace-nowrap"
           >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${
-                index === currentStep
-                  ? "bg-primary text-primary-foreground"
-                  : index < currentStep
-                  ? "bg-muted"
-                  : "bg-muted/50"
-              }`}
-            >
-              {index + 1}
-            </div>
-            <span className="text-sm font-medium hidden md:block">{step.title}</span>
-          </div>
+            {step.title}
+          </Button>
         ))}
       </div>
 
-      {/* Current Step */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{steps[currentStep].title}</CardTitle>
-          <CardDescription>{steps[currentStep].description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {currentStep === 0 && (
-            <Alert className="mb-6">
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Start by telling us about your business. This helps us provide accurate valuation insights.
-              </AlertDescription>
-            </Alert>
-          )}
+      {/* Current Step Content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>{steps[currentStep].title}</CardTitle>
+              <CardDescription>{steps[currentStep].description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {currentStep === 0 && (
+                <Alert className="mb-6">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Let's start by understanding your business better. This information helps us provide accurate valuation insights.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-          <StepComponent
-            onUpdate={(data: any) => handleStepUpdate(stepId, data)}
-            initialData={formData[stepId]}
-            sessionData={sessionData}
-          />
+              <StepComponent
+                onUpdate={(data: any) => handleStepUpdate(steps[currentStep].id, data)}
+                initialData={formData[steps[currentStep].id]}
+                sessionData={sessionData}
+              />
 
-          <div className="flex justify-between mt-6 pt-6 border-t">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
-              disabled={currentStep === 0}
-            >
-              Previous
-            </Button>
+              <div className="flex justify-between mt-6 pt-6 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                  disabled={currentStep === 0}
+                >
+                  Previous
+                </Button>
 
-            {currentStep === steps.length - 1 ? (
-              <Button onClick={handleComplete}>
-                Complete Valuation
-              </Button>
-            ) : (
-              <Button onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}>
-                Continue
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                {currentStep === steps.length - 1 ? (
+                  <Button 
+                    onClick={() => onComplete(formData as ValuationFormData)}
+                    disabled={!Object.values(stepValidation).every(Boolean)}
+                  >
+                    Generate Valuation Report
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}
+                    disabled={!stepValidation[currentStep]}
+                  >
+                    Continue
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
