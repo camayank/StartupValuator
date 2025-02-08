@@ -1,4 +1,6 @@
 import { Decimal } from 'decimal.js';
+import { Worker } from 'worker_threads';
+import { wrap } from 'comlink';
 import type { ValuationFormData } from "../../client/src/lib/validations";
 
 interface SimulationParams {
@@ -40,48 +42,75 @@ interface SimulationResult {
   };
 }
 
+interface StreamingProgress {
+  completedIterations: number;
+  currentEstimates: Partial<SimulationResult>;
+}
+
 export class MonteCarloService {
-  private readonly DEFAULT_ITERATIONS = 10000;
+  private readonly DEFAULT_ITERATIONS = 1_000_000; // Increased for better accuracy
+  private readonly BATCH_SIZE = 10_000; // Size of each parallel batch
+  private readonly NUM_WORKERS = 4; // Number of parallel workers
+
+  private workers: Worker[] = [];
+  private progressCallbacks: Set<(progress: StreamingProgress) => void> = new Set();
+
+  constructor() {
+    this.initializeWorkers();
+  }
+
+  private async initializeWorkers() {
+    for (let i = 0; i < this.NUM_WORKERS; i++) {
+      const worker = new Worker('./simulation-worker.js');
+      const wrappedWorker = wrap(worker);
+      this.workers.push(wrappedWorker);
+    }
+  }
 
   async runSimulation(
     data: ValuationFormData,
     baseValue: number,
-    customParams?: Partial<SimulationParams>
+    customParams?: Partial<SimulationParams>,
+    onProgress?: (progress: StreamingProgress) => void
   ): Promise<SimulationResult> {
     try {
+      if (onProgress) {
+        this.progressCallbacks.add(onProgress);
+      }
+
       const params = this.buildSimulationParams(data, baseValue, customParams);
-      const results = new Array<number>(params.iterations);
+      const batchesPerWorker = Math.ceil(params.iterations / (this.BATCH_SIZE * this.NUM_WORKERS));
+      const results: number[] = [];
       const variableImpacts = new Map<string, number[]>();
 
-      // Run iterations
-      for (let i = 0; i < params.iterations; i++) {
-        const iterationResults = this.runIteration(params);
-        results[i] = iterationResults.value;
-        
-        // Track variable impacts
-        for (const [variable, impact] of Object.entries(iterationResults.impacts)) {
+      // Run parallel simulations
+      const batches = await Promise.all(
+        this.workers.map(worker =>
+          worker.runBatches(params, batchesPerWorker, this.BATCH_SIZE)
+        )
+      );
+
+      // Combine results from all workers
+      for (const batch of batches) {
+        results.push(...batch.results);
+        for (const [variable, impacts] of Object.entries(batch.impacts)) {
           if (!variableImpacts.has(variable)) {
             variableImpacts.set(variable, []);
           }
-          variableImpacts.get(variable)!.push(impact);
+          variableImpacts.get(variable)!.push(...impacts);
         }
       }
 
-      // Calculate distribution metrics
+      // Calculate final metrics
       const sortedResults = results.sort((a, b) => a - b);
       const mean = this.calculateMean(results);
       const stdDev = this.calculateStandardDeviation(results, mean);
 
-      // Calculate sensitivity analysis
       const sensitivity = this.calculateSensitivity(variableImpacts, results);
-
-      // Generate scenarios
       const scenarios = this.generateScenarios(sortedResults, variableImpacts);
-
-      // Calculate risk metrics
       const riskMetrics = this.calculateRiskMetrics(sortedResults, baseValue);
 
-      return {
+      const finalResult = {
         valuationDistribution: {
           min: sortedResults[0],
           max: sortedResults[sortedResults.length - 1],
@@ -97,6 +126,12 @@ export class MonteCarloService {
         scenarios,
         riskMetrics
       };
+
+      if (onProgress) {
+        this.progressCallbacks.delete(onProgress);
+      }
+
+      return finalResult;
     } catch (error) {
       console.error('Monte Carlo simulation error:', error);
       throw new Error('Failed to run Monte Carlo simulation');
@@ -143,7 +178,7 @@ export class MonteCarloService {
 
   private runIteration(params: SimulationParams): { value: number; impacts: Record<string, number> } {
     const impacts: Record<string, number> = {};
-    
+
     // Generate random variables using Box-Muller transform
     const revenue = this.generateNormal(params.variables.revenue.mean, params.variables.revenue.stdDev);
     impacts.revenue = revenue - params.variables.revenue.mean;
@@ -176,7 +211,7 @@ export class MonteCarloService {
     let u = 0, v = 0;
     while (u === 0) u = Math.random();
     while (v === 0) v = Math.random();
-    
+
     const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     return mean + stdDev * z;
   }
@@ -218,10 +253,10 @@ export class MonteCarloService {
     return Array.from(variableImpacts.entries()).map(([variable, impacts]) => {
       const impactsMean = this.calculateMean(impacts);
       const impactsStdDev = this.calculateStandardDeviation(impacts, impactsMean);
-      
+
       // Calculate correlation coefficient
       const correlation = this.calculateCorrelation(impacts, results);
-      
+
       return {
         variable,
         impact: (impactsStdDev / resultsStdDev) * correlation,
@@ -233,15 +268,15 @@ export class MonteCarloService {
   private calculateCorrelation(array1: number[], array2: number[]): number {
     const mean1 = this.calculateMean(array1);
     const mean2 = this.calculateMean(array2);
-    
-    const diffProd = array1.reduce((sum, value, i) => 
+
+    const diffProd = array1.reduce((sum, value, i) =>
       sum + (value - mean1) * (array2[i] - mean2), 0);
-    
-    const sqDiff1 = array1.reduce((sum, value) => 
+
+    const sqDiff1 = array1.reduce((sum, value) =>
       sum + Math.pow(value - mean1, 2), 0);
-    const sqDiff2 = array2.reduce((sum, value) => 
+    const sqDiff2 = array2.reduce((sum, value) =>
       sum + Math.pow(value - mean2, 2), 0);
-    
+
     return diffProd / Math.sqrt(sqDiff1 * sqDiff2);
   }
 
@@ -298,7 +333,7 @@ export class MonteCarloService {
     index: number
   ) {
     const keyFactors: Record<string, number> = {};
-    
+
     for (const [variable, impacts] of variableImpacts.entries()) {
       keyFactors[variable] = impacts[index];
     }
@@ -313,7 +348,7 @@ export class MonteCarloService {
 
   private calculateRiskMetrics(sortedResults: number[], baseValue: number) {
     const n = sortedResults.length;
-    
+
     // Calculate Value at Risk (VaR) at 95% confidence
     const varIndex = Math.floor(n * 0.05);
     const valueAtRisk = Math.max(0, baseValue - sortedResults[varIndex]);
@@ -331,6 +366,31 @@ export class MonteCarloService {
       expectedShortfall,
       probabilityOfLoss
     };
+  }
+
+  private generateProgress(
+    completedIterations: number,
+    currentResults: number[],
+    variableImpacts: Map<string, number[]>
+  ): StreamingProgress {
+    const sortedResults = [...currentResults].sort((a, b) => a - b);
+    return {
+      completedIterations,
+      currentEstimates: {
+        valuationDistribution: {
+          min: sortedResults[0],
+          max: sortedResults[sortedResults.length - 1],
+          mean: this.calculateMean(sortedResults),
+          median: this.calculateMedian(sortedResults)
+        }
+      }
+    };
+  }
+
+  private notifyProgress(progress: StreamingProgress) {
+    for (const callback of this.progressCallbacks) {
+      callback(progress);
+    }
   }
 }
 
