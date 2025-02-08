@@ -1,92 +1,112 @@
 import { useEffect, useState } from "react";
-import { fieldValidations, validateField, type ValidationContext } from "@/lib/validations/field-validations";
+import { useValidation } from "@/contexts/ValidationContext";
 import { useToast } from "@/hooks/use-toast";
 
-type ValidationState = Record<string, {
+export type ValidationState = Record<string, {
   isValid: boolean;
+  errors: string[];
   warnings: string[];
+  suggestions: string[];
 }>;
 
-export function useFieldValidation(context: ValidationContext) {
+export interface ValidationOptions {
+  validateOnChange?: boolean;
+  validateOnBlur?: boolean;
+  showToasts?: boolean;
+}
+
+export function useFieldValidation(context: any, options: ValidationOptions = {}) {
   const { toast } = useToast();
+  const { validateField, validateCrossField, getSmartDefaults } = useValidation();
   const [validationState, setValidationState] = useState<ValidationState>({});
+  const [isValidating, setIsValidating] = useState(false);
+  const [fieldDefaults, setFieldDefaults] = useState<Record<string, any>>({});
 
-  // Validate a single field
-  const validateSingleField = (fieldName: keyof typeof fieldValidations, value: any) => {
-    const result = validateField(fieldName, value, context);
-
-    setValidationState(prev => ({
-      ...prev,
-      [fieldName]: {
-        isValid: result.isValid,
-        warnings: result.warnings
-      }
-    }));
-
-    // Show warnings as toasts
-    result.warnings.forEach(warning => {
-      toast({
-        title: `Recommendation for ${fieldName}`,
-        description: warning,
-        variant: "destructive"
+  // Load smart defaults when industry changes
+  useEffect(() => {
+    if (context.industry) {
+      getSmartDefaults(context.industry).then(defaults => {
+        setFieldDefaults(defaults);
       });
-    });
+    }
+  }, [context.industry]);
 
-    return result.isValid;
+  const validateSingleField = async (fieldName: string, value: any) => {
+    setIsValidating(true);
+    try {
+      // Basic field validation
+      const fieldError = await validateField(fieldName, value, {});
+
+      // Cross-field validation
+      const crossErrors = await validateCrossField(fieldName, value, context);
+
+      // Combine errors
+      const errors = [
+        ...(fieldError ? [fieldError] : []),
+        ...(crossErrors ? Object.values(crossErrors) : [])
+      ];
+
+      // Update validation state
+      setValidationState(prev => ({
+        ...prev,
+        [fieldName]: {
+          isValid: errors.length === 0,
+          errors,
+          warnings: [],
+          suggestions: []
+        }
+      }));
+
+      // Show validation feedback if enabled
+      if (options.showToasts && errors.length > 0) {
+        toast({
+          title: "Validation Error",
+          description: errors[0],
+          variant: "destructive"
+        });
+      }
+
+      return errors.length === 0;
+    } catch (error) {
+      console.error(`Validation error for ${fieldName}:`, error);
+      return false;
+    } finally {
+      setIsValidating(false);
+    }
   };
 
-  // Get dependent field requirements
-  const getDependentFields = (fieldName: keyof typeof fieldValidations) => {
-    const validation = fieldValidations[fieldName];
-    return validation.dependencies;
+  const validateForm = async (formData: Record<string, any>) => {
+    const validationPromises = Object.entries(formData).map(([field, value]) =>
+      validateSingleField(field, value)
+    );
+
+    const results = await Promise.all(validationPromises);
+    return results.every(Boolean);
   };
 
-  // Check if a field should be required based on context
-  const isFieldRequired = (fieldName: keyof typeof fieldValidations) => {
-    const validation = fieldValidations[fieldName];
-
-    // Base requirement
-    if (validation.required) return true;
-
-    // Check sector-specific requirements
-    if (context.sector && 
-        validation.sectorSpecificRules?.[context.sector]?.required) {
-      return true;
-    }
-
-    // Check stage-specific requirements
-    if (context.stage && 
-        validation.stageSpecificRules?.[context.stage]?.required) {
-      return true;
-    }
-
-    return false;
+  const getFieldDefault = (fieldName: string) => {
+    return fieldDefaults[fieldName];
   };
 
-  // Get smart default value for a field
-  const getSmartDefault = (fieldName: keyof typeof fieldValidations) => {
-    const validation = fieldValidations[fieldName];
-
-    // Check sector-specific defaults
-    if (context.sector && 
-        validation.sectorSpecificDefaults?.[context.sector]) {
-      return validation.sectorSpecificDefaults[context.sector];
+  const clearValidation = (fieldName?: string) => {
+    if (fieldName) {
+      setValidationState(prev => {
+        const newState = { ...prev };
+        delete newState[fieldName];
+        return newState;
+      });
+    } else {
+      setValidationState({});
     }
-
-    // Check region-specific defaults
-    if (context.region && 
-        validation.regionSpecificDefaults?.[context.region]) {
-      return validation.regionSpecificDefaults[context.region];
-    }
-
-    return validation.defaultValue;
   };
 
   return {
-    validateField: validateSingleField,
     validationState,
-    getDependentFields,
-    isFieldRequired,
-    getSmartDefault
+    isValidating,
+    validateField: validateSingleField,
+    validateForm,
+    getFieldDefault,
+    clearValidation,
+    fieldDefaults
   };
 }
