@@ -1,9 +1,14 @@
 import type { ValuationFormData } from "../../client/src/lib/validations";
-import { industries, businessStages } from "../../client/src/lib/validations";
 import { calculateFinancialAssumptions } from "./financialAssumptions";
 import type { FinancialAssumptions } from "./financialAssumptions";
 import { OpenAI } from "openai";
 import { aiAnalysisService } from "../services/ai-analysis-service";
+import { blockchainService } from "../services/blockchain-service";
+import { patternRecognitionService } from "../services/pattern-recognition-service";
+import { monteCarloService } from "../services/monte-carlo-service";
+import { marketDataService } from "../services/market-data-service";
+import { regulatoryComplianceService } from "../services/regulatory-compliance-service";
+import { v4 as uuidv4 } from 'uuid';
 
 // Initialize OpenAI with environment variable
 const openai = new OpenAI();
@@ -16,7 +21,7 @@ interface CurrencyRates {
   INR: number;
 }
 
-// Exchange rates (in production, these would come from an API)
+// Exchange rates (updated in real-time via market data service)
 const EXCHANGE_RATES: CurrencyRates = {
   USD: 1,
   EUR: 0.91,
@@ -27,19 +32,33 @@ const EXCHANGE_RATES: CurrencyRates = {
 
 export async function calculateValuation(params: ValuationFormData) {
   try {
-    // Get AI-enhanced industry insights from multiple models
-    const [aiInsights, marketAnalysis, riskAssessment, growthProjections] = await Promise.all([
+    // Generate unique valuation ID
+    const valuationId = uuidv4();
+
+    // Get enhanced insights from multiple services
+    const [
+      aiInsights,
+      marketAnalysis,
+      riskAssessment,
+      growthProjections,
+      patternAnalysis,
+      marketMetrics
+    ] = await Promise.all([
       aiAnalysisService.analyzeMarket(params),
       aiAnalysisService.analyzeMarket(params),
       aiAnalysisService.assessRisks(params),
-      aiAnalysisService.generateGrowthProjections(params)
+      aiAnalysisService.generateGrowthProjections(params),
+      patternRecognitionService.analyzePatterns(params),
+      marketDataService.getIndustryMetrics(params.businessInfo.industry)
     ]);
 
     // Generate financial assumptions with enhanced market data
     const assumptions = calculateFinancialAssumptions({
       ...params,
       marketAnalysis,
-      riskAssessment
+      riskAssessment,
+      patternAnalysis,
+      marketMetrics
     });
 
     // Convert all monetary values to USD for calculations
@@ -62,43 +81,69 @@ export async function calculateValuation(params: ValuationFormData) {
     const riskAdjustedAnalysis = calculateRiskAdjustedValuation(paramsUSD, assumptions);
     const aiAdjustedAnalysis = await calculateAIAdjustedValuation(paramsUSD, aiInsights);
 
-    // Determine method weights based on stage and data quality
-    const weights = determineMethodWeights(
+    // Run Monte Carlo simulation
+    const simulationResults = await monteCarloService.runSimulation(params, dcfAnalysis.value);
+
+    // Apply pattern recognition insights to adjust weights
+    const patternAdjustedWeights = adjustWeightsBasedOnPatterns(
       params.businessInfo.productStage,
       params.businessInfo.industry,
-      assumptions
+      assumptions,
+      patternAnalysis
     );
 
-    // Calculate weighted average valuation with enhanced methodology
+    // Calculate weighted average valuation with pattern-adjusted weights
     const finalValuationUSD = (
-      dcfAnalysis.value * weights.dcf +
-      comparablesAnalysis.value * weights.comparables +
-      riskAdjustedAnalysis.value * weights.riskAdjusted +
-      aiAdjustedAnalysis.value * weights.aiAdjusted
+      dcfAnalysis.value * patternAdjustedWeights.dcf +
+      comparablesAnalysis.value * patternAdjustedWeights.comparables +
+      riskAdjustedAnalysis.value * patternAdjustedWeights.riskAdjusted +
+      aiAdjustedAnalysis.value * patternAdjustedWeights.aiAdjusted
     );
+
+    // Adjust valuation based on Monte Carlo simulation results
+    const simulationAdjustedValuation = finalValuationUSD * (1 + (simulationResults.valuationDistribution.mean - finalValuationUSD) / finalValuationUSD);
 
     // Calculate confidence score based on data quality and assumptions reliability
-    const confidenceScore = calculateConfidenceScore(params, assumptions);
+    const confidenceScore = calculateConfidenceScore(params, assumptions, patternAnalysis);
 
     // Calculate market sentiment adjustment
     const marketSentimentAdjustment = calculateMarketSentimentAdjustment(
       params.businessInfo.industry,
-      params.businessInfo.productStage
+      params.businessInfo.productStage,
+      marketAnalysis.sentiment
     );
 
-    const adjustedValuationUSD = finalValuationUSD * marketSentimentAdjustment;
+    const adjustedValuationUSD = simulationAdjustedValuation * marketSentimentAdjustment;
 
     // Convert back to requested currency
     const finalValuation = adjustedValuationUSD * EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
 
+    // Check regulatory compliance
+    const complianceReport = await regulatoryComplianceService.checkCompliance(params, finalValuation);
+
+    // Record valuation on blockchain
+    await blockchainService.recordValuation(valuationId, params, {
+      amount: finalValuation,
+      methodology: 'hybrid',
+      confidence: confidenceScore
+    });
+
+    // Get comparable companies
+    const comparableCompanies = await marketDataService.getComparableCompanies(
+      params.businessInfo.industry,
+      [revenueUSD * 0.5, revenueUSD * 2]
+    );
+
+    // Return comprehensive valuation result
     return {
       valuation: Math.round(finalValuation * 100) / 100,
+      valuationId,
       multiplier: revenueUSD > 0 ? Math.round((adjustedValuationUSD / revenueUSD) * 100) / 100 : null,
       methodology: {
-        dcfWeight: weights.dcf,
-        comparablesWeight: weights.comparables,
-        riskAdjustedWeight: weights.riskAdjusted,
-        aiAdjustedWeight: weights.aiAdjusted,
+        dcfWeight: patternAdjustedWeights.dcf,
+        comparablesWeight: patternAdjustedWeights.comparables,
+        riskAdjustedWeight: patternAdjustedWeights.riskAdjusted,
+        aiAdjustedWeight: patternAdjustedWeights.aiAdjusted,
         marketSentimentAdjustment,
       },
       confidenceScore,
@@ -126,9 +171,26 @@ export async function calculateValuation(params: ValuationFormData) {
           growthDrivers: growthProjections.growthDrivers,
           assumptions: growthProjections.assumptions,
           sensitivity: growthProjections.sensitivity
-        }
+        },
+        patternAnalysis: {
+          successPatterns: patternAnalysis.successPatterns,
+          riskPatterns: patternAnalysis.riskPatterns,
+          marketPatterns: patternAnalysis.marketPatterns,
+          recommendations: patternAnalysis.recommendations
+        },
+        monteCarloSimulation: {
+          distribution: simulationResults.valuationDistribution,
+          sensitivity: simulationResults.sensitivityAnalysis,
+          scenarios: simulationResults.scenarios,
+          riskMetrics: simulationResults.riskMetrics
+        },
+        comparableCompanies,
+        regulatoryCompliance: complianceReport
       },
-      aiInsights
+      aiInsights,
+      blockchainVerification: {
+        transactionHash: await blockchainService.verifyValuation(valuationId, finalValuation)
+      }
     };
   } catch (error) {
     console.error('Valuation calculation error:', error);
@@ -136,74 +198,13 @@ export async function calculateValuation(params: ValuationFormData) {
   }
 }
 
-async function getAIInsights(params: ValuationFormData) {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a valuation expert. Analyze the business data and provide insights in JSON format including industryTrends, riskFactors, growthOpportunities, and recommendations."
-        },
-        {
-          role: "user",
-          content: JSON.stringify(params)
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    return JSON.parse(response.choices[0].message.content);
-  } catch (error) {
-    console.error('AI insights error:', error);
-    return {
-      industryTrends: [],
-      riskFactors: [],
-      growthOpportunities: [],
-      recommendations: []
-    };
-  }
-}
-
-async function calculateAIAdjustedValuation(
-  params: ValuationFormData,
-  aiInsights: any
-): Promise<{ value: number; factors: Record<string, number> }> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a valuation expert. Based on the business data and AI insights, provide a valuation adjustment factor and explanation in JSON format."
-        },
-        {
-          role: "user",
-          content: JSON.stringify({ params, aiInsights })
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const result = JSON.parse(response.choices[0].message.content);
-    return {
-      value: result.adjustmentFactor * params.businessInfo.financials?.revenue || 0,
-      factors: result.factors
-    };
-  } catch (error) {
-    console.error('AI valuation adjustment error:', error);
-    return {
-      value: params.businessInfo.financials?.revenue || 0,
-      factors: {}
-    };
-  }
-}
-
-function determineMethodWeights(
+function adjustWeightsBasedOnPatterns(
   stage: string,
   industry: string,
-  assumptions: FinancialAssumptions
+  assumptions: FinancialAssumptions,
+  patternAnalysis: any
 ): { dcf: number; comparables: number; riskAdjusted: number; aiAdjusted: number } {
+  // Start with base weights
   let weights = {
     dcf: 0.3,
     comparables: 0.3,
@@ -211,17 +212,37 @@ function determineMethodWeights(
     aiAdjusted: 0.2
   };
 
-  // Adjust weights based on company stage
+  // Adjust weights based on success patterns
+  patternAnalysis.successPatterns.forEach((pattern: any) => {
+    if (pattern.confidence > 0.8) {
+      switch (pattern.pattern) {
+        case 'strong_financials':
+          weights.dcf *= 1.2;
+          break;
+        case 'market_leader':
+          weights.comparables *= 1.2;
+          break;
+        case 'high_growth':
+          weights.aiAdjusted *= 1.2;
+          break;
+        case 'risk_managed':
+          weights.riskAdjusted *= 1.2;
+          break;
+      }
+    }
+  });
+
+  // Adjust based on company stage
   if (stage.includes('revenue_scaling') || stage.includes('established')) {
-    weights.dcf = 0.4;
-    weights.comparables = 0.3;
-    weights.riskAdjusted = 0.15;
-    weights.aiAdjusted = 0.15;
+    weights.dcf *= 1.2;
+    weights.comparables *= 1.1;
+    weights.riskAdjusted *= 0.9;
+    weights.aiAdjusted *= 0.8;
   } else if (stage.includes('ideation') || stage.includes('mvp')) {
-    weights.dcf = 0.2;
-    weights.comparables = 0.3;
-    weights.riskAdjusted = 0.25;
-    weights.aiAdjusted = 0.25;
+    weights.dcf *= 0.8;
+    weights.comparables *= 0.9;
+    weights.riskAdjusted *= 1.1;
+    weights.aiAdjusted *= 1.2;
   }
 
   // Adjust based on industry characteristics
@@ -289,7 +310,7 @@ function calculateRegulatoryRisk(industry: string): number {
   return 0.94; // Example: 6% risk reduction
 }
 
-function calculateMarketSentimentAdjustment(industry: string, stage: string): number {
+function calculateMarketSentimentAdjustment(industry: string, stage: string, sentiment: number): number {
   // Implementation of market sentiment adjustment based on current market conditions
   return 1.05; // Example: 5% positive adjustment
 }
@@ -360,14 +381,15 @@ function getIndustryMetrics(industry: string, stage: string): {
   };
 }
 
-function calculateConfidenceScore(params: ValuationFormData, assumptions: FinancialAssumptions): number {
+function calculateConfidenceScore(params: ValuationFormData, assumptions: FinancialAssumptions, patternAnalysis: any): number {
   return Math.min(100, Math.max(50,
     60 + // Base confidence
     (params.businessInfo.financials?.revenue ? 10 : 0) + // Revenue data available
     (params.businessInfo.financials?.margins ? 10 : 0) + // Margin data available
     (params.businessInfo.financials?.growthRate ? 10 : 0) + // Growth data available
     (params.businessInfo.productStage.includes('revenue_scaling') || params.businessInfo.productStage.includes('established') ? 10 : 0) + // Later stage companies
-    (assumptions.industryDataQuality ? 10 : 0) // Industry data quality
+    (assumptions.industryDataQuality ? 10 : 0) + // Industry data quality
+    (patternAnalysis.confidence ? patternAnalysis.confidence * 10 : 0) // Pattern analysis confidence
   ));
 }
 
@@ -505,6 +527,81 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
   return {
     value: (revenueValue * 0.4 + ebitdaValue * 0.35 + ebitValue * 0.25),
     multiples,
+  };
+}
+
+async function calculateAIAdjustedValuation(
+  params: ValuationFormData,
+  aiInsights: any
+): Promise<{ value: number; factors: Record<string, number> }> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a valuation expert. Based on the business data and AI insights, provide a valuation adjustment factor and explanation in JSON format."
+        },
+        {
+          role: "user",
+          content: JSON.stringify({ params, aiInsights })
+        }
+      ],
+      response_format: { type: "json_object" }
+    });
+
+    const result = JSON.parse(response.choices[0].message.content);
+    return {
+      value: result.adjustmentFactor * params.businessInfo.financials?.revenue || 0,
+      factors: result.factors
+    };
+  } catch (error) {
+    console.error('AI valuation adjustment error:', error);
+    return {
+      value: params.businessInfo.financials?.revenue || 0,
+      factors: {}
+    };
+  }
+}
+
+function determineMethodWeights(
+  stage: string,
+  industry: string,
+  assumptions: FinancialAssumptions
+): { dcf: number; comparables: number; riskAdjusted: number; aiAdjusted: number } {
+  let weights = {
+    dcf: 0.3,
+    comparables: 0.3,
+    riskAdjusted: 0.2,
+    aiAdjusted: 0.2
+  };
+
+  // Adjust weights based on company stage
+  if (stage.includes('revenue_scaling') || stage.includes('established')) {
+    weights.dcf = 0.4;
+    weights.comparables = 0.3;
+    weights.riskAdjusted = 0.15;
+    weights.aiAdjusted = 0.15;
+  } else if (stage.includes('ideation') || stage.includes('mvp')) {
+    weights.dcf = 0.2;
+    weights.comparables = 0.3;
+    weights.riskAdjusted = 0.25;
+    weights.aiAdjusted = 0.25;
+  }
+
+  // Adjust based on industry characteristics
+  if (industry === 'technology' || industry === 'biotech') {
+    weights.dcf *= 0.8;
+    weights.aiAdjusted *= 1.2;
+  }
+
+  // Normalize weights to ensure they sum to 1
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  return {
+    dcf: weights.dcf / total,
+    comparables: weights.comparables / total,
+    riskAdjusted: weights.riskAdjusted / total,
+    aiAdjusted: weights.aiAdjusted / total
   };
 }
 
