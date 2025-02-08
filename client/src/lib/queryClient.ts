@@ -7,6 +7,10 @@ export const queryClient = new QueryClient({
         try {
           const res = await fetch(queryKey[0] as string, {
             credentials: "include",
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+            }
           });
 
           if (!res.ok) {
@@ -46,20 +50,40 @@ export const queryClient = new QueryClient({
         return failureCount < 2;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-      refetchInterval: false,
       refetchOnWindowFocus: false,
-      // Reduce stale time to ensure fresh data
-      staleTime: 30000, // 30 seconds
+      gcTime: 5 * 60 * 1000, // 5 minutes
     },
     mutations: {
-      retry: (failureCount, error) => {
-        // Only retry network errors
-        if (error instanceof TypeError && error.message === 'Failed to fetch') {
-          return failureCount < 2;
-        }
-        return false;
-      },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      retry: false,
+      onError: (error: Error) => {
+        console.error('Mutation error:', error);
+      }
     }
   },
 });
+
+// Export helper for making API requests
+export async function apiRequest(
+  method: string,
+  url: string,
+  body?: any,
+  headers: HeadersInit = {}
+) {
+  const response = await fetch(url, {
+    method,
+    credentials: "include",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || response.statusText);
+  }
+
+  return response;
+}
