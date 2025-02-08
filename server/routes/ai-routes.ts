@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { enhancedAIService } from '../services/enhanced-ai-service';
 import { performanceTrackingService } from '../services/performance-tracking-service';
 import { auditTrailService } from '../services/audit-trail-service';
+import { validationService } from '../services/validation-service';
 import { z } from 'zod';
 
 const router = Router();
@@ -25,24 +26,35 @@ const expertValidationSchema = z.object({
 router.post('/market-analysis', async (req, res) => {
   try {
     const analysis = await enhancedAIService.analyzeMarket(req.body);
-    res.json(analysis);
+
+    // Perform compliance checks
+    const compliance = await validationService.performComplianceCheck(
+      req.body.id || 'default',
+      req.body
+    );
+
+    // Validate assumptions
+    const validatedAssumptions = await validationService.validateAssumptions(
+      req.body.id || 'default',
+      analysis.justification,
+      req.user?.id || 'system',
+      {
+        ipAddress: req.ip || 'system',
+        userAgent: req.headers['user-agent'] || 'system',
+        sessionId: req.sessionID || 'system'
+      }
+    );
+
+    res.json({
+      analysis,
+      compliance,
+      validatedAssumptions,
+      requiresReview: validatedAssumptions.some(v => v.requiresReview)
+    });
   } catch (error) {
     console.error('Market analysis error:', error);
     res.status(400).json({
       error: error instanceof Error ? error.message : 'Failed to analyze market'
-    });
-  }
-});
-
-// Get AI-enhanced risk assessment
-router.post('/risk-assessment', async (req, res) => {
-  try {
-    const assessment = await enhancedAIService.assessRisks(req.body);
-    res.json(assessment);
-  } catch (error) {
-    console.error('Risk assessment error:', error);
-    res.status(400).json({
-      error: error instanceof Error ? error.message : 'Failed to assess risks'
     });
   }
 });
@@ -62,11 +74,20 @@ router.post('/expert-validation', async (req, res) => {
         adjustments: validationData.adjustments
       },
       {
-        ipAddress: req.ip,
+        ipAddress: req.ip || 'unknown',
         userAgent: req.headers['user-agent'] || 'unknown',
         sessionId: req.sessionID || 'unknown'
       }
     );
+
+    // Update performance metrics if validation is complete
+    if (validationData.status === "approved" || validationData.status === "rejected") {
+      await performanceTrackingService.validatePrediction(
+        "hybrid_valuation",
+        validationData.valuationId,
+        validationData.adjustments?.actualValue as number || 0
+      );
+    }
 
     res.json(result);
   } catch (error) {
@@ -77,7 +98,7 @@ router.post('/expert-validation', async (req, res) => {
   }
 });
 
-// Track prediction performance
+// Track model performance
 router.post('/track-prediction', async (req, res) => {
   try {
     const { modelName, prediction } = req.body;
@@ -91,39 +112,7 @@ router.post('/track-prediction', async (req, res) => {
   }
 });
 
-// Validate prediction against actual value
-router.post('/validate-prediction', async (req, res) => {
-  try {
-    const data = validationRequestSchema.parse(req.body);
-    const result = await performanceTrackingService.validatePrediction(
-      data.modelName,
-      data.valuationId,
-      data.actualValue
-    );
-    res.json(result);
-  } catch (error) {
-    console.error('Prediction validation error:', error);
-    res.status(400).json({
-      error: error instanceof Error ? error.message : 'Failed to validate prediction'
-    });
-  }
-});
-
-// Get model performance metrics
-router.get('/performance/:modelName', async (req, res) => {
-  try {
-    const { modelName } = req.params;
-    const metrics = await performanceTrackingService.getPerformanceMetrics(modelName);
-    res.json(metrics);
-  } catch (error) {
-    console.error('Performance metrics error:', error);
-    res.status(400).json({
-      error: error instanceof Error ? error.message : 'Failed to get performance metrics'
-    });
-  }
-});
-
-// Get audit trail
+// Get audit trail with compliance information
 router.get('/audit-trail/:valuationId', async (req, res) => {
   try {
     const { valuationId } = req.params;
@@ -142,6 +131,32 @@ router.get('/audit-trail/:valuationId', async (req, res) => {
     console.error('Audit trail error:', error);
     res.status(400).json({
       error: error instanceof Error ? error.message : 'Failed to get audit trail'
+    });
+  }
+});
+
+// Get compliance status
+router.get('/compliance/:valuationId', async (req, res) => {
+  try {
+    const { valuationId } = req.params;
+    const valuation = await db.query.valuationRecords.findFirst({
+      where: eq(valuationRecords.id, valuationId)
+    });
+
+    if (!valuation) {
+      return res.status(404).json({ error: 'Valuation not found' });
+    }
+
+    const compliance = await validationService.performComplianceCheck(
+      valuationId,
+      valuation
+    );
+
+    res.json(compliance);
+  } catch (error) {
+    console.error('Compliance check error:', error);
+    res.status(400).json({
+      error: error instanceof Error ? error.message : 'Failed to check compliance'
     });
   }
 });
