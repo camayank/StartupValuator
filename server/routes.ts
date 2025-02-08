@@ -25,10 +25,10 @@ export function registerRoutes(app: Express): Server {
 
   const httpServer = createServer(app);
 
-  // Set up WebSocket server on a specific path to avoid conflict with Vite HMR
+  // Set up WebSocket server on a specific path
   const wss = new WebSocketServer({ 
     server: httpServer,
-    path: '/ws/valuation',
+    path: '/ws',
     verifyClient: (info: { req: IncomingMessage }) => {
       const protocol = info.req.headers['sec-websocket-protocol'];
       return !protocol || !protocol.includes('vite-hmr');

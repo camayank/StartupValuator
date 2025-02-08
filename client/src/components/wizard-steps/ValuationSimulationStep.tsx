@@ -23,8 +23,8 @@ import { Info, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useValuationSocket } from "@/hooks/use-valuation-socket";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Schema remains the same
 const valuationSimulationSchema = z.object({
   method: z.enum(["DCF", "Market Comps", "Monte Carlo", "AI Recommend"]),
   expectedROI: z.number().min(0).max(1000),
@@ -64,14 +64,10 @@ export function ValuationSimulationStep({
   const handleSubmit = async (values: ValuationSimulationFormData) => {
     try {
       setIsSubmitting(true);
-
-      // Send update through WebSocket
       if (isConnected) {
         sendMessage('valuation_update', values);
       }
-
       await onUpdate(values);
-
       toast({
         title: "Success",
         description: "Valuation simulation updated successfully",
@@ -88,152 +84,160 @@ export function ValuationSimulationStep({
     }
   };
 
-  // Connection status alert
-  const renderConnectionStatus = () => {
-    if (!isConnected) {
-      return (
-        <Alert variant="destructive" className="mb-4">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            {isReconnecting ? "Reconnecting to server..." : "Disconnected from server"}
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="space-y-6">
-      {renderConnectionStatus()}
+    <div className="space-y-8">
+      <Card className="bg-gradient-to-br from-primary/5 via-background to-background border-2 hover:border-primary/50 transition-all duration-300">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Startup Valuation Calculator
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!isConnected && (
+            <Alert variant="destructive" className="mb-4">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                {isReconnecting ? "Reconnecting to server..." : "Disconnected from server"}
+              </AlertDescription>
+            </Alert>
+          )}
 
-      {aiAnalysis && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>{aiAnalysis.feedback}</AlertDescription>
-        </Alert>
-      )}
+          {aiAnalysis && (
+            <Alert className="mb-6 bg-primary/5 border-primary/20">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-foreground">
+                {aiAnalysis.feedback}
+              </AlertDescription>
+            </Alert>
+          )}
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="method"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valuation Method</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valuation Method</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select valuation method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="DCF">Discounted Cash Flow</SelectItem>
+                        <SelectItem value="Market Comps">Market Comparables</SelectItem>
+                        <SelectItem value="Monte Carlo">Monte Carlo Simulation</SelectItem>
+                        <SelectItem value="AI Recommend">AI Recommended Method</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="expectedROI"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected ROI (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={e => field.onChange(Number(e.target.value))}
+                          className="bg-background/50"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="timeHorizon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time Horizon (years)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={e => field.onChange(Number(e.target.value))}
+                          className="bg-background/50"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="discountRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Discount Rate (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={e => field.onChange(Number(e.target.value))}
+                          className="bg-background/50"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="terminalGrowthRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Terminal Growth Rate (%)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={e => field.onChange(Number(e.target.value))}
+                          className="bg-background/50"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !isConnected}
+                  className="bg-primary hover:bg-primary/90"
                 >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select valuation method" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="DCF">Discounted Cash Flow</SelectItem>
-                    <SelectItem value="Market Comps">Market Comparables</SelectItem>
-                    <SelectItem value="Monte Carlo">Monte Carlo Simulation</SelectItem>
-                    <SelectItem value="AI Recommend">AI Recommended Method</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="expectedROI"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Expected ROI (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="timeHorizon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Time Horizon (years)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="discountRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Discount Rate (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="terminalGrowthRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Terminal Growth Rate (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <Button
-              type="submit"
-              disabled={isSubmitting || !isConnected}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Continue"
-              )}
-            </Button>
-          </div>
-        </form>
-      </Form>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Calculating...
+                    </>
+                  ) : (
+                    "Calculate Valuation"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
