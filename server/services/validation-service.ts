@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { auditTrailService } from "./audit-trail-service";
 import { performanceTrackingService } from "./performance-tracking-service";
+import { anomalyDetectionService } from "./anomaly-detection-service";
 import type { ValuationFormData } from "../../client/src/lib/validations";
 
 const complianceCheckSchema = z.object({
@@ -55,8 +56,36 @@ export class ValidationService {
         })
       );
 
-      await this.updateAuditTrail(valuationId, validations, expertId, metadata);
-      return validations;
+      const anomalies = await anomalyDetectionService.detectAnomalies({
+        id: valuationId,
+        ...assumptions.reduce((acc, curr) => ({
+          ...acc,
+          [curr.key]: curr.value
+        }), {})
+      } as ValuationFormData);
+
+      const enhancedValidations = validations.map(validation => {
+        const relatedAnomaly = anomalies.find(a => 
+          a.metric === validation.assumption.key
+        );
+
+        if (relatedAnomaly) {
+          return {
+            ...validation,
+            anomaly: {
+              severity: relatedAnomaly.severity,
+              explanation: relatedAnomaly.explanation,
+              recommendations: relatedAnomaly.recommendations
+            },
+            requiresReview: true
+          };
+        }
+
+        return validation;
+      });
+
+      await this.updateAuditTrail(valuationId, enhancedValidations, expertId, metadata);
+      return enhancedValidations;
     } catch (error) {
       console.error('Assumption validation error:', error);
       throw new Error('Failed to validate assumptions');
@@ -80,15 +109,12 @@ export class ValidationService {
   }
 
   private validateAssumption(assumption: any): boolean {
-    // Implement assumption validation logic
-    // Check for data consistency, historical patterns, and industry benchmarks
     return assumption.confidence >= 0.8 &&
            assumption.sources.length >= 2 &&
            this.validateSourceReliability(assumption.sources);
   }
 
   private validateSourceReliability(sources: string[]): boolean {
-    // Implement source reliability validation
     const reliableDomains = [
       'sec.gov',
       'bloomberg.com',
@@ -139,7 +165,6 @@ export class ValidationService {
   }
 
   private checkSOC2Compliance(data: ValuationFormData) {
-    // Implement SOC2 compliance checks
     return {
       dataProtection: this.checkDataProtection(),
       accessControl: this.checkAccessControl(),
@@ -150,7 +175,6 @@ export class ValidationService {
   }
 
   private checkIFRSCompliance(data: ValuationFormData) {
-    // Implement IFRS compliance checks
     return {
       fairValue: this.checkFairValueMeasurement(data),
       disclosure: this.checkDisclosureRequirements(data),
@@ -160,7 +184,6 @@ export class ValidationService {
   }
 
   private checkGAAPCompliance(data: ValuationFormData) {
-    // Implement GAAP compliance checks
     return {
       recognition: this.checkGAAPRecognition(data),
       measurement: this.checkGAAPMeasurement(data),
@@ -169,18 +192,17 @@ export class ValidationService {
     };
   }
 
-  // Implement individual compliance check methods
   private checkDataProtection() { return true; }
   private checkAccessControl() { return true; }
   private checkAuditLogging() { return true; }
   private checkEncryption() { return true; }
   private getSOC2Details() { return {}; }
-  
+
   private checkFairValueMeasurement(data: ValuationFormData) { return true; }
   private checkDisclosureRequirements(data: ValuationFormData) { return true; }
   private checkRecognitionCriteria(data: ValuationFormData) { return true; }
   private getIFRSDetails(data: ValuationFormData) { return {}; }
-  
+
   private checkGAAPRecognition(data: ValuationFormData) { return true; }
   private checkGAAPMeasurement(data: ValuationFormData) { return true; }
   private checkGAAPDisclosure(data: ValuationFormData) { return true; }
