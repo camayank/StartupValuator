@@ -1,0 +1,226 @@
+Let's resolve the frozen form issue systematically. Based on your screenshot and description, here's a step-by-step solution:
+
+### 1. First, let's create a minimal working version of the form component:
+
+```jsx
+import React, { useState } from 'react';
+
+const StartupValuatorForm = () => {
+  const [formData, setFormData] = useState({
+    industry: '',
+    businessStage: 'Startup',
+    annualRevenue: 0,
+    annualExpenses: 0
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name.endsWith('Revenue') || name.endsWith('Expenses') 
+        ? Number(value) 
+        : value
+    }));
+  };
+
+  return (
+    <div className="startup-valuator">
+      <h2>StartupValuator</h2>
+      
+      <div className="form-group">
+        <label>Industry</label>
+        <select 
+          name="industry"
+          value={formData.industry}
+          onChange={handleChange}
+        >
+          <option value="">Select industry</option>
+          <option value="saas">SaaS</option>
+          <option value="ecommerce">E-commerce</option>
+          <option value="fintech">Fintech</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>Business Stage</label>
+        <select
+          name="businessStage"
+          value={formData.businessStage}
+          onChange={handleChange}
+        >
+          <option value="Startup">Startup</option>
+          <option value="Growth">Growth</option>
+          <option value="Mature">Mature</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>Annual Revenue ($)</label>
+        <input
+          type="number"
+          name="annualRevenue"
+          value={formData.annualRevenue}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Annual Expenses ($)</label>
+        <input
+          type="number"
+          name="annualExpenses"
+          value={formData.annualExpenses}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+
+      <div className="debug-panel">
+        <h3>Current State</h3>
+        <pre>{JSON.stringify(formData, null, 2)}</pre>
+      </div>
+    </div>
+  );
+};
+
+export default StartupValuatorForm;
+```
+
+### 2. Common Replit-Specific Fixes:
+
+1. **Clear Cache and Hard Refresh**:
+   - Press `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac) in Replit browser
+   - Clear browser cache through Replit settings
+
+2. **Check Dependency Installation**:
+   ```bash
+   npm install react react-dom
+   npm install @replit/extensions
+   ```
+
+3. **Update Replit Config** (replit.nix):
+   ```nix
+   { pkgs }:
+   pkgs.replitPackages.mkShell {
+     buildInputs = [
+       pkgs.nodejs-18_x
+       pkgs.yarn
+       pkgs.replit-nodejs
+     ];
+   }
+   ```
+
+### 3. If Still Stuck - Add Debugging Features:
+
+```jsx
+// Add this inside your component
+useEffect(() => {
+  console.log('Form State Updated:', formData);
+}, [formData]);
+
+const [connectionStatus, setConnectionStatus] = useState('connected');
+
+// Add connection monitoring
+useEffect(() => {
+  const heartbeat = setInterval(() => {
+    fetch('/ping')
+      .then(() => setConnectionStatus('connected'))
+      .catch(() => setConnectionStatus('disconnected'));
+  }, 5000);
+
+  return () => clearInterval(heartbeat);
+}, []);
+```
+
+### 4. Validation Fixes for Number Inputs:
+
+```jsx
+const handleNumberInput = (name, value) => {
+  const numericValue = Math.max(0, Number(value) || 0);
+  setFormData(prev => ({
+    ...prev,
+    [name]: numericValue
+  }));
+};
+
+// Update your number inputs:
+<input
+  type="number"
+  name="annualRevenue"
+  value={formData.annualRevenue}
+  onChange={(e) => handleNumberInput('annualRevenue', e.target.value)}
+  min="0"
+  step="1000"
+/>
+```
+
+### 5. Force Re-render Workaround:
+
+```jsx
+// Add a dummy state to force updates
+const [forceUpdate, setForceUpdate] = useState(false);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setForceUpdate(prev => !prev);
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
+```
+
+To implement this properly:
+
+1. Create a new file called `ForceUpdateHook.js`:
+```jsx
+import { useState, useEffect } from 'react';
+
+const useForceUpdate = (interval = 5000) => {
+  const [_, setTick] = useState(false);
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(t => !t);
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [interval]);
+
+  return null;
+};
+
+export default useForceUpdate;
+```
+
+2. Use it in your component:
+```jsx
+import useForceUpdate from './ForceUpdateHook';
+
+// Inside component:
+useForceUpdate(5000); // 5 second refresh
+```
+
+### 6. Final Checks:
+1. Verify Replit's console for errors
+2. Check network tab for failed requests
+3. Ensure proper component mounting:
+```jsx
+// In your main App.js
+import { StrictMode } from 'react';
+
+function App() {
+  return (
+    <StrictMode>
+      <StartupValuatorForm />
+    </StrictMode>
+  );
+}
+```
+
+If the issue persists, try these in order:
+1. Fork the Repl and restart the environment
+2. Switch to "Run on Replit" button configuration
+3. Contact Replit support with your repl link
+
+Let me know if you need help with any specific implementation detail!
