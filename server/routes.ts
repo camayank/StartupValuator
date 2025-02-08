@@ -3,15 +3,19 @@ import { createServer, type Server } from "http";
 import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
 import analysisRoutes from "./routes/analysis";
-import monitoringRoutes from "./routes/monitoring"; // Add monitoring routes import
+import monitoringRoutes from "./routes/monitoring";
+import aiRoutes from "./routes/ai-routes"; // Import new AI routes
 import { setupAuth } from "./auth";
-import { userProfiles } from "@db/schema";
+import { userProfiles, valuationRecords } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
 import { setupCache } from "./lib/cache";
 import { z } from "zod";
-import { valuationRecords } from "@db/schema";
 import { ActivityTracker } from "./lib/activity-tracker";
+import { enhancedAIService } from "./services/enhanced-ai-service";
+import { performanceTrackingService } from "./services/performance-tracking-service";
+import XLSX from "xlsx";
+import { Parser } from "json2csv";
 import { pitchDeckAnalysisRequestSchema, analyzePitchDeck } from "./lib/pitch-deck-analysis";
 import { reportDataSchema, generatePdfReport } from "./lib/report-generator";
 import { generateComplianceReport } from "./lib/compliance-report";
@@ -22,8 +26,6 @@ import { analyzeMarketSentiment } from "./lib/market-sentiment-analysis";
 import { assessIntellectualProperty } from "./lib/ip-assessment";
 import { validateMetrics } from "./lib/metrics-validation";
 import { validateRevenueModel } from "./lib/revenue-model-validation";
-import XLSX from "xlsx";
-import { Parser } from "json2csv";
 
 
 export function registerRoutes(app: Express): Server {
@@ -34,11 +36,12 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // Register all routes
-  app.use(valuationRoutes);
-  app.use(analysisRoutes);
-  app.use(monitoringRoutes); // Register monitoring routes
+  app.use("/api/valuation", valuationRoutes);
+  app.use("/api/analysis", analysisRoutes);
+  app.use("/api/monitoring", monitoringRoutes);
+  app.use("/api/ai", aiRoutes); // Register new AI routes
 
-  // Enhanced valuation route with proper validation
+  // Enhanced valuation route with proper validation and AI integration
   app.post("/api/valuation", async (req, res) => {
     try {
       // Validate request body against our schema
@@ -53,16 +56,32 @@ export function registerRoutes(app: Express): Server {
         return res.json(cachedResult);
       }
 
+      // Get enhanced AI analysis
+      const aiAnalysis = await enhancedAIService.analyzeMarket(validatedData);
+
       // Get user ID from session
       const userId = req.user?.id || 1; // Fallback to default user if not logged in
 
-      // Store in database
+      // Store in database with enhanced data
       const [result] = await db.insert(valuationRecords).values({
         ...validatedData,
+        aiAnalysis,
         userId,
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();
+
+      // Track AI prediction for performance monitoring
+      await performanceTrackingService.trackPrediction("hybrid_valuation", {
+        valuationId: result.id,
+        predictedValue: result.valuation,
+        confidence: result.confidenceScore,
+        metadata: {
+          industry: validatedData.businessInfo.industry,
+          stage: validatedData.businessInfo.productStage,
+          aiModel: "hybrid"
+        }
+      });
 
       // Cache the result
       cache.set(cacheKey, result);
@@ -389,9 +408,6 @@ export function registerRoutes(app: Express): Server {
       });
     }
   });
-
-  // Inside registerRoutes function, after other route registrations
-  app.use(monitoringRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

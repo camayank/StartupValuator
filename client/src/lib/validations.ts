@@ -498,6 +498,25 @@ export const regionSchema = z.object({
     .default("fundraising")
 });
 
+// Add new validation schemas for AI analysis and tracking
+export const aiAnalysisSchema = z.object({
+  marketAnalysis: z.object({
+    trends: z.array(z.string()),
+    impact: z.record(z.number()),
+    confidence: z.number(),
+    recommendations: z.array(z.string()),
+  }),
+  riskAssessment: z.object({
+    score: z.number(),
+    factors: z.array(z.object({
+      category: z.string(),
+      severity: z.number(),
+      mitigation: z.array(z.string()),
+    })),
+  }),
+});
+
+// Update valuationFormSchema to include AI and performance tracking
 export const valuationFormSchema = z.object({
   businessInfo: z.object({
     name: z.string().min(1, "Business name is required"),
@@ -541,13 +560,71 @@ export const valuationFormSchema = z.object({
     targetValuation: z.number().min(0, "Target valuation must be a positive number"),
     fundingRequired: z.number().min(0, "Funding required must be a positive number"),
     expectedROI: z.number().min(0, "Expected ROI must be a positive number")
-  })
+  }),
+  aiConfig: z.object({
+    modelPreference: z.enum(["gpt4", "claude", "hybrid"]).default("hybrid"),
+    confidenceThreshold: z.number().min(0).max(1).default(0.8),
+    realTimeSignals: z.boolean().default(true),
+    validationFrequency: z.enum(["continuous", "daily", "weekly"]).default("continuous"),
+  }).optional(),
+});
+
+// Performance tracking schemas
+export const performanceMetricsSchema = z.object({
+  accuracy: z.number(),
+  precision: z.number(),
+  recall: z.number(),
+  f1Score: z.number(),
+  mape: z.number(),
+  confidenceCalibration: z.number(),
+});
+
+// Real-time market signal integration
+export const marketSignalSchema = z.object({
+  source: z.string(),
+  signal: z.string(),
+  impact: z.number(),
+  confidence: z.number(),
+  timestamp: z.date(),
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
+export type AIAnalysisData = z.infer<typeof aiAnalysisSchema>;
+export type PerformanceMetricsData = z.infer<typeof performanceMetricsSchema>;
+export type MarketSignalData = z.infer<typeof marketSignalSchema>;
 
+export const valuationFormSchema2 = z.object({
+  businessInfo: businessInfoSchema,
+  marketData: z.object({
+    tam: z.number().min(0, "TAM must be a positive number"),
+    sam: z.number().min(0, "SAM must be a positive number"),
+    som: z.number().min(0, "SOM must be a positive number"),
+    growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
+    competitors: z.array(z.string())
+  }).refine((data) => data.tam >= data.sam && data.sam >= data.som, {
+    message: "Market sizes must follow TAM ≥ SAM ≥ SOM",
+    path: ["marketData"]
+  }),
+  financialData: financialProjectionSchema,
+  productDetails: z.object({
+    maturity: z.string().min(1, "Product maturity level is required"),
+    roadmap: z.string().min(1, "Product roadmap is required"),
+    technologyStack: z.string().min(1, "Technology stack is required"),
+    differentiators: z.string().min(1, "Product differentiators are required")
+  }),
+  risksAndOpportunities: z.object({
+    risks: z.array(z.string()).min(1, "At least one risk must be identified"),
+    opportunities: z.array(z.string()).min(1, "At least one opportunity must be identified")
+  }),
+  valuationInputs: z.object({
+    targetValuation: z.number().min(0, "Target valuation must be a positive number"),
+    fundingRequired: z.number().min(0, "Funding required must be a positive number"),
+    expectedROI: z.number().min(0, "Expected ROI must be a positive number")
+  })
+});
 
-// PitchDeck Types and Validation
+export type ValuationFormData2 = z.infer<typeof valuationFormSchema2>;
+
 export const pitchDeckFormSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
   tagline: z.string().min(1, "Tagline is required"),
