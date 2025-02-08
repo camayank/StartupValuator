@@ -4,42 +4,101 @@ import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
 import analysisRoutes from "./routes/analysis";
 import monitoringRoutes from "./routes/monitoring";
-import aiRoutes from "./routes/ai-routes"; // Import new AI routes
+import aiRoutes from "./routes/ai-routes";
 import { setupAuth } from "./auth";
 import { userProfiles, valuationRecords } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { valuationFormSchema } from "../client/src/lib/validations";
-import { setupCache } from "./lib/cache";
 import { z } from "zod";
 import { ActivityTracker } from "./lib/activity-tracker";
 import { enhancedAIService } from "./services/enhanced-ai-service";
 import { performanceTrackingService } from "./services/performance-tracking-service";
-import XLSX from "xlsx";
-import { Parser } from "json2csv";
-import { pitchDeckAnalysisRequestSchema, analyzePitchDeck } from "./lib/pitch-deck-analysis";
-import { reportDataSchema, generatePdfReport } from "./lib/report-generator";
-import { generateComplianceReport } from "./lib/compliance-report";
-import { generateComplianceChecklist } from "./lib/compliance-checklist";
-import { assessBusinessModel } from "./lib/business-model-assessment";
-import { evaluateTeamExpertise } from "./lib/team-evaluation";
-import { analyzeMarketSentiment } from "./lib/market-sentiment-analysis";
-import { assessIntellectualProperty } from "./lib/ip-assessment";
-import { validateMetrics } from "./lib/metrics-validation";
-import { validateRevenueModel } from "./lib/revenue-model-validation";
-
+import { WebSocketServer, WebSocket } from 'ws';
+import { IncomingMessage } from "http";
 
 export function registerRoutes(app: Express): Server {
-  // Set up cache
-  const cache = setupCache();
-
-  // Setup authentication first
-  setupAuth(app);
-
   // Register all routes
   app.use("/api/valuation", valuationRoutes);
   app.use("/api/analysis", analysisRoutes);
   app.use("/api/monitoring", monitoringRoutes);
-  app.use("/api/ai", aiRoutes); // Register new AI routes
+  app.use("/api/ai", aiRoutes);
+
+  const httpServer = createServer(app);
+
+  // Set up WebSocket server on a specific path to avoid conflict with Vite HMR
+  const wss = new WebSocketServer({ 
+    server: httpServer,
+    path: '/ws/valuation',
+    verifyClient: (info: { req: IncomingMessage }) => {
+      const protocol = info.req.headers['sec-websocket-protocol'];
+      return !protocol || !protocol.includes('vite-hmr');
+    }
+  });
+
+  // WebSocket connection handling
+  wss.on('connection', (ws: WebSocket) => {
+    console.log('Client connected to valuation WebSocket');
+
+    // Send initial connection status
+    ws.send(JSON.stringify({ 
+      type: 'connection', 
+      status: 'connected',
+      timestamp: Date.now()
+    }));
+
+    // Handle incoming messages
+    ws.on('message', (message: Buffer | string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received WebSocket message:', data);
+
+        // Handle different message types
+        switch (data.type) {
+          case 'valuation_update':
+            // Broadcast valuation updates to all connected clients
+            wss.clients.forEach(client => {
+              if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'valuation_update',
+                  data: data.payload,
+                  timestamp: Date.now()
+                }));
+              }
+            });
+            break;
+
+          case 'analysis_request':
+            // Handle analysis requests
+            ws.send(JSON.stringify({
+              type: 'analysis_progress',
+              status: 'processing',
+              timestamp: Date.now()
+            }));
+            break;
+
+          default:
+            console.log('Unknown message type:', data.type);
+        }
+      } catch (error) {
+        console.error('WebSocket message handling error:', error);
+        ws.send(JSON.stringify({ 
+          type: 'error',
+          message: 'Failed to process message',
+          timestamp: Date.now()
+        }));
+      }
+    });
+
+    // Handle connection close
+    ws.on('close', () => {
+      console.log('Client disconnected from valuation WebSocket');
+    });
+
+    // Handle errors
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+  });
 
   // Enhanced valuation route with proper validation and AI integration
   app.post("/api/valuation", async (req, res) => {
@@ -49,12 +108,6 @@ export function registerRoutes(app: Express): Server {
 
       // Create a cache key from the important parameters
       const cacheKey = `${validatedData.businessInfo.name}-${validatedData.businessInfo.sector}`;
-
-      // Check cache first
-      const cachedResult = cache.get(cacheKey);
-      if (cachedResult) {
-        return res.json(cachedResult);
-      }
 
       // Get enhanced AI analysis
       const aiAnalysis = await enhancedAIService.analyzeMarket(validatedData);
@@ -83,8 +136,6 @@ export function registerRoutes(app: Express): Server {
         }
       });
 
-      // Cache the result
-      cache.set(cacheKey, result);
       res.json(result);
     } catch (error) {
       console.error('Valuation processing failed:', error);
@@ -409,6 +460,5 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  const httpServer = createServer(app);
   return httpServer;
 }

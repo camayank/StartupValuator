@@ -1,12 +1,10 @@
 import { createContext, useContext, ReactNode } from "react";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import type { ValuationFormInput, ValidationResult } from "@/lib/validation/aiValidation";
 
 interface ValidationContextType {
   validateField: (field: string, value: any, rules: any) => Promise<string | null>;
   validateCrossField: (field: string, value: any, formData: any) => Promise<Record<string, string> | null>;
-  getAISuggestions: (data: ValuationFormInput) => Promise<ValidationResult>;
   getSmartDefaults: (industry: string) => Promise<Record<string, any>>;
   industryRules: Record<string, any>;
 }
@@ -16,6 +14,22 @@ const ValidationContext = createContext<ValidationContextType | undefined>(undef
 interface ValidationProviderProps {
   children: ReactNode;
 }
+
+const industryValidationRules = {
+  SaaS: {
+    revenue: { min: 0, max: 1000000000 },
+    employeeCount: { min: 1, max: 10000 },
+    churnRate: { min: 0, max: 100 },
+    margins: { min: -100, max: 100 }
+  },
+  Ecommerce: {
+    revenue: { min: 0, max: 1000000000 },
+    margins: { min: -50, max: 80 },
+    inventory: { min: 0 }
+  }
+} as const;
+
+type IndustryType = keyof typeof industryValidationRules;
 
 export function ValidationProvider({ children }: ValidationProviderProps) {
   const { toast } = useToast();
@@ -28,22 +42,22 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
 
     try {
       // Create a dynamic schema based on rules
-      let schema = z.any();
+      let schema: z.ZodType<any> = z.any();
 
       if (rule.required) {
-        schema = schema.nonempty({ message: `${field} is required` });
+        schema = z.string().min(1, { message: `${field} is required` });
       }
 
       if (rule.min !== undefined) {
-        schema = schema.min(rule.min, { message: `${field} must be at least ${rule.min}` });
+        schema = z.number().min(rule.min, { message: `${field} must be at least ${rule.min}` });
       }
 
       if (rule.max !== undefined) {
-        schema = schema.max(rule.max, { message: `${field} must be at most ${rule.max}` });
+        schema = z.number().max(rule.max, { message: `${field} must be at most ${rule.max}` });
       }
 
       if (rule.pattern) {
-        schema = schema.regex(new RegExp(rule.pattern), { message: rule.patternMessage });
+        schema = z.string().regex(new RegExp(rule.pattern), { message: rule.patternMessage });
       }
 
       await schema.parseAsync(value);
@@ -61,7 +75,7 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
 
     // Industry-specific validations
     if (formData.industry) {
-      const industryRules = industryValidationRules[formData.industry];
+      const industryRules = industryValidationRules[formData.industry as IndustryType];
       if (industryRules?.[field]) {
         const error = await validateField(field, value, industryRules);
         if (error) errors[field] = error;
@@ -89,41 +103,6 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
     return Object.keys(errors).length ? errors : null;
   };
 
-  const getAISuggestions = async (data: ValuationFormInput): Promise<ValidationResult> => {
-    try {
-      const response = await fetch('/api/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get AI suggestions');
-      }
-
-      const result = await response.json();
-
-      // Show important warnings as toasts
-      result.warnings.forEach((warning: string) => {
-        toast({
-          title: "Validation Warning",
-          description: warning,
-          variant: "warning",
-        });
-      });
-
-      return result;
-    } catch (error) {
-      console.error('AI validation error:', error);
-      return {
-        isValid: true,
-        warnings: [],
-        suggestions: [],
-        industryInsights: []
-      };
-    }
-  };
-
   const getSmartDefaults = async (industry: string): Promise<Record<string, any>> => {
     // Industry-specific default values
     const defaults = {
@@ -138,26 +117,10 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
         churnRate: 15,
         cac: 50,
         ltv: 200
-      },
-      // Add more industry defaults
+      }
     };
 
     return defaults[industry as keyof typeof defaults] || {};
-  };
-
-  const industryValidationRules = {
-    SaaS: {
-      revenue: { min: 0, max: 1000000000 },
-      employeeCount: { min: 1, max: 10000 },
-      churnRate: { min: 0, max: 100 },
-      margins: { min: -100, max: 100 }
-    },
-    Ecommerce: {
-      revenue: { min: 0, max: 1000000000 },
-      margins: { min: -50, max: 80 },
-      inventory: { min: 0 }
-    },
-    // Add more industry-specific rules
   };
 
   return (
@@ -165,7 +128,6 @@ export function ValidationProvider({ children }: ValidationProviderProps) {
       value={{ 
         validateField, 
         validateCrossField, 
-        getAISuggestions,
         getSmartDefaults,
         industryRules: industryValidationRules
       }}

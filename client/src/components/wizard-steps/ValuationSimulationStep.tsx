@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,9 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useValuationSocket } from "@/hooks/use-valuation-socket";
+import { useToast } from "@/hooks/use-toast";
 
+// Schema remains the same
 const valuationSimulationSchema = z.object({
   method: z.enum(["DCF", "Market Comps", "Monte Carlo", "AI Recommend"]),
   expectedROI: z.number().min(0).max(1000),
@@ -44,6 +47,8 @@ export function ValuationSimulationStep({
   aiAnalysis
 }: ValuationSimulationStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { isConnected, isReconnecting, sendMessage } = useValuationSocket();
 
   const form = useForm<ValuationSimulationFormData>({
     resolver: zodResolver(valuationSimulationSchema),
@@ -59,16 +64,49 @@ export function ValuationSimulationStep({
   const handleSubmit = async (values: ValuationSimulationFormData) => {
     try {
       setIsSubmitting(true);
+
+      // Send update through WebSocket
+      if (isConnected) {
+        sendMessage('valuation_update', values);
+      }
+
       await onUpdate(values);
+
+      toast({
+        title: "Success",
+        description: "Valuation simulation updated successfully",
+      });
     } catch (error) {
       console.error("Error submitting valuation simulation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update valuation simulation",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Connection status alert
+  const renderConnectionStatus = () => {
+    if (!isConnected) {
+      return (
+        <Alert variant="destructive" className="mb-4">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            {isReconnecting ? "Reconnecting to server..." : "Disconnected from server"}
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
+      {renderConnectionStatus()}
+
       {aiAnalysis && (
         <Alert>
           <Info className="h-4 w-4" />
@@ -182,9 +220,16 @@ export function ValuationSimulationStep({
           <div className="flex justify-end space-x-4">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isConnected}
             >
-              {isSubmitting ? "Saving..." : "Continue"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </div>
         </form>
