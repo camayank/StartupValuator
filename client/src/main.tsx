@@ -12,6 +12,41 @@ setupErrorMonitoring();
 
 const root = createRoot(document.getElementById("root")!);
 
+// Store UI state before HMR updates
+let uiState = {
+  scrollPosition: 0,
+  formData: null as Record<string, any> | null,
+  selectedTab: null as string | null
+};
+
+function saveUIState() {
+  uiState = {
+    scrollPosition: window.scrollY,
+    formData: document.querySelector('form') 
+      ? Object.fromEntries(new FormData(document.querySelector('form') as HTMLFormElement))
+      : null,
+    selectedTab: localStorage.getItem('selectedTab')
+  };
+}
+
+function restoreUIState() {
+  if (uiState.scrollPosition) {
+    window.scrollTo(0, uiState.scrollPosition);
+  }
+
+  if (uiState.formData) {
+    window.dispatchEvent(new CustomEvent('restoreFormState', { 
+      detail: uiState.formData 
+    }));
+  }
+
+  if (uiState.selectedTab) {
+    window.dispatchEvent(new CustomEvent('restoreTabState', { 
+      detail: uiState.selectedTab 
+    }));
+  }
+}
+
 function render() {
   root.render(
     <StrictMode>
@@ -25,47 +60,51 @@ function render() {
 
 render();
 
-// Hot Module Replacement with state preservation
+// Enhanced Hot Module Replacement
 if (import.meta.hot) {
-  import.meta.hot.accept(['./App', './lib/queryClient'], (modules) => {
-    const scrollY = window.scrollY;
-    const formState = localStorage.getItem('formState');
-
-    // Batch updates for smooth transitions
-    setTimeout(() => {
-      render();
-      // Restore scroll position
-      requestAnimationFrame(() => {
-        window.scrollTo(0, scrollY);
-        if (formState) {
-          try {
-            const state = JSON.parse(formState);
-            // Dispatch event to restore form state
-            window.dispatchEvent(new CustomEvent('restoreFormState', { detail: state }));
-          } catch (e) {
-            console.error('Failed to restore form state:', e);
-          }
-        }
-      });
-    }, 50);
+  // Save state before updates
+  import.meta.hot.on('vite:beforeUpdate', () => {
+    saveUIState();
   });
 
-  // Error resilience - continue running after fixes
-  import.meta.hot.on('vite:beforeUpdate', () => {
-    // Save current form state before update
-    const currentState = document.querySelector('form')?.elements;
-    if (currentState) {
-      const formData = new FormData(currentState as HTMLFormElement);
-      localStorage.setItem('formState', JSON.stringify(Object.fromEntries(formData)));
+  // Handle module updates
+  import.meta.hot.accept(['./App', './lib/queryClient'], (modules) => {
+    requestAnimationFrame(() => {
+      render();
+      // Restore UI state after re-render
+      setTimeout(restoreUIState, 50);
+    });
+  });
+
+  // Error recovery
+  import.meta.hot.on('vite:error', (error) => {
+    console.error('HMR Error:', error);
+    // Attempt recovery by full page reload if needed
+    if (error.message.includes('syntax error')) {
+      window.location.reload();
     }
   });
 }
 
-// Prevent sudden page reloads
+// Prevent accidental navigation with unsaved changes
 window.addEventListener('beforeunload', (e) => {
   const form = document.querySelector('form');
-  if (form && form.elements.length > 0) {
+  if (form?.querySelector('[data-dirty="true"]')) {
     e.preventDefault();
     e.returnValue = '';
   }
 });
+
+// Listen for form state restore events
+window.addEventListener('restoreFormState', ((e: CustomEvent) => {
+  const form = document.querySelector('form');
+  if (form && e.detail) {
+    Object.entries(e.detail).forEach(([name, value]) => {
+      const input = form.querySelector(`[name="${name}"]`) as HTMLInputElement;
+      if (input) {
+        input.value = value as string;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+  }
+}) as EventListener);
