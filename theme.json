@@ -2,5 +2,37 @@
   "variant": "professional",
   "primary": "hsl(230 60% 20%)",
   "appearance": "light",
-  "radius": 0.75
+  "radius": 0.75,
+  "colors": {
+    "confidence": {
+      "low": "oklch(62% 0.2 30)",
+      "high": "oklch(85% 0.15 250)"
+    },
+    "risk": {
+      "mitigation": "oklch(75% 0.18 180)",
+      "warning": "oklch(70% 0.2 45)",
+      "critical": "oklch(65% 0.25 30)"
+    },
+    "data": {
+      "positive": "oklch(80% 0.12 145)",
+      "negative": "oklch(70% 0.15 30)",
+      "neutral": "oklch(75% 0.1 250)"
+    }
+  },
+  "typography": {
+    "base": {
+      "family": "Inter",
+      "size": "14px",
+      "lineHeight": 1.6,
+      "scale": 1.25
+    },
+    "data": {
+      "family": "IBM Plex Mono",
+      "features": ["tnum"]
+    }
+  },
+  "spacing": {
+    "grid": 4,
+    "unit": "px"
+  }
 }
