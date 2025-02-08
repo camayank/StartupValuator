@@ -2,10 +2,11 @@ import type { ValuationFormData } from "../../client/src/lib/validations";
 import { industries, businessStages } from "../../client/src/lib/validations";
 import { calculateFinancialAssumptions } from "./financialAssumptions";
 import type { FinancialAssumptions } from "./financialAssumptions";
-import OpenAI from "openai";
+import { OpenAI } from "openai";
+import { aiAnalysisService } from "../services/ai-analysis-service";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Initialize OpenAI with environment variable
+const openai = new OpenAI();
 
 interface CurrencyRates {
   USD: number;
@@ -26,17 +27,34 @@ const EXCHANGE_RATES: CurrencyRates = {
 
 export async function calculateValuation(params: ValuationFormData) {
   try {
-    const { currency = "USD", stage, industry, revenue } = params;
+    // Get AI-enhanced industry insights from multiple models
+    const [aiInsights, marketAnalysis, riskAssessment, growthProjections] = await Promise.all([
+      aiAnalysisService.analyzeMarket(params),
+      aiAnalysisService.analyzeMarket(params),
+      aiAnalysisService.assessRisks(params),
+      aiAnalysisService.generateGrowthProjections(params)
+    ]);
 
-    // Get AI-enhanced industry insights
-    const aiInsights = await getAIInsights(params);
+    // Generate financial assumptions with enhanced market data
+    const assumptions = calculateFinancialAssumptions({
+      ...params,
+      marketAnalysis,
+      riskAssessment
+    });
 
-    // Generate financial assumptions first
-    const assumptions = calculateFinancialAssumptions(params);
-
-    // Convert revenue to USD for calculations
-    const revenueUSD = params.revenue / EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
-    const paramsUSD = { ...params, revenue: revenueUSD };
+    // Convert all monetary values to USD for calculations
+    const currency = params.businessInfo.financials?.currency || "USD";
+    const revenueUSD = (params.businessInfo.financials?.revenue || 0) / EXCHANGE_RATES[currency as keyof typeof EXCHANGE_RATES];
+    const paramsUSD = { 
+      ...params,
+      businessInfo: {
+        ...params.businessInfo,
+        financials: {
+          ...params.businessInfo.financials,
+          revenue: revenueUSD
+        }
+      }
+    };
 
     // Calculate valuations using different methods with enhanced assumptions
     const dcfAnalysis = calculateDCF(paramsUSD, assumptions);
@@ -45,7 +63,11 @@ export async function calculateValuation(params: ValuationFormData) {
     const aiAdjustedAnalysis = await calculateAIAdjustedValuation(paramsUSD, aiInsights);
 
     // Determine method weights based on stage and data quality
-    const weights = determineMethodWeights(stage, industry, assumptions);
+    const weights = determineMethodWeights(
+      params.businessInfo.productStage,
+      params.businessInfo.industry,
+      assumptions
+    );
 
     // Calculate weighted average valuation with enhanced methodology
     const finalValuationUSD = (
@@ -58,11 +80,12 @@ export async function calculateValuation(params: ValuationFormData) {
     // Calculate confidence score based on data quality and assumptions reliability
     const confidenceScore = calculateConfidenceScore(params, assumptions);
 
-    // Enhanced scenario analysis using Monte Carlo simulation
-    const scenarios = generateScenarioAnalysis(params, finalValuationUSD, assumptions);
-
     // Calculate market sentiment adjustment
-    const marketSentimentAdjustment = calculateMarketSentimentAdjustment(industry, stage);
+    const marketSentimentAdjustment = calculateMarketSentimentAdjustment(
+      params.businessInfo.industry,
+      params.businessInfo.productStage
+    );
+
     const adjustedValuationUSD = finalValuationUSD * marketSentimentAdjustment;
 
     // Convert back to requested currency
@@ -70,7 +93,7 @@ export async function calculateValuation(params: ValuationFormData) {
 
     return {
       valuation: Math.round(finalValuation * 100) / 100,
-      multiplier: revenue > 0 ? Math.round((adjustedValuationUSD / revenueUSD) * 100) / 100 : null,
+      multiplier: revenueUSD > 0 ? Math.round((adjustedValuationUSD / revenueUSD) * 100) / 100 : null,
       methodology: {
         dcfWeight: weights.dcf,
         comparablesWeight: weights.comparables,
@@ -87,21 +110,29 @@ export async function calculateValuation(params: ValuationFormData) {
           riskAdjusted: riskAdjustedAnalysis,
           aiAdjusted: aiAdjustedAnalysis
         },
-        scenarios,
-        sensitivityAnalysis: performSensitivityAnalysis(params, finalValuationUSD),
-        industryMetrics: getIndustryMetrics(industry, stage),
-      },
-      assumptions,
-      marketAnalysis: {
-        sentiment: await calculateMarketSentiment(industry),
-        trends: await getIndustryTrends(industry),
-        growthPotential: await assessGrowthPotential(params),
+        marketAnalysis: {
+          trends: marketAnalysis.trends,
+          competitors: marketAnalysis.competitors,
+          marketSize: marketAnalysis.marketSize,
+          sentiment: marketAnalysis.sentiment
+        },
+        riskAssessment: {
+          overall: riskAssessment.overall,
+          categories: riskAssessment.categories,
+          keyRisks: riskAssessment.keyRisks
+        },
+        growthProjections: {
+          revenueProjections: growthProjections.revenueProjections,
+          growthDrivers: growthProjections.growthDrivers,
+          assumptions: growthProjections.assumptions,
+          sensitivity: growthProjections.sensitivity
+        }
       },
       aiInsights
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Valuation calculation error:', error);
-    throw new Error(`Failed to calculate valuation: ${error.message}`);
+    throw new Error(`Failed to calculate valuation: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -156,13 +187,13 @@ async function calculateAIAdjustedValuation(
 
     const result = JSON.parse(response.choices[0].message.content);
     return {
-      value: result.adjustmentFactor * params.revenue,
+      value: result.adjustmentFactor * params.businessInfo.financials?.revenue || 0,
       factors: result.factors
     };
   } catch (error) {
     console.error('AI valuation adjustment error:', error);
     return {
-      value: params.revenue,
+      value: params.businessInfo.financials?.revenue || 0,
       factors: {}
     };
   }
@@ -213,7 +244,7 @@ function calculateRiskAdjustedValuation(
   params: ValuationFormData,
   assumptions: FinancialAssumptions
 ): { value: number; riskFactors: Record<string, number> } {
-  const baseValue = (params.revenue || 0) * assumptions.industryMultiple;
+  const baseValue = (params.businessInfo.financials?.revenue || 0) * assumptions.industryMultiple;
 
   // Calculate various risk factors
   const riskFactors = {
@@ -221,7 +252,7 @@ function calculateRiskAdjustedValuation(
     executionRisk: calculateExecutionRisk(params),
     competitiveRisk: calculateCompetitiveRisk(params),
     financialRisk: calculateFinancialRisk(params),
-    regulatoryRisk: calculateRegulatoryRisk(params.industry),
+    regulatoryRisk: calculateRegulatoryRisk(params.businessInfo.industry),
   };
 
   // Apply risk adjustments
@@ -332,10 +363,10 @@ function getIndustryMetrics(industry: string, stage: string): {
 function calculateConfidenceScore(params: ValuationFormData, assumptions: FinancialAssumptions): number {
   return Math.min(100, Math.max(50,
     60 + // Base confidence
-    (params.revenue ? 10 : 0) + // Revenue data available
-    (params.margins ? 10 : 0) + // Margin data available
-    (params.growthRate ? 10 : 0) + // Growth data available
-    (params.stage.includes('revenue_scaling') || params.stage.includes('established') ? 10 : 0) + // Later stage companies
+    (params.businessInfo.financials?.revenue ? 10 : 0) + // Revenue data available
+    (params.businessInfo.financials?.margins ? 10 : 0) + // Margin data available
+    (params.businessInfo.financials?.growthRate ? 10 : 0) + // Growth data available
+    (params.businessInfo.productStage.includes('revenue_scaling') || params.businessInfo.productStage.includes('established') ? 10 : 0) + // Later stage companies
     (assumptions.industryDataQuality ? 10 : 0) // Industry data quality
   ));
 }
@@ -350,7 +381,7 @@ function calculateDCF(params: ValuationFormData, assumptions: FinancialAssumptio
     capex: number;
   }>;
 } {
-  const { revenue, margins = 0 } = params;
+  const { revenue, margins = 0 } = params.businessInfo.financials || {revenue: 0, margins: 0};
   const { discountRate, growthRate, terminalGrowthRate } = assumptions;
 
   let currentRevenue = revenue;
@@ -408,7 +439,7 @@ function calculateComparables(params: ValuationFormData, assumptions: FinancialA
     }>;
   };
 } {
-  const { revenue, stage, industry, margins = 0 } = params;
+  const { revenue, stage, industry, margins = 0 } = params.businessInfo.financials || {revenue: 0, stage: '', industry: '', margins: 0};
 
   // Enhanced industry-specific multiples based on comprehensive market data
   const baseMultiples = {
@@ -492,7 +523,7 @@ function generateScenarioAnalysis(
     value: baseValue * 0.7,
     assumptions: {
       growthRate: assumptions.growthRate * 0.7,
-      margins: (params.margins || 0) * 0.8,
+      margins: (params.businessInfo.financials?.margins || 0) * 0.8,
       discountRate: assumptions.discountRate * 1.2,
     },
     probability: 0.25,
@@ -502,7 +533,7 @@ function generateScenarioAnalysis(
     value: baseValue,
     assumptions: {
       growthRate: assumptions.growthRate,
-      margins: params.margins || 0,
+      margins: params.businessInfo.financials?.margins || 0,
       discountRate: assumptions.discountRate,
     },
     probability: 0.5,
@@ -512,7 +543,7 @@ function generateScenarioAnalysis(
     value: baseValue * 1.3,
     assumptions: {
       growthRate: assumptions.growthRate * 1.3,
-      margins: (params.margins || 0) * 1.2,
+      margins: (params.businessInfo.financials?.margins || 0) * 1.2,
       discountRate: assumptions.discountRate * 0.9,
     },
     probability: 0.25,

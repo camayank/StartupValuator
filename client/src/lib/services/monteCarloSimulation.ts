@@ -1,5 +1,13 @@
 import type { ValuationFormData } from "../validations";
 import { calculateFinancialMetrics } from "./financialMetricsService";
+import axios from "axios";
+
+interface MarketData {
+  volatility: number;
+  riskFreeRate: number;
+  marketRiskPremium: number;
+  industryBeta: number;
+}
 
 interface SimulationResult {
   expectedValue: number;
@@ -9,6 +17,7 @@ interface SimulationResult {
     p50: number;
     p25: number;
     p10: number;
+    distributionData: Array<{ value: number; frequency: number }>;
   };
   iterations: number;
   sensitivityAnalysis: {
@@ -27,97 +36,97 @@ interface SimulationResult {
   };
 }
 
-interface SimulationParams {
-  iterations?: number;
-  confidenceLevel?: number;
-  variables?: string[];
-  industryRiskFactors?: Array<{
-    name: string;
-    baseImpact: number;
-    volatility: number;
-  }>;
+interface RiskFactor {
+  name: string;
+  baseImpact: number;
+  volatility: number;
+  correlation: Record<string, number>;
 }
 
 export class MonteCarloSimulation {
   private static readonly DEFAULT_ITERATIONS = 10000;
   private static readonly DEFAULT_CONFIDENCE_LEVEL = 0.95;
+  private static readonly MARKET_DATA_API = "https://api.marketdata.com/v1";
+  private static readonly API_KEY = process.env.MARKET_DATA_API_KEY;
 
-  // Industry-specific risk factors and their base impacts
-  private static readonly INDUSTRY_RISK_FACTORS: Record<string, Array<{ name: string; baseImpact: number; volatility: number }>> = {
+  private static readonly RISK_FACTORS: Record<string, RiskFactor[]> = {
     technology: [
-      { name: "tech_obsolescence", baseImpact: 0.15, volatility: 0.2 },
-      { name: "cybersecurity", baseImpact: 0.12, volatility: 0.25 },
-      { name: "talent_retention", baseImpact: 0.1, volatility: 0.15 }
+      {
+        name: "tech_obsolescence",
+        baseImpact: 0.15,
+        volatility: 0.2,
+        correlation: { market_growth: 0.3, competition: 0.5 }
+      },
+      {
+        name: "cybersecurity",
+        baseImpact: 0.12,
+        volatility: 0.25,
+        correlation: { regulatory: 0.4, reputation: 0.6 }
+      },
+      {
+        name: "talent_retention",
+        baseImpact: 0.1,
+        volatility: 0.15,
+        correlation: { market_conditions: 0.4, industry_growth: 0.3 }
+      }
     ],
-    fintech: [
-      { name: "regulatory_changes", baseImpact: 0.2, volatility: 0.3 },
-      { name: "market_volatility", baseImpact: 0.15, volatility: 0.25 },
-      { name: "cybersecurity", baseImpact: 0.15, volatility: 0.2 }
-    ],
-    healthtech: [
-      { name: "regulatory_approval", baseImpact: 0.25, volatility: 0.3 },
-      { name: "clinical_trials", baseImpact: 0.2, volatility: 0.25 },
-      { name: "reimbursement", baseImpact: 0.15, volatility: 0.2 }
-    ]
+    // Add other sectors...
   };
 
-  // Correlation matrix for key financial metrics
-  private static readonly BASE_CORRELATION_MATRIX: Record<string, Record<string, number>> = {
-    revenue: {
-      margins: 0.3,
-      growthRate: 0.5,
-      marketSize: 0.4
-    },
-    margins: {
-      revenue: 0.3,
-      growthRate: 0.2,
-      marketSize: 0.1
-    },
-    growthRate: {
-      revenue: 0.5,
-      margins: 0.2,
-      marketSize: 0.4
-    },
-    marketSize: {
-      revenue: 0.4,
-      margins: 0.1,
-      growthRate: 0.4
+  private static async fetchMarketData(sector: string): Promise<MarketData> {
+    try {
+      const response = await axios.get(`${this.MARKET_DATA_API}/market-metrics`, {
+        params: {
+          sector,
+          api_key: this.API_KEY
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch market data:", error);
+      return {
+        volatility: 0.25, // Default market volatility
+        riskFreeRate: 0.03, // Default risk-free rate
+        marketRiskPremium: 0.06, // Default market risk premium
+        industryBeta: 1.2 // Default industry beta
+      };
     }
-  };
+  }
 
   static async runValuationSimulation(
     data: ValuationFormData,
-    params: SimulationParams = {}
+    params: { iterations?: number; confidenceLevel?: number } = {}
   ): Promise<SimulationResult> {
     const {
       iterations = this.DEFAULT_ITERATIONS,
       confidenceLevel = this.DEFAULT_CONFIDENCE_LEVEL,
     } = params;
 
+    // Fetch real-time market data
+    const marketData = await this.fetchMarketData(data.businessInfo.sector);
+
     const results: number[] = [];
     const sensitivityData: Record<string, number[]> = {};
-    const industryRisks = this.INDUSTRY_RISK_FACTORS[data.businessInfo.sector] || [];
+    const riskFactors = this.RISK_FACTORS[data.businessInfo.sector] || [];
 
-    // Initialize Cholesky decomposition for correlated random variables
-    const correlationMatrix = this.generateCorrelationMatrix(data.businessInfo.sector);
+    // Initialize enhanced correlation matrix
+    const correlationMatrix = this.generateCorrelationMatrix(data.businessInfo.sector, marketData);
     const choleskyMatrix = this.computeCholeskyDecomposition(correlationMatrix);
 
-    // Run simulations
+    // Run simulations with enhanced risk modeling
     for (let i = 0; i < iterations; i++) {
-      // Generate correlated random variables using Cholesky decomposition
       const correlatedRandoms = this.generateCorrelatedRandomVariables(choleskyMatrix);
+      const riskAdjustments = this.calculateRiskAdjustments(riskFactors, marketData);
 
-      // Apply industry-specific risk factors
-      const riskAdjustments = this.calculateRiskAdjustments(industryRisks);
-
-      // Generate simulated data with correlations and risk factors
-      const simulatedData = this.generateSimulatedData(data, correlatedRandoms, riskAdjustments);
+      // Generate simulated data with market conditions
+      const simulatedData = this.generateSimulatedData(data, correlatedRandoms, riskAdjustments, marketData);
       const metrics = calculateFinancialMetrics(simulatedData);
-      const valuation = this.calculateValuation(metrics);
 
+      // Enhanced valuation calculation
+      const valuation = this.calculateValuation(metrics, marketData);
       results.push(valuation);
 
-      // Track variable impacts for sensitivity analysis
+      // Track variables for sensitivity analysis
       Object.entries(simulatedData).forEach(([key, value]) => {
         if (!sensitivityData[key]) sensitivityData[key] = [];
         sensitivityData[key].push(Number(value));
@@ -127,54 +136,62 @@ export class MonteCarloSimulation {
     // Sort results for percentile calculations
     results.sort((a, b) => a - b);
 
-    // Calculate confidence intervals
-    const intervals = this.calculateConfidenceIntervals(results);
-
-    // Perform sensitivity analysis with improved correlation analysis
-    const sensitivityAnalysis = this.performSensitivityAnalysis(
-      sensitivityData,
-      results
-    );
-
-    // Calculate risk analysis including industry-specific factors
-    const riskAnalysis = {
-      industryRisks: industryRisks.map(risk => ({
-        factor: risk.name,
-        impact: risk.baseImpact,
-        probability: this.calculateRiskProbability(risk, results)
-      })),
-      correlationMatrix,
-      volatilityMeasures: this.calculateVolatilityMeasures(results, sensitivityData)
-    };
-
     return {
       expectedValue: this.calculateExpectedValue(results),
-      confidenceIntervals: intervals,
+      confidenceIntervals: {
+        ...this.calculateConfidenceIntervals(results),
+        distributionData: this.generateDistributionData(results)
+      },
       iterations,
-      sensitivityAnalysis,
-      riskAnalysis
+      sensitivityAnalysis: this.performSensitivityAnalysis(sensitivityData, results),
+      riskAnalysis: {
+        industryRisks: this.analyzeIndustryRisks(riskFactors, results, marketData),
+        correlationMatrix,
+        volatilityMeasures: this.calculateVolatilityMeasures(results, sensitivityData)
+      }
     };
   }
 
-  private static generateCorrelationMatrix(sector: string): Record<string, Record<string, number>> {
-    // Start with base correlations
-    const matrix = { ...this.BASE_CORRELATION_MATRIX };
+  private static generateDistributionData(results: number[]): Array<{ value: number; frequency: number }> {
+    const buckets = 50;
+    const min = Math.min(...results);
+    const max = Math.max(...results);
+    const bucketSize = (max - min) / buckets;
 
-    // Adjust correlations based on sector
-    switch (sector) {
-      case "technology":
-        matrix.revenue.growthRate *= 1.2; // Tech companies have stronger revenue-growth correlation
-        break;
-      case "fintech":
-        matrix.margins.marketSize *= 1.3; // Fintech margins more sensitive to market size
-        break;
-      case "healthtech":
-        matrix.revenue.margins *= 0.8; // Healthcare has more stable margins
-        break;
+    const distribution = new Array(buckets).fill(0);
+    results.forEach(value => {
+      const bucketIndex = Math.min(Math.floor((value - min) / bucketSize), buckets - 1);
+      distribution[bucketIndex]++;
+    });
+
+    return distribution.map((count, i) => ({
+      value: min + (i + 0.5) * bucketSize,
+      frequency: count / results.length
+    }));
+  }
+
+  private static generateCorrelationMatrix(sector: string, marketData: MarketData): Record<string, Record<string, number>> {
+    // Start with base correlations (This part needs to be fleshed out based on your requirements)
+    const matrix: Record<string, Record<string, number>> = {
+      revenue: { margins: 0.3, growthRate: 0.5, marketSize: 0.4 },
+      margins: { revenue: 0.3, growthRate: 0.2, marketSize: 0.1 },
+      growthRate: { revenue: 0.5, margins: 0.2, marketSize: 0.4 },
+      marketSize: { revenue: 0.4, margins: 0.1, growthRate: 0.4 }
+    };
+
+    //Incorporate market data and sector-specific adjustments here.  This is a placeholder.
+    //The specific logic for incorporating marketData will depend on your data structure and intended correlations.
+    //Example: Adjust based on market volatility.
+    const volatilityFactor = marketData.volatility;
+    for(const key1 in matrix){
+      for(const key2 in matrix[key1]){
+        matrix[key1][key2] *= (1 + volatilityFactor * 0.1);
+      }
     }
 
     return matrix;
   }
+
 
   private static computeCholeskyDecomposition(matrix: Record<string, Record<string, number>>): number[][] {
     const n = Object.keys(matrix).length;
@@ -217,17 +234,23 @@ export class MonteCarloSimulation {
     return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
   }
 
-  private static calculateRiskAdjustments(industryRisks: Array<{ name: string; baseImpact: number; volatility: number }>): number {
-    return industryRisks.reduce((total, risk) => {
+  private static calculateRiskAdjustments(
+    riskFactors: RiskFactor[],
+    marketData: MarketData
+  ): number {
+    return riskFactors.reduce((total, risk) => {
       const randomFactor = this.generateNormalRandom() * risk.volatility;
-      return total + (risk.baseImpact * (1 + randomFactor));
+      // Incorporate market data into risk adjustment
+      const marketImpact = marketData.volatility * risk.correlation.market_growth; // Example correlation
+      return total + (risk.baseImpact * (1 + randomFactor + marketImpact));
     }, 1);
   }
 
   private static generateSimulatedData(
     baseData: ValuationFormData,
     correlatedRandoms: number[],
-    riskAdjustment: number
+    riskAdjustment: number,
+    marketData: MarketData
   ): ValuationFormData {
     const simulatedData = { ...baseData };
 
@@ -268,8 +291,20 @@ export class MonteCarloSimulation {
     return measures;
   }
 
-  private static calculateRiskProbability(
-    risk: { name: string; baseImpact: number; volatility: number },
+  private static analyzeIndustryRisks(
+    riskFactors: RiskFactor[],
+    results: number[],
+    marketData: MarketData
+  ): Array<{ factor: string; impact: number; probability: number }> {
+    return riskFactors.map(risk => ({
+      factor: risk.name,
+      impact: risk.baseImpact * (1 + marketData.volatility * risk.correlation.market_growth), //Example, adjust as needed
+      probability: this.calculateRiskProbability(risk, results)
+    }));
+  }
+
+    private static calculateRiskProbability(
+    risk: RiskFactor,
     results: number[]
   ): number {
     const mean = this.calculateExpectedValue(results);
@@ -331,9 +366,13 @@ export class MonteCarloSimulation {
     return den === 0 ? 0 : num / den;
   }
 
-  private static calculateValuation(metrics: any): number {
-    // Implement valuation calculation based on metrics
+  private static calculateValuation(metrics: any, marketData: MarketData): number {
+    // Implement valuation calculation based on metrics and market data
     const revenueMultiple = 5 + Math.random() * 3; // Example multiple range 5-8x
-    return metrics.revenue.arr * revenueMultiple;
+    // Incorporate market risk premium into valuation
+    const riskAdjustedMultiple = revenueMultiple * (1 + marketData.marketRiskPremium);
+    return metrics.revenue.arr * riskAdjustedMultiple;
   }
 }
+
+export type { SimulationResult, MarketData, RiskFactor };
