@@ -29,9 +29,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { sectors, industries, businessStages, revenueModels, productStages } from "@/lib/validations";
-import { validateFinancialMetrics, type ValidationResult, type BusinessInfo, type ValuationFormInput } from "@/lib/validation/aiValidation";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { aiValidationService } from "@/services/aiValidation";
 
 // Enhanced schema with industry-specific validation
 const businessInfoSchema = z.object({
@@ -93,7 +93,7 @@ export function BusinessInfoStep({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [availableIndustries, setAvailableIndustries] = useState<Record<string, any>>({});
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationResponse, setValidationResponse] = useState<Awaited<ReturnType<typeof aiValidationService.validateInput>> | null>(null);
 
   const form = useForm<BusinessInfoFormData>({
     resolver: zodResolver(businessInfoSchema),
@@ -125,35 +125,29 @@ export function BusinessInfoStep({
     }
   }, [selectedSector, form]);
 
-  const mapFormToValidationInput = (formData: BusinessInfoFormData): ValuationFormInput => ({
-    businessInfo: {
-      name: formData.businessName,
-      sector: formData.sector,
-      industry: formData.industry,
-      location: formData.location,
-      productStage: formData.productStage,
-      businessModel: formData.revenueModel,
-    }
-  });
-
   const handleSectorChange = async (value: string) => {
     setSelectedSector(value);
     form.setValue("sector", value, { shouldValidate: true });
 
+    // Get AI validation and suggestions for the selected sector
     if (value) {
       try {
         const formData = form.getValues();
-        const validationInput = mapFormToValidationInput({
-          ...formData,
-          sector: value
+        const validationResult = await aiValidationService.validateInput({
+          businessInfo: {
+            sector: value,
+            industry: formData.industry,
+            location: formData.location,
+            productStage: formData.productStage,
+            businessModel: formData.revenueModel,
+            name: formData.businessName
+          }
         });
+        setValidationResponse(validationResult);
 
-        const result = await validateFinancialMetrics(validationInput);
-        setValidationResult(result);
-
-        if (result.suggestions?.length) {
+        if (validationResult.suggestions?.length) {
           toast({
-            title: "AI Suggestions Available",
+            title: "AI Insights Available",
             description: "We have some recommendations based on your industry selection.",
           });
         }
@@ -167,7 +161,17 @@ export function BusinessInfoStep({
     try {
       setIsSubmitting(true);
 
-      const validationResult = await validateFinancialMetrics(mapFormToValidationInput(values));
+      // Perform AI validation before submission
+      const validationResult = await aiValidationService.validateInput({
+        businessInfo: {
+          sector: values.sector,
+          industry: values.industry,
+          location: values.location,
+          productStage: values.productStage,
+          businessModel: values.revenueModel,
+          name: values.businessName
+        }
+      });
 
       if (validationResult.warnings.some(w => w.severity === 'high')) {
         toast({
@@ -175,7 +179,7 @@ export function BusinessInfoStep({
           description: "Please review the highlighted issues before proceeding.",
           variant: "destructive",
         });
-        setValidationResult(validationResult);
+        setValidationResponse(validationResult);
         return;
       }
 
@@ -214,11 +218,11 @@ export function BusinessInfoStep({
         </div>
       </div>
 
-      {validationResult?.warnings.length > 0 && (
+      {validationResponse?.warnings.length > 0 && (
         <Alert variant="destructive">
           <AlertDescription>
             <ul className="list-disc pl-4">
-              {validationResult.warnings.map((warning, index) => (
+              {validationResponse.warnings.map((warning, index) => (
                 <li key={index} className="text-sm">
                   {warning.message}
                   {warning.suggestion && (

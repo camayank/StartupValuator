@@ -22,7 +22,7 @@ import {
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 interface ValidationWarning {
-  field: keyof ValuationFormData;
+  field: string;
   message: string;
   severity: 'low' | 'medium' | 'high';
   suggestion?: string | number;
@@ -207,9 +207,8 @@ export class AIValidationService {
       return result;
     } catch (error) {
       console.error('AI Validation error:', error);
-      // Fallback to basic validation
       return {
-        warnings: validateBusinessMetrics(data),
+        warnings: [],
         suggestions: [],
         industryInsights: []
       };
@@ -220,8 +219,8 @@ export class AIValidationService {
     try {
       const validationContext = {
         data,
-        industryBenchmarks: industryBenchmarks[data.sector],
-        regionRules: enhancedRegionRules[data.region],
+        industryBenchmarks: industryBenchmarks[data.businessInfo.sector],
+        regionRules: enhancedRegionRules[data.businessInfo.location],
         cashFlowStability: assessCashFlowStability(data),
         riskAnalysis: calculateRiskPremium(data),
         pitchDeckMetrics: generatePitchDeckMetrics(data)
@@ -271,8 +270,8 @@ export class AIValidationService {
     try {
       const validationContext = {
         data,
-        industryBenchmarks: industryBenchmarks[data.sector],
-        regionRules: enhancedRegionRules[data.region],
+        industryBenchmarks: industryBenchmarks[data.businessInfo.sector],
+        regionRules: enhancedRegionRules[data.businessInfo.location],
         cashFlowStability: assessCashFlowStability(data),
         stabilityRules: cashFlowStabilityRules[assessCashFlowStability(data)],
         riskAnalysis: calculateRiskPremium(data),
