@@ -112,7 +112,7 @@ export class MonteCarloSimulation {
 
       // Generate simulated data with correlations and risk factors
       const simulatedData = this.generateSimulatedData(data, correlatedRandoms, riskAdjustments);
-      const metrics = await calculateFinancialMetrics(simulatedData);
+      const metrics = calculateFinancialMetrics(simulatedData);
       const valuation = this.calculateValuation(metrics);
 
       results.push(valuation);

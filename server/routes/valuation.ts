@@ -8,27 +8,32 @@ import { ValuationCalculator } from '../services/valuation';
 import { openAIService, anthropicService } from '../services/ai-service';
 import { ReportGenerator } from '../services/report-generation';
 import { ValidationService } from '../services/validation';
-import OpenAI from 'openai';
-import Express from 'express';
-
 
 const router = Router();
 const calculator = new ValuationCalculator();
 const reportGenerator = new ReportGenerator();
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
 
-// Authentication middleware
-function requireAuth(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ success: false, message: "Not logged in" });
+// Request rate limiting
+const requestCounts = new Map<string, { count: number; timestamp: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 5; // 5 requests per minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userRequests = requestCounts.get(ip) || { count: 0, timestamp: now };
+
+  if (now - userRequests.timestamp > RATE_LIMIT_WINDOW) {
+    userRequests.count = 1;
+    userRequests.timestamp = now;
+  } else if (userRequests.count >= MAX_REQUESTS) {
+    return false;
+  } else {
+    userRequests.count++;
   }
-  next();
-}
 
-// Apply authentication middleware to all valuation routes
-router.use(requireAuth);
+  requestCounts.set(ip, userRequests);
+  return true;
+}
 
 // Create new valuation with AI insights
 router.post('/api/valuations', async (req, res) => {
@@ -349,103 +354,5 @@ router.get('/api/valuations/:id/executive-summary', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
-router.post('/api/ai-valuation', async (req, res) => {
-  try {
-    const formData = req.body;
-
-    const prompt = `
-      Please analyze this startup and provide a valuation with detailed rationale:
-
-      Business Information:
-      - Name: ${formData.businessInfo.name}
-      - Sector: ${formData.businessInfo.sector}
-      - Industry: ${formData.businessInfo.industry}
-      - Stage: ${formData.businessInfo.productStage}
-
-      Market Data:
-      - TAM: ${formData.marketData.tam}
-      - SAM: ${formData.marketData.sam}
-      - SOM: ${formData.marketData.som}
-      - Growth Rate: ${formData.marketData.growthRate}%
-
-      Financial Data:
-      - Revenue: ${formData.financialData.revenue}
-      - CAC: ${formData.financialData.cac}
-      - LTV: ${formData.financialData.ltv}
-      - Burn Rate: ${formData.financialData.burnRate}
-
-      Please provide:
-      1. Estimated valuation range
-      2. Key factors influencing the valuation
-      3. Confidence score (0-100)
-      4. Strategic recommendations
-    `;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{
-        role: "system",
-        content: "You are an expert startup valuation analyst. Analyze the provided business data and generate a detailed valuation response."
-      }, {
-        role: "user",
-        content: prompt
-      }],
-      temperature: 0.7,
-    });
-
-    const content = response.choices[0].message.content;
-
-    // Parse the response
-    const valuationMatch = content.match(/\$(\d+(?:\.\d+)?)\s*(?:million|M|-\s*\$\d+(?:\.\d+)?M)?/);
-    const confidenceMatch = content.match(/confidence(?:\s+score)?[:]\s*(\d+)/i);
-    const recommendationsMatch = content.match(/recommendations?:?\n((?:[-*]\s*.+\n?)+)/i);
-    const rationaleMatch = content.match(/factors?:?\n((?:[-*]\s*.+\n?)+)/i);
-
-    const aiResponse = {
-      valuation: valuationMatch ? parseFloat(valuationMatch[1]) * 1000000 : 1000000,
-      rationale: rationaleMatch 
-        ? rationaleMatch[1].replace(/[-*]\s*/g, '').trim()
-        : "Based on market comparables and growth metrics",
-      confidenceScore: confidenceMatch ? parseInt(confidenceMatch[1]) : 85,
-      recommendations: recommendationsMatch 
-        ? recommendationsMatch[1].split('\n')
-            .filter(r => r.trim())
-            .map(r => r.replace(/^[-*]\s*/, '').trim())
-        : ["Focus on reducing CAC", "Expand market presence", "Invest in product development"]
-    };
-
-    res.json(aiResponse);
-  } catch (error: any) {
-    console.error('AI Valuation Error:', error);
-    res.status(500).json({ 
-      message: 'Failed to generate AI-powered valuation',
-      error: error.message 
-    });
-  }
-});
-
-// Request rate limiting
-const requestCounts = new Map<string, { count: number; timestamp: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 5; // 5 requests per minute
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const userRequests = requestCounts.get(ip) || { count: 0, timestamp: now };
-
-  if (now - userRequests.timestamp > RATE_LIMIT_WINDOW) {
-    userRequests.count = 1;
-    userRequests.timestamp = now;
-  } else if (userRequests.count >= MAX_REQUESTS) {
-    return false;
-  } else {
-    userRequests.count++;
-  }
-
-  requestCounts.set(ip, userRequests);
-  return true;
-}
-
 
 export default router;

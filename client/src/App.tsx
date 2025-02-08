@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
 import { ValuationForm } from "@/components/ValuationForm";
 import {
@@ -35,7 +35,6 @@ import AuthPage from "./pages/AuthPage";
 import { useState, useEffect } from "react";
 import { TourGuide } from "@/components/TourGuide";
 
-// Navigation items configuration
 const navigationItems = [
   { 
     href: "/dashboard", 
@@ -70,7 +69,7 @@ const navigationItems = [
 ];
 
 function App() {
-  const { user, isLoading, error, logoutMutation } = useAuth();
+  const { user, isLoading, error, logout } = useUser();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -98,7 +97,6 @@ function App() {
     };
   }, [isLoading]);
 
-  // Handle loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -154,20 +152,17 @@ function App() {
     return <LandingPage />;
   }
 
-  // Handle logout
-  const handleLogout = () => {
-    logoutMutation.mutate(undefined, {
-      onSuccess: () => {
-        window.location.href = '/';
-      },
-      onError: (error) => {
-        toast({
-          title: "Logout Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    });
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      toast({
+        title: "Logout Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -301,6 +296,9 @@ function App() {
       <main className="flex-1 lg:pl-64">
         <div className="container mx-auto px-4 py-8">
           <Switch>
+            <Route path="/auth">
+              <AuthPage />
+            </Route>
             <Route path="/calculator">
               <ValuationCalculatorPage />
             </Route>

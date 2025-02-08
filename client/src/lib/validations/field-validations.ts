@@ -1,33 +1,5 @@
 import { z } from "zod";
 
-// Define stage specific rules
-const stageSpecificRules = {
-  ideation: {
-    minTeamSize: 1,
-    requiredFields: ['description', 'sector', 'industrySegment']
-  },
-  validation: {
-    minTeamSize: 2,
-    requiredFields: ['description', 'sector', 'industrySegment', 'targetMarket']
-  },
-  mvp: {
-    minTeamSize: 3,
-    requiredFields: ['description', 'sector', 'industrySegment', 'targetMarket', 'productDetails']
-  },
-  early_revenue: {
-    minTeamSize: 4,
-    requiredFields: ['description', 'sector', 'industrySegment', 'targetMarket', 'productDetails', 'revenue']
-  },
-  growth: {
-    minTeamSize: 5,
-    requiredFields: ['description', 'sector', 'industrySegment', 'targetMarket', 'productDetails', 'revenue', 'margins']
-  },
-  scaling: {
-    minTeamSize: 8,
-    requiredFields: ['description', 'sector', 'industrySegment', 'targetMarket', 'productDetails', 'revenue', 'margins', 'marketShare']
-  }
-} as const;
-
 type ValidationRule = {
   required: boolean;
   rules: z.ZodType<any>;
@@ -38,7 +10,6 @@ type ValidationRule = {
     recommendedValue?: string;
     warning?: string;
   }>;
-  stageSpecificRules?: typeof stageSpecificRules;
   defaultValue?: any;
 };
 
@@ -47,8 +18,7 @@ export const fieldValidations: Record<string, ValidationRule> = {
     required: true,
     rules: z.string().min(1, "Industry segment is required"),
     dependencies: [],
-    businessLogic: "Primary industry classification",
-    stageSpecificRules
+    businessLogic: "Primary industry classification"
   },
 
   sector: {
@@ -65,8 +35,7 @@ export const fieldValidations: Record<string, ValidationRule> = {
       "distribution"
     ]),
     dependencies: ["industrySegment"],
-    businessLogic: "Business sector must align with selected industry",
-    stageSpecificRules
+    businessLogic: "Business sector must align with selected industry"
   },
 
   businessName: {
@@ -113,8 +82,7 @@ export const fieldValidations: Record<string, ValidationRule> = {
         required: true,
         warning: "Service businesses scale with team size"
       }
-    },
-    stageSpecificRules
+    }
   },
 
   description: {
@@ -135,66 +103,7 @@ export const fieldValidations: Record<string, ValidationRule> = {
       "scaling"
     ]),
     dependencies: ["revenue", "teamSize"],
-    businessLogic: "Stage affects validation requirements",
-    stageSpecificRules
-  },
-
-  revenue: {
-    required: false,
-    rules: z.number().min(0, "Revenue cannot be negative"),
-    dependencies: ["stage"],
-    businessLogic: "Required for revenue-generating stages",
-    stageSpecificRules: {
-      early_revenue: { required: true },
-      growth: { required: true },
-      scaling: { required: true }
-    }
-  },
-
-  margins: {
-    required: false,
-    rules: z.number().min(-100).max(100),
-    dependencies: ["revenue", "stage"],
-    businessLogic: "Required for growth and scaling stages",
-    stageSpecificRules: {
-      growth: { required: true },
-      scaling: { required: true }
-    }
-  },
-
-  marketShare: {
-    required: false,
-    rules: z.number().min(0).max(100),
-    dependencies: ["revenue", "stage"],
-    businessLogic: "Required for scaling stage",
-    stageSpecificRules: {
-      scaling: { required: true }
-    }
-  },
-  targetMarket: {
-    required: false,
-    rules: z.string().min(1, "Target market is required"),
-    dependencies: [],
-    businessLogic: "Required for market analysis",
-    stageSpecificRules: {
-      validation: { required: true },
-      mvp: { required: true },
-      early_revenue: { required: true },
-      growth: { required: true },
-      scaling: { required: true }
-    }
-  },
-  productDetails: {
-    required: false,
-    rules: z.string().min(50, "Product details must be at least 50 characters"),
-    dependencies: [],
-    businessLogic: "Detailed product description required",
-    stageSpecificRules: {
-      mvp: { required: true },
-      early_revenue: { required: true },
-      growth: { required: true },
-      scaling: { required: true }
-    }
+    businessLogic: "Stage affects validation requirements"
   }
 };
 
@@ -204,66 +113,42 @@ export type ValidationContext = {
   industrySegment?: string;
   sector?: string;
   stage?: string;
-  revenue?: number;
 };
 
-// Enhanced validation helper function
-export const validateField = (
-  fieldName: keyof typeof fieldValidations, 
-  value: any, 
-  context: ValidationContext
-) => {
+// Validation helper function
+export const validateField = (fieldName: keyof typeof fieldValidations, value: any, context: ValidationContext) => {
   const validation = fieldValidations[fieldName];
   if (!validation) {
     return { isValid: true, warnings: [] };
   }
 
-  const result = {
-    isValid: true,
-    errors: [] as string[],
-    warnings: [] as string[],
-    requiredFields: [] as string[]
-  };
-
-  // Check stage-specific requirements
-  if (context.stage && validation.stageSpecificRules) {
-    const stageRules = validation.stageSpecificRules[context.stage as keyof typeof stageSpecificRules];
-    if (stageRules) {
-      // Add required fields for this stage
-      result.requiredFields = stageRules.requiredFields;
-
-      // Check team size requirements
-      if (fieldName === 'teamSize' && value < stageRules.minTeamSize) {
-        result.warnings.push(`${context.stage} stage typically requires at least ${stageRules.minTeamSize} team members`);
-      }
-    }
-  }
-
   // For optional fields that are empty
   if (!validation.required && (value === undefined || value === "")) {
-    return result;
+    return { isValid: true, warnings: [] };
   }
 
   // Basic validation
   const basicValidation = validation.rules.safeParse(value);
   if (!basicValidation.success) {
-    result.isValid = false;
-    result.errors = basicValidation.error.errors.map(e => e.message);
-    return result;
+    return {
+      isValid: false,
+      errors: basicValidation.error.errors,
+      warnings: []
+    };
   }
+
+  // Business logic validation
+  const warnings: string[] = [];
 
   // Add sector-specific warnings if applicable
   if (context.sector && 
       validation.sectorSpecificRules && 
       validation.sectorSpecificRules[context.sector]?.warning) {
-    result.warnings.push(validation.sectorSpecificRules[context.sector].warning!);
+    warnings.push(validation.sectorSpecificRules[context.sector].warning!);
   }
 
-  return result;
+  return {
+    isValid: true,
+    warnings
+  };
 };
-
-// Export validation schemas for form integration
-export const validationSchemas = Object.entries(fieldValidations).reduce((acc, [key, validation]) => {
-  acc[key] = validation.rules;
-  return acc;
-}, {} as Record<string, z.ZodType<any>>);

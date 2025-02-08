@@ -23,105 +23,25 @@ interface ValidationWarning {
   suggestion?: string | number;
 }
 
-// Industry-specific validation rules with stage awareness
+// Industry-specific validation rules
 const saasRules = {
-  churnRate: { 
-    min: 0, 
-    max: 0.3, 
-    optimal: 0.1,
-    stageRules: {
-      early_revenue: { max: 0.4 },
-      growth: { max: 0.25 },
-      scaling: { max: 0.15 }
-    }
-  },
-  ltv: { 
-    min: 0, 
-    optimal: 3,
-    stageRules: {
-      early_revenue: { min: 2 },
-      growth: { min: 3 },
-      scaling: { min: 4 }
-    }
-  },
-  arr: { 
-    minGrowth: 0.4,
-    stageRules: {
-      early_revenue: { minGrowth: 0.2 },
-      growth: { minGrowth: 0.4 },
-      scaling: { minGrowth: 0.6 }
-    }
-  },
-  margins: { 
-    min: 0.6,
-    stageRules: {
-      early_revenue: { min: 0.5 },
-      growth: { min: 0.6 },
-      scaling: { min: 0.7 }
-    }
-  }
+  churnRate: { min: 0, max: 0.3, optimal: 0.1 },
+  ltv: { min: 0, optimal: 3 }, // Minimum LTV/CAC ratio
+  arr: { minGrowth: 0.4 }, // Minimum ARR growth rate
+  margins: { min: 0.6 } // Minimum gross margins
 };
 
 const ecommerceRules = {
-  gmv: { 
-    minGrowth: 0.25,
-    stageRules: {
-      early_revenue: { minGrowth: 0.15 },
-      growth: { minGrowth: 0.25 },
-      scaling: { minGrowth: 0.35 }
-    }
-  },
-  aov: { 
-    min: 10,
-    stageRules: {
-      early_revenue: { min: 5 },
-      growth: { min: 10 },
-      scaling: { min: 15 }
-    }
-  },
-  inventoryTurnover: { 
-    min: 4,
-    stageRules: {
-      early_revenue: { min: 3 },
-      growth: { min: 4 },
-      scaling: { min: 5 }
-    }
-  },
-  repeatPurchaseRate: { 
-    min: 0.2,
-    stageRules: {
-      early_revenue: { min: 0.15 },
-      growth: { min: 0.2 },
-      scaling: { min: 0.25 }
-    }
-  }
+  gmv: { minGrowth: 0.25 },
+  aov: { min: 10 },
+  inventoryTurnover: { min: 4 },
+  repeatPurchaseRate: { min: 0.2 }
 };
 
 const enterpriseRules = {
-  dealCycle: { 
-    max: 180,
-    stageRules: {
-      early_revenue: { max: 270 },
-      growth: { max: 180 },
-      scaling: { max: 120 }
-    }
-  },
-  contractLength: { 
-    min: 12,
-    stageRules: {
-      early_revenue: { min: 6 },
-      growth: { min: 12 },
-      scaling: { min: 24 }
-    }
-  },
-  bookings: { 
-    minGrowth: 0.3,
-    stageRules: {
-      early_revenue: { minGrowth: 0.2 },
-      growth: { minGrowth: 0.3 },
-      scaling: { minGrowth: 0.4 }
-    }
-  }
+  dealCycle: { max: 180 }, // Maximum deal cycle in days
+  contractLength: { min: 12 }, // Minimum contract length in months
+  bookings: { minGrowth: 0.3 }
 };
 
 // Validation Functions
@@ -146,28 +66,25 @@ export function validateIndustryMetrics(data: ValuationFormData): ValidationWarn
 function validateSaaSMetrics(data: ValuationFormData): ValidationWarning[] {
   const warnings: ValidationWarning[] = [];
   const metrics = calculateSaaSMetrics(data);
-  const stageRules = saasRules.churnRate.stageRules[data.businessInfo.productStage] || saasRules.churnRate;
 
   if (!metrics) return warnings;
 
-  if (metrics.churnRate > stageRules.max) {
+  if (metrics.churnRate > saasRules.churnRate.max) {
     warnings.push({
       field: 'churnRate',
-      message: `Churn rate of ${metrics.churnRate * 100}% is above acceptable range for ${data.businessInfo.productStage} stage`,
+      message: `Churn rate of ${metrics.churnRate * 100}% is above acceptable range`,
       severity: 'high',
-      suggestion: stageRules.optimal || saasRules.churnRate.optimal
+      suggestion: saasRules.churnRate.optimal
     });
   }
 
   const ltvCacRatio = metrics.ltv / metrics.cac;
-  const ltvRules = saasRules.ltv.stageRules[data.businessInfo.productStage] || saasRules.ltv;
-
-  if (ltvCacRatio < ltvRules.min) {
+  if (ltvCacRatio < saasRules.ltv.min) {
     warnings.push({
       field: 'customerAcquisitionCost',
-      message: `LTV/CAC ratio of ${ltvCacRatio.toFixed(2)} is below sustainable levels for ${data.businessInfo.productStage} stage`,
+      message: `LTV/CAC ratio of ${ltvCacRatio.toFixed(2)} is below sustainable levels`,
       severity: 'high',
-      suggestion: metrics.ltv / ltvRules.optimal
+      suggestion: metrics.ltv / saasRules.ltv.optimal
     });
   }
 
@@ -177,26 +94,24 @@ function validateSaaSMetrics(data: ValuationFormData): ValidationWarning[] {
 function validateEcommerceMetrics(data: ValuationFormData): ValidationWarning[] {
   const warnings: ValidationWarning[] = [];
   const metrics = calculateEcommerceMetrics(data);
-  const stageRules = ecommerceRules.aov.stageRules[data.businessInfo.productStage] || ecommerceRules.aov;
 
   if (!metrics) return warnings;
 
-  if (metrics.aov < stageRules.min) {
+  if (metrics.aov < ecommerceRules.aov.min) {
     warnings.push({
       field: 'averageOrderValue',
-      message: `Average order value is below sustainable levels for ${data.businessInfo.productStage} stage`,
+      message: `Average order value is below sustainable levels`,
       severity: 'medium',
-      suggestion: stageRules.min
+      suggestion: ecommerceRules.aov.min
     });
   }
 
-  const turnoverRules = ecommerceRules.inventoryTurnover.stageRules[data.businessInfo.productStage] || ecommerceRules.inventoryTurnover;
-  if (metrics.inventoryTurnover < turnoverRules.min) {
+  if (metrics.inventoryTurnover < ecommerceRules.inventoryTurnover.min) {
     warnings.push({
       field: 'inventoryTurnover',
-      message: `Inventory turnover is below industry standards for ${data.businessInfo.productStage} stage`,
+      message: `Inventory turnover is below industry standards`,
       severity: 'medium',
-      suggestion: turnoverRules.min
+      suggestion: ecommerceRules.inventoryTurnover.min
     });
   }
 
@@ -206,26 +121,24 @@ function validateEcommerceMetrics(data: ValuationFormData): ValidationWarning[] 
 function validateEnterpriseMetrics(data: ValuationFormData): ValidationWarning[] {
   const warnings: ValidationWarning[] = [];
   const metrics = calculateEnterpriseMetrics(data);
-  const stageRules = enterpriseRules.dealCycle.stageRules[data.businessInfo.productStage] || enterpriseRules.dealCycle;
 
   if (!metrics) return warnings;
 
-  if (metrics.dealCycle > stageRules.max) {
+  if (metrics.dealCycle > enterpriseRules.dealCycle.max) {
     warnings.push({
       field: 'averageDealCycle',
-      message: `Deal cycle length is above optimal range for ${data.businessInfo.productStage} stage`,
+      message: `Deal cycle length is above optimal range`,
       severity: 'medium',
-      suggestion: stageRules.max
+      suggestion: enterpriseRules.dealCycle.max
     });
   }
 
-  const contractRules = enterpriseRules.contractLength.stageRules[data.businessInfo.productStage] || enterpriseRules.contractLength;
-  if (metrics.contractLength < contractRules.min) {
+  if (metrics.contractLength < enterpriseRules.contractLength.min) {
     warnings.push({
       field: 'averageContractLength',
-      message: `Contract length is below industry standard for ${data.businessInfo.productStage} stage`,
+      message: `Contract length is below industry standard`,
       severity: 'medium',
-      suggestion: contractRules.min
+      suggestion: enterpriseRules.contractLength.min
     });
   }
 
@@ -258,23 +171,6 @@ export function validateMarketComparables(data: ValuationFormData): ValidationWa
   }
 
   return warnings;
-}
-
-// Helper functions remain unchanged
-function calculateAverageMultiple(comparables: MarketComparable[]): number {
-  return comparables.reduce((sum, comp) => sum + comp.metrics.evRevenue, 0) / comparables.length;
-}
-
-function calculateImpliedMultiple(data: ValuationFormData): number {
-  return data.valuation && data.revenue ? data.valuation / data.revenue : 0;
-}
-
-function calculateFounderOwnership(capTable: CapTable): number {
-  const founderShares = capTable.entries
-    .filter(entry => entry.shareClass === 'Founder')
-    .reduce((sum, entry) => sum + entry.sharesOutstanding, 0);
-
-  return founderShares / capTable.fullyDilutedShares;
 }
 
 export function validateGrowthAssumptions(data: ValuationFormData): ValidationWarning[] {
@@ -354,4 +250,21 @@ export function validateCapTable(data: ValuationFormData): ValidationWarning[] {
   }
 
   return warnings;
+}
+
+// Helper functions
+function calculateAverageMultiple(comparables: MarketComparable[]): number {
+  return comparables.reduce((sum, comp) => sum + comp.metrics.evRevenue, 0) / comparables.length;
+}
+
+function calculateImpliedMultiple(data: ValuationFormData): number {
+  return data.valuation && data.revenue ? data.valuation / data.revenue : 0;
+}
+
+function calculateFounderOwnership(capTable: CapTable): number {
+  const founderShares = capTable.entries
+    .filter(entry => entry.shareClass === 'Founder')
+    .reduce((sum, entry) => sum + entry.sharesOutstanding, 0);
+  
+  return founderShares / capTable.fullyDilutedShares;
 }
