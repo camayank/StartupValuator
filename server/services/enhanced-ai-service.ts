@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { cache } from "../lib/cache";
 import type { ValuationFormData } from "../../client/src/lib/validations";
+import { auditTrailService } from "./audit-trail-service";
 
 // Validation schemas for AI responses
 const marketAnalysisSchema = z.object({
@@ -52,6 +53,18 @@ export class EnhancedAIService {
 
       // Cache the validated analysis
       cache.set(cacheKey, combinedAnalysis, this.CACHE_TTL);
+
+      // Record AI-generated assumptions for audit
+      await auditTrailService.recordAIAssumption(
+        "system", // Replace with actual user ID in production
+        data.businessInfo.id || "default",
+        combinedAnalysis,
+        {
+          ipAddress: "system",
+          userAgent: "EnhancedAIService",
+          sessionId: "system"
+        }
+      );
 
       return combinedAnalysis;
     } catch (error) {
@@ -201,7 +214,7 @@ export class EnhancedAIService {
   private combineAndRankRecommendations(gptRecs: string[], claudeRecs: string[]) {
     // Combine unique recommendations and sort by frequency
     const recMap = new Map<string, number>();
-    
+
     [...gptRecs, ...claudeRecs].forEach(rec => {
       recMap.set(rec, (recMap.get(rec) || 0) + 1);
     });
