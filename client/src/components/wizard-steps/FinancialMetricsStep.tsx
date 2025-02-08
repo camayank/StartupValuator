@@ -9,19 +9,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, DollarSign, TrendingUp, Percent } from "lucide-react";
+import { NumericInput } from "@/components/ui/numeric-input";
 
 const financialMetricsSchema = z.object({
-  revenue: z.number().min(0, "Revenue must be positive"),
-  expenses: z.number().min(0, "Expenses must be positive"),
+  annualRevenue: z.number().min(0, "Revenue must be positive"),
+  annualExpenses: z.number().min(0, "Expenses must be positive"),
   grossMargin: z.number().min(-100).max(100, "Margin must be between -100 and 100"),
   growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
-  runway: z.number().min(0, "Runway must be positive"),
+  runwayMonths: z.number().min(0, "Runway must be positive"),
   burnRate: z.number().min(0, "Burn rate must be positive"),
 });
 
@@ -43,11 +45,11 @@ export function FinancialMetricsStep({
   const form = useForm<FinancialMetricsFormData>({
     resolver: zodResolver(financialMetricsSchema),
     defaultValues: {
-      revenue: initialData.revenue || 0,
-      expenses: initialData.expenses || 0,
+      annualRevenue: initialData.annualRevenue || 0,
+      annualExpenses: initialData.annualExpenses || 0,
       grossMargin: initialData.grossMargin || 0,
       growthRate: initialData.growthRate || 0,
-      runway: initialData.runway || 0,
+      runwayMonths: initialData.runwayMonths || 0,
       burnRate: initialData.burnRate || 0,
     },
   });
@@ -55,6 +57,14 @@ export function FinancialMetricsStep({
   const handleSubmit = async (values: FinancialMetricsFormData) => {
     try {
       setIsSubmitting(true);
+      // Calculate burn rate if not provided
+      if (!values.burnRate && values.annualExpenses) {
+        values.burnRate = values.annualExpenses / 12;
+      }
+      // Calculate runway if not provided
+      if (!values.runwayMonths && values.annualRevenue && values.burnRate) {
+        values.runwayMonths = (values.annualRevenue / 12) / values.burnRate;
+      }
       await onUpdate(values);
     } catch (error) {
       console.error('Error submitting financial metrics:', error);
@@ -77,15 +87,24 @@ export function FinancialMetricsStep({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="revenue"
+              name="annualRevenue"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Annual Revenue ($)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Annual Revenue
+                  </FormLabel>
+                  <FormDescription>
+                    Total revenue for the last 12 months
+                  </FormDescription>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <NumericInput
                       {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
+                      onValueChange={field.onChange}
+                      prefix="$"
+                      thousandSeparator=","
+                      decimalScale={0}
+                      placeholder="Enter annual revenue"
                     />
                   </FormControl>
                   <FormMessage />
@@ -95,15 +114,24 @@ export function FinancialMetricsStep({
 
             <FormField
               control={form.control}
-              name="expenses"
+              name="annualExpenses"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Annual Expenses ($)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Annual Expenses
+                  </FormLabel>
+                  <FormDescription>
+                    Total expenses for the last 12 months
+                  </FormDescription>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <NumericInput
                       {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
+                      onValueChange={field.onChange}
+                      prefix="$"
+                      thousandSeparator=","
+                      decimalScale={0}
+                      placeholder="Enter annual expenses"
                     />
                   </FormControl>
                   <FormMessage />
@@ -116,12 +144,21 @@ export function FinancialMetricsStep({
               name="grossMargin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Gross Margin (%)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <Percent className="h-4 w-4" />
+                    Gross Margin
+                  </FormLabel>
+                  <FormDescription>
+                    Gross profit as a percentage of revenue
+                  </FormDescription>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <NumericInput
                       {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
+                      onValueChange={field.onChange}
+                      suffix="%"
+                      decimalScale={1}
+                      allowNegative
+                      placeholder="Enter gross margin"
                     />
                   </FormControl>
                   <FormMessage />
@@ -134,30 +171,21 @@ export function FinancialMetricsStep({
               name="growthRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Growth Rate (%)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Growth Rate
+                  </FormLabel>
+                  <FormDescription>
+                    Year-over-year revenue growth rate
+                  </FormDescription>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <NumericInput
                       {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="runway"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Runway (months)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
+                      onValueChange={field.onChange}
+                      suffix="%"
+                      decimalScale={1}
+                      allowNegative
+                      placeholder="Enter growth rate"
                     />
                   </FormControl>
                   <FormMessage />
@@ -170,12 +198,44 @@ export function FinancialMetricsStep({
               name="burnRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Monthly Burn Rate ($)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Monthly Burn Rate
+                  </FormLabel>
+                  <FormDescription>
+                    Net monthly cash outflow
+                  </FormDescription>
                   <FormControl>
-                    <Input
-                      type="number"
+                    <NumericInput
                       {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
+                      onValueChange={field.onChange}
+                      prefix="$"
+                      thousandSeparator=","
+                      decimalScale={0}
+                      placeholder="Enter monthly burn rate"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="runwayMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Runway (months)</FormLabel>
+                  <FormDescription>
+                    Months of operation at current burn rate
+                  </FormDescription>
+                  <FormControl>
+                    <NumericInput
+                      {...field}
+                      onValueChange={field.onChange}
+                      decimalScale={1}
+                      min={0}
+                      placeholder="Enter runway in months"
                     />
                   </FormControl>
                   <FormMessage />
