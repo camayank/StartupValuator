@@ -25,7 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { sectors, industries } from "@/lib/validations";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatCurrency, parseCurrencyInput } from "@/lib/utils";
@@ -55,7 +54,6 @@ export function BusinessInfoStep({
 }: BusinessInfoStepProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('connected');
 
   // Use force update hook to prevent form freezing
   useForceUpdate();
@@ -70,21 +68,10 @@ export function BusinessInfoStep({
     }
   });
 
-  // Add form state monitoring
+  // Monitor form state changes
   useEffect(() => {
     console.log('Form State Updated:', form.getValues());
   }, [form.watch()]);
-
-  // Add connection monitoring
-  useEffect(() => {
-    const heartbeat = setInterval(() => {
-      fetch('/ping')
-        .then(() => setConnectionStatus('connected'))
-        .catch(() => setConnectionStatus('disconnected'));
-    }, 5000);
-
-    return () => clearInterval(heartbeat);
-  }, []);
 
   const handleSubmit = async (values: BusinessInfoFormData) => {
     try {
@@ -110,15 +97,6 @@ export function BusinessInfoStep({
   };
 
   const progressPercentage = (currentStep / totalSteps) * 100;
-
-  // Add connection status indicator
-  if (connectionStatus === 'disconnected') {
-    return (
-      <div className="p-4 bg-red-100 text-red-700 rounded">
-        Connection lost. Please refresh the page.
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -205,7 +183,7 @@ export function BusinessInfoStep({
                               onChange={(e) => {
                                 const value = parseCurrencyInput(e.target.value);
                                 field.onChange(value);
-                                console.log('Revenue changed:', value); // Debug log
+                                console.log('Revenue changed:', value);
                               }}
                               className="pl-8"
                               placeholder="0.00"
@@ -235,7 +213,7 @@ export function BusinessInfoStep({
                               onChange={(e) => {
                                 const value = parseCurrencyInput(e.target.value);
                                 field.onChange(value);
-                                console.log('Expenses changed:', value); // Debug log
+                                console.log('Expenses changed:', value);
                               }}
                               className="pl-8"
                               placeholder="0.00"
@@ -256,20 +234,6 @@ export function BusinessInfoStep({
                     {isSubmitting ? "Saving..." : "Continue"}
                   </Button>
                 </div>
-
-                {/* Debug panel in development */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-8 p-4 bg-gray-100 rounded">
-                    <h3 className="text-sm font-semibold">Debug Info</h3>
-                    <pre className="text-xs mt-2">
-                      {JSON.stringify({
-                        formState: form.formState,
-                        values: form.getValues(),
-                        connectionStatus
-                      }, null, 2)}
-                    </pre>
-                  </div>
-                )}
               </div>
             </form>
           </Form>
