@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, ChartBar, FileText, Globe, ActivitySquare, Target, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ValuationFormData } from "@/lib/validations";
-import { 
-  validateFinancialMetrics, 
-  generateValuationReport, 
+import {
+  validateFinancialMetrics,
+  generateValuationReport,
   getMarketInsights,
   analyzeCompetitiveLandscape
 } from "@/lib/services/ai-service";
+import { ValuationProgress } from "@/components/ui/valuation-progress";
 
 interface AIValuationWizardProps {
   formData: ValuationFormData;
@@ -60,11 +61,13 @@ const analysisSteps = [
 export function AIValuationWizard({ formData, onComplete }: AIValuationWizardProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [showProgress, setShowProgress] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [currentThought, setCurrentThought] = useState("");
   const [analysisResults, setAnalysisResults] = useState<Record<string, any>>({});
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
 
   const processStep = async (step: typeof analysisSteps[0]) => {
     setThinking(true);
@@ -116,6 +119,8 @@ export function AIValuationWizard({ formData, onComplete }: AIValuationWizardPro
         description: "Analysis completed successfully",
       });
 
+      setCompletedSteps([...completedSteps, currentStep +1]);
+
       if (currentStep < analysisSteps.length - 1) {
         setCurrentStep(prev => prev + 1);
       }
@@ -145,6 +150,20 @@ export function AIValuationWizard({ formData, onComplete }: AIValuationWizardPro
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {showProgress && (
+        <ValuationProgress
+          currentStep={currentStep + 1}
+          completedSteps={completedSteps}
+          totalSteps={analysisSteps.length}
+          validationErrors={validationErrors}
+          onStepClick={(step) => {
+            if (completedSteps.includes(step) || step === currentStep + 1) {
+              setCurrentStep(step - 1);
+            }
+          }}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -180,8 +199,8 @@ export function AIValuationWizard({ formData, onComplete }: AIValuationWizardPro
               </div>
 
               <div className="flex justify-center">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   onClick={handleStartAnalysis}
                   className="gap-2"
                 >
@@ -216,8 +235,8 @@ export function AIValuationWizard({ formData, onComplete }: AIValuationWizardPro
                       >
                         <div className={`p-2 rounded-full ${
                           isComplete ? "bg-green-500" :
-                          isCurrent ? "bg-primary" :
-                          "bg-muted"
+                            isCurrent ? "bg-primary" :
+                              "bg-muted"
                         }`}>
                           <StepIcon className={`h-5 w-5 ${
                             isComplete || isCurrent ? "text-white" : "text-muted-foreground"
@@ -228,12 +247,12 @@ export function AIValuationWizard({ formData, onComplete }: AIValuationWizardPro
                             <h3 className="font-medium">{step.title}</h3>
                             <Badge variant={
                               isComplete ? "success" :
-                              isCurrent ? "default" :
-                              "secondary"
+                                isCurrent ? "default" :
+                                  "secondary"
                             }>
                               {isComplete ? "Complete" :
-                               isCurrent ? "In Progress" :
-                               "Pending"}
+                                isCurrent ? "In Progress" :
+                                  "Pending"}
                             </Badge>
                           </div>
                           {isCurrent && thinking && (
