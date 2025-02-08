@@ -1,0 +1,205 @@
+# Core Valuation Engine Implementation Prompts
+
+## Phase 1: Foundation & Data Models (Week 1-2)
+
+### 1.1. Project Initialization
+```prompt
+Create a new React project in Replit with the following structure:
+- TypeScript configuration
+- Tailwind CSS setup
+- Essential dependencies (mathjs, lodash, recharts)
+Include folder structure for:
+- Components
+- Models
+- Services
+- Utils
+- Hooks
+```
+
+### 1.2. Financial Data Models
+```prompt
+Create TypeScript interfaces and validation schemas for:
+- Company financial metrics
+- Industry benchmarks
+- Market conditions
+- Risk factors
+Include complete type definitions and validation rules.
+```
+
+### 1.3. Base UI Components
+```prompt
+Build reusable UI components for:
+- Financial data input forms
+- Validation messages
+- Loading states
+- Error boundaries
+Use Tailwind CSS and ensure mobile responsiveness.
+```
+
+## Phase 2: Core Valuation Methods (Week 3-4)
+
+### 2.1. DCF Implementation
+```prompt
+Implement Discounted Cash Flow valuation:
+- Cash flow projection logic
+- WACC calculation
+- Terminal value computation
+- Growth rate adjustments
+Include mathematical formulas and validation.
+```
+
+### 2.2. Comparable Multiples
+```prompt
+Create comparable company analysis:
+- EV/Revenue multiple
+- EV/EBITDA multiple
+- P/E ratio calculations
+Include industry-specific adjustments.
+```
+
+### 2.3. LBO Model
+```prompt
+Build Leveraged Buyout model:
+- Debt capacity calculation
+- Interest coverage ratios
+- Exit multiple assumptions
+Include sensitivity parameters.
+```
+
+## Phase 3: Risk Modeling (Week 5-6)
+
+### 3.1. Monte Carlo Simulation
+```prompt
+Implement Monte Carlo simulation:
+- Random variable generation
+- Probability distribution
+- Scenario generation
+- Result aggregation
+Include visualization components.
+```
+
+### 3.2. Sensitivity Analysis
+```prompt
+Create sensitivity analysis module:
+- Input parameter ranges
+- Impact calculations
+- Correlation analysis
+Include interactive visualizations.
+```
+
+### 3.3. Scenario Builder
+```prompt
+Develop scenario modeling system:
+- Best case parameters
+- Base case assumptions
+- Worst case projections
+Include adjustment mechanisms.
+```
+
+## Phase 4: Market Integration (Week 7-8)
+
+### 4.1. Market Data Structure
+```prompt
+Design market data integration:
+- Industry benchmark storage
+- Peer company metrics
+- Market condition indicators
+Include update mechanisms.
+```
+
+### 4.2. Valuation Adjustments
+```prompt
+Implement market-based adjustments:
+- Liquidity discounts
+- Control premiums
+- Market condition factors
+Include calculation logic.
+```
+
+## Phase 5: AI Components (Week 9-10)
+
+### 5.1. Data Preprocessing
+```prompt
+Create data preprocessing pipeline:
+- Financial statement normalization
+- Outlier detection
+- Missing data handling
+Include validation rules.
+```
+
+### 5.2. Model Selection
+```prompt
+Implement valuation method selection:
+- Company stage analysis
+- Industry classification
+- Method weighting algorithm
+Include decision logic.
+```
+
+## Phase 6: Report Generation (Week 11-12)
+
+### 6.1. Report Structure
+```prompt
+Design report generation system:
+- Valuation summary
+- Methodology explanation
+- Risk analysis
+- Recommendations
+Include PDF export capability.
+```
+
+### 6.2. Visualization Components
+```prompt
+Create visualization components:
+- Valuation waterfall
+- Sensitivity charts
+- Scenario comparisons
+Include interactive elements.
+```
+
+## Implementation Guidelines
+
+1. **Code Quality Standards**
+   - Use TypeScript for type safety
+   - Implement comprehensive error handling
+   - Write unit tests for all calculations
+   - Document all assumptions
+
+2. **Performance Requirements**
+   - Valuation calculation < 5 seconds
+   - Monte Carlo simulation < 30 seconds
+   - UI updates < 100ms
+
+3. **Testing Strategy**
+   - Unit tests for each calculation
+   - Integration tests for workflows
+   - Performance benchmarking
+   - User acceptance testing
+
+4. **Security Considerations**
+   - Data encryption
+   - Input validation
+   - Secure calculation methods
+   - Audit logging
+
+## Usage Instructions
+
+1. Use each prompt sequentially
+2. Include current code context when asking
+3. Specify any errors or challenges
+4. Request detailed explanations
+
+## Key Dependencies
+```json
+{
+  "dependencies": {
+    "react": "^18.2.0",
+    "typescript": "^4.9.5",
+    "mathjs": "^11.8.0",
+    "lodash": "^4.17.21",
+    "recharts": "^2.7.0",
+    "tailwindcss": "^3.3.0",
+    "@headlessui/react": "^1.7.15"
+  }
+}
+```

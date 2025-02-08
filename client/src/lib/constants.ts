@@ -34,86 +34,25 @@ export const sectors = {
   mobility: "Mobility & Transportation"
 } as const;
 
-// Enhanced industry segments mapped to sectors
-export const industrySegments = {
-  fintech: [
-    "Digital Banking & Neobanks",
-    "Payment Processing & Gateways",
-    "Investment & Trading Platforms",
-    "Insurance Technology (InsurTech)",
-    "Blockchain & Cryptocurrency",
-    "Lending & Credit Solutions",
-    "Personal Finance Management",
-    "Regulatory Technology (RegTech)",
-    "Financial Analytics & Research",
-    "Wealth Management",
-    "Cross-border Remittance",
-    "Financial Infrastructure",
-    "Other"
-  ],
-  enterprise: [
-    "Business Intelligence",
-    "CRM & Sales",
-    "HR & Workforce",
-    "Project Management",
-    "ERP Systems",
-    "Other"
-  ],
-  technology: [
-    "Cloud Computing",
-    "Cybersecurity",
-    "AI/ML",
-    "IoT",
-    "DevOps",
-    "Other"
-  ],
-  healthtech: [
-    "Telemedicine",
-    "Health Records",
-    "Medical Devices",
-    "Wellness Apps",
-    "Biotech",
-    "Other"
-  ]
+// Currency definitions
+export const currencies = {
+  USD: { symbol: "$", name: "US Dollar" },
+  EUR: { symbol: "€", name: "Euro" },
+  GBP: { symbol: "£", name: "British Pound" },
+  JPY: { symbol: "¥", name: "Japanese Yen" },
+  INR: { symbol: "₹", name: "Indian Rupee" }
 } as const;
 
-// Added technology stack options
-export const technologyStacks = {
-  frontend: [
-    "React",
-    "Vue.js",
-    "Angular",
-    "Next.js",
-    "TypeScript"
-  ],
-  backend: [
-    "Node.js",
-    "Python/Django",
-    "Java Spring",
-    "Ruby on Rails",
-    "Go"
-  ],
-  database: [
-    "PostgreSQL",
-    "MongoDB",
-    "MySQL",
-    "Redis",
-    "Elasticsearch"
-  ],
-  cloud: [
-    "AWS",
-    "Google Cloud",
-    "Azure",
-    "Digital Ocean",
-    "Heroku"
-  ],
-  mobile: [
-    "React Native",
-    "Flutter",
-    "iOS Native",
-    "Android Native",
-    "Progressive Web App"
-  ]
+// Financial constants for calculations
+export const FINANCIAL_CONSTANTS = {
+  MIN_DISCOUNT_RATE: 0,
+  MAX_DISCOUNT_RATE: 100,
+  DEFAULT_RISK_FREE_RATE: 3.5,
+  DEFAULT_MARKET_RISK_PREMIUM: 5.5,
+  DEFAULT_BETA: 1.0,
+  MIN_GROWTH_RATE: -20,
+  MAX_GROWTH_RATE: 100,
+  MAX_PROJECTION_YEARS: 10
 } as const;
 
 // Added common business risks

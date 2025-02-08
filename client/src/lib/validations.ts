@@ -644,3 +644,29 @@ export const pitchDeckFormSchema = z.object({
 });
 
 export type PitchDeckFormData = z.infer<typeof pitchDeckFormSchema>;
+
+// Financial Metrics Schema
+export const financialMetricsSchema = z.object({
+  revenue: z.number().min(0, "Revenue must be positive"),
+  ebitda: z.number(),
+  netIncome: z.number(),
+  cashFlow: z.number(),
+  assets: z.number().min(0, "Assets must be positive"),
+  liabilities: z.number().min(0, "Liabilities must be positive"),
+  equityValue: z.number(),
+  debtLevel: z.number().min(0, "Debt level must be positive"),
+  growthRate: z.number().min(-100).max(1000),
+  profitMargin: z.number().min(-100).max(100),
+});
+
+// Market Analysis Schema
+export const marketAnalysisSchema = z.object({
+  marketSize: z.number().min(0, "Market size must be positive"),
+  growthRate: z.number().min(-100).max(1000),
+  competitorCount: z.number().int().min(0),
+  marketShare: z.number().min(0).max(100),
+  barriers: z.array(z.string()),
+  trends: z.array(z.string()),
+  opportunities: z.array(z.string()),
+  threats: z.array(z.string()),
+});
