@@ -1,0 +1,82 @@
+import React, { useState } from 'react';
+
+const StartupValuatorForm = () => {
+  const [formData, setFormData] = useState({
+    industry: '',
+    businessStage: 'Startup',
+    annualRevenue: 0,
+    annualExpenses: 0
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name.endsWith('Revenue') || name.endsWith('Expenses') 
+        ? Number(value) 
+        : value
+    }));
+  };
+
+  return (
+    <div className="startup-valuator">
+      <h2>StartupValuator</h2>
+      
+      <div className="form-group">
+        <label>Industry</label>
+        <select 
+          name="industry"
+          value={formData.industry}
+          onChange={handleChange}
+        >
+          <option value="">Select industry</option>
+          <option value="saas">SaaS</option>
+          <option value="ecommerce">E-commerce</option>
+          <option value="fintech">Fintech</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>Business Stage</label>
+        <select
+          name="businessStage"
+          value={formData.businessStage}
+          onChange={handleChange}
+        >
+          <option value="Startup">Startup</option>
+          <option value="Growth">Growth</option>
+          <option value="Mature">Mature</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>Annual Revenue ($)</label>
+        <input
+          type="number"
+          name="annualRevenue"
+          value={formData.annualRevenue}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Annual Expenses ($)</label>
+        <input
+          type="number"
+          name="annualExpenses"
+          value={formData.annualExpenses}
+          onChange={handleChange}
+          min="0"
+        />
+      </div>
+
+      <div className="debug-panel">
+        <h3>Current State</h3>
+        <pre>{JSON.stringify(formData, null, 2)}</pre>
+      </div>
+    </div>
+  );
+};
+
+export default StartupValuatorForm;

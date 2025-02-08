@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -10,7 +10,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,56 +23,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { sectors, industries, businessStages, revenueModels, productStages } from "@/lib/validations";
+import { sectors, industries } from "@/lib/validations";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { aiValidationService } from "@/services/aiValidation";
 import { formatCurrency, parseCurrencyInput } from "@/lib/utils";
 
 const businessInfoSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
-  sector: z.string().min(1, "Sector is required"),
   industry: z.string().min(1, "Industry is required"),
-  location: z.string().min(1, "Location is required"),
   annualRevenue: z.number().min(0, "Revenue cannot be negative"),
-  annualExpenses: z.number().min(0, "Expenses cannot be negative"),
-  stage: z.enum([
-    "ideation_unvalidated",
-    "mvp_early_traction",
-    "revenue_early",
-    "revenue_growth",
-    "revenue_scaling",
-    "mature",
-    "exit_ready"
-  ]),
-  employeeCount: z.number().min(1),
-  teamExperience: z.number().min(0),
-  customerBase: z.number().optional(),
-  revenueModel: z.enum([
-    "subscription",
-    "transactional",
-    "marketplace",
-    "advertising",
-    "licensing",
-    "freemium",
-    "saas"
-  ]),
-  productStage: z.enum([
-    "concept",
-    "mvp",
-    "beta",
-    "prototype",
-    "market_ready",
-    "scaling",
-    "mature"
-  ]),
-  scalability: z.enum(["limited", "moderate", "high"]),
-  intellectualProperty: z.enum(["none", "pending", "registered"]),
-  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"])
+  annualExpenses: z.number().min(0, "Expenses cannot be negative")
 });
 
 type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
@@ -93,98 +54,20 @@ export function BusinessInfoStep({
 }: BusinessInfoStepProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedSector, setSelectedSector] = useState<string>("");
-  const [availableIndustries, setAvailableIndustries] = useState<Record<string, any>>({});
-  const [validationResponse, setValidationResponse] = useState<Awaited<ReturnType<typeof aiValidationService.validateInput>> | null>(null);
 
   const form = useForm<BusinessInfoFormData>({
     resolver: zodResolver(businessInfoSchema),
     defaultValues: {
       businessName: "",
-      sector: "",
       industry: "",
-      location: "",
       annualRevenue: 0,
-      annualExpenses: 0,
-      stage: "ideation_unvalidated",
-      employeeCount: 1,
-      teamExperience: 0,
-      customerBase: 0,
-      revenueModel: "subscription",
-      productStage: "concept",
-      scalability: "moderate",
-      intellectualProperty: "none",
-      regulatoryCompliance: "notRequired",
+      annualExpenses: 0
     }
   });
-
-  useEffect(() => {
-    if (selectedSector && sectors[selectedSector]?.subsectors) {
-      setAvailableIndustries(sectors[selectedSector].subsectors);
-      if (form.getValues().industry && !sectors[selectedSector].subsectors[form.getValues().industry]) {
-        form.setValue("industry", "", { shouldValidate: true });
-      }
-    } else {
-      setAvailableIndustries({});
-    }
-  }, [selectedSector, form]);
-
-  const handleSectorChange = async (value: string) => {
-    setSelectedSector(value);
-    form.setValue("sector", value, { shouldValidate: true });
-
-    if (value) {
-      try {
-        const formData = form.getValues();
-        const validationResult = await aiValidationService.validateInput({
-          businessInfo: {
-            sector: value,
-            industry: formData.industry,
-            location: formData.location,
-            productStage: formData.productStage,
-            businessModel: formData.revenueModel,
-            name: formData.businessName
-          }
-        });
-        setValidationResponse(validationResult);
-
-        if (validationResult.suggestions?.length) {
-          toast({
-            title: "AI Insights Available",
-            description: "We have some recommendations based on your industry selection.",
-          });
-        }
-      } catch (error) {
-        console.error('Validation error:', error);
-      }
-    }
-  };
 
   const handleSubmit = async (values: BusinessInfoFormData) => {
     try {
       setIsSubmitting(true);
-
-      const validationResult = await aiValidationService.validateInput({
-        businessInfo: {
-          sector: values.sector,
-          industry: values.industry,
-          location: values.location,
-          productStage: values.productStage,
-          businessModel: values.revenueModel,
-          name: values.businessName
-        }
-      });
-
-      if (validationResult.warnings.some(w => w.severity === 'high')) {
-        toast({
-          title: "Validation Warning",
-          description: "Please review the highlighted issues before proceeding.",
-          variant: "destructive",
-        });
-        setValidationResponse(validationResult);
-        return;
-      }
-
       await onUpdate(values);
       toast({
         title: "Success",
@@ -220,30 +103,11 @@ export function BusinessInfoStep({
         </div>
       </div>
 
-      {validationResponse?.warnings.length > 0 && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            <ul className="list-disc pl-4">
-              {validationResponse.warnings.map((warning, index) => (
-                <li key={index} className="text-sm">
-                  {warning.message}
-                  {warning.suggestion && (
-                    <span className="block text-xs mt-1">
-                      Suggestion: {warning.suggestion}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>Business Information</CardTitle>
           <CardDescription>
-            Enter your business details to begin the valuation process
+            Enter your core business details to begin the valuation process
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -266,76 +130,30 @@ export function BusinessInfoStep({
 
                 <FormField
                   control={form.control}
-                  name="location"
+                  name="industry"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter business location" />
-                      </FormControl>
+                      <FormLabel>Industry</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select industry" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="saas">SaaS</SelectItem>
+                          <SelectItem value="ecommerce">E-commerce</SelectItem>
+                          <SelectItem value="fintech">Fintech</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="sector"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Sector</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={handleSectorChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a sector" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(sectors).map(([id, sectorData]) => (
-                              <SelectItem key={id} value={id}>
-                                {sectorData.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="industry"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Industry</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("industry", value)}
-                          disabled={!selectedSector}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={selectedSector ? "Select an industry" : "Select sector first"} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(availableIndustries).map(([id, industryData]) => (
-                              <SelectItem key={id} value={id}>
-                                {industryData.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -361,9 +179,6 @@ export function BusinessInfoStep({
                             />
                           </div>
                         </FormControl>
-                        <FormDescription>
-                          Enter your total annual revenue
-                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -393,218 +208,6 @@ export function BusinessInfoStep({
                             />
                           </div>
                         </FormControl>
-                        <FormDescription>
-                          Enter your total annual expenses
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid gap-4">
-                  <FormField
-                    control={form.control}
-                    name="stage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Business Stage</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("stage", value as keyof typeof businessStages)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select business stage" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(businessStages).map(([id, name]) => (
-                              <SelectItem key={id} value={id}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="employeeCount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Number of Employees</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 1)}
-                              min={1}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="teamExperience"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Team Experience (Years)</FormLabel>
-                          <FormControl>
-                            <Slider
-                              value={[field.value || 0]}
-                              onValueChange={([value]) => field.onChange(value)}
-                              max={50}
-                              step={1}
-                              className="py-4"
-                            />
-                          </FormControl>
-                          <FormDescription>{field.value} years</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="revenueModel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Revenue Model</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("revenueModel", value as keyof typeof revenueModels)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select revenue model" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(revenueModels).map(([id, name]) => (
-                              <SelectItem key={id} value={id}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="productStage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Product Stage</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => form.setValue("productStage", value as keyof typeof productStages)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product stage" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(productStages).map(([id, name]) => (
-                              <SelectItem key={id} value={id}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="scalability"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Scalability</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select scalability" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="limited">Limited</SelectItem>
-                            <SelectItem value="moderate">Moderate</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="intellectualProperty"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>IP Status</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select IP status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="registered">Registered</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="regulatoryCompliance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Compliance Status</FormLabel>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select compliance status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="notRequired">Not Required</SelectItem>
-                            <SelectItem value="inProgress">In Progress</SelectItem>
-                            <SelectItem value="compliant">Compliant</SelectItem>
-                          </SelectContent>
-                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
