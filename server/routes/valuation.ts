@@ -9,6 +9,8 @@ import { openAIService, anthropicService } from '../services/ai-service';
 import { ReportGenerator } from '../services/report-generation';
 import { ValidationService } from '../services/validation';
 import OpenAI from 'openai';
+import Express from 'express';
+
 
 const router = Router();
 const calculator = new ValuationCalculator();
@@ -17,27 +19,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Request rate limiting
-const requestCounts = new Map<string, { count: number; timestamp: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 5; // 5 requests per minute
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const userRequests = requestCounts.get(ip) || { count: 0, timestamp: now };
-
-  if (now - userRequests.timestamp > RATE_LIMIT_WINDOW) {
-    userRequests.count = 1;
-    userRequests.timestamp = now;
-  } else if (userRequests.count >= MAX_REQUESTS) {
-    return false;
-  } else {
-    userRequests.count++;
+// Authentication middleware
+function requireAuth(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ success: false, message: "Not logged in" });
   }
-
-  requestCounts.set(ip, userRequests);
-  return true;
+  next();
 }
+
+// Apply authentication middleware to all valuation routes
+router.use(requireAuth);
 
 // Create new valuation with AI insights
 router.post('/api/valuations', async (req, res) => {
@@ -433,5 +424,28 @@ router.post('/api/ai-valuation', async (req, res) => {
     });
   }
 });
+
+// Request rate limiting
+const requestCounts = new Map<string, { count: number; timestamp: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 5; // 5 requests per minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userRequests = requestCounts.get(ip) || { count: 0, timestamp: now };
+
+  if (now - userRequests.timestamp > RATE_LIMIT_WINDOW) {
+    userRequests.count = 1;
+    userRequests.timestamp = now;
+  } else if (userRequests.count >= MAX_REQUESTS) {
+    return false;
+  } else {
+    userRequests.count++;
+  }
+
+  requestCounts.set(ip, userRequests);
+  return true;
+}
+
 
 export default router;
