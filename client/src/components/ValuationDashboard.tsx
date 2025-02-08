@@ -16,33 +16,77 @@ import {
   Percent,
   DollarSign,
   Building,
+  Plus,
+  X,
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 type ValuationModel = "DCF" | "LBO" | "Comparables";
 
-const DCFModelPanel = () => (
-  <Card className="h-full">
-    <div className="p-4">
-      <h3 className="text-lg font-semibold mb-4">DCF Model</h3>
-      {/* DCF content will be implemented next */}
-    </div>
-  </Card>
-);
+interface ModelConfig {
+  type: ValuationModel;
+  assumptions: Record<string, number>;
+  results: Record<string, number>;
+}
 
-const LBOModelPanel = () => (
-  <Card className="h-full">
-    <div className="p-4">
-      <h3 className="text-lg font-semibold mb-4">LBO Model</h3>
-      {/* LBO content will be implemented next */}
-    </div>
-  </Card>
-);
+interface PanelState {
+  id: string;
+  model: ModelConfig;
+}
 
-const ComparablesPanel = () => (
+const DEFAULT_ASSUMPTIONS = {
+  DCF: {
+    discountRate: 0.12,
+    growthRate: 0.03,
+    terminalValue: 10,
+  },
+  LBO: {
+    debtRatio: 0.7,
+    exitMultiple: 8,
+    interestRate: 0.08,
+  },
+  Comparables: {
+    evEbitdaMultiple: 12,
+    evRevenueMultiple: 3,
+    peRatio: 15,
+  },
+};
+
+const ModelPanel: React.FC<{
+  model: ModelConfig;
+  onUpdate: (assumptions: Record<string, number>) => void;
+  onRemove?: () => void;
+}> = ({ model, onUpdate, onRemove }) => (
   <Card className="h-full">
     <div className="p-4">
-      <h3 className="text-lg font-semibold mb-4">Comparables Analysis</h3>
-      {/* Comparables content will be implemented next */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">{model.type} Model</h3>
+        {onRemove && (
+          <Button variant="ghost" size="icon" onClick={onRemove}>
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      <div className="space-y-4">
+        {Object.entries(model.assumptions).map(([key, value]) => (
+          <div key={key} className="space-y-2">
+            <label className="text-sm font-medium">{key}</label>
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => {
+                const newAssumptions = {
+                  ...model.assumptions,
+                  [key]: parseFloat(e.target.value) || 0,
+                };
+                onUpdate(newAssumptions);
+              }}
+              className="w-full p-2 border rounded"
+              step="0.01"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   </Card>
 );
@@ -86,28 +130,111 @@ const ContextualToolbar: React.FC<{ activeModel: ValuationModel }> = ({
 };
 
 export function ValuationDashboard() {
+  const [panels, setPanels] = useState<PanelState[]>([
+    {
+      id: "dcf",
+      model: {
+        type: "DCF",
+        assumptions: DEFAULT_ASSUMPTIONS.DCF,
+        results: {},
+      },
+    },
+  ]);
   const [activeModel, setActiveModel] = useState<ValuationModel>("DCF");
 
-  return (
-    <div className="h-[calc(100vh-4rem)]">
-      <ContextualToolbar activeModel={activeModel} />
+  const addModel = (type: ValuationModel) => {
+    if (panels.length >= 3) {
+      toast({
+        title: "Maximum models reached",
+        description: "You can only compare up to 3 models at a time.",
+      });
+      return;
+    }
 
-      <ResizablePanelGroup direction="horizontal" className="h-full">
-        <ResizablePanel defaultSize={33} minSize={25}>
-          <DCFModelPanel />
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel>
-          <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={50}>
-              <LBOModelPanel />
+    setPanels([
+      ...panels,
+      {
+        id: `${type.toLowerCase()}-${panels.length}`,
+        model: {
+          type,
+          assumptions: DEFAULT_ASSUMPTIONS[type],
+          results: {},
+        },
+      },
+    ]);
+  };
+
+  const removePanel = (id: string) => {
+    setPanels(panels.filter((panel) => panel.id !== id));
+  };
+
+  const updateModel = (id: string, assumptions: Record<string, number>) => {
+    setPanels(
+      panels.map((panel) =>
+        panel.id === id
+          ? {
+              ...panel,
+              model: {
+                ...panel.model,
+                assumptions,
+              },
+            }
+          : panel
+      )
+    );
+  };
+
+  return (
+    <div className="h-[calc(100vh-4rem)] p-4">
+      <div className="mb-4 space-y-4">
+        <ContextualToolbar activeModel={activeModel} />
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => addModel("DCF")}
+            disabled={panels.length >= 3}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add DCF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => addModel("LBO")}
+            disabled={panels.length >= 3}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add LBO
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => addModel("Comparables")}
+            disabled={panels.length >= 3}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Comparables
+          </Button>
+        </div>
+      </div>
+
+      <ResizablePanelGroup direction="horizontal" className="h-[calc(100%-8rem)]">
+        {panels.map((panel, index) => (
+          <React.Fragment key={panel.id}>
+            {index > 0 && <ResizableHandle withHandle />}
+            <ResizablePanel defaultSize={100 / panels.length} minSize={25}>
+              <ModelPanel
+                model={panel.model}
+                onUpdate={(assumptions) => updateModel(panel.id, assumptions)}
+                onRemove={
+                  panels.length > 1 ? () => removePanel(panel.id) : undefined
+                }
+              />
             </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel>
-              <ComparablesPanel />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
+          </React.Fragment>
+        ))}
       </ResizablePanelGroup>
     </div>
   );
