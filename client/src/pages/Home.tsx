@@ -1,182 +1,107 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Calculator,
-  ChartBar,
-  FileText,
-  BarChart,
-  ClipboardCheck,
-  DollarSign,
-  FileSpreadsheet,
-  Building2,
-  GanttChartSquare,
-  BookOpen
-} from "lucide-react";
-import { ValuationWizard } from "@/components/ValuationWizard";
-import { QuickCalculator } from "@/components/QuickCalculator";
-import { FinancialProjections } from "@/components/FinancialProjections";
-import { PitchDeckGenerator } from "@/components/PitchDeckGenerator";
-import { BusinessPlanWizard } from "@/components/BusinessPlanWizard";
-import { ComplianceChecker } from "@/components/ComplianceChecker";
-import { ValuationDashboard } from "@/components/ValuationDashboard";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Calculator, ChartBar, FileText, DollarSign } from "lucide-react";
+import { motion } from "framer-motion";
 
-type Tool = {
-  id: string;
-  name: string;
-  icon: any;
-  component: any;
-  description: string;
-};
-
-const mainTools: Tool[] = [
+const features = [
   {
-    id: "full-valuation",
-    name: "Full Valuation",
+    title: "Quick Valuation",
+    description: "Get a quick estimate of your startup's value",
     icon: Calculator,
-    component: ValuationWizard,
-    description: "Complete startup valuation analysis"
+    href: "/valuation/quick"
   },
   {
-    id: "quick-calculator",
-    name: "Quick Calculator",
-    icon: DollarSign,
-    component: QuickCalculator,
-    description: "Fast estimation tool"
-  },
-  {
-    id: "financial-projections",
-    name: "Financial Projections",
+    title: "Detailed Analysis",
+    description: "Deep dive into your startup's metrics",
     icon: ChartBar,
-    component: FinancialProjections,
-    description: "Detailed financial forecasting"
+    href: "/valuation/detailed"
   },
   {
-    id: "pitch-deck",
-    name: "Pitch Deck",
+    title: "Financial Modeling",
+    description: "Build comprehensive financial models",
+    icon: DollarSign,
+    href: "/valuation/financial"
+  },
+  {
+    title: "Report Generation",
+    description: "Generate professional valuation reports",
     icon: FileText,
-    component: PitchDeckGenerator,
-    description: "Create investor presentations"
-  },
-  {
-    id: "business-plan",
-    name: "Business Plan",
-    icon: Building2,
-    component: BusinessPlanWizard,
-    description: "Comprehensive business planning"
-  }
-];
-
-const analytics: Tool[] = [
-  {
-    id: "dashboard",
-    name: "Dashboard",
-    icon: BarChart,
-    component: ValuationDashboard,
-    description: "Analytics and insights"
-  },
-  {
-    id: "compliance",
-    name: "Compliance Check",
-    icon: ClipboardCheck,
-    component: ComplianceChecker,
-    description: "Regulatory compliance"
-  }
-];
-
-const resources: Tool[] = [
-  {
-    id: "pricing",
-    name: "Pricing",
-    icon: FileSpreadsheet,
-    component: null,
-    description: "Subscription plans"
-  },
-  {
-    id: "api-docs",
-    name: "API Docs",
-    icon: BookOpen,
-    component: null,
-    description: "API documentation"
+    href: "/valuation/report"
   }
 ];
 
 export function Home() {
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(true);
-
-  const allTools = [...mainTools, ...analytics, ...resources];
-  const ActiveComponent = selectedTool
-    ? allTools.find(tool => tool.id === selectedTool)?.component
-    : null;
-
-  const renderToolSection = (title: string, tools: Tool[]) => (
-    <div className="space-y-2">
-      <h2 className="text-sm font-semibold text-muted-foreground px-2">{title}</h2>
-      {tools.map((tool) => (
-        <Button
-          key={tool.id}
-          variant={selectedTool === tool.id ? "default" : "ghost"}
-          className="w-full justify-start gap-2"
-          onClick={() => setSelectedTool(tool.id)}
-        >
-          <tool.icon className="h-4 w-4" />
-          <span>{tool.name}</span>
-        </Button>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      {showSidebar && (
-        <div className="w-64 border-r bg-background p-4">
-          <ScrollArea className="h-[calc(100vh-2rem)]">
-            <div className="space-y-6">
-              {renderToolSection("Main Tools", mainTools)}
-              <Separator />
-              {renderToolSection("Analytics", analytics)}
-              <Separator />
-              {renderToolSection("Resources", resources)}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
+    <div className="container px-4 py-12">
+      {/* Hero Section */}
+      <motion.div 
+        className="text-center max-w-3xl mx-auto mb-16"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h1 className="text-4xl font-bold tracking-tight mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          Startup Valuation Made Simple
+        </h1>
+        <p className="text-xl text-muted-foreground mb-8">
+          Use AI-powered analytics to understand your startup's true value
+        </p>
+        <Button size="lg" className="mr-4">
+          Start Valuation
+        </Button>
+        <Button size="lg" variant="outline">
+          Learn More
+        </Button>
+      </motion.div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {ActiveComponent ? (
-          <ActiveComponent />
-        ) : (
-          <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-6">Welcome to Startup Valuation Platform</h1>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mainTools.map((tool) => (
-                <Card
-                  key={tool.id}
-                  className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => setSelectedTool(tool.id)}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <tool.icon className="h-5 w-5" />
-                      {tool.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {tool.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Features Grid */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {features.map((feature, index) => (
+          <motion.div
+            key={feature.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+          >
+            <Card className="h-full hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="mb-2">
+                  <feature.icon className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-xl">{feature.title}</CardTitle>
+                <CardDescription>{feature.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="ghost" className="w-full" asChild>
+                  <a href={feature.href}>Get Started →</a>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
+
+      {/* Quick Start Section */}
+      <motion.div 
+        className="mt-16 text-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Ready to get started?</CardTitle>
+            <CardDescription>
+              Begin with a quick valuation or explore our detailed analysis tools
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center gap-4">
+            <Button>Quick Valuation</Button>
+            <Button variant="outline">View Demo</Button>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }
