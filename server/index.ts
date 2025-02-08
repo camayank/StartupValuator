@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupAuth } from "./auth";
 
 const app = express();
 app.use(express.json());
@@ -42,6 +43,10 @@ app.use((req, res, next) => {
 
 (async () => {
   log("Starting server initialization...");
+
+  // Set up authentication before registering routes
+  setupAuth(app);
+  log("Authentication setup complete");
 
   const server = registerRoutes(app);
   log("Routes registered successfully");
