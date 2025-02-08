@@ -1,0 +1,266 @@
+Let me help you implement a robust validation system for the BusinessInfoStep component. Here's a properly structured solution with AI-powered validation:
+
+```jsx
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useValidation } from '../contexts/ValidationContext';
+import { IndustryRules } from '../data/validationRules';
+import { fetchAISuggestions } from '../api/valuationApi';
+
+const BusinessInfoStep = ({ sessionData, onComplete, onError }) => {
+  const [formData, setFormData] = useState({
+    companyName: sessionData.companyName || '',
+    industry: sessionData.industry || '',
+    revenueModel: sessionData.revenueModel || 'SaaS',
+    annualRevenue: sessionData.annualRevenue || '',
+    employeeCount: sessionData.employeeCount || ''
+  });
+
+  const [validationErrors, setValidationErrors] = useState({});
+  const [aiSuggestions, setAiSuggestions] = useState({});
+  const [isValidating, setIsValidating] = useState(false);
+  const { validateField, validateCrossField } = useValidation();
+
+  // AI-powered validation debounce
+  useEffect(() => {
+    const debounceTimer = setTimeout(async () => {
+      if (formData.industry && formData.annualRevenue) {
+        try {
+          setIsValidating(true);
+          const suggestions = await fetchAISuggestions({
+            industry: formData.industry,
+            revenue: formData.annualRevenue,
+            employeeCount: formData.employeeCount
+          });
+          setAiSuggestions(suggestions);
+        } catch (error) {
+          onError('AI_VALIDATION_FAILED', error);
+        } finally {
+          setIsValidating(false);
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [formData.industry, formData.annualRevenue, formData.employeeCount]);
+
+  const handleInputChange = async (field, value) => {
+    // Basic validation first
+    const error = validateField(field, value, IndustryRules[formData.industry]);
+    
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error || null
+    }));
+
+    // Cross-field validation after state update
+    setTimeout(() => {
+      const crossError = validateCrossField(field, value, formData);
+      if (crossError) {
+        setValidationErrors(prev => ({
+          ...prev,
+          ...crossError
+        }));
+      }
+    }, 0);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const finalValidation = Object.entries(formData).reduce((acc, [key, value]) => {
+        const error = validateField(key, value, IndustryRules[formData.industry]);
+        return error ? { ...acc, [key]: error } : acc;
+      }, {});
+
+      if (Object.keys(finalValidation).length > 0) {
+        setValidationErrors(finalValidation);
+        throw new Error('VALIDATION_FAILED');
+      }
+
+      await onComplete({
+        ...formData,
+        aiSuggestions,
+        validatedAt: new Date().toISOString()
+      });
+
+    } catch (error) {
+      onError('SUBMIT_FAILED', {
+        error,
+        formData,
+        validationErrors,
+        aiSuggestions
+      });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="business-info-form">
+      <div className="form-section">
+        <label htmlFor="companyName">Company Name</label>
+        <input
+          id="companyName"
+          type="text"
+          value={formData.companyName}
+          onChange={(e) => handleInputChange('companyName', e.target.value)}
+          className={validationErrors.companyName ? 'error' : ''}
+        />
+        {validationErrors.companyName && (
+          <div className="error-message">
+            {validationErrors.companyName}
+            {aiSuggestions.companyName && (
+              <div className="ai-suggestion">
+                Suggestion: {aiSuggestions.companyName}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Repeat similar structure for other fields */}
+
+      <div className="form-actions">
+        <button 
+          type="submit"
+          disabled={isValidating || Object.keys(validationErrors).length > 0}
+        >
+          {isValidating ? 'Validating...' : 'Continue'}
+        </button>
+        
+        {isValidating && (
+          <div className="validation-status">
+            <span className="ai-loading-indicator" />
+            Analyzing industry patterns...
+          </div>
+        )}
+      </div>
+    </form>
+  );
+};
+
+BusinessInfoStep.propTypes = {
+  sessionData: PropTypes.shape({
+    companyName: PropTypes.string,
+    industry: PropTypes.string,
+    revenueModel: PropTypes.string,
+    annualRevenue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    employeeCount: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  }),
+  onComplete: PropTypes.func.isRequired,
+  onError: PropTypes.func.isRequired
+};
+
+export default BusinessInfoStep;
+```
+
+Key improvements and validation features:
+
+1. **Multi-Layer Validation System**
+```javascript
+const validationStack = [
+  basicFieldValidation,
+  crossFieldValidation,
+  asyncAIChecks
+];
+
+async function validateAll() {
+  for (const validator of validationStack) {
+    await validator(formData);
+  }
+}
+```
+
+2. **AI-Powered Suggestion Service**
+```javascript
+async function fetchAISuggestions(formData) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{
+        role: "system",
+        content: `Analyze ${formData.industry} company valuation patterns...`
+      }]
+    });
+    
+    return parseAISuggestions(response.choices[0].message.content);
+  } catch (error) {
+    fallbackToRuleBasedSuggestions();
+  }
+}
+```
+
+3. **State Management Enhancements**
+```javascript
+const [validationState, setValidationState] = useState({
+  errors: {},
+  warnings: {},
+  suggestions: {},
+  validationStatus: 'idle' // 'validating', 'valid', 'invalid'
+});
+```
+
+4. **Error Recovery System**
+```javascript
+function handleError(errorType, errorDetails) {
+  switch(errorType) {
+    case 'AI_VALIDATION_FAILED':
+      logErrorToSentry(errorDetails);
+      revertToLastValidState();
+      break;
+      
+    case 'SUBMIT_FAILED':
+      showErrorToast('Failed to save data');
+      cacheDraft(formData);
+      break;
+  }
+}
+```
+
+To resolve the error and implement properly:
+
+1. Add these required dependencies:
+```bash
+npm install @openai/api @anthropic-ai/sdk react-use-validation
+```
+
+2. Create supporting files:
+```javascript
+// src/contexts/ValidationContext.js
+import { createContext } from 'react';
+
+export const ValidationContext = createContext({
+  validateField: () => {},
+  validateCrossField: () => {},
+  industryRules: {}
+});
+```
+
+3. Implement validation service:
+```javascript
+// src/services/validationService.js
+export const validateFinancials = (values, industry) => {
+  const rules = IndustryRules[industry] || DEFAULT_RULES;
+  
+  return {
+    isValid: checkAllRules(values, rules),
+    errors: collectErrors(values, rules),
+    warnings: collectWarnings(values, rules)
+  };
+};
+```
+
+This implementation provides:
+- Real-time AI-enhanced validation
+- Multi-source error handling
+- State persistence and recovery
+- Performance optimization through debouncing
+- Context-aware suggestions
+- Graceful error fallback systems
+
+Would you like me to add specific validation rules for your industry verticals or expand on any particular aspect?

@@ -2,16 +2,44 @@ import { z } from 'zod';
 import { type ValuationFormData } from "@/lib/validations";
 import { aiValidationService } from "@/services/aiValidation";
 
-interface ValidationResult {
+// AI Validation Types
+export interface ValidationResult {
   isValid: boolean;
   warnings: Array<{
-    field: keyof ValuationFormData;
+    field: string;
     message: string;
     severity: 'low' | 'medium' | 'high';
     suggestion?: string | number;
   }>;
   suggestions?: string[];
   industryInsights?: string[];
+}
+
+export interface BusinessInfo {
+  sector: string;
+  industry: string;
+  productStage: "mature" | "concept" | "mvp" | "beta" | "prototype" | "market_ready" | "scaling";
+  name: string;
+  location: string;
+  businessModel: "subscription" | "transactional" | "marketplace" | "advertising" | "licensing" | "freemium" | "saas";
+}
+
+export interface ValuationFormInput {
+  businessInfo: BusinessInfo;
+  financialMetrics?: {
+    revenue?: number;
+    margins?: number;
+    growthRate?: number;
+    churnRate?: number;
+    monthlyRevenue?: number[];
+  };
+  marketData?: any;
+  competitiveAnalysis?: any;
+  riskAssessment?: any;
+  aiConfig?: {
+    confidenceThreshold?: number;
+    usePredictiveAnalytics?: boolean;
+  };
 }
 
 interface IndustryBenchmark {
@@ -536,29 +564,29 @@ export function applyAIEnhancements(data: ValuationFormData) {
   };
 }
 
-export async function validateFinancialMetrics(data: ValuationFormData): Promise<ValidationResult> {
+export async function validateFinancialMetrics(data: ValuationFormInput): Promise<ValidationResult> {
   const warnings: ValidationResult['warnings'] = [];
 
   // Get industry benchmarks
-  const industryData = industryBenchmarks[data.sector];
-  const stageData = stageBasedValidation[data.stage];
+  const industryData = industryBenchmarks[data.businessInfo.sector];
+  const stageData = stageBasedValidation[data.businessInfo.productStage];
 
   // Rule-based validation
   if (industryData) {
     // Validate growth rate
-    if (data.growthRate !== undefined) {
+    if (data.financialMetrics?.growthRate !== undefined) {
       const growthBenchmark = industryData.growthRate;
-      if (data.growthRate > growthBenchmark.range.max) {
+      if (data.financialMetrics.growthRate > growthBenchmark.range.max) {
         warnings.push({
           field: 'growthRate',
-          message: `Growth rate of ${data.growthRate}% is unusually high for ${data.sector} sector`,
+          message: `Growth rate of ${data.financialMetrics.growthRate}% is unusually high for ${data.businessInfo.sector} sector`,
           severity: 'high',
           suggestion: growthBenchmark.typical
         });
-      } else if (data.growthRate < growthBenchmark.range.min) {
+      } else if (data.financialMetrics.growthRate < growthBenchmark.range.min) {
         warnings.push({
           field: 'growthRate',
-          message: `Growth rate of ${data.growthRate}% is below average for ${data.sector} sector`,
+          message: `Growth rate of ${data.financialMetrics.growthRate}% is below average for ${data.businessInfo.sector} sector`,
           severity: 'medium',
           suggestion: growthBenchmark.typical
         });
@@ -566,19 +594,19 @@ export async function validateFinancialMetrics(data: ValuationFormData): Promise
     }
 
     // Validate margins
-    if (data.margins !== undefined) {
+    if (data.financialMetrics?.margins !== undefined) {
       const marginBenchmark = industryData.margins;
-      if (data.margins > marginBenchmark.range.max) {
+      if (data.financialMetrics.margins > marginBenchmark.range.max) {
         warnings.push({
           field: 'margins',
-          message: `Operating margin of ${data.margins}% is unusually high for ${data.sector} sector`,
+          message: `Operating margin of ${data.financialMetrics.margins}% is unusually high for ${data.businessInfo.sector} sector`,
           severity: 'high',
           suggestion: marginBenchmark.typical
         });
-      } else if (data.margins < marginBenchmark.range.min) {
+      } else if (data.financialMetrics.margins < marginBenchmark.range.min) {
         warnings.push({
           field: 'margins',
-          message: `Operating margin of ${data.margins}% is below average for ${data.sector} sector`,
+          message: `Operating margin of ${data.financialMetrics.margins}% is below average for ${data.businessInfo.sector} sector`,
           severity: 'medium',
           suggestion: marginBenchmark.typical
         });
@@ -587,27 +615,27 @@ export async function validateFinancialMetrics(data: ValuationFormData): Promise
   }
 
   // Stage-based revenue validation
-  if (data.revenue !== undefined && stageData?.revenue) {
+  if (data.financialMetrics?.revenue !== undefined && stageData?.revenue) {
     const revenueBenchmark = stageData.revenue;
-    if (data.revenue > revenueBenchmark.range.max) {
+    if (data.financialMetrics.revenue > revenueBenchmark.range.max) {
       warnings.push({
         field: 'revenue',
-        message: `Revenue of ${data.revenue} is unusually high for ${data.stage} stage`,
+        message: `Revenue of ${data.financialMetrics.revenue} is unusually high for ${data.businessInfo.productStage} stage`,
         severity: 'medium'
       });
-    } else if (data.revenue < revenueBenchmark.range.min) {
+    } else if (data.financialMetrics.revenue < revenueBenchmark.range.min) {
       warnings.push({
         field: 'revenue',
-        message: `Revenue of ${data.revenue} is below typical range for ${data.stage} stage`,
+        message: `Revenue of ${data.financialMetrics.revenue} is below typical range for ${data.businessInfo.productStage} stage`,
         severity: 'low'
       });
     }
   }
 
   // Cross-field validation
-  if (data.revenue && data.margins) {
-    const operatingIncome = (data.revenue * data.margins) / 100;
-    if (operatingIncome < 0 && data.stage !== 'ideation_unvalidated') {
+  if (data.financialMetrics?.revenue && data.financialMetrics?.margins) {
+    const operatingIncome = (data.financialMetrics.revenue * data.financialMetrics.margins) / 100;
+    if (operatingIncome < 0 && data.businessInfo.productStage !== 'ideation_unvalidated') {
       warnings.push({
         field: 'margins',
         message: 'Negative operating income may affect valuation accuracy',

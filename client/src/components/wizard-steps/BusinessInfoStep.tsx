@@ -25,14 +25,58 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
-import { sectors, industries, businessStages, revenueModels, productStages, businessInfoSchema } from "@/lib/validations";
-import type { BusinessInfoFormData } from "@/lib/validations";
+import { sectors, industries, businessStages, revenueModels, productStages } from "@/lib/validations";
+import { validateFinancialMetrics, type ValidationResult, type BusinessInfo, type ValuationFormInput } from "@/lib/validation/aiValidation";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+// Enhanced schema with industry-specific validation
+const businessInfoSchema = z.object({
+  businessName: z.string().min(1, "Business name is required"),
+  sector: z.string().min(1, "Sector is required"),
+  industry: z.string().min(1, "Industry is required"),
+  location: z.string().min(1, "Location is required"),
+  stage: z.enum([
+    "ideation_unvalidated",
+    "mvp_early_traction",
+    "revenue_early",
+    "revenue_growth",
+    "revenue_scaling",
+    "mature",
+    "exit_ready"
+  ]),
+  employeeCount: z.number().min(1),
+  teamExperience: z.number().min(0),
+  customerBase: z.number().optional(),
+  revenueModel: z.enum([
+    "subscription",
+    "transactional",
+    "marketplace",
+    "advertising",
+    "licensing",
+    "freemium",
+    "saas"
+  ]),
+  productStage: z.enum([
+    "concept",
+    "mvp",
+    "beta",
+    "prototype",
+    "market_ready",
+    "scaling",
+    "mature"
+  ]),
+  scalability: z.enum(["limited", "moderate", "high"]),
+  intellectualProperty: z.enum(["none", "pending", "registered"]),
+  regulatoryCompliance: z.enum(["notRequired", "inProgress", "compliant"])
+});
+
+type BusinessInfoFormData = z.infer<typeof businessInfoSchema>;
+
 interface BusinessInfoStepProps {
-  data?: Partial<BusinessInfoFormData>;
   onUpdate: (data: BusinessInfoFormData) => Promise<void>;
   onNext: () => void;
   currentStep: number;
@@ -40,7 +84,6 @@ interface BusinessInfoStepProps {
 }
 
 export function BusinessInfoStep({
-  data = {},
   onUpdate,
   onNext,
   currentStep,
@@ -48,32 +91,33 @@ export function BusinessInfoStep({
 }: BusinessInfoStepProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedSector, setSelectedSector] = useState<string>(data.sector || "");
+  const [selectedSector, setSelectedSector] = useState<string>("");
   const [availableIndustries, setAvailableIndustries] = useState<Record<string, any>>({});
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   const form = useForm<BusinessInfoFormData>({
     resolver: zodResolver(businessInfoSchema),
     defaultValues: {
-      businessName: data.businessName || "",
-      sector: data.sector || "",
-      industry: data.industry || "",
-      stage: data.stage || "ideation_unvalidated",
-      employeeCount: data.employeeCount || 1,
-      teamExperience: data.teamExperience || 0,
-      customerBase: data.customerBase || 0,
-      revenueModel: data.revenueModel || "subscription",
-      productStage: data.productStage || "concept",
-      scalability: data.scalability || "moderate",
-      intellectualProperty: data.intellectualProperty || "none",
-      regulatoryCompliance: data.regulatoryCompliance || "notRequired",
+      businessName: "",
+      sector: "",
+      industry: "",
+      location: "",
+      stage: "ideation_unvalidated",
+      employeeCount: 1,
+      teamExperience: 0,
+      customerBase: 0,
+      revenueModel: "subscription",
+      productStage: "concept",
+      scalability: "moderate",
+      intellectualProperty: "none",
+      regulatoryCompliance: "notRequired",
     }
   });
 
   useEffect(() => {
     if (selectedSector && sectors[selectedSector]?.subsectors) {
       setAvailableIndustries(sectors[selectedSector].subsectors);
-      // Reset industry if current selection is not in new sector
-      if (!sectors[selectedSector].subsectors[form.getValues().industry]) {
+      if (form.getValues().industry && !sectors[selectedSector].subsectors[form.getValues().industry]) {
         form.setValue("industry", "", { shouldValidate: true });
       }
     } else {
@@ -81,14 +125,60 @@ export function BusinessInfoStep({
     }
   }, [selectedSector, form]);
 
-  const handleSectorChange = (value: string) => {
+  const mapFormToValidationInput = (formData: BusinessInfoFormData): ValuationFormInput => ({
+    businessInfo: {
+      name: formData.businessName,
+      sector: formData.sector,
+      industry: formData.industry,
+      location: formData.location,
+      productStage: formData.productStage,
+      businessModel: formData.revenueModel,
+    }
+  });
+
+  const handleSectorChange = async (value: string) => {
     setSelectedSector(value);
     form.setValue("sector", value, { shouldValidate: true });
+
+    if (value) {
+      try {
+        const formData = form.getValues();
+        const validationInput = mapFormToValidationInput({
+          ...formData,
+          sector: value
+        });
+
+        const result = await validateFinancialMetrics(validationInput);
+        setValidationResult(result);
+
+        if (result.suggestions?.length) {
+          toast({
+            title: "AI Suggestions Available",
+            description: "We have some recommendations based on your industry selection.",
+          });
+        }
+      } catch (error) {
+        console.error('Validation error:', error);
+      }
+    }
   };
 
   const handleSubmit = async (values: BusinessInfoFormData) => {
     try {
       setIsSubmitting(true);
+
+      const validationResult = await validateFinancialMetrics(mapFormToValidationInput(values));
+
+      if (validationResult.warnings.some(w => w.severity === 'high')) {
+        toast({
+          title: "Validation Warning",
+          description: "Please review the highlighted issues before proceeding.",
+          variant: "destructive",
+        });
+        setValidationResult(validationResult);
+        return;
+      }
+
       await onUpdate(values);
       toast({
         title: "Success",
@@ -124,6 +214,25 @@ export function BusinessInfoStep({
         </div>
       </div>
 
+      {validationResult?.warnings.length > 0 && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              {validationResult.warnings.map((warning, index) => (
+                <li key={index} className="text-sm">
+                  {warning.message}
+                  {warning.suggestion && (
+                    <span className="block text-xs mt-1">
+                      Suggestion: {warning.suggestion}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Business Information</CardTitle>
@@ -142,6 +251,20 @@ export function BusinessInfoStep({
                     <FormLabel>Business Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Enter your business name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter business location" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -206,7 +329,6 @@ export function BusinessInfoStep({
                   )}
                 />
               </div>
-
               <div className="grid gap-4">
                 <FormField
                   control={form.control}
