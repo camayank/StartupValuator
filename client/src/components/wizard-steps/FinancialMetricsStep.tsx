@@ -11,20 +11,31 @@ import {
   FormMessage,
   FormDescription,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, DollarSign, TrendingUp, Percent } from "lucide-react";
+import { DollarSign, TrendingUp, Info } from "lucide-react";
 import { NumericInput } from "@/components/ui/numeric-input";
 
+// Schema with helpful error messages
 const financialMetricsSchema = z.object({
-  annualRevenue: z.number().min(0, "Revenue must be positive"),
-  annualExpenses: z.number().min(0, "Expenses must be positive"),
-  grossMargin: z.number().min(-100).max(100, "Margin must be between -100 and 100"),
-  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100 and 1000"),
-  runwayMonths: z.number().min(0, "Runway must be positive"),
-  burnRate: z.number().min(0, "Burn rate must be positive"),
+  annualRevenue: z.number({
+    required_error: "Annual revenue is required",
+    invalid_type_error: "Please enter a valid number",
+  }).min(0, "Revenue must be positive"),
+
+  annualExpenses: z.number({
+    required_error: "Annual expenses are required",
+    invalid_type_error: "Please enter a valid number",
+  }).min(0, "Expenses must be positive"),
+
+  burnRate: z.number({
+    required_error: "Monthly burn rate is required",
+    invalid_type_error: "Please enter a valid number",
+  }).min(0, "Burn rate must be positive"),
+
+  growthRate: z.number({
+    required_error: "Growth rate is required",
+    invalid_type_error: "Please enter a valid number",
+  }),
 });
 
 type FinancialMetricsFormData = z.infer<typeof financialMetricsSchema>;
@@ -32,13 +43,11 @@ type FinancialMetricsFormData = z.infer<typeof financialMetricsSchema>;
 interface FinancialMetricsStepProps {
   onUpdate: (data: FinancialMetricsFormData) => Promise<void>;
   initialData?: Partial<FinancialMetricsFormData>;
-  aiAnalysis?: any;
 }
 
 export function FinancialMetricsStep({
   onUpdate,
   initialData = {},
-  aiAnalysis
 }: FinancialMetricsStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,10 +56,8 @@ export function FinancialMetricsStep({
     defaultValues: {
       annualRevenue: initialData.annualRevenue || 0,
       annualExpenses: initialData.annualExpenses || 0,
-      grossMargin: initialData.grossMargin || 0,
-      growthRate: initialData.growthRate || 0,
-      runwayMonths: initialData.runwayMonths || 0,
       burnRate: initialData.burnRate || 0,
+      growthRate: initialData.growthRate || 0,
     },
   });
 
@@ -60,10 +67,6 @@ export function FinancialMetricsStep({
       // Calculate burn rate if not provided
       if (!values.burnRate && values.annualExpenses) {
         values.burnRate = values.annualExpenses / 12;
-      }
-      // Calculate runway if not provided
-      if (!values.runwayMonths && values.annualRevenue && values.burnRate) {
-        values.runwayMonths = (values.annualRevenue / 12) / values.burnRate;
       }
       await onUpdate(values);
     } catch (error) {
@@ -75,16 +78,16 @@ export function FinancialMetricsStep({
 
   return (
     <div className="space-y-6">
-      {aiAnalysis && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>{aiAnalysis.feedback}</AlertDescription>
-        </Alert>
-      )}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          Enter your company's financial metrics. These numbers help us calculate an accurate valuation.
+        </AlertDescription>
+      </Alert>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+          <div className="grid gap-6">
             <FormField
               control={form.control}
               name="annualRevenue"
@@ -105,6 +108,7 @@ export function FinancialMetricsStep({
                       thousandSeparator=","
                       decimalScale={0}
                       placeholder="Enter annual revenue"
+                      className="text-lg"
                     />
                   </FormControl>
                   <FormMessage />
@@ -132,60 +136,7 @@ export function FinancialMetricsStep({
                       thousandSeparator=","
                       decimalScale={0}
                       placeholder="Enter annual expenses"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="grossMargin"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Percent className="h-4 w-4" />
-                    Gross Margin
-                  </FormLabel>
-                  <FormDescription>
-                    Gross profit as a percentage of revenue
-                  </FormDescription>
-                  <FormControl>
-                    <NumericInput
-                      {...field}
-                      onValueChange={field.onChange}
-                      suffix="%"
-                      decimalScale={1}
-                      allowNegative
-                      placeholder="Enter gross margin"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="growthRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Growth Rate
-                  </FormLabel>
-                  <FormDescription>
-                    Year-over-year revenue growth rate
-                  </FormDescription>
-                  <FormControl>
-                    <NumericInput
-                      {...field}
-                      onValueChange={field.onChange}
-                      suffix="%"
-                      decimalScale={1}
-                      allowNegative
-                      placeholder="Enter growth rate"
+                      className="text-lg"
                     />
                   </FormControl>
                   <FormMessage />
@@ -203,7 +154,7 @@ export function FinancialMetricsStep({
                     Monthly Burn Rate
                   </FormLabel>
                   <FormDescription>
-                    Net monthly cash outflow
+                    Average monthly cash spent (expenses minus revenue)
                   </FormDescription>
                   <FormControl>
                     <NumericInput
@@ -213,6 +164,7 @@ export function FinancialMetricsStep({
                       thousandSeparator=","
                       decimalScale={0}
                       placeholder="Enter monthly burn rate"
+                      className="text-lg"
                     />
                   </FormControl>
                   <FormMessage />
@@ -222,20 +174,25 @@ export function FinancialMetricsStep({
 
             <FormField
               control={form.control}
-              name="runwayMonths"
+              name="growthRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Runway (months)</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Growth Rate (%)
+                  </FormLabel>
                   <FormDescription>
-                    Months of operation at current burn rate
+                    Year-over-year revenue growth rate
                   </FormDescription>
                   <FormControl>
                     <NumericInput
                       {...field}
                       onValueChange={field.onChange}
+                      suffix="%"
                       decimalScale={1}
-                      min={0}
-                      placeholder="Enter runway in months"
+                      allowNegative
+                      placeholder="Enter growth rate"
+                      className="text-lg"
                     />
                   </FormControl>
                   <FormMessage />
@@ -243,7 +200,6 @@ export function FinancialMetricsStep({
               )}
             />
           </div>
-
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : "Continue"}
           </Button>

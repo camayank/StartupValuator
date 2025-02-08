@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { ValuationProgress } from "@/components/ui/valuation-progress";
+import { Info } from "lucide-react";
+import type { ValuationFormData } from "@/lib/validations";
 import { BusinessInfoStep } from "./wizard-steps/BusinessInfoStep";
 import { FinancialMetricsStep } from "./wizard-steps/FinancialMetricsStep";
 import { MarketAnalysisStep } from "./wizard-steps/MarketAnalysisStep";
@@ -17,11 +18,11 @@ import { CompetitiveAnalysisStep } from "./wizard-steps/CompetitiveAnalysisStep"
 import { RiskAssessmentStep } from "./wizard-steps/RiskAssessmentStep";
 import { ValuationSimulationStep } from "./wizard-steps/ValuationSimulationStep";
 import { ReportGenerationStep } from "./wizard-steps/ReportGenerationStep";
-import type { ValuationFormData } from "@/lib/validations";
+
 
 interface ValuationWizardProps {
   onComplete: (data: ValuationFormData) => void;
-  sessionData?: any; // Add session data prop
+  sessionData?: any;
 }
 
 const steps = [
@@ -30,178 +31,137 @@ const steps = [
     title: "Business Information",
     description: "Tell us about your business",
     component: BusinessInfoStep,
-    requiredFields: ["companyName", "industry", "businessModel"]
   },
   {
     id: "financialMetrics",
     title: "Financial Metrics",
     description: "Key financial indicators",
     component: FinancialMetricsStep,
-    requiredFields: ["annualRevenue", "annualExpenses", "margins"]
   },
   {
     id: "marketAnalysis",
     title: "Market Analysis",
     description: "Market size and position",
     component: MarketAnalysisStep,
-    requiredFields: ["targetMarket", "marketSize"]
   },
   {
     id: "competitiveAnalysis",
     title: "Competitive Analysis",
-    description: "Analyze competitors",
+    description: "Competitive landscape",
     component: CompetitiveAnalysisStep,
-    requiredFields: ["competitors", "competitiveAdvantage"]
   },
   {
     id: "riskAssessment",
     title: "Risk Assessment",
-    description: "Identify and mitigate risks",
+    description: "Risk evaluation",
     component: RiskAssessmentStep,
-    requiredFields: ["riskFactors", "mitigationStrategies"]
   },
   {
     id: "valuationSimulation",
     title: "Valuation Simulation",
     description: "Calculate company value",
     component: ValuationSimulationStep,
-    requiredFields: []
   },
   {
     id: "reportGeneration",
     title: "Report Generation",
     description: "Generate detailed reports",
     component: ReportGenerationStep,
-    requiredFields: []
   }
 ];
 
 export function ValuationWizard({ onComplete, sessionData }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<ValuationFormData>({
-    businessInfo: {},
-    financialMetrics: {},
-    marketAnalysis: {},
-    competitiveAnalysis: {},
-    riskAssessment: {},
-    valuationSimulation: {},
-    reportGeneration: {}
-  });
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
+  const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
   const { toast } = useToast();
 
-  const validateStep = (stepIndex: number, data: any) => {
-    const step = steps[stepIndex];
-    const missingFields = step.requiredFields.filter(field => {
-      const value = data[field];
-      return value === undefined || value === null || value === '';
-    });
-
-    if (missingFields.length > 0) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [stepIndex + 1]: `Missing required fields: ${missingFields.join(', ')}`
-      }));
-      return false;
-    }
-
-    setValidationErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[stepIndex + 1];
-      return newErrors;
-    });
-    return true;
-  };
-
   const handleStepUpdate = async (stepId: string, data: any) => {
-    const stepIndex = steps.findIndex(s => s.id === stepId);
-    if (stepIndex === -1) return;
-
-    if (!validateStep(stepIndex, data)) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setFormData(prev => ({
       ...prev,
       [stepId]: data
     }));
 
-    if (!completedSteps.includes(stepIndex + 1)) {
-      setCompletedSteps(prev => [...prev, stepIndex + 1]);
-    }
-
+    // Show success message
     toast({
-      title: "Step Complete",
-      description: "Your data has been saved successfully."
+      title: "Saved",
+      description: "Your progress has been saved",
     });
 
-    if (stepIndex < steps.length - 1) {
-      setCurrentStep(stepIndex + 1);
+    // Move to next step if available
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(prev => prev + 1);
     }
   };
 
-  const handleError = (error: Error) => {
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive"
-    });
-  };
-
-  const getCurrentStepComponent = () => {
-    const StepComponent = steps[currentStep].component;
-    const stepId = steps[currentStep].id;
-
-    const commonProps = {
-      onUpdate: (data: any) => handleStepUpdate(stepId, data),
-      initialData: formData[stepId as keyof ValuationFormData],
-      onError: handleError
-    };
-
-    if (stepId === "businessInfo") {
-      return (
-        <StepComponent
-          {...commonProps}
-          sessionData={sessionData}
-          onComplete={() => handleStepUpdate(stepId, formData[stepId as keyof ValuationFormData])}
-        />
-      );
+  const handleComplete = () => {
+    if (Object.keys(formData).length < steps.length) {
+      toast({
+        title: "Incomplete",
+        description: "Please complete all steps before submitting",
+        variant: "destructive"
+      });
+      return;
     }
-
-    return <StepComponent {...commonProps} />;
+    onComplete(formData as ValuationFormData);
   };
+
+  const StepComponent = steps[currentStep].component;
+  const stepId = steps[currentStep].id;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <ValuationProgress
-        currentStep={currentStep + 1}
-        completedSteps={completedSteps}
-        totalSteps={steps.length}
-        validationErrors={validationErrors}
-        onStepClick={(step) => {
-          if (completedSteps.includes(step) || step === currentStep + 1) {
-            setCurrentStep(step - 1);
-          }
-        }}
-      />
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Step Indicator */}
+      <div className="flex justify-between items-center py-4 px-6 bg-background rounded-lg border">
+        {steps.map((step, index) => (
+          <div
+            key={step.id}
+            className={`flex flex-col items-center ${
+              index === currentStep
+                ? "text-primary"
+                : index < currentStep
+                ? "text-muted-foreground"
+                : "text-muted"
+            }`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${
+                index === currentStep
+                  ? "bg-primary text-primary-foreground"
+                  : index < currentStep
+                  ? "bg-muted"
+                  : "bg-muted/50"
+              }`}
+            >
+              {index + 1}
+            </div>
+            <span className="text-sm font-medium hidden md:block">{step.title}</span>
+          </div>
+        ))}
+      </div>
 
+      {/* Current Step */}
       <Card>
         <CardHeader>
           <CardTitle>{steps[currentStep].title}</CardTitle>
-          <CardDescription>
-            {steps[currentStep].description}
-          </CardDescription>
+          <CardDescription>{steps[currentStep].description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {getCurrentStepComponent()}
+          {currentStep === 0 && (
+            <Alert className="mb-6">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Start by telling us about your business. This helps us provide accurate valuation insights.
+              </AlertDescription>
+            </Alert>
+          )}
 
-          <div className="flex justify-between mt-6">
+          <StepComponent
+            onUpdate={(data: any) => handleStepUpdate(stepId, data)}
+            initialData={formData[stepId]}
+            sessionData={sessionData}
+          />
+
+          <div className="flex justify-between mt-6 pt-6 border-t">
             <Button
               variant="outline"
               onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
@@ -211,18 +171,12 @@ export function ValuationWizard({ onComplete, sessionData }: ValuationWizardProp
             </Button>
 
             {currentStep === steps.length - 1 ? (
-              <Button
-                onClick={() => onComplete(formData)}
-                disabled={completedSteps.length !== steps.length}
-              >
+              <Button onClick={handleComplete}>
                 Complete Valuation
               </Button>
             ) : (
-              <Button
-                onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}
-                disabled={!completedSteps.includes(currentStep + 1)}
-              >
-                Next
+              <Button onClick={() => setCurrentStep(prev => Math.min(steps.length - 1, prev + 1))}>
+                Continue
               </Button>
             )}
           </div>
