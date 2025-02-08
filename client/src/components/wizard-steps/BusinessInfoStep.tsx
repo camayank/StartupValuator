@@ -52,8 +52,8 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
   const [connectionStatus, setConnectionStatus] = useState('connected');
   const [aiSuggestions, setAiSuggestions] = useState({});
 
-  // Use force update hook to prevent form freezing
-  useForceUpdate(5000); // 5 second refresh
+  // Use force update hook with optimized interval
+  useForceUpdate(2000); // Reduced interval for more responsive updates
 
   const form = useForm<BusinessInfoFormData>({
     resolver: zodResolver(businessInfoSchema),
@@ -66,33 +66,83 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
     }
   });
 
-  // Monitor form state changes
+  // Form state persistence
   useEffect(() => {
-    console.log('Form State Updated:', form.getValues());
+    const savedState = localStorage.getItem('businessInfoForm');
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        Object.entries(parsedState).forEach(([key, value]) => {
+          form.setValue(key as keyof BusinessInfoFormData, value);
+        });
+      } catch (e) {
+        console.error('Failed to restore form state:', e);
+      }
+    }
+
+    // Listen for state restoration events
+    const handleStateRestore = (event: CustomEvent) => {
+      const restoredState = event.detail;
+      Object.entries(restoredState).forEach(([key, value]) => {
+        form.setValue(key as keyof BusinessInfoFormData, value);
+      });
+    };
+
+    window.addEventListener('restoreFormState', handleStateRestore as EventListener);
+    return () => {
+      window.removeEventListener('restoreFormState', handleStateRestore as EventListener);
+    };
+  }, [form]);
+
+  // Save form state on changes
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      localStorage.setItem('businessInfoForm', JSON.stringify(value));
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+
+  // Monitor form state changes with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      console.log('Form State Updated:', form.getValues());
+    }, 500);
+    return () => clearTimeout(timeoutId);
   }, [form.watch()]);
 
-  // Add connection monitoring
+  // Optimized connection monitoring
   useEffect(() => {
-    const heartbeat = setInterval(() => {
-      fetch('/ping')
-        .then(() => setConnectionStatus('connected'))
-        .catch(() => setConnectionStatus('disconnected'));
+    let mounted = true;
+    const heartbeat = setInterval(async () => {
+      try {
+        const response = await fetch('/ping');
+        if (mounted && response.ok) {
+          setConnectionStatus('connected');
+        }
+      } catch (error) {
+        if (mounted) {
+          setConnectionStatus('disconnected');
+        }
+      }
     }, 5000);
 
-    return () => clearInterval(heartbeat);
+    return () => {
+      mounted = false;
+      clearInterval(heartbeat);
+    };
   }, []);
 
   const handleSubmit = async (values: BusinessInfoFormData) => {
     try {
       setIsValidating(true);
 
-      // Final validation before submission
-      const finalValidation = Object.entries(values).reduce((acc, [key, value]) => {
+      // Validation with error grouping
+      const validationErrors = Object.entries(values).reduce((acc, [key, value]) => {
         const error = form.formState.errors[key]?.message;
         return error ? { ...acc, [key]: error } : acc;
       }, {});
 
-      if (Object.keys(finalValidation).length > 0) {
+      if (Object.keys(validationErrors).length > 0) {
         throw new Error('VALIDATION_FAILED');
       }
 
@@ -101,6 +151,9 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
         aiSuggestions,
         validatedAt: new Date().toISOString()
       });
+
+      // Clear saved state after successful submission
+      localStorage.removeItem('businessInfoForm');
 
       toast({
         title: "Success",
@@ -126,11 +179,18 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
     }
   };
 
-  // Connection status warning
+  // Connection status warning with retry button
   if (connectionStatus === 'disconnected') {
     return (
       <div className="p-4 bg-red-100 text-red-700 rounded">
-        Connection lost. Please refresh the page.
+        <p className="mb-2">Connection lost. Please retry or refresh the page.</p>
+        <Button 
+          variant="outline" 
+          onClick={() => window.location.reload()}
+          className="text-red-700 border-red-700 hover:bg-red-50"
+        >
+          Retry Connection
+        </Button>
       </div>
     );
   }
@@ -206,7 +266,6 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
                           onChange={(e) => {
                             const value = parseCurrencyInput(e.target.value);
                             field.onChange(value);
-                            console.log('Revenue changed:', value);
                           }}
                           className="pl-8"
                           placeholder="0.00"
