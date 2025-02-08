@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -20,71 +19,78 @@ import { ValuationSimulationStep } from "./wizard-steps/ValuationSimulationStep"
 import { ReportGenerationStep } from "./wizard-steps/ReportGenerationStep";
 import type { ValuationFormData } from "@/lib/validations";
 
-
 interface ValuationWizardProps {
   onComplete: (data: ValuationFormData) => void;
+  sessionData?: any; // Add session data prop
 }
 
 const steps = [
   {
-    id: "business-info",
+    id: "businessInfo",
     title: "Business Information",
     description: "Tell us about your business",
     component: BusinessInfoStep,
     requiredFields: ["companyName", "industry", "businessModel"]
   },
   {
-    id: "financials",
+    id: "financialMetrics",
     title: "Financial Metrics",
     description: "Key financial indicators",
     component: FinancialMetricsStep,
     requiredFields: ["annualRevenue", "annualExpenses", "margins"]
   },
   {
-    id: "market",
+    id: "marketAnalysis",
     title: "Market Analysis",
     description: "Market size and position",
     component: MarketAnalysisStep,
     requiredFields: ["targetMarket", "marketSize"]
   },
   {
-    id: "competition",
+    id: "competitiveAnalysis",
     title: "Competitive Analysis",
     description: "Analyze competitors",
     component: CompetitiveAnalysisStep,
     requiredFields: ["competitors", "competitiveAdvantage"]
   },
   {
-    id: "risks",
+    id: "riskAssessment",
     title: "Risk Assessment",
     description: "Identify and mitigate risks",
     component: RiskAssessmentStep,
     requiredFields: ["riskFactors", "mitigationStrategies"]
   },
   {
-    id: "valuation",
+    id: "valuationSimulation",
     title: "Valuation Simulation",
     description: "Calculate company value",
     component: ValuationSimulationStep,
-    requiredFields: [] // Add required fields if necessary
+    requiredFields: []
   },
   {
-    id: "report",
+    id: "reportGeneration",
     title: "Report Generation",
     description: "Generate detailed reports",
     component: ReportGenerationStep,
-    requiredFields: [] // Add required fields if necessary
+    requiredFields: []
   }
 ];
 
-export function ValuationWizard({ onComplete }: ValuationWizardProps) {
+export function ValuationWizard({ onComplete, sessionData }: ValuationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<Partial<ValuationFormData>>({});
+  const [formData, setFormData] = useState<ValuationFormData>({
+    businessInfo: {},
+    financialMetrics: {},
+    marketAnalysis: {},
+    competitiveAnalysis: {},
+    riskAssessment: {},
+    valuationSimulation: {},
+    reportGeneration: {}
+  });
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
   const { toast } = useToast();
 
-  // Validate required fields for current step
   const validateStep = (stepIndex: number, data: any) => {
     const step = steps[stepIndex];
     const missingFields = step.requiredFields.filter(field => {
@@ -108,12 +114,10 @@ export function ValuationWizard({ onComplete }: ValuationWizardProps) {
     return true;
   };
 
-  // Handle step data updates
   const handleStepUpdate = async (stepId: string, data: any) => {
     const stepIndex = steps.findIndex(s => s.id === stepId);
     if (stepIndex === -1) return;
 
-    // Validate step data
     if (!validateStep(stepIndex, data)) {
       toast({
         title: "Validation Error",
@@ -123,45 +127,54 @@ export function ValuationWizard({ onComplete }: ValuationWizardProps) {
       return;
     }
 
-    // Update form data
     setFormData(prev => ({
       ...prev,
       [stepId]: data
     }));
 
-    // Mark step as completed
     if (!completedSteps.includes(stepIndex + 1)) {
       setCompletedSteps(prev => [...prev, stepIndex + 1]);
     }
 
-    // Show success message
     toast({
       title: "Step Complete",
       description: "Your data has been saved successfully."
     });
 
-    // Auto-advance to next step if available
     if (stepIndex < steps.length - 1) {
       setCurrentStep(stepIndex + 1);
     }
   };
 
-  // Handle completion
-  const handleComplete = () => {
-    // Validate all steps
-    for (let i = 0; i < steps.length; i++) {
-      if (!validateStep(i, formData[steps[i].id])) {
-        toast({
-          title: "Incomplete Data",
-          description: `Please complete step ${i + 1}: ${steps[i].title}`,
-          variant: "destructive"
-        });
-        setCurrentStep(i);
-        return;
-      }
+  const handleError = (error: Error) => {
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive"
+    });
+  };
+
+  const getCurrentStepComponent = () => {
+    const StepComponent = steps[currentStep].component;
+    const stepId = steps[currentStep].id;
+
+    const commonProps = {
+      onUpdate: (data: any) => handleStepUpdate(stepId, data),
+      initialData: formData[stepId as keyof ValuationFormData],
+      onError: handleError
+    };
+
+    if (stepId === "businessInfo") {
+      return (
+        <StepComponent
+          {...commonProps}
+          sessionData={sessionData}
+          onComplete={() => handleStepUpdate(stepId, formData[stepId as keyof ValuationFormData])}
+        />
+      );
     }
 
-    onComplete(formData as ValuationFormData);
+    return <StepComponent {...commonProps} />;
   };
 
   return (
@@ -186,18 +199,8 @@ export function ValuationWizard({ onComplete }: ValuationWizardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Render current step component */}
-          {(() => {
-            const StepComponent = steps[currentStep].component;
-            return (
-              <StepComponent
-                onUpdate={(data: any) => handleStepUpdate(steps[currentStep].id, data)}
-                initialData={formData[steps[currentStep].id]}
-              />
-            );
-          })()}
+          {getCurrentStepComponent()}
 
-          {/* Navigation */}
           <div className="flex justify-between mt-6">
             <Button
               variant="outline"
@@ -209,7 +212,7 @@ export function ValuationWizard({ onComplete }: ValuationWizardProps) {
 
             {currentStep === steps.length - 1 ? (
               <Button
-                onClick={handleComplete}
+                onClick={() => onComplete(formData)}
                 disabled={completedSteps.length !== steps.length}
               >
                 Complete Valuation
