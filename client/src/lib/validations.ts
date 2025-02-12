@@ -516,83 +516,76 @@ export const aiAnalysisSchema = z.object({
   }),
 });
 
-// Update valuationFormSchema to include AI and performance tracking
+// Core Types from edited snippet
+export const businessSectorSchema = z.enum([
+  "SaaS",
+  "E-commerce",
+  "Fintech",
+  "Healthcare",
+  "Enterprise",
+  "Consumer"
+]);
+
+export const businessStageSchema = z.enum([
+  "concept",
+  "prototype",
+  "mvp",
+  "beta",
+  "market_ready",
+  "scaling",
+  "mature"
+]);
+
+export const businessModelSchema = z.enum([
+  "subscription",
+  "transactional",
+  "marketplace",
+  "advertising",
+  "licensing",
+  "saas",
+  "freemium"
+]);
+
+// Validation Schemas from edited snippet
+export const businessInfoSchema2 = z.object({
+  name: z.string().min(1, "Business name is required"),
+  sector: businessSectorSchema,
+  industry: z.string().min(1, "Industry is required"),
+  location: z.string().min(1, "Location is required"),
+  productStage: businessStageSchema,
+  businessModel: businessModelSchema
+});
+
+export const financialDataSchema = z.object({
+  revenue: z.number().min(0, "Revenue must be a positive number"),
+  cac: z.number().min(0, "CAC must be a positive number"),
+  ltv: z.number().min(0, "LTV must be a positive number"),
+  burnRate: z.number().min(0, "Burn rate must be a positive number"),
+  runway: z.number().min(0, "Runway must be a positive number")
+});
+
+export const marketDataSchema = z.object({
+  tam: z.number().min(0, "TAM must be a positive number"),
+  sam: z.number().min(0, "SAM must be a positive number"),
+  som: z.number().min(0, "SOM must be a positive number"),
+  growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
+  competitors: z.array(z.string())
+}).refine((data) => data.tam >= data.sam && data.sam >= data.som, {
+  message: "Market sizes must follow TAM ≥ SAM ≥ SOM",
+  path: ["marketData"]
+});
+
+// Main Valuation Form Schema from edited snippet
 export const valuationFormSchema = z.object({
-  businessInfo: z.object({
-    name: z.string().min(1, "Business name is required"),
-    sector: z.string().min(1, "Sector is required"),
-    industry: z.string().min(1, "Industry is required"),
-    location: z.string().min(1, "Location is required"),
-    productStage: z.enum(Object.keys(productStages) as [keyof typeof productStages, ...Array<keyof typeof productStages>]),
-    businessModel: z.enum(Object.keys(revenueModels) as [keyof typeof revenueModels, ...Array<keyof typeof revenueModels>])
-  }),
-  marketData: z.object({
-    tam: z.number().min(0, "TAM must be a positive number"),
-    sam: z.number().min(0, "SAM must be a positive number"),
-    som: z.number().min(0, "SOM must be a positive number"),
-    growthRate: z.number().min(-100).max(1000, "Growth rate must be between -100% and 1000%"),
-    competitors: z.array(z.string())
-  }).refine((data) => data.tam >= data.sam && data.sam >= data.som, {
-    message: "Market sizes must follow TAM ≥ SAM ≥ SOM",
-    path: ["marketData"]
-  }),
-  financialData: z.object({
-    revenue: z.number().min(0, "Revenue must be a positive number"),
-    cac: z.number().min(0, "CAC must be a positive number"),
-    ltv: z.number().min(0, "LTV must be a positive number"),
-    burnRate: z.number().min(0, "Burn rate must be a positive number"),
-    runway: z.number().min(0, "Runway must be a positive number")
-  }).refine((data) => data.ltv > data.cac, {
-    message: "LTV should be greater than CAC for a sustainable business model",
-    path: ["financialData"]
-  }),
-  productDetails: z.object({
-    maturity: z.string().min(1, "Product maturity level is required"),
-    roadmap: z.string().min(1, "Product roadmap is required"),
-    technologyStack: z.string().min(1, "Technology stack is required"),
-    differentiators: z.string().min(1, "Product differentiators are required")
-  }),
-  risksAndOpportunities: z.object({
-    risks: z.array(z.string()).min(1, "At least one risk must be identified"),
-    opportunities: z.array(z.string()).min(1, "At least one opportunity must be identified")
-  }),
-  valuationInputs: z.object({
-    targetValuation: z.number().min(0, "Target valuation must be a positive number"),
-    fundingRequired: z.number().min(0, "Funding required must be a positive number"),
-    expectedROI: z.number().min(0, "Expected ROI must be a positive number")
-  }),
-  aiConfig: z.object({
-    modelPreference: z.enum(["gpt4", "claude", "hybrid"]).default("hybrid"),
-    confidenceThreshold: z.number().min(0).max(1).default(0.8),
-    realTimeSignals: z.boolean().default(true),
-    validationFrequency: z.enum(["continuous", "daily", "weekly"]).default("continuous"),
-  }).optional(),
-});
-
-// Performance tracking schemas
-export const performanceMetricsSchema = z.object({
-  accuracy: z.number(),
-  precision: z.number(),
-  recall: z.number(),
-  f1Score: z.number(),
-  mape: z.number(),
-  confidenceCalibration: z.number(),
-});
-
-// Real-time market signal integration
-export const marketSignalSchema = z.object({
-  source: z.string(),
-  signal: z.string(),
-  impact: z.number(),
-  confidence: z.number(),
-  timestamp: z.date(),
+  businessInfo: businessInfoSchema2,
+  financialData: financialDataSchema,
+  marketData: marketDataSchema
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;
-export type AIAnalysisData = z.infer<typeof aiAnalysisSchema>;
-export type PerformanceMetricsData = z.infer<typeof performanceMetricsSchema>;
-export type MarketSignalData = z.infer<typeof marketSignalSchema>;
 
+
+// Update valuationFormSchema to include AI and performance tracking
 export const valuationFormSchema2 = z.object({
   businessInfo: businessInfoSchema,
   marketData: z.object({
@@ -670,3 +663,26 @@ export const marketAnalysisSchema = z.object({
   opportunities: z.array(z.string()),
   threats: z.array(z.string()),
 });
+
+// Performance tracking schemas
+export const performanceMetricsSchema = z.object({
+  accuracy: z.number(),
+  precision: z.number(),
+  recall: z.number(),
+  f1Score: z.number(),
+  mape: z.number(),
+  confidenceCalibration: z.number(),
+});
+
+// Real-time market signal integration
+export const marketSignalSchema = z.object({
+  source: z.string(),
+  signal: z.string(),
+  impact: z.number(),
+  confidence: z.number(),
+  timestamp: z.date(),
+});
+
+export type AIAnalysisData = z.infer<typeof aiAnalysisSchema>;
+export type PerformanceMetricsData = z.infer<typeof performanceMetricsSchema>;
+export type MarketSignalData = z.infer<typeof marketSignalSchema>;
