@@ -13,38 +13,52 @@ class PreSeedModel(BaseValuationModel):
         """Define required fields and their validation rules"""
         return {
             'tam': {
-                'type': float,
+                'type': (int, float),
                 'min': 1000000,  # Minimum $1M TAM
                 'description': 'Total Addressable Market in USD'
             },
             'team_score': {
-                'type': float,
+                'type': (int, float),
                 'min': 0,
                 'max': 1,
                 'description': 'Team capability score (0-1)'
             },
             'current_traction': {
-                'type': float,
+                'type': (int, float),
                 'min': 0,
                 'description': 'Current revenue/user base'
             }
         }
 
-    def validate_inputs(self, inputs: Dict[str, Any]) -> bool:
+    def validate_inputs(self, inputs: Dict[str, Any], required_fields: list = None) -> bool:
         """Enhanced input validation with detailed checks"""
-        required_fields = self.get_required_fields()
+        if required_fields is None:
+            required_fields = list(self.get_required_fields().keys())
 
-        for field, rules in required_fields.items():
-            if field not in inputs:
+        # First check if all required fields are present
+        if not all(field in inputs for field in required_fields):
+            return False
+
+        field_rules = self.get_required_fields()
+
+        # Then validate each field's value against its rules
+        for field, value in inputs.items():
+            if field not in field_rules:
+                continue
+
+            rules = field_rules[field]
+
+            # Convert value to float for numeric comparisons
+            try:
+                value = float(value)
+            except (TypeError, ValueError):
                 return False
 
-            value = inputs[field]
-            if not isinstance(value, rules['type']):
-                return False
-
+            # Check minimum value
             if 'min' in rules and value < rules['min']:
                 return False
 
+            # Check maximum value
             if 'max' in rules and value > rules['max']:
                 return False
 
@@ -68,8 +82,9 @@ class PreSeedModel(BaseValuationModel):
 
     def calculate(self, inputs: Dict[str, Any]) -> ValuationResult:
         """Calculate valuation with enhanced validation and risk assessment"""
-        if not self.validate_inputs(inputs):
-            raise ValueError(f"Invalid inputs. Required fields: {list(self.get_required_fields().keys())}")
+        required_fields = list(self.get_required_fields().keys())
+        if not self.validate_inputs(inputs, required_fields):
+            raise ValueError(f"Invalid inputs. Required fields: {required_fields}")
 
         tam = float(inputs['tam'])
         team_score = float(inputs['team_score'])
