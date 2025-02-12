@@ -6,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { ValuationPDFDocument, generateValuationPDF } from '@/lib/services/pdf-export';
 
 const stagesSchema = {
   pre_seed: z.object({
@@ -48,6 +50,10 @@ export function StageWizard() {
   const onSubmit = async (data: any) => {
     try {
       console.log('Form data:', data);
+
+      // Generate valuation report
+      const report = generateValuationPDF(data);
+
       toast({
         title: "Success",
         description: "Data submitted successfully",
@@ -184,12 +190,28 @@ export function StageWizard() {
           )}
 
           <div className="pt-4">
-            <Button type="submit" className="w-full">
-              Next
+            <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+              Submit
             </Button>
           </div>
         </form>
       </Form>
+
+      <div className="flex justify-between mt-6">
+
+        {form.formState.isSubmitSuccessful && (
+          <PDFDownloadLink
+            document={<ValuationPDFDocument data={form.getValues()} />}
+            fileName="valuation-report.pdf"
+          >
+            {({ loading }) => (
+              <Button variant="outline" disabled={loading}>
+                {loading ? 'Generating PDF...' : 'Download Report'}
+              </Button>
+            )}
+          </PDFDownloadLink>
+        )}
+      </div>
 
       <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-900">
         <h3 className="text-lg font-semibold mb-2">Real-time Preview</h3>
