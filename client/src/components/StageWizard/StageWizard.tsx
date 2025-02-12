@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useToast } from '@/hooks/use-toast';
 
 const stagesSchema = {
   pre_seed: z.object({
@@ -21,8 +22,18 @@ const stagesSchema = {
 const stages = ['pre_seed', 'seed'] as const;
 type Stage = typeof stages[number];
 
+const fieldDescriptions = {
+  tam: "Total Addressable Market - The total market demand for your product or service",
+  team_score: "A measure of your team's experience and capability",
+  revenue: "Current monthly or annual revenue",
+  churn_rate: "The rate at which customers stop using your product",
+  growth_rate: "Your month-over-month or year-over-year growth rate"
+};
+
 export function StageWizard() {
   const [stage, setStage] = useState<Stage>('pre_seed');
+  const { toast } = useToast();
+
   const form = useForm({
     resolver: zodResolver(stagesSchema[stage]),
     defaultValues: {
@@ -34,8 +45,20 @@ export function StageWizard() {
     }
   });
 
-  const onSubmit = (data: any) => {
-    console.log('Form data:', data);
+  const onSubmit = async (data: any) => {
+    try {
+      console.log('Form data:', data);
+      toast({
+        title: "Success",
+        description: "Data submitted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -73,6 +96,9 @@ export function StageWizard() {
                     {form.formState.errors.tam.message}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  {fieldDescriptions.tam}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -89,6 +115,9 @@ export function StageWizard() {
                     {form.formState.errors.team_score.message}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  {fieldDescriptions.team_score}
+                </p>
               </div>
             </>
           )}
@@ -109,6 +138,9 @@ export function StageWizard() {
                     {form.formState.errors.revenue.message}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  {fieldDescriptions.revenue}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -125,6 +157,9 @@ export function StageWizard() {
                     {form.formState.errors.churn_rate.message}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  {fieldDescriptions.churn_rate}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -141,6 +176,9 @@ export function StageWizard() {
                     {form.formState.errors.growth_rate.message}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  {fieldDescriptions.growth_rate}
+                </p>
               </div>
             </>
           )}
@@ -153,7 +191,7 @@ export function StageWizard() {
         </form>
       </Form>
 
-      <div className="mt-8 p-4 border rounded-lg bg-gray-50">
+      <div className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-900">
         <h3 className="text-lg font-semibold mb-2">Real-time Preview</h3>
         <pre className="whitespace-pre-wrap">
           {JSON.stringify(form.watch(), null, 2)}
