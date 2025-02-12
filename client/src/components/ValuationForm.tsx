@@ -21,31 +21,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ArrowRight, Brain } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, ArrowRight, Brain, Building2, ChartBar, TrendingUp } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { valuationFormSchema } from "@/lib/validations";
 import type { ValuationFormData } from "@/lib/validations";
 
-const formSteps = [
-  {
-    id: "business-info",
-    title: "Business Information",
-    description: "Tell us about your company",
-    fields: ["businessInfo.name", "businessInfo.industry"]
-  },
-  {
-    id: "financials",
-    title: "Financial Details",
-    description: "Enter your key financial metrics",
-    fields: ["financialData.revenue", "financialData.growth"]
-  }
-];
-
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
-  const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ValuationFormData>({
@@ -53,11 +37,30 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     defaultValues: {
       businessInfo: {
         name: "",
+        sector: "",
         industry: "",
+        location: "",
+        productStage: "concept",
+        businessModel: "subscription",
       },
       financialData: {
         revenue: 0,
-        growth: 0
+        cac: 0,
+        ltv: 0,
+        burnRate: 0,
+        runway: 0,
+      },
+      marketData: {
+        marketSize: 0,
+        competitorCount: 0,
+        marketGrowth: 0,
+        marketShare: 0,
+      },
+      valuationInputs: {
+        method: "DCF",
+        discountRate: 15,
+        terminalGrowthRate: 2,
+        projectionYears: 5,
       }
     },
   });
@@ -93,11 +96,6 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   });
 
   async function onSubmit(data: ValuationFormData) {
-    if (step < formSteps.length - 1) {
-      setStep(step + 1);
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       await mutation.mutateAsync(data);
@@ -111,180 +109,184 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
+      className="p-6"
     >
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            {formSteps[step].title}
-          </CardTitle>
-          <CardDescription>{formSteps[step].description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={{ x: 20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -20, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="space-y-4">
-                    {step === 0 && (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="businessInfo.name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Company Name</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  {...field} 
-                                  className="h-12 text-lg transition-all duration-200 focus:ring-2 focus:ring-primary/20"
-                                  placeholder="Enter your company name"
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                This will help us identify your business sector
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Business Information Section */}
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Business Information
+              </CardTitle>
+              <CardDescription>Tell us about your company</CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="businessInfo.name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} className="bg-background/50" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                        <FormField
-                          control={form.control}
-                          name="businessInfo.industry"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Industry</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-12 text-lg">
-                                    <SelectValue placeholder="Select your industry" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="technology">Technology</SelectItem>
-                                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                                  <SelectItem value="retail">Retail</SelectItem>
-                                  <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                                  <SelectItem value="services">Services</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormDescription>
-                                Choose the industry that best describes your business
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </>
-                    )}
+              <FormField
+                control={form.control}
+                name="businessInfo.sector"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sector</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sector" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="technology">Technology</SelectItem>
+                        <SelectItem value="healthcare">Healthcare</SelectItem>
+                        <SelectItem value="fintech">Fintech</SelectItem>
+                        <SelectItem value="ecommerce">E-commerce</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-                    {step === 1 && (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name="financialData.revenue"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Annual Revenue</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  className="h-12 text-lg"
-                                  placeholder="Enter your annual revenue"
-                                  {...field}
-                                  onChange={(e) => field.onChange(Number(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Your company's total revenue for the last 12 months
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+          {/* Financial Metrics Section */}
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ChartBar className="h-5 w-5 text-primary" />
+                Financial Metrics
+              </CardTitle>
+              <CardDescription>Enter your key financial data</CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="financialData.revenue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Annual Revenue</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                        <FormField
-                          control={form.control}
-                          name="financialData.growth"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Growth Rate (%)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  className="h-12 text-lg"
-                                  placeholder="Enter your growth rate"
-                                  {...field}
-                                  onChange={(e) => field.onChange(Number(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Your year-over-year revenue growth rate
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </>
-                    )}
-                  </div>
+              <FormField
+                control={form.control}
+                name="financialData.burnRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monthly Burn Rate</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-                  <div className="mt-8 flex justify-end gap-4">
-                    {step > 0 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setStep(step - 1)}
-                      >
-                        Previous
-                      </Button>
-                    )}
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className={cn(
-                        "min-w-[120px]",
-                        step === formSteps.length - 1 ? "bg-primary" : ""
-                      )}
-                    >
-                      {isSubmitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : step === formSteps.length - 1 ? (
-                        "Calculate"
-                      ) : (
-                        <>
-                          Next
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+          {/* Market Analysis Section */}
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Market Analysis
+              </CardTitle>
+              <CardDescription>Provide market information</CardDescription>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="marketData.marketSize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Addressable Market (TAM)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      {/* Form Progress */}
-      <div className="mt-8 flex justify-center gap-2">
-        {formSteps.map((formStep, idx) => (
-          <div
-            key={formStep.id}
-            className={cn(
-              "w-3 h-3 rounded-full transition-all duration-200",
-              idx === step ? "bg-primary scale-125" : "bg-primary/20"
-            )}
-          />
-        ))}
-      </div>
+              <FormField
+                control={form.control}
+                name="marketData.marketGrowth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Market Growth Rate (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className={cn(
+                "min-w-[200px] bg-primary hover:bg-primary/90",
+                isSubmitting && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Calculating...
+                </>
+              ) : (
+                <>
+                  Calculate Valuation
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </motion.div>
   );
 }
