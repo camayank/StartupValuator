@@ -41,23 +41,23 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         industry: "",
         location: "",
         productStage: "concept",
-        businessModel: "subscription",
+        businessModel: "subscription"
       },
       financialData: {
         revenue: 0,
         cac: 0,
         ltv: 0,
         burnRate: 0,
-        runway: 0,
+        runway: 0
       },
       marketData: {
         tam: 0,
         sam: 0,
         som: 0,
         growthRate: 0,
-        competitors: [],
+        competitors: []
       }
-    },
+    }
   });
 
   const mutation = useMutation({
@@ -104,12 +104,12 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="p-6"
+      className="p-6 space-y-6"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           {/* Business Information Section */}
-          <Card className="bg-gradient-to-br from-primary/5 via-background to-background">
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background border border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-primary" />
@@ -122,10 +122,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                 control={form.control}
                 name="businessInfo.name"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="col-span-2">
                     <FormLabel>Company Name</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-background/50" />
+                      <Input {...field} className="bg-background/50" placeholder="Enter company name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -210,7 +210,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           </Card>
 
           {/* Financial Metrics Section */}
-          <Card className="bg-gradient-to-br from-primary/5 via-background to-background">
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background border border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ChartBar className="h-5 w-5 text-primary" />
@@ -231,6 +231,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
                         className="bg-background/50"
+                        placeholder="0"
                       />
                     </FormControl>
                     <FormMessage />
@@ -250,6 +251,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
                         className="bg-background/50"
+                        placeholder="0"
                       />
                     </FormControl>
                     <FormMessage />
@@ -269,6 +271,27 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
                         className="bg-background/50"
+                        placeholder="0"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="financialData.burnRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monthly Burn Rate</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                        placeholder="0"
                       />
                     </FormControl>
                     <FormMessage />
@@ -279,7 +302,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           </Card>
 
           {/* Market Analysis Section */}
-          <Card className="bg-gradient-to-br from-primary/5 via-background to-background">
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background border border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -300,6 +323,47 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
                         className="bg-background/50"
+                        placeholder="0"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="marketData.sam"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Serviceable Addressable Market (SAM)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                        placeholder="0"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="marketData.som"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Serviceable Obtainable Market (SOM)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                        placeholder="0"
                       />
                     </FormControl>
                     <FormMessage />
@@ -319,6 +383,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         {...field}
                         onChange={e => field.onChange(Number(e.target.value))}
                         className="bg-background/50"
+                        placeholder="0"
                       />
                     </FormControl>
                     <FormMessage />
