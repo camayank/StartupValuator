@@ -12,8 +12,13 @@ import { Suspense, lazy, useState, useEffect } from "react";
 
 // Lazy load the step components
 const LazyValuationSimulationStep = lazy(() => import("@/components/wizard-steps/ValuationSimulationStep"));
-const LazyMarketAnalysisStep = lazy(() => import("@/components/wizard-steps/MarketAnalysisStep"));
-const LazyFinancialDetailsStep = lazy(() => import("@/components/wizard-steps/FinancialDetailsStep"));
+const LazyStageWizard = lazy(() => import("@/components/StageWizard/StageWizard").then(mod => ({ default: mod.StageWizard })));
+const LazyMarketAnalysisStep = lazy(() => import("@/components/wizard-steps/MarketAnalysisStep").then(mod => ({ default: mod.MarketAnalysisStep })));
+const LazyFinancialDetailsStep = lazy(() => import("@/components/wizard-steps/FinancialDetailsStep").then(mod => ({ default: mod.FinancialDetailsStep })));
+
+interface StepData {
+  [key: string]: any;
+}
 
 function App() {
   const { toast } = useToast();
@@ -49,8 +54,8 @@ function App() {
                 <Link href="/docs">
                   <Button variant="outline">Documentation</Button>
                 </Link>
-                <Link href="/valuation/quick">
-                  <Button>Get Started</Button>
+                <Link href="/valuation/stages">
+                  <Button>Start Valuation</Button>
                 </Link>
               </div>
             </div>
@@ -61,6 +66,11 @@ function App() {
             <Suspense fallback={<LoadingScreen />}>
               <Switch>
                 <Route path="/" component={Home} />
+                <Route path="/valuation/stages">
+                  <div className="container py-8">
+                    <LazyStageWizard />
+                  </div>
+                </Route>
                 <Route path="/valuation/quick">
                   <div className="container py-8">
                     <LazyValuationSimulationStep 
@@ -85,8 +95,8 @@ function App() {
                 <Route path="/valuation/detailed">
                   <div className="container py-8">
                     <LazyMarketAnalysisStep 
-                      data={{}}
-                      onUpdate={(data) => {
+                      data={{} as StepData}
+                      onUpdate={(data: StepData) => {
                         toast({
                           title: "Success",
                           description: "Your market analysis data has been saved.",
@@ -99,8 +109,8 @@ function App() {
                 <Route path="/valuation/financial">
                   <div className="container py-8">
                     <LazyFinancialDetailsStep 
-                      data={{}}
-                      onUpdate={(data) => {
+                      data={{} as StepData}
+                      onUpdate={(data: StepData) => {
                         toast({
                           title: "Success",
                           description: "Your financial data has been saved.",
