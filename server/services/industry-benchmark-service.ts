@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { z } from 'zod';
+import { aiMultipleService } from './ai-multiple-service';
 
 export interface IndustryBenchmark {
   industry: string;
@@ -39,26 +40,50 @@ export class IndustryBenchmarkService {
     try {
       const filePath = join(process.cwd(), 'data', 'industry_benchmarks.csv');
       const fileContent = await readFile(filePath, 'utf-8');
-      
+
       const rows = fileContent.split('\n');
       const headers = rows[0].split(',');
-      
+
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i].trim();
         if (!row) continue;
-        
+
         const values = row.split(',');
         const benchmark = headers.reduce((obj, header, index) => {
           obj[header.trim()] = header === 'industry' ? values[index] : Number(values[index]);
           return obj;
         }, {} as Record<string, string | number>);
-        
+
         const parsedBenchmark = benchmarkSchema.parse(benchmark);
         this.benchmarks.set(parsedBenchmark.industry, parsedBenchmark);
       }
     } catch (error) {
       console.error('Error loading industry benchmarks:', error);
       throw new Error('Failed to load industry benchmarks');
+    }
+  }
+
+  async getBenchmarkWithFallback(industry: string): Promise<IndustryBenchmark | undefined> {
+    const localBenchmark = this.getBenchmark(industry);
+    if (localBenchmark) {
+      return localBenchmark;
+    }
+
+    // If no local benchmark, try to get AI-powered multiple
+    try {
+      const ev_revenue = await aiMultipleService.getIndustryMultiple(industry);
+      return {
+        industry,
+        ev_revenue,
+        pe_ratio: 20, // Default values for other metrics
+        growth_rate: 30,
+        gross_margin: 60,
+        churn_rate: 15,
+        ltv_cac_ratio: 3
+      };
+    } catch (error) {
+      console.error('Error getting AI-powered benchmark:', error);
+      return undefined;
     }
   }
 

@@ -96,7 +96,7 @@
     "nanoid": "^5.0.9",
     "node-cache": "^5.1.2",
     "nth-check": "^2.1.1",
-    "openai": "^4.83.0",
+    "openai": "^4.84.0",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pdfkit": "^0.16.0",
