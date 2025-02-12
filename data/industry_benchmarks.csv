@@ -1,0 +1,7 @@
+industry,ev_revenue,pe_ratio,growth_rate,gross_margin,churn_rate,ltv_cac_ratio
+SaaS,8.2,45.1,35,75,12,3.5
+Fintech,6.5,32.7,28,65,15,3.2
+E-commerce,2.1,18.3,25,45,25,2.8
+Healthcare,4.8,28.4,22,62,8,4.1
+Enterprise,7.5,38.2,20,70,10,3.8
+Consumer,3.2,22.5,18,55,20,2.5

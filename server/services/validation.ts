@@ -3,6 +3,7 @@ import type { ValuationFormData } from "../../client/src/lib/validations";
 import { ValidationResult } from "../../client/src/lib/types";
 import { industries, sectors } from "../../client/src/lib/validations";
 import { ErrorLoggingService } from "./error-logging";
+import { industryBenchmarkService } from './industry-benchmark-service';
 
 interface EnhancedFinancialData {
   revenue: number;
@@ -20,6 +21,7 @@ interface EnhancedFinancialData {
   cashFlow?: number;
   assets?: number;
   liabilities?: number;
+  churnRate?: number; // Added churnRate
 }
 
 interface EnhancedValuationFormData extends ValuationFormData {
@@ -62,24 +64,12 @@ export class ValidationService {
     const results: ValidationResult[] = [];
 
     try {
-      // First pass: Core business information validation
       await this.validateBusinessInfo(data, results);
-
-      // Second pass: Basic financial metrics validation
       await this.validateBasicMetrics(data, results);
-
-      // Third pass: Industry-specific validation
       await this.validateIndustryMetrics(data, results);
-
-      // Fourth pass: Cross-method validation
       await this.validateMethodConsistency(data, results);
-
-      // Final pass: Comprehensive validation
       await this.validateComprehensive(data, results);
-
-      // Log validation results
       await this.logValidationResults(data, results);
-
       return results;
     } catch (error) {
       await ErrorLoggingService.logError(error instanceof Error ? error : 'Validation error occurred', {
@@ -105,8 +95,6 @@ export class ValidationService {
     results: ValidationResult[]
   ): Promise<void> {
     const { businessInfo } = data;
-
-    // Validate required fields
     const requiredFields = ['name', 'sector', 'industry', 'location', 'productStage', 'businessModel'];
     const missingFields = requiredFields.filter(field => !businessInfo[field]);
 
@@ -123,7 +111,6 @@ export class ValidationService {
       });
     }
 
-    // Validate sector against predefined list
     if (!sectors.includes(businessInfo.sector)) {
       results.push({
         isValid: false,
@@ -137,7 +124,6 @@ export class ValidationService {
       });
     }
 
-    // Validate industry against predefined list
     if (!industries[businessInfo.sector]?.includes(businessInfo.industry)) {
       results.push({
         isValid: false,
@@ -151,7 +137,6 @@ export class ValidationService {
       });
     }
 
-    // Location format validation (basic)
     const locationRegex = /^[A-Za-z\s,]+$/;
     if (!locationRegex.test(businessInfo.location)) {
       results.push({
@@ -174,7 +159,6 @@ export class ValidationService {
     try {
       const { financialData } = data;
 
-      // Revenue and growth rate cross-check
       if (financialData.revenue && financialData.growthRate) {
         if (financialData.growthRate > 200 && financialData.revenue < 100000) {
           results.push({
@@ -191,7 +175,6 @@ export class ValidationService {
         }
       }
 
-      // Operating margin validation
       if (financialData.operatingMargin) {
         if (financialData.operatingMargin < this.COMMON_RATIOS.minProfitMargin ||
             financialData.operatingMargin > this.COMMON_RATIOS.maxProfitMargin) {
@@ -209,7 +192,6 @@ export class ValidationService {
         }
       }
 
-      // Revenue multiple validation
       if (financialData.revenueMultiple) {
         if (financialData.revenueMultiple < this.COMMON_RATIOS.minRevenueMultiple ||
             financialData.revenueMultiple > this.COMMON_RATIOS.maxRevenueMultiple) {
@@ -227,7 +209,6 @@ export class ValidationService {
         }
       }
 
-      // Burn rate and runway validation
       if (financialData.burnRate && financialData.runway) {
         if (financialData.runway < 6) {
           results.push({
@@ -262,50 +243,56 @@ export class ValidationService {
     try {
       const { businessInfo, financialData } = data;
 
-      const benchmarks = await this.getIndustryBenchmarks(businessInfo.industry);
+      const benchmark = industryBenchmarkService.getBenchmark(businessInfo.industry);
 
-      // Revenue multiple validation against industry
-      if (financialData.revenueMultiple > benchmarks.maxMultiple * 1.5) {
+      if (!benchmark) {
         results.push({
           isValid: false,
           severity: 'warning',
-          message: `Revenue multiple significantly exceeds industry maximum (${benchmarks.maxMultiple}x)`,
+          message: `No benchmark data available for industry: ${businessInfo.industry}`,
+          impact: 'medium',
           suggestions: [
-            'Review comparable company multiples',
-            'Document growth assumptions',
-            'Consider market conditions'
-          ],
-          impact: 'high'
+            'Consider selecting a more specific industry category',
+            'Compare with similar industries'
+          ]
+        });
+        return;
+      }
+
+      const validation = industryBenchmarkService.validateMetrics(businessInfo.industry, {
+        ev_revenue: financialData.revenueMultiple,
+        growth_rate: financialData.growthRate,
+        churn_rate: financialData.churnRate
+      });
+
+      if (!validation.valid) {
+        validation.warnings.forEach(warning => {
+          results.push({
+            isValid: false,
+            severity: 'warning',
+            message: warning,
+            impact: 'medium',
+            suggestions: [
+              'Review industry comparables',
+              'Document justification for variance',
+              'Consider market conditions'
+            ]
+          });
         });
       }
 
-      // Growth rate validation against industry
-      if (financialData.projectedGrowth > benchmarks.maxGrowth * 1.3) {
+
+      if (financialData.growthRate > benchmark.growth_rate * 2) {
         results.push({
           isValid: false,
           severity: 'warning',
-          message: `Growth projections exceed typical industry maximum by >30%`,
+          message: `Growth rate projections (${financialData.growthRate}%) are more than double the industry average`,
           suggestions: [
             'Validate growth assumptions',
-            'Compare to historical performance',
+            'Document growth drivers',
             'Consider market size constraints'
           ],
-          impact: 'medium'
-        });
-      }
-
-      // Operating margin validation against industry
-      if (financialData.operatingMargin > benchmarks.maxMargin * 1.2) {
-        results.push({
-          isValid: false,
-          severity: 'warning',
-          message: `Operating margin exceeds industry benchmark by >20%`,
-          suggestions: [
-            'Review cost structure',
-            'Compare with industry leaders',
-            'Document competitive advantages'
-          ],
-          impact: 'medium'
+          impact: 'high'
         });
       }
 
@@ -341,7 +328,6 @@ export class ValidationService {
           impact: 'high'
         });
 
-        // Add detailed analysis for each method
         const meanValue = valuationResults.reduce((sum, r) => sum + r.value, 0) / valuationResults.length;
         valuationResults.forEach(result => {
           const deviation = Math.abs(result.value - meanValue) / meanValue;
@@ -392,7 +378,7 @@ export class ValidationService {
   }
 
   private static async calculateMethodValue(
-    data: EnhancedValuationFormData, 
+    data: EnhancedValuationFormData,
     method: string
   ): Promise<ValuationMethodResult> {
     const { financialData } = data;
@@ -425,14 +411,12 @@ export class ValidationService {
   }
 
   private static calculateDCF(financialData: EnhancedFinancialData): number {
-    // DCF calculation logic
     const projectionYears = 5;
-    const discountRate = 0.15; // 15% discount rate for early-stage companies
+    const discountRate = 0.15;
 
     let value = 0;
     let currentRevenue = financialData.revenue;
 
-    // Project cash flows
     for (let year = 1; year <= projectionYears; year++) {
       const growthRate = Math.max(financialData.growthRate * Math.pow(0.9, year - 1), 0.15);
       currentRevenue *= (1 + growthRate);
@@ -441,8 +425,7 @@ export class ValidationService {
       value += freeCashFlow / Math.pow(1 + discountRate, year);
     }
 
-    // Terminal value calculation
-    const terminalGrowthRate = 0.03; // 3% long-term growth
+    const terminalGrowthRate = 0.03;
     const terminalValue = (currentRevenue * 0.15) / (discountRate - terminalGrowthRate);
     value += terminalValue / Math.pow(1 + discountRate, projectionYears);
 
@@ -464,11 +447,10 @@ export class ValidationService {
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
     const maxDeviation = Math.max(...values.map(v => Math.abs(v - mean) / mean));
 
-    return 1 - (maxDeviation / 2); // Normalize to [0,1]
+    return 1 - (maxDeviation / 2);
   }
 
   private static async getIndustryBenchmarks(industry: string) {
-    // In a production environment, this would fetch from a database or external API
     return {
       maxMultiple: 12,
       avgMultiple: 8,
@@ -504,78 +486,79 @@ export class ValidationService {
     }
   }
 
-  private static async validateComprehensive(
-    data: EnhancedValuationFormData,
-    results: ValidationResult[]
-  ): Promise<void> {
-    try {
-      const valuationResults = await this.calculateAllMethodologies(data);
-      const consistencyScore = this.assessMethodologyConsistency(valuationResults);
+    private static async validateComprehensive(
+        data: EnhancedValuationFormData,
+        results: ValidationResult[]
+    ): Promise<void> {
+        try {
+            const valuationResults = await this.calculateAllMethodologies(data);
+            const consistencyScore = this.assessMethodologyConsistency(valuationResults);
 
-      if (consistencyScore < 0.7) { // 70% consistency threshold
-        results.push({
-          isValid: false,
-          severity: 'warning',
-          message: 'Significant variations between valuation methods detected',
-          suggestions: [
-            'Review assumptions across all methods',
-            'Check for outliers in financial data',
-            'Consider industry-specific adjustments'
-          ],
-          impact: 'high'
-        });
-      }
+            if (consistencyScore < 0.7) { // 70% consistency threshold
+                results.push({
+                    isValid: false,
+                    severity: 'warning',
+                    message: 'Significant variations between valuation methods detected',
+                    suggestions: [
+                        'Review assumptions across all methods',
+                        'Check for outliers in financial data',
+                        'Consider industry-specific adjustments'
+                    ],
+                    impact: 'high'
+                });
+            }
 
-      // Validate against industry benchmarks
-      const benchmarks = await this.getIndustryBenchmarks(data.businessInfo.industry);
-      this.validateAgainstBenchmarks(data, benchmarks, results);
-    } catch (error) {
-      await ErrorLoggingService.logError(error, {
-        category: 'validation',
-        severity: 'high',
-        context: { data, metric: 'comprehensive' },
-        source: 'validateComprehensive'
-      });
-      throw error;
-    }
-  }
-
-
-  private static async validateAgainstBenchmarks(
-    data: EnhancedValuationFormData,
-    benchmarks: any,
-    results: ValidationResult[]
-  ): Promise<void> {
-    const { financialData } = data;
-
-    // Validate revenue multiple
-    if (financialData.revenueMultiple > benchmarks.maxMultiple * 1.5) {
-      results.push({
-        isValid: false,
-        severity: 'warning',
-        message: `Revenue multiple significantly exceeds industry maximum (${benchmarks.maxMultiple}x)`,
-        suggestions: [
-          'Review comparable company multiples',
-          'Document growth assumptions',
-          'Consider market conditions'
-        ],
-        impact: 'high'
-      });
+            // Validate against industry benchmarks
+            const benchmarks = await this.getIndustryBenchmarks(data.businessInfo.industry);
+            this.validateAgainstBenchmarks(data, benchmarks, results);
+        } catch (error) {
+            await ErrorLoggingService.logError(error, {
+                category: 'validation',
+                severity: 'high',
+                context: { data, metric: 'comprehensive' },
+                source: 'validateComprehensive'
+            });
+            throw error;
+        }
     }
 
-    // Validate growth projections
-    if (financialData.projectedGrowth > benchmarks.maxGrowth * 1.3) {
-      results.push({
-        isValid: false,
-        severity: 'warning',
-        message: `Growth projections exceed typical industry maximum by >30%`,
-        suggestions: [
-          'Validate growth assumptions',
-          'Compare to historical performance',
-          'Consider market size constraints'
-        ],
-        impact: 'medium'
-      });
+
+
+    private static async validateAgainstBenchmarks(
+        data: EnhancedValuationFormData,
+        benchmarks: any,
+        results: ValidationResult[]
+    ): Promise<void> {
+        const { financialData } = data;
+
+        // Validate revenue multiple
+        if (financialData.revenueMultiple > benchmarks.maxMultiple * 1.5) {
+            results.push({
+                isValid: false,
+                severity: 'warning',
+                message: `Revenue multiple significantly exceeds industry maximum (${benchmarks.maxMultiple}x)`,
+                suggestions: [
+                    'Review comparable company multiples',
+                    'Document growth assumptions',
+                    'Consider market conditions'
+                ],
+                impact: 'high'
+            });
+        }
+
+        // Validate growth projections
+        if (financialData.projectedGrowth > benchmarks.maxGrowth * 1.3) {
+            results.push({
+                isValid: false,
+                severity: 'warning',
+                message: `Growth projections exceed typical industry maximum by >30%`,
+                suggestions: [
+                    'Validate growth assumptions',
+                    'Compare to historical performance',
+                    'Consider market size constraints'
+                ],
+                impact: 'medium'
+            });
+        }
     }
-  }
 }
