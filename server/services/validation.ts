@@ -24,6 +24,11 @@ interface EnhancedFinancialData {
   churnRate?: number; // Added churnRate
 }
 
+interface PreSeedRequirements {
+  tam: number;
+  team_score: number;
+}
+
 interface EnhancedValuationFormData extends ValuationFormData {
   businessInfo: {
     id?: number;
@@ -41,6 +46,7 @@ interface EnhancedValuationFormData extends ValuationFormData {
     fundingRequired: number;
     expectedROI: number;
   };
+  preSeedData?: PreSeedRequirements;
 }
 
 interface ValuationMethodResult {
@@ -60,11 +66,18 @@ export class ValidationService {
     maxProfitMargin: 0.7,
   };
 
+  private static readonly PRE_SEED_REQUIREMENTS = {
+    minTAM: 100000, // $100k minimum TAM
+    minTeamScore: 1, // Minimum team score
+    requiredFields: ['tam', 'team_score'] as const
+  };
+
   static async validateValuationData(data: EnhancedValuationFormData): Promise<ValidationResult[]> {
     const results: ValidationResult[] = [];
 
     try {
       await this.validateBusinessInfo(data, results);
+      await this.validatePreSeedRequirements(data, results);
       await this.validateBasicMetrics(data, results);
       await this.validateIndustryMetrics(data, results);
       await this.validateMethodConsistency(data, results);
@@ -149,6 +162,59 @@ export class ValidationService {
           'Example format: City, Country'
         ]
       });
+    }
+  }
+
+  private static async validatePreSeedRequirements(
+    data: EnhancedValuationFormData,
+    results: ValidationResult[]
+  ): Promise<void> {
+    if (data.businessInfo.productStage === 'concept' || data.businessInfo.productStage === 'prototype') {
+      if (!data.preSeedData) {
+        results.push({
+          isValid: false,
+          severity: 'error',
+          message: 'Missing pre-seed validation data',
+          impact: 'high',
+          suggestions: [
+            'Provide Total Addressable Market (TAM)',
+            'Include team assessment score'
+          ]
+        });
+        return;
+      }
+
+      const { tam, team_score } = data.preSeedData;
+
+      // Validate TAM
+      if (tam < this.PRE_SEED_REQUIREMENTS.minTAM) {
+        results.push({
+          isValid: false,
+          severity: 'error',
+          message: `TAM must be ≥ $${this.PRE_SEED_REQUIREMENTS.minTAM.toLocaleString()} for Pre-Seed stage`,
+          impact: 'high',
+          suggestions: [
+            'Reassess market size calculation',
+            'Consider expanding target market',
+            'Include additional revenue streams'
+          ]
+        });
+      }
+
+      // Validate team score
+      if (team_score < this.PRE_SEED_REQUIREMENTS.minTeamScore) {
+        results.push({
+          isValid: false,
+          severity: 'error',
+          message: 'Team assessment score below minimum threshold',
+          impact: 'high',
+          suggestions: [
+            'Review team composition',
+            'Identify key skill gaps',
+            'Consider adding advisors or mentors'
+          ]
+        });
+      }
     }
   }
 
