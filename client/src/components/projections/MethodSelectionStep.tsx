@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,9 +21,17 @@ import { Badge } from "@/components/ui/badge";
 import { Info, CheckCircle2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
-import type { FinancialProjectionData } from "@/lib/validations";
+import type { ValuationData } from "@/lib/types";
 
-const valuationMethods = {
+interface ValuationMethod {
+  name: string;
+  description: string;
+  suitableFor: string[];
+  weightRange: string;
+  icon: string;
+}
+
+const valuationMethods: Record<string, ValuationMethod> = {
   dcf: {
     name: "Discounted Cash Flow (DCF)",
     description: "Values a company based on projected future cash flows",
@@ -69,8 +77,8 @@ const valuationMethods = {
 };
 
 interface MethodSelectionStepProps {
-  data: Partial<FinancialProjectionData>;
-  onUpdate: (data: Partial<FinancialProjectionData>) => void;
+  data: Partial<ValuationData>;
+  onUpdate: (data: Partial<ValuationData>) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -82,32 +90,40 @@ export function MethodSelectionStep({
   onBack
 }: MethodSelectionStepProps) {
   const [selectedMethods, setSelectedMethods] = useState<string[]>(
-    data.valuationMethods || []
+    data.selectedMethods?.methods || []
   );
 
-  const form = useForm<Partial<FinancialProjectionData>>({
+  const form = useForm<Partial<ValuationData>>({
     defaultValues: {
-      valuationMethods: data.valuationMethods || [],
+      selectedMethods: {
+        methods: data.selectedMethods?.methods || [],
+        weights: data.selectedMethods?.weights || {},
+        justification: data.selectedMethods?.justification || ""
+      }
     },
   });
 
   // Calculate recommended methods based on business profile
   const getRecommendedMethods = () => {
     const recommendations: string[] = [];
-    const stage = data.stage;
-    const revenue = data.baseRevenue || 0;
-    const hasProjections = Boolean(data.assumptions?.revenueAssumptions?.length);
+    const businessInfo = data.businessInfo;
+    const financialData = data.financialData;
 
-    if (revenue > 1000000 && hasProjections) {
+    if (!businessInfo || !financialData) return recommendations;
+
+    if (financialData.revenue > 1000000) {
       recommendations.push("dcf");
     }
-    if (stage === "growth" || stage === "expansion") {
+
+    if (businessInfo.productStage === "growth" || businessInfo.productStage === "expansion") {
       recommendations.push("marketComparables", "ventureCapital");
     }
-    if (stage === "seed" || stage === "early") {
+
+    if (businessInfo.productStage === "concept" || businessInfo.productStage === "prototype") {
       recommendations.push("scorecard", "firstChicago");
     }
-    if (data.sector === "manufacturing" || data.sector === "real_estate") {
+
+    if (businessInfo.sector === "manufacturing" || businessInfo.sector === "real_estate") {
       recommendations.push("assetBased");
     }
 
@@ -121,15 +137,18 @@ export function MethodSelectionStep({
       const newSelection = prev.includes(methodId)
         ? prev.filter(m => m !== methodId)
         : [...prev, methodId];
-      
-      form.setValue("valuationMethods", newSelection);
+
+      form.setValue("selectedMethods", {
+        ...data.selectedMethods,
+        methods: newSelection,
+      });
       return newSelection;
     });
   };
 
-  const handleSubmit = (values: Partial<FinancialProjectionData>) => {
+  const handleSubmit = (values: Partial<ValuationData>) => {
     if (selectedMethods.length === 0) {
-      form.setError("valuationMethods", {
+      form.setError("selectedMethods", {
         type: "manual",
         message: "Please select at least one valuation method"
       });
@@ -138,7 +157,10 @@ export function MethodSelectionStep({
 
     onUpdate({
       ...values,
-      valuationMethods: selectedMethods,
+      selectedMethods: {
+        ...values.selectedMethods,
+        methods: selectedMethods,
+      },
     });
     onNext();
   };
@@ -203,9 +225,9 @@ export function MethodSelectionStep({
             ))}
           </div>
 
-          {form.formState.errors.valuationMethods && (
+          {form.formState.errors.selectedMethods && (
             <p className="text-sm text-destructive mt-2">
-              {form.formState.errors.valuationMethods.message}
+              {form.formState.errors.selectedMethods.message}
             </p>
           )}
 

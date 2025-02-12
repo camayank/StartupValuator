@@ -16,6 +16,13 @@ import { performanceTrackingService } from "./services/performance-tracking-serv
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from "http";
 
+// WebSocket message types
+type WebSocketMessage = {
+  type: string;
+  payload?: any;
+  timestamp?: number;
+};
+
 export function registerRoutes(app: Express): Server {
   // Register all routes
   app.use("/api/valuation", valuationRoutes);
@@ -25,65 +32,65 @@ export function registerRoutes(app: Express): Server {
 
   const httpServer = createServer(app);
 
-  // Set up WebSocket server on a specific path
+  // Set up WebSocket server with proper error handling
   const wss = new WebSocketServer({ 
     server: httpServer,
     path: '/ws',
     verifyClient: (info: { req: IncomingMessage }) => {
       const protocol = info.req.headers['sec-websocket-protocol'];
+      // Ignore Vite HMR WebSocket connections
       return !protocol || !protocol.includes('vite-hmr');
     }
   });
 
+  // Track connected clients
+  const clients = new Set<WebSocket>();
+
   // WebSocket connection handling
-  wss.on('connection', (ws: WebSocket) => {
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
     console.log('Client connected to valuation WebSocket');
+    clients.add(ws);
 
     // Send initial connection status
-    ws.send(JSON.stringify({ 
-      type: 'connection', 
-      status: 'connected',
+    const connectionMessage: WebSocketMessage = {
+      type: 'connection',
+      payload: { status: 'connected' },
       timestamp: Date.now()
-    }));
+    };
+    ws.send(JSON.stringify(connectionMessage));
 
     // Handle incoming messages
-    ws.on('message', (message: Buffer | string) => {
+    ws.on('message', (data: WebSocket.Data) => {
       try {
-        const data = JSON.parse(message.toString());
-        console.log('Received WebSocket message:', data);
+        const message: WebSocketMessage = JSON.parse(data.toString());
+        console.log('Received WebSocket message:', message);
 
-        // Handle different message types
-        switch (data.type) {
+        switch (message.type) {
           case 'valuation_update':
-            // Broadcast valuation updates to all connected clients
-            wss.clients.forEach(client => {
-              if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                  type: 'valuation_update',
-                  data: data.payload,
-                  timestamp: Date.now()
-                }));
-              }
+            // Broadcast valuation updates to all other connected clients
+            broadcastMessage(ws, {
+              type: 'valuation_update',
+              payload: message.payload,
+              timestamp: Date.now()
             });
             break;
 
           case 'analysis_request':
-            // Handle analysis requests
-            ws.send(JSON.stringify({
-              type: 'analysis_progress',
-              status: 'processing',
-              timestamp: Date.now()
-            }));
+            handleAnalysisRequest(ws, message);
             break;
 
           default:
-            console.log('Unknown message type:', data.type);
+            ws.send(JSON.stringify({
+              type: 'error',
+              payload: { message: 'Unknown message type' },
+              timestamp: Date.now()
+            }));
         }
       } catch (error) {
         console.error('WebSocket message handling error:', error);
-        ws.send(JSON.stringify({ 
+        ws.send(JSON.stringify({
           type: 'error',
-          message: 'Failed to process message',
+          payload: { message: 'Failed to process message' },
           timestamp: Date.now()
         }));
       }
@@ -92,13 +99,51 @@ export function registerRoutes(app: Express): Server {
     // Handle connection close
     ws.on('close', () => {
       console.log('Client disconnected from valuation WebSocket');
+      clients.delete(ws);
     });
 
     // Handle errors
     ws.on('error', (error) => {
       console.error('WebSocket error:', error);
+      clients.delete(ws);
     });
   });
+
+  // Broadcast helper function
+  function broadcastMessage(sender: WebSocket, message: WebSocketMessage) {
+    clients.forEach(client => {
+      if (client !== sender && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
+
+  // Handle analysis requests
+  async function handleAnalysisRequest(ws: WebSocket, message: WebSocketMessage) {
+    try {
+      ws.send(JSON.stringify({
+        type: 'analysis_progress',
+        payload: { status: 'processing' },
+        timestamp: Date.now()
+      }));
+
+      // Process analysis request
+      // Add your analysis logic here
+
+      ws.send(JSON.stringify({
+        type: 'analysis_complete',
+        payload: { status: 'completed' },
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error('Analysis request failed:', error);
+      ws.send(JSON.stringify({
+        type: 'error',
+        payload: { message: 'Analysis request failed' },
+        timestamp: Date.now()
+      }));
+    }
+  }
 
   // Enhanced valuation route with proper validation and AI integration
   app.post("/api/valuation", async (req, res) => {
