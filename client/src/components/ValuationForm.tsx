@@ -25,8 +25,8 @@ import { Loader2, ArrowRight, Brain, Building2, ChartBar, TrendingUp } from "luc
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { valuationFormSchema } from "@/lib/validations";
-import type { ValuationFormData } from "@/lib/validations";
+import { valuationFormSchema, type ValuationFormData } from "@/lib/validations";
+import { businessSectorSchema, businessStageSchema, businessModelSchema } from "@/lib/validations";
 
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
@@ -37,7 +37,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
     defaultValues: {
       businessInfo: {
         name: "",
-        sector: "",
+        sector: "SaaS",
         industry: "",
         location: "",
         productStage: "concept",
@@ -51,16 +51,11 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         runway: 0,
       },
       marketData: {
-        marketSize: 0,
-        competitorCount: 0,
-        marketGrowth: 0,
-        marketShare: 0,
-      },
-      valuationInputs: {
-        method: "DCF",
-        discountRate: 15,
-        terminalGrowthRate: 2,
-        projectionYears: 5,
+        tam: 0,
+        sam: 0,
+        som: 0,
+        growthRate: 0,
+        competitors: [],
       }
     },
   });
@@ -150,10 +145,61 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="technology">Technology</SelectItem>
-                        <SelectItem value="healthcare">Healthcare</SelectItem>
-                        <SelectItem value="fintech">Fintech</SelectItem>
-                        <SelectItem value="ecommerce">E-commerce</SelectItem>
+                        {Object.values(businessSectorSchema.enum).map((sector) => (
+                          <SelectItem key={sector} value={sector}>
+                            {sector}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="businessInfo.productStage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Stage</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product stage" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(businessStageSchema.enum).map((stage) => (
+                          <SelectItem key={stage} value={stage}>
+                            {stage.charAt(0).toUpperCase() + stage.slice(1).replace('_', ' ')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="businessInfo.businessModel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Model</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select business model" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(businessModelSchema.enum).map((model) => (
+                          <SelectItem key={model} value={model}>
+                            {model.charAt(0).toUpperCase() + model.slice(1)}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -194,10 +240,29 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
               <FormField
                 control={form.control}
-                name="financialData.burnRate"
+                name="financialData.cac"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Monthly Burn Rate</FormLabel>
+                    <FormLabel>Customer Acquisition Cost (CAC)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        onChange={e => field.onChange(Number(e.target.value))}
+                        className="bg-background/50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="financialData.ltv"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer Lifetime Value (LTV)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -225,7 +290,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
             <CardContent className="grid md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="marketData.marketSize"
+                name="marketData.tam"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Total Addressable Market (TAM)</FormLabel>
@@ -244,7 +309,7 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
               <FormField
                 control={form.control}
-                name="marketData.marketGrowth"
+                name="marketData.growthRate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Market Growth Rate (%)</FormLabel>
