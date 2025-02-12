@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -21,16 +21,64 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, ArrowRight, Brain, Building2, ChartBar, TrendingUp } from "lucide-react";
+import { Loader2, ArrowRight, Building2, ChartBar, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { valuationFormSchema, type ValuationFormData } from "@/lib/validations";
 import { businessSectorSchema, businessStageSchema, businessModelSchema } from "@/lib/validations";
 
+// WebSocket connection setup
+const setupWebSocket = () => {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
+  return new WebSocket(wsUrl);
+};
+
 export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData) => void }) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  useEffect(() => {
+    const socket = setupWebSocket();
+    setWs(socket);
+
+    socket.onopen = () => {
+      setWsStatus('connected');
+      toast({
+        title: "Connected to server",
+        description: "Real-time updates are now enabled",
+      });
+    };
+
+    socket.onclose = () => {
+      setWsStatus('disconnected');
+      toast({
+        title: "Disconnected from server",
+        description: "Attempting to reconnect...",
+        variant: "destructive",
+      });
+      // Attempt to reconnect after 3 seconds
+      setTimeout(() => {
+        setWs(setupWebSocket());
+      }, 3000);
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      toast({
+        title: "Connection error",
+        description: "There was an error connecting to the server",
+        variant: "destructive",
+      });
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   const form = useForm<ValuationFormData>({
     resolver: zodResolver(valuationFormSchema),
@@ -62,17 +110,22 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
 
   const mutation = useMutation({
     mutationFn: async (data: ValuationFormData) => {
-      const response = await fetch('/api/valuation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      try {
+        const response = await fetch('/api/valuation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(error);
+        }
+        return response.json();
+      } catch (error) {
+        console.error('Mutation error:', error);
+        throw error;
       }
-      return response.json();
     },
     onSuccess: (data) => {
       onResult(data);
@@ -80,6 +133,14 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
         title: "Success!",
         description: "Your valuation has been calculated.",
       });
+      // Send success event through WebSocket
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'valuation_update',
+          status: 'success',
+          data: data
+        }));
+      }
     },
     onError: (error) => {
       toast({
@@ -91,9 +152,20 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
   });
 
   async function onSubmit(data: ValuationFormData) {
+    if (wsStatus !== 'connected') {
+      toast({
+        title: "Connection Error",
+        description: "Please wait for server connection to be established",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await mutation.mutateAsync(data);
+    } catch (error) {
+      console.error('Submit error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -106,6 +178,12 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
       transition={{ duration: 0.5 }}
       className="p-6 space-y-6"
     >
+      {wsStatus !== 'connected' && (
+        <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-md mb-4">
+          {wsStatus === 'connecting' ? 'Connecting to server...' : 'Reconnecting to server...'}
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           {/* Business Information Section */}
@@ -396,10 +474,10 @@ export function ValuationForm({ onResult }: { onResult: (data: ValuationFormData
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || wsStatus !== 'connected'}
               className={cn(
                 "min-w-[200px] bg-primary hover:bg-primary/90",
-                isSubmitting && "opacity-50 cursor-not-allowed"
+                (isSubmitting || wsStatus !== 'connected') && "opacity-50 cursor-not-allowed"
               )}
             >
               {isSubmitting ? (
