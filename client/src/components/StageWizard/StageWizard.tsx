@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { PDFDownloadLink } from '@react-pdf/renderer';
-import { ValuationPDFDocument, generateValuationPDF } from '@/lib/services/pdf-export';
+import { ValuationPDFDocument, generateValuationPDF, type ValuationReport } from '@/lib/services/pdf-export';
 
 const stagesSchema = {
   pre_seed: z.object({
@@ -19,10 +19,18 @@ const stagesSchema = {
     churn_rate: z.number().min(0).max(100).optional(),
     growth_rate: z.number().min(-100).max(1000).optional(),
   })
-};
+} as const;
 
 const stages = ['pre_seed', 'seed'] as const;
 type Stage = typeof stages[number];
+
+type FormData = {
+  tam: number;
+  team_score: number;
+  revenue: number;
+  churn_rate: number;
+  growth_rate: number;
+};
 
 const fieldDescriptions = {
   tam: "Total Addressable Market - The total market demand for your product or service",
@@ -34,9 +42,10 @@ const fieldDescriptions = {
 
 export function StageWizard() {
   const [stage, setStage] = useState<Stage>('pre_seed');
+  const [report, setReport] = useState<ValuationReport | null>(null);
   const { toast } = useToast();
 
-  const form = useForm({
+  const form = useForm<FormData>({
     resolver: zodResolver(stagesSchema[stage]),
     defaultValues: {
       tam: 0,
@@ -47,12 +56,14 @@ export function StageWizard() {
     }
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FormData) => {
     try {
       console.log('Form data:', data);
-
-      // Generate valuation report
-      const report = generateValuationPDF(data);
+      const generatedReport = generateValuationPDF({
+        ...data,
+        stage: stage
+      });
+      setReport(generatedReport);
 
       toast({
         title: "Success",
@@ -190,7 +201,7 @@ export function StageWizard() {
           )}
 
           <div className="pt-4">
-            <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+            <Button type="submit">
               Submit
             </Button>
           </div>
@@ -198,10 +209,9 @@ export function StageWizard() {
       </Form>
 
       <div className="flex justify-between mt-6">
-
-        {form.formState.isSubmitSuccessful && (
+        {report && (
           <PDFDownloadLink
-            document={<ValuationPDFDocument data={form.getValues()} />}
+            document={<ValuationPDFDocument data={report} />}
             fileName="valuation-report.pdf"
           >
             {({ loading }) => (

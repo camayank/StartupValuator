@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, PDFViewer } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { ValuationFormData } from "../validations";
 
 const styles = StyleSheet.create({
@@ -62,7 +62,7 @@ export const ValuationPDFDocument = ({ data }: { data: ValuationReport }) => (
       <View style={styles.section}>
         <Text style={styles.title}>Startup Valuation Report</Text>
         <Text style={styles.subtitle}>Generated on {data.date}</Text>
-        
+
         <View style={styles.section}>
           <Text style={styles.subtitle}>Company Overview</Text>
           <View style={styles.row}>
@@ -77,8 +77,8 @@ export const ValuationPDFDocument = ({ data }: { data: ValuationReport }) => (
 
         <View style={styles.section}>
           <Text style={styles.subtitle}>Key Metrics</Text>
-          {Object.entries(data.metrics).map(([key, value]) => (
-            <View style={styles.row} key={key}>
+          {Object.entries(data.metrics).map(([key, value], index) => (
+            <View style={styles.row} key={index}>
               <Text style={styles.label}>{key}:</Text>
               <Text style={styles.value}>
                 {typeof value === 'number' ? formatCurrency(value) : value}
@@ -98,15 +98,16 @@ export const ValuationPDFDocument = ({ data }: { data: ValuationReport }) => (
   </Document>
 );
 
-export const generateValuationPDF = (formData: ValuationFormData): ValuationReport => {
-  // Transform form data into report format
+export const generateValuationPDF = (formData: any): ValuationReport => {
   return {
-    stage: formData.businessInfo.productStage,
+    stage: formData.stage || 'Pre-Seed',
     valuation: 1000000, // This should come from actual valuation calculation
     metrics: {
-      'Revenue': formData.financialData?.revenue || 0,
-      'Growth Rate': `${formData.financialData?.growthRate || 0}%`,
-      'Burn Rate': formData.financialData?.burnRate || 0,
+      'TAM': formData.tam || 0,
+      'Team Score': formData.team_score || 0,
+      'Revenue': formData.revenue || 0,
+      'Growth Rate': `${formData.growth_rate || 0}%`,
+      'Churn Rate': `${formData.churn_rate || 0}%`
     },
     recommendations: [
       'Consider expanding your market reach',
