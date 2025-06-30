@@ -9,6 +9,7 @@ import { ValuationResults } from './ValuationResults';
 import { useValuation } from '@/hooks/useValuation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, Clock, TrendingUp, BarChart3, Target } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const steps = [
   { 

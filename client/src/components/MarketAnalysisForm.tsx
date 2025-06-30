@@ -1,128 +1,100 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useValuation } from '@/hooks/useValuation';
-import { Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { BarChart3, ArrowLeft, Calculator } from 'lucide-react';
 
-const marketAnalysisSchema = z.object({
-  marketSize: z.number().min(0, 'Market size cannot be negative'),
-  targetMarket: z.string().min(1, 'Target market description is required'),
-  competitors: z.number().min(0, 'Number of competitors cannot be negative'),
-});
-
-type MarketAnalysisData = z.infer<typeof marketAnalysisSchema>;
-
-interface MarketAnalysisFormProps {
-  onNext: () => void;
-  onBack: () => void;
+interface MarketData {
+  marketSize: number;
+  competitors: number;
+  marketShare: number;
 }
 
-export function MarketAnalysisForm({ onNext, onBack }: MarketAnalysisFormProps) {
-  const { updateData, isLoading } = useValuation();
+interface MarketAnalysisFormProps {
+  data: MarketData;
+  onUpdate: (data: MarketData) => void;
+  onSubmit: () => void;
+  onBack: () => void;
+  isLoading?: boolean;
+}
 
-  const form = useForm<MarketAnalysisData>({
-    resolver: zodResolver(marketAnalysisSchema),
-    defaultValues: {
-      marketSize: 0,
-      targetMarket: '',
-      competitors: 0,
-    },
-  });
-
-  const onSubmit = async (data: MarketAnalysisData) => {
-    try {
-      updateData('marketAnalysis', data);
-      onNext();
-    } catch (error) {
-      console.error('Failed to update market analysis:', error);
-    }
+export function MarketAnalysisForm({ data, onUpdate, onSubmit, onBack, isLoading }: MarketAnalysisFormProps) {
+  const handleInputChange = (field: keyof MarketData, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    onUpdate({ ...data, [field]: numValue });
   };
+
+  const isComplete = data.marketSize > 0 && data.competitors >= 0 && data.marketShare >= 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Market Analysis</CardTitle>
-        <CardDescription>
-          Help us understand your market opportunity and competitive landscape
-        </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          Market Analysis
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="marketSize"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Total Addressable Market (TAM) in USD</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Enter total addressable market size"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="market-size">Total Addressable Market ($M)</Label>
+            <Input
+              id="market-size"
+              type="number"
+              placeholder="e.g. 100"
+              value={data.marketSize || ''}
+              onChange={(e) => handleInputChange('marketSize', e.target.value)}
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="targetMarket"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Market Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe your target market and customer segments"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="competitors">Number of Direct Competitors</Label>
+            <Input
+              id="competitors"
+              type="number"
+              placeholder="e.g. 5"
+              value={data.competitors || ''}
+              onChange={(e) => handleInputChange('competitors', e.target.value)}
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="competitors"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Direct Competitors</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Enter number of direct competitors"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="market-share">Expected Market Share (%)</Label>
+            <Input
+              id="market-share"
+              type="number"
+              placeholder="e.g. 2.5"
+              step="0.1"
+              value={data.marketShare || ''}
+              onChange={(e) => handleInputChange('marketShare', e.target.value)}
             />
+          </div>
+        </div>
 
-            <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={onBack} className="flex-1">
-                Back
-              </Button>
-              <Button type="submit" className="flex-1" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={onBack} className="flex-1" disabled={isLoading}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button 
+            onClick={onSubmit} 
+            disabled={!isComplete || isLoading} 
+            className="flex-1"
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
+                Calculating...
+              </>
+            ) : (
+              <>
                 Calculate Valuation
-              </Button>
-            </div>
-          </form>
-        </Form>
+                <Calculator className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

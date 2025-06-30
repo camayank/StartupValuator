@@ -1,156 +1,123 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useValuation } from '@/hooks/useValuation';
-import { Loader2 } from 'lucide-react';
+import { Building, MapPin, Target, TrendingUp } from 'lucide-react';
 
-const businessInfoSchema = z.object({
-  companyName: z.string().min(1, 'Company name is required'),
-  industry: z.string().min(1, 'Industry is required'),
-  stage: z.string().min(1, 'Business stage is required'),
-  employeeCount: z.number().min(1, 'Employee count must be at least 1'),
-});
-
-type BusinessInfoData = z.infer<typeof businessInfoSchema>;
+interface BusinessInfoData {
+  name: string;
+  industry: string;
+  stage: string;
+  location: string;
+}
 
 interface BusinessInfoFormProps {
+  data: BusinessInfoData;
+  onUpdate: (data: BusinessInfoData) => void;
   onNext: () => void;
 }
 
-export function BusinessInfoForm({ onNext }: BusinessInfoFormProps) {
-  const { updateData, isLoading } = useValuation();
+const industries = [
+  'Technology',
+  'Healthcare',
+  'Finance',
+  'E-commerce',
+  'SaaS',
+  'Marketplace',
+  'AI/ML',
+  'Biotech',
+  'CleanTech',
+  'Other'
+];
 
-  const form = useForm<BusinessInfoData>({
-    resolver: zodResolver(businessInfoSchema),
-    defaultValues: {
-      companyName: '',
-      industry: '',
-      stage: '',
-      employeeCount: 1,
-    },
-  });
+const stages = [
+  'Pre-Seed',
+  'Seed',
+  'Series A',
+  'Series B',
+  'Series C+',
+  'Growth',
+  'Pre-IPO'
+];
 
-  const onSubmit = async (data: BusinessInfoData) => {
-    try {
-      updateData('businessInfo', data);
-      onNext();
-    } catch (error) {
-      console.error('Failed to update business info:', error);
-    }
+export function BusinessInfoForm({ data, onUpdate, onNext }: BusinessInfoFormProps) {
+  const handleInputChange = (field: keyof BusinessInfoData, value: string) => {
+    onUpdate({ ...data, [field]: value });
   };
+
+  const isComplete = data.name && data.industry && data.stage && data.location;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Business Information</CardTitle>
-        <CardDescription>
-          Tell us about your company to get started with the valuation
-        </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Building className="h-5 w-5 text-primary" />
+          Business Information
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your company name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="company-name">Company Name</Label>
+          <Input
+            id="company-name"
+            placeholder="Enter your company name"
+            value={data.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+          />
+        </div>
 
-            <FormField
-              control={form.control}
-              name="industry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Industry</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your industry" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="saas">SaaS</SelectItem>
-                      <SelectItem value="fintech">Fintech</SelectItem>
-                      <SelectItem value="healthtech">Healthtech</SelectItem>
-                      <SelectItem value="ecommerce">E-commerce</SelectItem>
-                      <SelectItem value="biotech">Biotech</SelectItem>
-                      <SelectItem value="cleantech">Cleantech</SelectItem>
-                      <SelectItem value="edtech">Edtech</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <div className="space-y-2">
+          <Label>Industry</Label>
+          <Select value={data.industry} onValueChange={(value) => handleInputChange('industry', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select your industry" />
+            </SelectTrigger>
+            <SelectContent>
+              {industries.map((industry) => (
+                <SelectItem key={industry} value={industry.toLowerCase()}>
+                  {industry}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <FormField
-              control={form.control}
-              name="stage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Stage</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your business stage" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ideation">Ideation</SelectItem>
-                      <SelectItem value="mvp">MVP Development</SelectItem>
-                      <SelectItem value="beta">Beta Testing</SelectItem>
-                      <SelectItem value="revenue">Early Revenue</SelectItem>
-                      <SelectItem value="growth">Growth Stage</SelectItem>
-                      <SelectItem value="scale">Scaling</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <div className="space-y-2">
+          <Label>Funding Stage</Label>
+          <Select value={data.stage} onValueChange={(value) => handleInputChange('stage', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select your funding stage" />
+            </SelectTrigger>
+            <SelectContent>
+              {stages.map((stage) => (
+                <SelectItem key={stage} value={stage.toLowerCase()}>
+                  {stage}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <FormField
-              control={form.control}
-              name="employeeCount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Employees</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="Enter number of employees"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <div className="space-y-2">
+          <Label htmlFor="location">Location</Label>
+          <Input
+            id="location"
+            placeholder="e.g. San Francisco, CA"
+            value={data.location}
+            onChange={(e) => handleInputChange('location', e.target.value)}
+          />
+        </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Continue to Financial Metrics
-            </Button>
-          </form>
-        </Form>
+        <Button 
+          onClick={onNext} 
+          disabled={!isComplete}
+          className="w-full"
+        >
+          Continue to Financial Metrics
+          <TrendingUp className="ml-2 h-4 w-4" />
+        </Button>
       </CardContent>
     </Card>
   );

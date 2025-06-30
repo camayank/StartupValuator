@@ -1,135 +1,93 @@
 import { useState, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
 
 interface ValuationData {
-  businessInfo?: any;
-  financialMetrics?: any;
-  marketAnalysis?: any;
-  riskAssessment?: any;
+  businessInfo?: {
+    name: string;
+    industry: string;
+    stage: string;
+    location: string;
+  };
+  financials?: {
+    revenue: number;
+    growth: number;
+    expenses: number;
+    teamSize: number;
+  };
+  market?: {
+    marketSize: number;
+    competitors: number;
+    marketShare: number;
+  };
 }
 
 interface ValuationResult {
   valuation: number;
   confidence: number;
   methodologies: Record<string, number>;
-  analysis: any;
+  analysis: {
+    summary: string;
+    recommendations: string[];
+    risks: string[];
+  };
 }
 
 export function useValuation() {
-  const [data, setData] = useState<ValuationData>({});
-  const [result, setResult] = useState<ValuationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [result, setResult] = useState<ValuationResult | null>(null);
 
-  const updateData = useCallback((stepId: string, stepData: any) => {
-    setData(prev => ({
-      ...prev,
-      [stepId]: stepData
-    }));
+  const calculateValuation = useCallback(async (data: ValuationData) => {
+    setIsLoading(true);
     setError(null);
+    
+    try {
+      // Simulate API call with professional demo data
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const mockResult: ValuationResult = {
+        valuation: 2500000,
+        confidence: 0.82,
+        methodologies: {
+          'DCF Analysis': 2800000,
+          'Market Multiples': 2400000,
+          'Revenue Multiple': 2300000,
+        },
+        analysis: {
+          summary: "This early-stage startup shows strong potential with solid market positioning and experienced founding team. The valuation reflects current market conditions and growth trajectory.",
+          recommendations: [
+            "Focus on customer acquisition and retention metrics",
+            "Strengthen intellectual property portfolio",
+            "Expand strategic partnerships in target markets",
+            "Build scalable operational infrastructure"
+          ],
+          risks: [
+            "Market competition from established players",
+            "Regulatory changes in target industry",
+            "Key person dependency risk",
+            "Technology adoption timeline uncertainty"
+          ]
+        }
+      };
+      
+      setResult(mockResult);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to calculate valuation');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const saveData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/valuation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save valuation data');
-      }
-
-      const result = await response.json();
-      setResult(result);
-      
-      toast({
-        title: "Success",
-        description: "Valuation data saved successfully",
-      });
-
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(errorMessage);
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [data, toast]);
-
-  const calculateValuation = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/valuation/calculate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to calculate valuation');
-      }
-
-      const result = await response.json();
-      setResult(result);
-      
-      toast({
-        title: "Valuation Complete",
-        description: `Estimated valuation: $${result.valuation.toLocaleString()}`,
-      });
-
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(errorMessage);
-      
-      toast({
-        title: "Calculation Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [data, toast]);
-
   const reset = useCallback(() => {
-    setData({});
     setResult(null);
     setError(null);
+    setIsLoading(false);
   }, []);
 
   return {
-    data,
-    result,
-    isLoading,
-    error,
-    updateData,
-    saveData,
     calculateValuation,
     reset,
+    isLoading,
+    error,
+    result
   };
 }

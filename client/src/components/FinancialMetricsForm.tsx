@@ -1,153 +1,97 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useValuation } from '@/hooks/useValuation';
-import { Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { DollarSign, TrendingUp, Users, ArrowLeft, BarChart3 } from 'lucide-react';
 
-const financialMetricsSchema = z.object({
-  revenue: z.number().min(0, 'Revenue cannot be negative'),
-  growth: z.number().min(-100).max(1000, 'Growth rate must be between -100% and 1000%'),
-  expenses: z.number().min(0, 'Expenses cannot be negative'),
-  runway: z.number().min(0, 'Runway cannot be negative'),
-});
-
-type FinancialMetricsData = z.infer<typeof financialMetricsSchema>;
+interface FinancialData {
+  revenue: number;
+  growth: number;
+  expenses: number;
+  teamSize: number;
+}
 
 interface FinancialMetricsFormProps {
+  data: FinancialData;
+  onUpdate: (data: FinancialData) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function FinancialMetricsForm({ onNext, onBack }: FinancialMetricsFormProps) {
-  const { updateData, isLoading } = useValuation();
-
-  const form = useForm<FinancialMetricsData>({
-    resolver: zodResolver(financialMetricsSchema),
-    defaultValues: {
-      revenue: 0,
-      growth: 0,
-      expenses: 0,
-      runway: 12,
-    },
-  });
-
-  const onSubmit = async (data: FinancialMetricsData) => {
-    try {
-      updateData('financialMetrics', data);
-      onNext();
-    } catch (error) {
-      console.error('Failed to update financial metrics:', error);
-    }
+export function FinancialMetricsForm({ data, onUpdate, onNext, onBack }: FinancialMetricsFormProps) {
+  const handleInputChange = (field: keyof FinancialData, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    onUpdate({ ...data, [field]: numValue });
   };
+
+  const isComplete = data.revenue >= 0 && data.growth >= 0 && data.expenses >= 0 && data.teamSize > 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Financial Metrics</CardTitle>
-        <CardDescription>
-          Provide your key financial information for accurate valuation
-        </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5 text-primary" />
+          Financial Metrics
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="revenue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Annual Revenue (USD)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Enter annual revenue"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="revenue">Annual Revenue ($)</Label>
+            <Input
+              id="revenue"
+              type="number"
+              placeholder="0"
+              value={data.revenue || ''}
+              onChange={(e) => handleInputChange('revenue', e.target.value)}
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="growth"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Monthly Growth Rate (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="-100"
-                      max="1000"
-                      placeholder="Enter monthly growth rate"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="growth">Growth Rate (%)</Label>
+            <Input
+              id="growth"
+              type="number"
+              placeholder="0"
+              value={data.growth || ''}
+              onChange={(e) => handleInputChange('growth', e.target.value)}
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="expenses"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Monthly Expenses (USD)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Enter monthly expenses"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="expenses">Annual Expenses ($)</Label>
+            <Input
+              id="expenses"
+              type="number"
+              placeholder="0"
+              value={data.expenses || ''}
+              onChange={(e) => handleInputChange('expenses', e.target.value)}
             />
+          </div>
 
-            <FormField
-              control={form.control}
-              name="runway"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Runway (Months)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="Enter runway in months"
-                      {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="team-size">Team Size</Label>
+            <Input
+              id="team-size"
+              type="number"
+              placeholder="1"
+              value={data.teamSize || ''}
+              onChange={(e) => handleInputChange('teamSize', e.target.value)}
             />
+          </div>
+        </div>
 
-            <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={onBack} className="flex-1">
-                Back
-              </Button>
-              <Button type="submit" className="flex-1" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Continue to Market Analysis
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={onBack} className="flex-1">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button onClick={onNext} disabled={!isComplete} className="flex-1">
+            Continue to Market Analysis
+            <BarChart3 className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
