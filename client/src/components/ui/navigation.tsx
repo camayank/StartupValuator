@@ -1,53 +1,74 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { BrandHeader } from "@/components/ui/brand-header";
 import { cn } from "@/lib/utils";
 import {
-  Calculator,
-  ChevronRight,
+  BarChart3,
   FileText,
   Home,
   LogIn,
   Menu,
-  UserPlus,
+  Settings,
+  TrendingUp,
+  Users,
   X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface Route {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  description?: string;
 }
 
 const routes: Route[] = [
   {
     href: "/",
-    label: "Home",
+    label: "Dashboard",
     icon: Home,
+    description: "Overview and analytics"
   },
   {
-    href: "/calculator",
+    href: "/valuation/calculator",
     label: "Valuation Calculator",
-    icon: Calculator,
+    icon: TrendingUp,
+    badge: "Pro",
+    description: "AI-powered startup valuation"
+  },
+  {
+    href: "/analysis",
+    label: "Market Analysis",
+    icon: BarChart3,
+    description: "Industry insights and benchmarks"
   },
   {
     href: "/reports",
-    label: "Reports",
+    label: "Reports & Exports",
     icon: FileText,
+    description: "Professional valuation reports"
   },
 ];
 
 export function Navigation() {
   const [open, setOpen] = useState(false);
+  const [location] = useLocation();
+
+  const isActive = (href: string) => {
+    if (href === "/") return location === "/";
+    return location.startsWith(href);
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <nav className="container flex h-14 items-center">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <nav className="container flex h-16 items-center justify-between">
         <Link href="/">
-          <a className="mr-6 flex items-center space-x-2">
-            <Calculator className="h-6 w-6" />
-            <span className="font-bold">StartupValue.ai</span>
+          <a className="flex items-center">
+            <BrandHeader size="sm" />
+          </a>
           </a>
         </Link>
 

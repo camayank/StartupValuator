@@ -1,38 +1,53 @@
 {
   "variant": "professional",
-  "primary": "hsl(230 60% 20%)",
+  "primary": "hsl(215 25% 27%)",
   "appearance": "light",
-  "radius": 0.75,
+  "radius": 0.5,
   "colors": {
+    "brand": {
+      "primary": "hsl(215 25% 27%)",
+      "secondary": "hsl(215 20% 65%)",
+      "accent": "hsl(142 76% 36%)",
+      "muted": "hsl(215 15% 92%)"
+    },
     "confidence": {
-      "low": "oklch(62% 0.2 30)",
-      "high": "oklch(85% 0.15 250)"
+      "low": "hsl(0 84% 60%)",
+      "medium": "hsl(38 92% 50%)",
+      "high": "hsl(142 76% 36%)"
     },
     "risk": {
-      "mitigation": "oklch(75% 0.18 180)",
-      "warning": "oklch(70% 0.2 45)",
-      "critical": "oklch(65% 0.25 30)"
+      "low": "hsl(142 76% 36%)",
+      "medium": "hsl(38 92% 50%)",
+      "high": "hsl(0 84% 60%)",
+      "critical": "hsl(0 62% 30%)"
     },
-    "data": {
-      "positive": "oklch(80% 0.12 145)",
-      "negative": "oklch(70% 0.15 30)",
-      "neutral": "oklch(75% 0.1 250)"
+    "valuation": {
+      "positive": "hsl(142 76% 36%)",
+      "neutral": "hsl(215 20% 65%)",
+      "negative": "hsl(0 84% 60%)"
+    },
+    "financial": {
+      "revenue": "hsl(142 76% 36%)",
+      "expenses": "hsl(0 84% 60%)",
+      "growth": "hsl(260 84% 60%)",
+      "market": "hsl(200 84% 60%)"
     }
   },
   "typography": {
-    "base": {
-      "family": "Inter",
-      "size": "14px",
-      "lineHeight": 1.6,
-      "scale": 1.25
-    },
-    "data": {
-      "family": "IBM Plex Mono",
-      "features": ["tnum"]
+    "scale": "perfect-fourth",
+    "baseSize": 16,
+    "families": {
+      "sans": "Inter",
+      "mono": "IBM Plex Mono",
+      "display": "Inter"
     }
   },
-  "spacing": {
-    "grid": 4,
-    "unit": "px"
+  "elevation": {
+    "none": "0 0 0 0 transparent",
+    "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    "base": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+    "md": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+    "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+    "xl": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
   }
 }

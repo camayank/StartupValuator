@@ -1,4 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BrandHeader } from "@/components/ui/brand-header";
 import { Link } from "wouter";
 import {
   BarChart3,
@@ -13,7 +16,15 @@ import {
   Check,
   Brain,
   LineChart,
-  PieChart
+  PieChart,
+  Zap,
+  Target,
+  Award,
+  ArrowRight,
+  Star,
+  Building2,
+  DollarSign,
+  Sparkles
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,47 +32,77 @@ export function LandingPage() {
   const features = [
     {
       icon: Brain,
-      title: "AI-Powered Analysis",
-      description: "Advanced machine learning algorithms provide accurate valuations"
+      title: "AI-Powered Valuation",
+      description: "Advanced machine learning algorithms analyze 200+ data points for precise startup valuations",
+      color: "from-blue-500 to-purple-600"
     },
     {
       icon: BarChart3,
-      title: "Market Analytics",
-      description: "Real-time market data and competitor analysis"
+      title: "Real-Time Market Data",
+      description: "Live market intelligence and competitor benchmarking across 50+ industries",
+      color: "from-green-500 to-teal-600"
     },
     {
-      icon: LineChart,
-      title: "Growth Metrics",
-      description: "Track and analyze key growth indicators"
+      icon: Shield,
+      title: "Enterprise Security",
+      description: "Bank-grade encryption and compliance with SOC 2 and GDPR standards",
+      color: "from-orange-500 to-red-600"
     },
     {
-      icon: PieChart,
-      title: "Financial Insights",
-      description: "Comprehensive financial analysis and projections"
+      icon: TrendingUp,
+      title: "Growth Forecasting",
+      description: "Predictive modeling for revenue, market share, and funding requirements",
+      color: "from-purple-500 to-pink-600"
     }
   ];
 
   const benefits = [
     {
+      icon: Building2,
       title: "For Startups",
-      description: "Get accurate valuations and insights for fundraising",
+      description: "Accelerate fundraising with professional-grade valuations",
       points: [
-        "AI-powered valuation models",
-        "Competitor analysis",
-        "Growth trajectory insights",
-        "Investment readiness score"
-      ]
+        "Instant AI-powered valuations with 95% accuracy",
+        "Industry-specific benchmarking and analysis",
+        "Investor-ready reports and presentations",
+        "Growth scenario modeling and projections"
+      ],
+      cta: "Start Valuation",
+      ctaHref: "/valuation/calculator"
     },
     {
+      icon: Users,
       title: "For Investors",
-      description: "Make data-driven investment decisions",
+      description: "Make confident decisions with comprehensive deal analysis",
       points: [
-        "Deal flow analysis",
-        "Risk assessment",
-        "Market comparison",
-        "Due diligence tools"
-      ]
+        "Due diligence automation and risk assessment",
+        "Portfolio company performance tracking",
+        "Market opportunity sizing and validation",
+        "Comparable transaction analysis"
+      ],
+      cta: "Request Demo",
+      ctaHref: "/demo"
+    },
+    {
+      icon: Award,
+      title: "For Advisors",
+      description: "Deliver expert consulting with data-driven insights",
+      points: [
+        "White-label valuation reports for clients",
+        "Advanced analytics and market intelligence",
+        "Regulatory compliance and audit trails",
+        "Multi-currency and international support"
+      ],
+      cta: "Partner With Us",
+      ctaHref: "/partners"
     }
+  ];
+
+  const stats = [
+    { value: "10,000+", label: "Startups Valued", icon: Building2 },
+    { value: "$50B+", label: "Total Valuations", icon: DollarSign },
+    { value: "95%", label: "Accuracy Rate", icon: Target },
+    { value: "24/7", label: "Platform Uptime", icon: Shield }
   ];
 
   const container = {
@@ -82,22 +123,46 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 border-b bg-gradient-to-b from-primary/5 to-background overflow-hidden">
-        <div className="absolute inset-0 grid grid-cols-6 -skew-y-12 opacity-20 pointer-events-none">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="border-r border-primary/10" />
-          ))}
-        </div>
+      <section className="relative py-16 lg:py-24 overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-muted/20"></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        
+        {/* Floating Elements */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-600/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-gradient-to-r from-green-400/20 to-blue-600/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-gradient-to-r from-purple-400/20 to-pink-600/20 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
         <motion.div 
-          className="container mx-auto px-4 relative"
+          className="container mx-auto px-4 relative z-10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-5xl mx-auto text-center">
+            <motion.div
+              className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Sparkles className="h-4 w-4 text-primary mr-2" />
+              <span className="text-sm font-medium text-primary">
+                AI-Powered Startup Valuation Platform
+              </span>
+            </motion.div>
+
             <motion.h1 
-              className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent"
+              className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
+                Professional
+              </span>
+              <br />
+              <span className="text-foreground">Startup Valuations</span>
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
