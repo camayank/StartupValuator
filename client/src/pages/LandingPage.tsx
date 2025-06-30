@@ -163,11 +163,6 @@ export function LandingPage() {
               </span>
               <br />
               <span className="text-foreground">Startup Valuations</span>
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              AI-Powered Startup Valuations
             </motion.h1>
             <motion.p 
               className="text-xl md:text-2xl text-muted-foreground mb-8"

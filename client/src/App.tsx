@@ -1,3 +1,4 @@
+import React, { Suspense, useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { Navigation } from "@/components/ui/navigation";
@@ -6,7 +7,6 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ValuationWizardContainer } from "@/components/ValuationWizardContainer";
 import { LandingPage } from "./pages/LandingPage";
-import { Suspense, useState, useEffect } from "react";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
