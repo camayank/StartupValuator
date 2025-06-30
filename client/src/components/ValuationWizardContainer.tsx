@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { BusinessInfoForm } from './forms/BusinessInfoForm';
-import { FinancialMetricsForm } from './forms/FinancialMetricsForm';
-import { MarketAnalysisForm } from './forms/MarketAnalysisForm';
+import { BusinessInfoForm } from '@/components/BusinessInfoForm';
+import { FinancialMetricsForm } from '@/components/FinancialMetricsForm';
+import { MarketAnalysisForm } from '@/components/MarketAnalysisForm';
 import { ValuationResults } from './ValuationResults';
 import { useValuation } from '@/hooks/useValuation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
