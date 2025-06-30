@@ -43,6 +43,24 @@ export const userProfiles = pgTable("user_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Valuation drafts table for session persistence
+export const valuationDrafts = pgTable("valuation_drafts", {
+  id: serial("id").primaryKey(),
+  sessionId: varchar("session_id", { length: 50 }).unique().notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  formData: jsonb("form_data").$type<Record<string, any>>().notNull(),
+  steps: jsonb("steps").$type<Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    data: any;
+    errors?: Record<string, string>;
+  }>>().notNull(),
+  currentStep: integer("current_step").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Create schemas for validation
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email("Invalid email format"),
@@ -66,11 +84,17 @@ export const selectUserSchema = createSelectSchema(users);
 export const insertUserProfileSchema = createInsertSchema(userProfiles);
 export const selectUserProfileSchema = createSelectSchema(userProfiles);
 
+export const insertValuationDraftSchema = createInsertSchema(valuationDrafts);
+export const selectValuationDraftSchema = createSelectSchema(valuationDrafts);
+
 // Export types
 export type SelectUser = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = typeof userProfiles.$inferInsert;
+
+export type SelectValuationDraft = typeof valuationDrafts.$inferSelect;
+export type InsertValuationDraft = typeof valuationDrafts.$inferInsert;
 
 // Define relations
 export const usersRelations = relations(users, ({ one }) => ({
