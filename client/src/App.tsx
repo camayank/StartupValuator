@@ -6,6 +6,9 @@ import { ValidationProvider } from "@/contexts/ValidationContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ValuationWizardContainer } from "@/components/ValuationWizardContainer";
+import { ExecutiveDashboard } from "@/components/dashboards/ExecutiveDashboard";
+import { AdvancedCharts } from "@/components/charts/AdvancedCharts";
+import { SmartFormValidation } from "@/components/forms/SmartFormValidation";
 import { LandingPage } from "./pages/LandingPage";
 
 function App() {

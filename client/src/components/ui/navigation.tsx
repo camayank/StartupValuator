@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from './button';
 import { BrandHeader } from './brand-header';
-import { Calculator, Home } from 'lucide-react';
+import { Calculator, Home, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
 
 export function Navigation() {
   const [location] = useLocation();
@@ -14,7 +14,7 @@ export function Navigation() {
           <BrandHeader size="sm" />
         </Link>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           <Link href="/">
             <Button 
               variant={location === '/' ? 'default' : 'ghost'} 
@@ -32,6 +32,36 @@ export function Navigation() {
             >
               <Calculator className="mr-2 h-4 w-4" />
               Calculator
+            </Button>
+          </Link>
+
+          <Link href="/dashboard">
+            <Button 
+              variant={location === '/dashboard' ? 'default' : 'ghost'} 
+              size="sm"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+
+          <Link href="/analytics">
+            <Button 
+              variant={location === '/analytics' ? 'default' : 'ghost'} 
+              size="sm"
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Analytics
+            </Button>
+          </Link>
+
+          <Link href="/smart-form">
+            <Button 
+              variant={location === '/smart-form' ? 'default' : 'ghost'} 
+              size="sm"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Smart Form
             </Button>
           </Link>
         </div>
