@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '@db';
-import { valuationDrafts } from '@db/schema';
+import { valuationDrafts } from '@db/schema/core';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';

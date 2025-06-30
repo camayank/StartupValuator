@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { ValidationProvider } from "@/contexts/ValidationContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { ValuationWizardContainer } from "@/components/ValuationWizardContainer";
 import { Suspense, lazy, useState, useEffect } from "react";
 
 // Lazy load the step components
@@ -54,7 +55,7 @@ function App() {
                 <Link href="/docs">
                   <Button variant="outline">Documentation</Button>
                 </Link>
-                <Link href="/valuation/stages">
+                <Link href="/valuation/calculator">
                   <Button>Start Valuation</Button>
                 </Link>
               </div>
@@ -69,6 +70,11 @@ function App() {
                 <Route path="/valuation/stages">
                   <div className="container py-8">
                     <LazyStageWizard />
+                  </div>
+                </Route>
+                <Route path="/valuation/calculator">
+                  <div className="container py-8">
+                    <ValuationWizardContainer />
                   </div>
                 </Route>
                 <Route path="/valuation/quick">

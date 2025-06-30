@@ -2,9 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
+import valuationCalculateRoutes from "./routes/valuation-calculate";
 import analysisRoutes from "./routes/analysis";
 import monitoringRoutes from "./routes/monitoring";
 import aiRoutes from "./routes/ai-routes";
+import draftRoutes from "./routes/draft";
 import { setupAuth } from "./auth";
 import { userProfiles, valuationRecords } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -25,7 +27,9 @@ type WebSocketMessage = {
 
 export function registerRoutes(app: Express): Server {
   // Register all routes
+  app.use("/api/valuation", valuationCalculateRoutes);
   app.use("/api/valuation", valuationRoutes);
+  app.use("/api/valuation/draft", draftRoutes);
   app.use("/api/analysis", analysisRoutes);
   app.use("/api/monitoring", monitoringRoutes);
   app.use("/api/ai", aiRoutes);
