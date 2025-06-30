@@ -8,10 +8,8 @@ import {
   Home,
   LogIn,
   Menu,
-  Settings,
   TrendingUp,
   Users,
-  X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -69,64 +67,98 @@ export function Navigation() {
           <a className="flex items-center">
             <BrandHeader size="sm" />
           </a>
-          </a>
         </Link>
 
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          {/* Desktop navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-4">
-            {routes.map((route) => (
-              <Link key={route.href} href={route.href}>
-                <a className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                  <route.icon className="mr-2 h-4 w-4" />
-                  {route.label}
-                </a>
-              </Link>
-            ))}
-          </div>
-
-          {/* Auth buttons */}
-          <div className="flex items-center space-x-2">
-            <Link href="/auth?mode=login">
-              <Button variant="ghost" size="sm">
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
-              </Button>
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-1">
+          {routes.map((route) => (
+            <Link key={route.href} href={route.href}>
+              <a
+                className={cn(
+                  "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                  isActive(route.href)
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                <route.icon className="h-4 w-4" />
+                <span>{route.label}</span>
+                {route.badge && (
+                  <Badge variant="secondary" className="text-xs ml-1">
+                    {route.badge}
+                  </Badge>
+                )}
+              </a>
             </Link>
-            <Link href="/auth?mode=signup">
-              <Button size="sm">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Get Started
-              </Button>
-            </Link>
-          </div>
+          ))}
+        </div>
 
-          {/* Mobile navigation */}
+        {/* Right Side Actions */}
+        <div className="flex items-center space-x-3">
+          <Button variant="ghost" size="sm" className="hidden sm:flex">
+            <LogIn className="mr-2 h-4 w-4" />
+            Sign In
+          </Button>
+          <Button size="sm" className="hidden sm:flex">
+            Get Started
+          </Button>
+
+          {/* Mobile Menu */}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
-              >
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle menu</span>
+              <Button variant="ghost" size="sm" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="pr-0">
-              <Link href="/" className="flex items-center">
-                <Calculator className="mr-2 h-6 w-6" />
-                <span className="font-bold">StartupValue.ai</span>
-              </Link>
-              <div className="my-4 flex flex-col space-y-2">
-                {routes.map((route) => (
-                  <Link key={route.href} href={route.href}>
-                    <a className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                      <route.icon className="mr-2 h-4 w-4" />
-                      {route.label}
-                      <ChevronRight className="ml-auto h-4 w-4" />
-                    </a>
-                  </Link>
-                ))}
+            <SheetContent side="right" className="w-80">
+              <div className="flex flex-col space-y-4 mt-6">
+                <BrandHeader size="sm" showTagline />
+                
+                <div className="border-t pt-4">
+                  <nav className="flex flex-col space-y-1">
+                    {routes.map((route) => (
+                      <Link key={route.href} href={route.href}>
+                        <a
+                          className={cn(
+                            "flex items-center justify-between p-3 rounded-lg transition-colors",
+                            isActive(route.href)
+                              ? "bg-primary text-primary-foreground"
+                              : "hover:bg-muted"
+                          )}
+                          onClick={() => setOpen(false)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <route.icon className="h-5 w-5" />
+                            <div className="flex flex-col">
+                              <span className="font-medium">{route.label}</span>
+                              {route.description && (
+                                <span className="text-xs opacity-70">
+                                  {route.description}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {route.badge && (
+                            <Badge variant="secondary" className="text-xs">
+                              {route.badge}
+                            </Badge>
+                          )}
+                        </a>
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
+
+                <div className="border-t pt-4 space-y-2">
+                  <Button variant="outline" className="w-full justify-start">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Button>
+                  <Button className="w-full justify-start">
+                    Get Started
+                  </Button>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
