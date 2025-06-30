@@ -42,8 +42,11 @@ export function registerRoutes(app: Express): Server {
     path: '/ws',
     verifyClient: (info: { req: IncomingMessage }) => {
       const protocol = info.req.headers['sec-websocket-protocol'];
-      // Ignore Vite HMR WebSocket connections
-      return !protocol || !protocol.includes('vite-hmr');
+      // Allow all connections except Vite HMR
+      if (protocol && protocol.includes('vite-hmr')) {
+        return false;
+      }
+      return true;
     }
   });
 

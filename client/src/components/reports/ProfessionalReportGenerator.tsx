@@ -318,7 +318,7 @@ export function ProfessionalReportGenerator({ valuationData, companyData }: Prof
                   <Checkbox 
                     id="branding"
                     checked={brandingEnabled}
-                    onCheckedChange={setBrandingEnabled}
+                    onCheckedChange={(checked) => setBrandingEnabled(checked === true)}
                   />
                   <Label htmlFor="branding">Include company branding</Label>
                 </div>
