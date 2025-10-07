@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
 import valuationCalculateRoutes from "./routes/valuation-calculate";
+import valuationSimpleRoutes from "./routes/valuation-simple";
 import analysisRoutes from "./routes/analysis";
 import monitoringRoutes from "./routes/monitoring";
 import aiRoutes from "./routes/ai-routes";
@@ -27,6 +28,7 @@ type WebSocketMessage = {
 
 export function registerRoutes(app: Express): Server {
   // Register all routes
+  app.use("/api/valuation", valuationSimpleRoutes);
   app.use("/api/valuation", valuationCalculateRoutes);
   app.use("/api/valuation", valuationRoutes);
   app.use("/api/valuation/draft", draftRoutes);
