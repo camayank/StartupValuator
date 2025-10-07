@@ -69,8 +69,18 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
 
   return (
     <div className="space-y-8">
+      {/* Premium Header */}
+      <div className="text-center space-y-2 mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          Your Professional Valuation Report
+        </h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto">
+          Analyzed using methodologies from Aswath Damodaran (NYU), Sam Altman (OpenAI), and Elon Musk's first principles approach
+        </p>
+      </div>
+
       {/* Main Valuation Result */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-2 text-2xl mb-4">
             <DollarSign className="h-8 w-8 text-primary" />
