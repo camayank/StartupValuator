@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BrandHeader } from "@/components/ui/brand-header";
+import { SocialShare } from "@/components/ui/social-share";
 import { Link } from "wouter";
 import {
   BarChart3,
@@ -24,7 +25,8 @@ import {
   Star,
   Building2,
   DollarSign,
-  Sparkles
+  Sparkles,
+  Gift
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -173,22 +175,23 @@ export function LandingPage() {
               Get accurate, data-driven valuations for your startup in minutes using advanced AI and real market data.
             </motion.p>
             <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center"
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Link href="/auth?mode=signup">
+              <Link href="/valuation/calculator">
                 <Button size="lg" className="w-full sm:w-auto group">
                   Start Free Valuation 
                   <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link href="/calculator">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  Try Calculator
-                </Button>
-              </Link>
+              <SocialShare 
+                title="ValuationPro - Get Your Startup Valued in Minutes!"
+                description="I just found this amazing AI-powered startup valuation platform. Get accurate, investor-ready valuations for FREE!"
+                variant="outline"
+                size="lg"
+              />
             </motion.div>
 
             <motion.div 
@@ -212,6 +215,56 @@ export function LandingPage() {
             </motion.div>
           </div>
         </motion.div>
+      </section>
+
+      {/* Social Proof Stats */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="grid grid-cols-2 md:grid-cols-4 gap-8"
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            {stats.map((stat, index) => (
+              <motion.div 
+                key={index}
+                variants={item}
+                className="text-center"
+              >
+                <div className="flex justify-center mb-3">
+                  <stat.icon className="h-8 w-8 text-primary" />
+                </div>
+                <div className="text-3xl md:text-4xl font-bold mb-2">{stat.value}</div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Referral Banner */}
+      <section className="py-4 bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 border-y">
+        <div className="container mx-auto px-4">
+          <motion.div 
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left"
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Gift className="h-6 w-6 text-primary flex-shrink-0" />
+            <p className="text-sm md:text-base font-medium">
+              <span className="font-bold text-primary">Share & Earn:</span> Refer friends and unlock premium features for free!
+            </p>
+            <SocialShare 
+              title="ValuationPro - Free Startup Valuation Tool"
+              description="Check out this amazing AI-powered startup valuation platform! Get your startup valued for FREE 🚀"
+              size="sm"
+              showLabel={false}
+            />
+          </motion.div>
+        </div>
       </section>
 
       {/* Features Grid */}
