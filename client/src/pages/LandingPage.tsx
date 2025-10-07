@@ -68,9 +68,7 @@ export function LandingPage() {
         "Industry-specific benchmarking and analysis",
         "Investor-ready reports and presentations",
         "Growth scenario modeling and projections"
-      ],
-      cta: "Start Valuation",
-      ctaHref: "/valuation/calculator"
+      ]
     },
     {
       icon: Users,
@@ -81,9 +79,7 @@ export function LandingPage() {
         "Portfolio company performance tracking",
         "Market opportunity sizing and validation",
         "Comparable transaction analysis"
-      ],
-      cta: "View Dashboard",
-      ctaHref: "/dashboard"
+      ]
     },
     {
       icon: Award,
@@ -94,9 +90,7 @@ export function LandingPage() {
         "Advanced analytics and market intelligence",
         "Regulatory compliance and audit trails",
         "Multi-currency and international support"
-      ],
-      cta: "View Analytics",
-      ctaHref: "/analytics"
+      ]
     }
   ];
 
