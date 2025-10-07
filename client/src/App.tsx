@@ -9,6 +9,7 @@ import { ValuationWizardContainer } from "@/components/ValuationWizardContainer"
 import { ExecutiveDashboard } from "@/components/dashboards/ExecutiveDashboard";
 import { AdvancedCharts } from "@/components/charts/AdvancedCharts";
 import { SmartFormValidation } from "@/components/forms/SmartFormValidation";
+import { ReferralSystem } from "@/components/ReferralSystem";
 import { LandingPage } from "./pages/LandingPage";
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
                     <ValuationWizardContainer />
                   </div>
                 </Route>
+                <Route path="/referral" component={ReferralSystem} />
                 <Route>
                   <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
                     <div className="text-center">

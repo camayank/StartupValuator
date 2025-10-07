@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { Button } from './button';
 import { BrandHeader } from './brand-header';
-import { Calculator, Home, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
+import { Calculator, Home, BarChart3, TrendingUp, Sparkles, Gift } from 'lucide-react';
 
 export function Navigation() {
   const [location] = useLocation();
@@ -62,6 +62,17 @@ export function Navigation() {
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Smart Form
+            </Button>
+          </Link>
+
+          <Link href="/referral">
+            <Button 
+              variant={location === '/referral' ? 'default' : 'ghost'} 
+              size="sm"
+              className="bg-gradient-to-r from-primary/10 to-purple-500/10 hover:from-primary/20 hover:to-purple-500/20"
+            >
+              <Gift className="mr-2 h-4 w-4" />
+              Refer & Earn
             </Button>
           </Link>
         </div>
