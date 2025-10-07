@@ -30,6 +30,16 @@ interface ValuationResult {
     low: number;
     high: number;
   };
+  transparency?: {
+    aiEnrichmentUsed: boolean;
+    methodsUsed: string[];
+    dataQuality: string;
+    disclaimers: string[];
+  };
+  metadata?: {
+    isPreRevenue?: boolean;
+    disclaimers?: string[];
+  };
 }
 
 interface ValuationResultsProps {
@@ -329,6 +339,75 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
                 <p className="text-sm text-muted-foreground">{result.aiInsights.comparableCompanies.typicalValuations}</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Transparency & Disclaimers */}
+      {(result.transparency || result.metadata?.disclaimers) && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Important Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Data Quality Indicator */}
+            {result.transparency && (
+              <div className="p-3 bg-background/80 rounded-lg border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Data Quality:</span>
+                  <Badge variant={result.transparency.aiEnrichmentUsed ? "default" : "secondary"}>
+                    {result.transparency.dataQuality}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {result.transparency.aiEnrichmentUsed ? (
+                    <>✨ AI enrichment used to analyze your startup with 200+ data points</>
+                  ) : (
+                    <>📊 Based on industry benchmarks - connect with API key for enhanced AI analysis</>
+                  )}
+                </p>
+              </div>
+            )}
+            
+            {/* Methodology Used */}
+            {result.transparency?.methodsUsed && (
+              <div className="p-3 bg-background/80 rounded-lg border">
+                <p className="text-sm font-medium mb-2">Valuation Methods Applied:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  {result.transparency.methodsUsed.map((method, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3 w-3 text-green-600" />
+                      {method}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Pre-revenue indicator */}
+            {result.metadata?.isPreRevenue && (
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-900">
+                  <strong>Pre-Revenue Startup:</strong> Valuation based on team quality, technology maturity, and market opportunity rather than financial metrics.
+                </p>
+              </div>
+            )}
+            
+            {/* Legal Disclaimers */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-amber-900">Disclaimers:</p>
+              <ul className="text-xs text-amber-800 space-y-1.5">
+                {(result.transparency?.disclaimers || result.metadata?.disclaimers || []).map((disclaimer, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="mt-0.5">•</span>
+                    <span>{disclaimer}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </CardContent>
         </Card>
       )}

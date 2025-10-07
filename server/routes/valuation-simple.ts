@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
-import { ValuationCalculator } from "../services/valuation";
+import { ValuationCalculatorV2 } from "../services/valuation-v2";
 import type { ValuationFormData } from "../../client/src/lib/validations";
 
 const anthropic = new Anthropic({
@@ -20,121 +20,122 @@ const simpleInputSchema = z.object({
 
 type SimpleInput = z.infer<typeof simpleInputSchema>;
 
-// Industry benchmarks for intelligent defaults
+// Industry benchmarks for intelligent defaults (India-optimized, INR values)
+// Based on actual Indian startup ecosystem data
 const industryBenchmarks: Record<string, {
   avgGrowthRate: number;
   avgMargins: number;
-  avgTAM: number;
-  avgCAC: number;
-  avgLTV: number;
+  avgTAM: number; // In INR
+  avgCAC: number; // In INR
+  avgLTV: number; // In INR
   typicalCompetitors: number;
   marketGrowthRate: number;
 }> = {
   "SaaS (Software as a Service)": {
     avgGrowthRate: 120,
-    avgMargins: 75,
-    avgTAM: 50000000000,
-    avgCAC: 1000,
-    avgLTV: 5000,
+    avgMargins: 70,
+    avgTAM: 4150000000000, // ₹41,500 Cr (~$50B converted)
+    avgCAC: 8300, // ₹8,300 (~$100 converted)
+    avgLTV: 41500, // ₹41,500 (~$500 converted)
     typicalCompetitors: 8,
-    marketGrowthRate: 25
+    marketGrowthRate: 30 // India SaaS growing faster than global
   },
   "E-commerce & D2C": {
-    avgGrowthRate: 80,
-    avgMargins: 35,
-    avgTAM: 100000000000,
-    avgCAC: 50,
-    avgLTV: 300,
-    typicalCompetitors: 15,
-    marketGrowthRate: 18
-  },
-  "Fintech & Payments": {
-    avgGrowthRate: 100,
-    avgMargins: 65,
-    avgTAM: 75000000000,
-    avgCAC: 150,
-    avgLTV: 1200,
-    typicalCompetitors: 12,
+    avgGrowthRate: 85,
+    avgMargins: 25, // Lower margins in India due to price sensitivity
+    avgTAM: 8300000000000, // ₹83,000 Cr
+    avgCAC: 830, // ₹830 (~$10)
+    avgLTV: 8300, // ₹8,300 (~$100)
+    typicalCompetitors: 18, // Highly competitive in India
     marketGrowthRate: 22
   },
+  "Fintech & Payments": {
+    avgGrowthRate: 110,
+    avgMargins: 60,
+    avgTAM: 6225000000000, // ₹62,250 Cr
+    avgCAC: 415, // ₹415 (~$5)
+    avgLTV: 4150, // ₹4,150 (~$50)
+    typicalCompetitors: 15, // Very competitive post-UPI
+    marketGrowthRate: 28 // India's fintech boom
+  },
   "Edtech & Learning": {
-    avgGrowthRate: 90,
-    avgMargins: 55,
-    avgTAM: 30000000000,
-    avgCAC: 200,
-    avgLTV: 800,
+    avgGrowthRate: 95,
+    avgMargins: 45,
+    avgTAM: 2490000000000, // ₹24,900 Cr
+    avgCAC: 1660, // ₹1,660 (~$20)
+    avgLTV: 8300, // ₹8,300 (~$100)
+    typicalCompetitors: 12,
+    marketGrowthRate: 25
+  },
+  "Healthcare & Wellness": {
+    avgGrowthRate: 75,
+    avgMargins: 40,
+    avgTAM: 6640000000000, // ₹66,400 Cr
+    avgCAC: 2490, // ₹2,490 (~$30)
+    avgLTV: 12450, // ₹12,450 (~$150)
     typicalCompetitors: 10,
     marketGrowthRate: 20
   },
-  "Healthcare & Wellness": {
-    avgGrowthRate: 70,
-    avgMargins: 45,
-    avgTAM: 80000000000,
-    avgCAC: 300,
-    avgLTV: 1500,
+  "Logistics & Supply Chain": {
+    avgGrowthRate: 65,
+    avgMargins: 20, // Thin margins in Indian logistics
+    avgTAM: 12450000000000, // ₹1,24,500 Cr
+    avgCAC: 4150, // ₹4,150 (~$50)
+    avgLTV: 24900, // ₹24,900 (~$300)
     typicalCompetitors: 9,
     marketGrowthRate: 15
   },
-  "Logistics & Supply Chain": {
-    avgGrowthRate: 60,
+  "Food & Beverage": {
+    avgGrowthRate: 55,
     avgMargins: 25,
-    avgTAM: 150000000000,
-    avgCAC: 500,
-    avgLTV: 3000,
-    typicalCompetitors: 7,
+    avgTAM: 9960000000000, // ₹99,600 Cr
+    avgCAC: 415, // ₹415 (~$5)
+    avgLTV: 4150, // ₹4,150 (~$50)
+    typicalCompetitors: 25, // Extremely competitive
     marketGrowthRate: 12
   },
-  "Food & Beverage": {
-    avgGrowthRate: 50,
-    avgMargins: 30,
-    avgTAM: 120000000000,
-    avgCAC: 25,
-    avgLTV: 200,
-    typicalCompetitors: 20,
-    marketGrowthRate: 8
-  },
   "Gaming & Entertainment": {
-    avgGrowthRate: 150,
-    avgMargins: 70,
-    avgTAM: 200000000000,
-    avgCAC: 5,
-    avgLTV: 50,
-    typicalCompetitors: 18,
-    marketGrowthRate: 28
+    avgGrowthRate: 140,
+    avgMargins: 65,
+    avgTAM: 16600000000000, // ₹1,66,000 Cr
+    avgCAC: 165, // ₹165 (~$2)
+    avgLTV: 1660, // ₹1,660 (~$20)
+    typicalCompetitors: 20,
+    marketGrowthRate: 32
   },
   "AgriTech & FoodTech": {
-    avgGrowthRate: 65,
-    avgMargins: 40,
-    avgTAM: 45000000000,
-    avgCAC: 100,
-    avgLTV: 600,
-    typicalCompetitors: 6,
-    marketGrowthRate: 14
+    avgGrowthRate: 70,
+    avgMargins: 35,
+    avgTAM: 3735000000000, // ₹37,350 Cr
+    avgCAC: 830, // ₹830 (~$10)
+    avgLTV: 4980, // ₹4,980 (~$60)
+    typicalCompetitors: 7,
+    marketGrowthRate: 18
   },
   "CleanTech & Sustainability": {
-    avgGrowthRate: 85,
-    avgMargins: 50,
-    avgTAM: 60000000000,
-    avgCAC: 400,
-    avgLTV: 2000,
-    typicalCompetitors: 5,
-    marketGrowthRate: 30
+    avgGrowthRate: 80,
+    avgMargins: 45,
+    avgTAM: 4980000000000, // ₹49,800 Cr
+    avgCAC: 3320, // ₹3,320 (~$40)
+    avgLTV: 16600, // ₹16,600 (~$200)
+    typicalCompetitors: 6,
+    marketGrowthRate: 35 // Government push for clean energy
   },
   "Manufacturing & Industrial": {
-    avgGrowthRate: 40,
-    avgMargins: 35,
-    avgTAM: 180000000000,
-    avgCAC: 1000,
-    avgLTV: 8000,
-    typicalCompetitors: 8,
-    marketGrowthRate: 6
+    avgGrowthRate: 45,
+    avgMargins: 30, // Lower margins in Indian manufacturing
+    avgTAM: 14940000000000, // ₹1,49,400 Cr
+    avgCAC: 8300, // ₹8,300 (~$100)
+    avgLTV: 66400, // ₹66,400 (~$800)
+    typicalCompetitors: 10,
+    marketGrowthRate: 10
   },
   "Other": {
     avgGrowthRate: 60,
-    avgMargins: 40,
-    avgTAM: 50000000000,
-    avgCAC: 200,
-    avgLTV: 1000,
+    avgMargins: 35,
+    avgTAM: 4150000000000, // ₹41,500 Cr
+    avgCAC: 1660, // ₹1,660 (~$20)
+    avgLTV: 8300, // ₹8,300 (~$100)
     typicalCompetitors: 10,
     marketGrowthRate: 15
   }
@@ -319,21 +320,37 @@ OUTPUT REQUIRED (JSON only, no markdown):
   }
 }
 
+// Currency conversion helper (matches the one in valuation-v2.ts)
+const CURRENCY_TO_INR: Record<string, number> = {
+  INR: 1,
+  USD: 83,
+  EUR: 90,
+  GBP: 105
+};
+
+function convertToINR(value: number, fromCurrency: string): number {
+  return value * (CURRENCY_TO_INR[fromCurrency] || 1);
+}
+
 function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): ValuationFormData {
   const benchmark = industryBenchmarks[simpleData.industry] || industryBenchmarks["Other"];
   const stageData = stageMultipliers[simpleData.stage] || stageMultipliers["Seed Stage"];
+  
+  // CRITICAL: Convert user revenue to INR since all benchmarks are in INR
+  // This ensures consistent calculations regardless of currency selected
+  const revenueINR = convertToINR(simpleData.revenue || 0, simpleData.currency);
   
   // Calculate intelligent defaults using AI insights first, then benchmarks
   const adjustedGrowthRate = Math.round(
     aiInsights?.marketAnalysis?.marketGrowthRate || 
     benchmark.avgGrowthRate * stageData.growthMultiplier
   );
-  const estimatedRevenue = simpleData.revenue || 0;
   
-  // Financial metrics: AI first, then benchmarks
+  // Financial metrics: AI first, then INR benchmarks
+  // Note: AI insights should already be in INR since we specify Indian context
   const cac = aiInsights?.financialMetrics?.cac || benchmark.avgCAC;
   const ltv = aiInsights?.financialMetrics?.ltv || benchmark.avgLTV;
-  const burnRate = aiInsights?.financialMetrics?.burnRate || (estimatedRevenue * 1.5) / 12;
+  const burnRate = aiInsights?.financialMetrics?.burnRate || (revenueINR * 1.5) / 12;
   const teamSize = aiInsights?.startupQuality?.teamSizeOptimal || stageData.teamSize;
   const runway = aiInsights?.financialMetrics?.runway || stageData.runway;
   
@@ -359,7 +376,7 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
       businessModel: "subscription"
     },
     financialData: {
-      revenue: estimatedRevenue,
+      revenue: revenueINR, // All values now in INR for consistent calculation
       cac: cac,
       ltv: ltv,
       burnRate: burnRate,
@@ -404,23 +421,36 @@ router.post("/simple", async (req, res) => {
   try {
     const simpleData = simpleInputSchema.parse(req.body);
     
-    // Enrich with AI insights
-    const aiInsights = await enrichWithAI(simpleData);
+    // Enrich with AI insights (non-blocking - use fallback if fails)
+    let aiInsights = null;
+    let aiUsed = false;
+    try {
+      aiInsights = await enrichWithAI(simpleData);
+      aiUsed = true;
+    } catch (error) {
+      console.warn("AI enrichment failed, using benchmarks:", error);
+    }
     
     // Build complete valuation data with intelligent defaults
     const fullData = buildFullValuationData(simpleData, aiInsights);
     
-    // Calculate valuation using existing calculator
-    const calculator = new ValuationCalculator();
-    const valuationResult = calculator.calculateValuation(fullData);
+    // Calculate valuation using corrected calculator
+    const calculator = new ValuationCalculatorV2();
+    const valuationResult = calculator.calculateValuation(fullData, simpleData.currency);
     
-    // Return comprehensive result
+    // Return comprehensive result with transparency
     res.json({
       ...valuationResult,
       inputData: fullData,
       aiInsights: aiInsights,
       currency: simpleData.currency,
-      simplifiedInput: simpleData
+      simplifiedInput: simpleData,
+      transparency: {
+        aiEnrichmentUsed: aiUsed,
+        methodsUsed: ["Scorecard Method", "Risk Factor Summation", "Venture Capital Method"],
+        dataQuality: aiUsed ? "AI-enhanced" : "Benchmark-based",
+        disclaimers: valuationResult.metadata?.disclaimers || []
+      }
     });
   } catch (error) {
     console.error("Simple valuation error:", error);
