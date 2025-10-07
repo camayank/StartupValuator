@@ -194,55 +194,115 @@ const stageMultipliers: Record<string, {
 
 async function enrichWithAI(simpleData: SimpleInput): Promise<any> {
   try {
-    const prompt = `You are an expert startup valuation analyst. Based on this minimal information, provide intelligent estimates for missing financial and market data:
+    const prompt = `You are a synthesis of the world's top valuation and startup experts: Aswath Damodaran (NYU valuation professor), Sam Altman (OpenAI CEO, Y Combinator), and Elon Musk (first principles thinker).
 
-Input:
+STARTUP DATA:
 - Business: ${simpleData.businessName || "Anonymous Startup"}
 - Industry: ${simpleData.industry}
 - Stage: ${simpleData.stage}
-- Revenue: ${simpleData.currency} ${simpleData.revenue}
+- Annual Revenue: ${simpleData.currency} ${simpleData.revenue.toLocaleString()}
 
-Provide realistic estimates for:
-1. Customer Acquisition Cost (CAC) for this industry and stage
-2. Customer Lifetime Value (LTV) ratio to CAC
-3. Monthly burn rate as a percentage of annual revenue
-4. Team composition and size
-5. Market positioning and competitive advantages
-6. Growth trajectory and key metrics
-7. Risk factors specific to this stage and industry
-8. 3-year revenue projections
+ANALYSIS FRAMEWORK (combining all three perspectives):
 
-Return ONLY a JSON object with these fields (no markdown, no explanation):
+1. DAMODARAN'S VALUATION RIGOR:
+   - Calculate industry-specific risk premium (equity risk premium + industry beta)
+   - Determine appropriate discount rate (WACC or required return)
+   - Estimate terminal value and sustainable growth rate
+   - Apply multiple valuation methods: DCF, Revenue Multiple, Comparable Companies
+   - Consider country risk premium (especially for India/emerging markets)
+
+2. SAM ALTMAN'S STARTUP INSIGHTS:
+   - Assess founder/team quality indicators (proxy from stage and industry)
+   - Evaluate network effects and scalability potential (1-10 scale)
+   - Analyze market timing (is this the right time for this business?)
+   - Estimate TAM/SAM/SOM and realistic market capture over 5 years
+   - Identify key growth levers and bottlenecks
+   - Evaluate product-market fit indicators
+
+3. ELON MUSK'S FIRST PRINCIPLES:
+   - Break down to fundamental value drivers (not industry averages)
+   - Assess technology moat and defensibility (1-10 scale)
+   - Evaluate exponential growth potential vs linear
+   - Analyze execution capability indicators
+   - Identify breakthrough potential vs incremental improvement
+   - Consider real-world impact and mission clarity
+
+OUTPUT REQUIRED (JSON only, no markdown):
 {
-  "estimatedMetrics": {
+  "valuationAnalysis": {
+    "discountRate": number (WACC or required return %),
+    "industryRiskPremium": number (%),
+    "terminalGrowthRate": number (%),
+    "revenueMultiple": number (industry typical multiple),
+    "confidenceLevel": number (0-1),
+    "valuationRange": {
+      "conservative": number,
+      "base": number,
+      "aggressive": number
+    }
+  },
+  "financialMetrics": {
     "cac": number,
     "ltv": number,
-    "burnRate": number,
-    "teamSize": number,
-    "runway": number
+    "ltvCacRatio": number,
+    "grossMargin": number (%),
+    "burnRate": number (monthly),
+    "runway": number (months),
+    "breakEvenTimeline": number (months)
   },
-  "marketInsights": {
-    "positioning": "string",
-    "competitiveAdvantage": "string",
-    "keyRisks": ["string"],
-    "opportunities": ["string"]
+  "marketAnalysis": {
+    "tam": number,
+    "sam": number,
+    "som": number,
+    "marketGrowthRate": number (%),
+    "marketShareYear5": number (%),
+    "competitiveDynamics": "string (fragmented/consolidated/emerging)",
+    "barriers ToEntry": ["string"],
+    "networkEffectScore": number (1-10)
   },
-  "projections": {
+  "startupQuality": {
+    "founderQualityScore": number (1-10, based on stage/industry signals),
+    "teamSizeOptimal": number,
+    "executionCapabilityScore": number (1-10),
+    "productMarketFitStage": "string (searching/emerging/strong)",
+    "technologyMoatScore": number (1-10),
+    "scalabilityScore": number (1-10)
+  },
+  "growthProjections": {
     "year1Revenue": number,
     "year2Revenue": number,
     "year3Revenue": number,
-    "growthRate": number
+    "year4Revenue": number,
+    "year5Revenue": number,
+    "growthType": "exponential" | "linear" | "s-curve",
+    "keyGrowthDrivers": ["string"]
   },
-  "recommendations": {
-    "fundingStrategy": "string",
+  "riskAssessment": {
+    "overallRiskLevel": "low" | "medium" | "high",
+    "marketRisks": ["string"],
+    "executionRisks": ["string"],
+    "financialRisks": ["string"],
+    "competitiveRisks": ["string"],
+    "mitigationStrategies": ["string"]
+  },
+  "strategicInsights": {
+    "keyStrengths": ["string"],
+    "criticalWeaknesses": ["string"],
     "nextMilestones": ["string"],
-    "valuation Drivers": ["string"]
+    "fundingStrategy": "string",
+    "valuationDrivers": ["string"],
+    "pivotSuggestions": ["string"]
+  },
+  "comparableCompanies": {
+    "similarCompanies": ["string (company name and brief context)"],
+    "typicalValuations": "string (range and reasoning)"
   }
 }`;
 
     const response = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
-      max_tokens: 2048,
+      max_tokens: 4096,
+      temperature: 0.7,
       messages: [{
         role: "user",
         content: prompt
@@ -263,29 +323,39 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
   const benchmark = industryBenchmarks[simpleData.industry] || industryBenchmarks["Other"];
   const stageData = stageMultipliers[simpleData.stage] || stageMultipliers["Seed Stage"];
   
-  // Calculate intelligent defaults
-  const adjustedGrowthRate = Math.round(benchmark.avgGrowthRate * stageData.growthMultiplier);
+  // Calculate intelligent defaults using AI insights first, then benchmarks
+  const adjustedGrowthRate = Math.round(
+    aiInsights?.marketAnalysis?.marketGrowthRate || 
+    benchmark.avgGrowthRate * stageData.growthMultiplier
+  );
   const estimatedRevenue = simpleData.revenue || 0;
   
-  // Use AI insights if available, otherwise use benchmarks
-  const cac = aiInsights?.estimatedMetrics?.cac || benchmark.avgCAC;
-  const ltv = aiInsights?.estimatedMetrics?.ltv || benchmark.avgLTV;
-  const burnRate = aiInsights?.estimatedMetrics?.burnRate || (estimatedRevenue * 1.5) / 12;
-  const teamSize = aiInsights?.estimatedMetrics?.teamSize || stageData.teamSize;
+  // Financial metrics: AI first, then benchmarks
+  const cac = aiInsights?.financialMetrics?.cac || benchmark.avgCAC;
+  const ltv = aiInsights?.financialMetrics?.ltv || benchmark.avgLTV;
+  const burnRate = aiInsights?.financialMetrics?.burnRate || (estimatedRevenue * 1.5) / 12;
+  const teamSize = aiInsights?.startupQuality?.teamSizeOptimal || stageData.teamSize;
+  const runway = aiInsights?.financialMetrics?.runway || stageData.runway;
   
-  // Calculate market sizes based on revenue and industry
-  const tam = benchmark.avgTAM;
-  const sam = tam * 0.1; // 10% of TAM
-  const som = sam * 0.05; // 5% of SAM
+  // Market sizes: Use AI insights if available
+  const tam = aiInsights?.marketAnalysis?.tam || benchmark.avgTAM;
+  const sam = aiInsights?.marketAnalysis?.sam || tam * 0.1;
+  const som = aiInsights?.marketAnalysis?.som || sam * 0.05;
+
+  // Determine product stage and maturity
+  const productStage = simpleData.stage.includes("Pre-seed") ? "concept" : 
+                      simpleData.stage.includes("Seed") ? "prototype" : "production";
+  
+  // Use AI-determined risk levels if available
+  const overallRisk = aiInsights?.riskAssessment?.overallRiskLevel || stageData.riskLevel;
 
   return {
     businessInfo: {
       name: simpleData.businessName || "My Startup",
-      sector: simpleData.industry.split(" ")[0], // Extract first word as sector
+      sector: simpleData.industry.split(" ")[0],
       industry: simpleData.industry,
       location: "India",
-      productStage: simpleData.stage.includes("Pre-seed") ? "concept" : 
-                    simpleData.stage.includes("Seed") ? "prototype" : "production",
+      productStage: productStage,
       businessModel: "subscription"
     },
     financialData: {
@@ -293,7 +363,7 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
       cac: cac,
       ltv: ltv,
       burnRate: burnRate,
-      runway: stageData.runway
+      runway: runway
     },
     marketData: {
       tam: tam,
@@ -303,7 +373,7 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
       competitors: []
     },
     productDetails: {
-      maturity: simpleData.stage.includes("Pre-seed") ? "concept" : "production",
+      maturity: productStage,
       features: [],
       techStack: [],
       deployment: "cloud"
@@ -314,17 +384,17 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
       advisors: []
     },
     riskFactors: {
-      overall: stageData.riskLevel as any,
-      market: stageData.riskLevel as any,
-      execution: stageData.riskLevel as any,
-      financial: stageData.riskLevel as any
+      overall: overallRisk as any,
+      market: overallRisk as any,
+      execution: overallRisk as any,
+      financial: overallRisk as any
     },
     valuationInputs: {
       method: "hybrid",
-      expectedROI: 25,
+      expectedROI: aiInsights?.valuationAnalysis?.discountRate || 25,
       timeHorizon: 5,
-      discountRate: 15,
-      terminalGrowthRate: 3
+      discountRate: aiInsights?.valuationAnalysis?.discountRate || 15,
+      terminalGrowthRate: aiInsights?.valuationAnalysis?.terminalGrowthRate || 3
     },
     aiInsights: aiInsights
   };

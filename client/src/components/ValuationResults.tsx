@@ -25,6 +25,11 @@ interface ValuationResult {
   };
   aiInsights?: any;
   factors?: string[];
+  currency?: string;
+  range?: {
+    low: number;
+    high: number;
+  };
 }
 
 interface ValuationResultsProps {
@@ -33,10 +38,18 @@ interface ValuationResultsProps {
 }
 
 export function ValuationResults({ result, onStartOver }: ValuationResultsProps) {
+  // Use the currency from the result, default to INR for India-focused platform
+  const currency = result.currency || 'INR';
+  
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
+    // Determine locale based on currency
+    const locale = currency === 'INR' ? 'en-IN' : 
+                   currency === 'EUR' ? 'de-DE' :
+                   currency === 'GBP' ? 'en-GB' : 'en-US';
+    
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: 'USD',
+      currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
@@ -74,6 +87,31 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </Badge>
         </CardHeader>
         <CardContent>
+          {result.aiInsights?.valuationAnalysis && (
+            <div className="mb-6 p-4 bg-muted/50 rounded-lg space-y-2">
+              <p className="text-sm font-semibold text-center mb-3">Valuation Range Analysis</p>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Conservative</p>
+                  <p className="text-base font-semibold text-orange-600">
+                    {formatCurrency(result.aiInsights.valuationAnalysis.valuationRange?.conservative || result.range?.low || result.valuation * 0.7)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Base Case</p>
+                  <p className="text-base font-semibold text-primary">
+                    {formatCurrency(result.aiInsights.valuationAnalysis.valuationRange?.base || result.valuation)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Aggressive</p>
+                  <p className="text-base font-semibold text-green-600">
+                    {formatCurrency(result.aiInsights.valuationAnalysis.valuationRange?.aggressive || result.range?.high || result.valuation * 1.3)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-2">
@@ -163,6 +201,127 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </CardContent>
         </Card>
       </div>
+
+      {/* Startup Quality Scores (Musk + Altman perspective) */}
+      {result.aiInsights?.startupQuality && (
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-background">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+              Startup Quality Assessment
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Expert analysis combining founder quality, technology moat, and scalability potential</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="text-center p-4 rounded-lg bg-background border">
+                <p className="text-sm text-muted-foreground mb-2">Founder Quality</p>
+                <p className="text-3xl font-bold text-purple-600">{result.aiInsights.startupQuality.founderQualityScore || 'N/A'}/10</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-background border">
+                <p className="text-sm text-muted-foreground mb-2">Technology Moat</p>
+                <p className="text-3xl font-bold text-blue-600">{result.aiInsights.startupQuality.technologyMoatScore || 'N/A'}/10</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-background border">
+                <p className="text-sm text-muted-foreground mb-2">Scalability</p>
+                <p className="text-3xl font-bold text-green-600">{result.aiInsights.startupQuality.scalabilityScore || 'N/A'}/10</p>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-muted/50 rounded">
+              <p className="text-sm"><span className="font-semibold">Product-Market Fit:</span> {result.aiInsights.startupQuality.productMarketFitStage || 'Assessing'}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 5-Year Growth Trajectory (Damodaran DCF approach) */}
+      {result.aiInsights?.growthProjections && (
+        <Card className="border-green-200 bg-gradient-to-br from-green-50/50 to-background">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              5-Year Growth Trajectory
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Revenue projections based on industry benchmarks and growth patterns</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-5 gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map(year => {
+                const revenue = result.aiInsights.growthProjections[`year${year}Revenue`];
+                return (
+                  <div key={year} className="text-center p-3 rounded-lg bg-background border">
+                    <p className="text-xs text-muted-foreground mb-1">Year {year}</p>
+                    <p className="text-sm font-semibold">{revenue ? formatCurrency(revenue) : 'N/A'}</p>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="p-3 bg-muted/50 rounded">
+              <p className="text-sm"><span className="font-semibold">Growth Pattern:</span> {result.aiInsights.growthProjections.growthType || 'Linear'}</p>
+              {result.aiInsights.growthProjections.keyGrowthDrivers && (
+                <p className="text-sm mt-1"><span className="font-semibold">Key Drivers:</span> {result.aiInsights.growthProjections.keyGrowthDrivers.join(', ')}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Strategic Insights & Comparable Companies */}
+      {result.aiInsights?.strategicInsights && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Strategic Insights & Next Steps
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="font-semibold text-sm mb-2">Key Strengths:</p>
+              <ul className="text-sm space-y-1">
+                {result.aiInsights.strategicInsights.keyStrengths?.map((strength, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{strength}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {result.aiInsights.strategicInsights.fundingStrategy && (
+              <div className="p-3 bg-primary/5 rounded-lg">
+                <p className="font-semibold text-sm mb-1">Funding Strategy:</p>
+                <p className="text-sm text-muted-foreground">{result.aiInsights.strategicInsights.fundingStrategy}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Comparable Companies (Damodaran comparative valuation) */}
+      {result.aiInsights?.comparableCompanies?.similarCompanies && (
+        <Card className="border-blue-200 bg-gradient-to-br from-blue-50/50 to-background">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Comparable Companies
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 mb-4">
+              {result.aiInsights.comparableCompanies.similarCompanies.map((company, idx) => (
+                <li key={idx} className="text-sm p-2 bg-background rounded border">
+                  {company}
+                </li>
+              ))}
+            </ul>
+            {result.aiInsights.comparableCompanies.typicalValuations && (
+              <div className="p-3 bg-muted/50 rounded">
+                <p className="text-sm text-muted-foreground">{result.aiInsights.comparableCompanies.typicalValuations}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Separator />
 
