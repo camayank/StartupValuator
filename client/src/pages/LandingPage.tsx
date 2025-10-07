@@ -82,8 +82,8 @@ export function LandingPage() {
         "Market opportunity sizing and validation",
         "Comparable transaction analysis"
       ],
-      cta: "Request Demo",
-      ctaHref: "/demo"
+      cta: "View Dashboard",
+      ctaHref: "/dashboard"
     },
     {
       icon: Award,
@@ -95,8 +95,8 @@ export function LandingPage() {
         "Regulatory compliance and audit trails",
         "Multi-currency and international support"
       ],
-      cta: "Partner With Us",
-      ctaHref: "/partners"
+      cta: "View Analytics",
+      ctaHref: "/analytics"
     }
   ];
 

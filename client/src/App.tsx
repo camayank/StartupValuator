@@ -1,6 +1,7 @@
 import React, { Suspense, useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
+import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/ui/navigation";
 import { ValidationProvider } from "@/contexts/ValidationContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -55,6 +56,11 @@ function App() {
                       <p className="text-muted-foreground mb-6">
                         The page you're looking for doesn't exist.
                       </p>
+                      <Link href="/">
+                        <Button>
+                          Back to Home
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </Route>
