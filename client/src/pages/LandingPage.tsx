@@ -35,25 +35,25 @@ export function LandingPage() {
     {
       icon: Brain,
       title: "AI-Powered Valuation",
-      description: "Advanced machine learning algorithms analyze 200+ data points for precise startup valuations",
+      description: "Advanced algorithms analyze 200+ data points tailored for Indian and global startup ecosystems",
       color: "from-blue-500 to-purple-600"
     },
     {
-      icon: BarChart3,
-      title: "Real-Time Market Data",
-      description: "Live market intelligence and competitor benchmarking across 50+ industries",
+      icon: Globe,
+      title: "Multi-Currency Support",
+      description: "INR, USD, EUR, GBP, and 40+ currencies. Localized for India, US, Europe & Asia markets",
       color: "from-green-500 to-teal-600"
     },
     {
       icon: Shield,
       title: "Enterprise Security",
-      description: "Bank-grade encryption and compliance with SOC 2 and GDPR standards",
+      description: "Bank-grade encryption with compliance to global standards including GDPR",
       color: "from-orange-500 to-red-600"
     },
     {
       icon: TrendingUp,
-      title: "Growth Forecasting",
-      description: "Predictive modeling for revenue, market share, and funding requirements",
+      title: "Regional Intelligence",
+      description: "Market data from India, Southeast Asia, US, and European startup ecosystems",
       color: "from-purple-500 to-pink-600"
     }
   ];
@@ -61,44 +61,44 @@ export function LandingPage() {
   const benefits = [
     {
       icon: Building2,
-      title: "For Startups",
-      description: "Accelerate fundraising with professional-grade valuations",
+      title: "For Indian Startups",
+      description: "Perfect for Seed to Series C rounds with INR valuations",
       points: [
-        "Instant AI-powered valuations with 95% accuracy",
-        "Industry-specific benchmarking and analysis",
-        "Investor-ready reports and presentations",
-        "Growth scenario modeling and projections"
+        "Instant valuations in INR, USD, or your preferred currency",
+        "India-specific benchmarking (SaaS, D2C, Fintech, Edtech)",
+        "Pre-seed to Series C funding stage analysis",
+        "SEBI-compliant valuation reports"
       ]
     },
     {
       icon: Users,
-      title: "For Investors",
-      description: "Make confident decisions with comprehensive deal analysis",
+      title: "For Global Investors",
+      description: "Evaluate startups across emerging and developed markets",
       points: [
-        "Due diligence automation and risk assessment",
-        "Portfolio company performance tracking",
-        "Market opportunity sizing and validation",
-        "Comparable transaction analysis"
+        "Multi-region deal flow analysis (India, SEA, US, EU)",
+        "Currency-adjusted comparable analysis",
+        "Cross-border investment risk assessment",
+        "Portfolio tracking in multiple currencies"
       ]
     },
     {
       icon: Award,
-      title: "For Advisors",
-      description: "Deliver expert consulting with data-driven insights",
+      title: "For CA & Advisors",
+      description: "Professional reports for Indian and international clients",
       points: [
-        "White-label valuation reports for clients",
-        "Advanced analytics and market intelligence",
-        "Regulatory compliance and audit trails",
-        "Multi-currency and international support"
+        "Compliant with Indian valuation standards",
+        "Multi-currency white-label reports",
+        "Support for FDI and cross-border deals",
+        "Integration with Indian accounting practices"
       ]
     }
   ];
 
   const stats = [
     { value: "10,000+", label: "Startups Valued", icon: Building2 },
-    { value: "$50B+", label: "Total Valuations", icon: DollarSign },
+    { value: "₹4,000Cr+", label: "Total Valuations", icon: DollarSign },
     { value: "95%", label: "Accuracy Rate", icon: Target },
-    { value: "24/7", label: "Platform Uptime", icon: Shield }
+    { value: "50+", label: "Countries Served", icon: Globe }
   ];
 
   const container = {
@@ -144,7 +144,7 @@ export function LandingPage() {
             >
               <Sparkles className="h-4 w-4 text-primary mr-2" />
               <span className="text-sm font-medium text-primary">
-                AI-Powered Startup Valuation Platform
+                #1 AI-Powered Valuation Platform for India & Global Markets
               </span>
             </motion.div>
 
@@ -166,7 +166,7 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              Get accurate, data-driven valuations for your startup in minutes using advanced AI and real market data.
+              Get accurate, data-driven valuations in minutes. Supporting INR, USD, EUR & 40+ currencies for startups across India and the world.
             </motion.p>
             <motion.div 
               className="flex flex-col sm:flex-row gap-4 justify-center items-center"
@@ -181,8 +181,8 @@ export function LandingPage() {
                 </Button>
               </Link>
               <SocialShare 
-                title="ValuationPro - Get Your Startup Valued in Minutes!"
-                description="I just found this amazing AI-powered startup valuation platform. Get accurate, investor-ready valuations for FREE!"
+                title="ValuationPro - India's #1 Startup Valuation Tool"
+                description="Free AI-powered valuations in INR! Perfect for Indian startups from Pre-seed to Series C. Check it out! 🇮🇳🚀"
                 variant="outline"
                 size="lg"
               />
@@ -252,8 +252,8 @@ export function LandingPage() {
               <span className="font-bold text-primary">Share & Earn:</span> Refer friends and unlock premium features for free!
             </p>
             <SocialShare 
-              title="ValuationPro - Free Startup Valuation Tool"
-              description="Check out this amazing AI-powered startup valuation platform! Get your startup valued for FREE 🚀"
+              title="Get Your Startup Valued in INR - Free!"
+              description="India's #1 AI-powered valuation tool. Get accurate valuations in INR, USD & 40+ currencies. Perfect for Seed to Series C! 🇮🇳🚀"
               size="sm"
               showLabel={false}
             />
@@ -362,7 +362,7 @@ export function LandingPage() {
             Ready to Value Your Startup?
           </h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Join thousands of founders making data-driven decisions with our platform
+            Join 10,000+ founders from India, Singapore, Dubai, and 50+ countries making data-driven decisions
           </p>
           <Link href="/valuation/calculator">
             <Button

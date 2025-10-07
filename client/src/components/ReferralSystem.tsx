@@ -152,8 +152,8 @@ export function ReferralSystem() {
             <div className="pt-4">
               <p className="text-sm text-muted-foreground mb-3">Share on social media:</p>
               <SocialShare 
-                title="Get Your Startup Valued for FREE with ValuationPro!"
-                description={`Use my referral code ${referralCode} to get bonus credits and start your free valuation today! 🚀`}
+                title="Get FREE Startup Valuation in INR with ValuationPro!"
+                description={`Use my code ${referralCode} for bonus credits! India's #1 AI-powered valuation tool for Seed to Series C startups 🇮🇳🚀`}
                 url={getReferralUrl()}
                 size="lg"
               />

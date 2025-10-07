@@ -12,20 +12,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
   useReferralTracking();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
 
   return (
     <ValidationProvider>
