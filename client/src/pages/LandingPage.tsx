@@ -370,7 +370,7 @@ export function LandingPage() {
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
             Join thousands of founders making data-driven decisions with our platform
           </p>
-          <Link href="/auth?mode=signup">
+          <Link href="/valuation/calculator">
             <Button
               size="lg"
               variant="secondary"
