@@ -18,11 +18,13 @@ interface ValuationResult {
   valuation: number;
   confidence: number;
   methodologies: Record<string, number>;
-  analysis: {
+  analysis?: {
     summary: string;
     recommendations: string[];
     risks: string[];
   };
+  aiInsights?: any;
+  factors?: string[];
 }
 
 interface ValuationResultsProps {
@@ -114,7 +116,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground leading-relaxed">
-            {result.analysis.summary}
+            {result.analysis?.summary || result.aiInsights?.marketInsights?.positioning || "Your startup valuation has been calculated using industry benchmarks and AI-powered analysis."}
           </p>
         </CardContent>
       </Card>
@@ -131,7 +133,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {result.analysis.recommendations.map((rec, index) => (
+              {(result.analysis?.recommendations || result.aiInsights?.recommendations?.nextMilestones || result.factors || ['Continue building and validating your business model']).map((rec, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">{rec}</span>
@@ -151,7 +153,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {result.analysis.risks.map((risk, index) => (
+              {(result.analysis?.risks || result.aiInsights?.marketInsights?.keyRisks || ['General market risks apply']).map((risk, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">{risk}</span>
