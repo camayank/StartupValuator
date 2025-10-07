@@ -6,11 +6,11 @@ import { ValidationProvider } from "@/contexts/ValidationContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ValuationWizardContainer } from "@/components/ValuationWizardContainer";
-import { ExecutiveDashboard } from "@/components/dashboards/ExecutiveDashboard";
-import { AdvancedCharts } from "@/components/charts/AdvancedCharts";
-import { SmartFormValidation } from "@/components/forms/SmartFormValidation";
 import { ReferralSystem } from "@/components/ReferralSystem";
 import { LandingPage } from "./pages/LandingPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { SmartFormPage } from "./pages/SmartFormPage";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 
 function App() {
@@ -44,6 +44,9 @@ function App() {
                     <ValuationWizardContainer />
                   </div>
                 </Route>
+                <Route path="/dashboard" component={DashboardPage} />
+                <Route path="/analytics" component={AnalyticsPage} />
+                <Route path="/smart-form" component={SmartFormPage} />
                 <Route path="/referral" component={ReferralSystem} />
                 <Route>
                   <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
