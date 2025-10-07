@@ -11,12 +11,13 @@ import { AdvancedCharts } from "@/components/charts/AdvancedCharts";
 import { SmartFormValidation } from "@/components/forms/SmartFormValidation";
 import { ReferralSystem } from "@/components/ReferralSystem";
 import { LandingPage } from "./pages/LandingPage";
+import { useReferralTracking } from "@/hooks/useReferralTracking";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  useReferralTracking();
 
   useEffect(() => {
-    // Simulate initial load
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);

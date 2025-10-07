@@ -18,18 +18,46 @@ export function ReferralSystem() {
   });
 
   useEffect(() => {
-    const code = localStorage.getItem('referralCode');
+    let code = localStorage.getItem('referralCode');
     if (!code) {
       const newCode = generateReferralCode();
       localStorage.setItem('referralCode', newCode);
+      code = newCode;
       setReferralCode(newCode);
     } else {
       setReferralCode(code);
     }
 
-    const stats = localStorage.getItem('referralStats');
-    if (stats) {
-      setReferralStats(JSON.parse(stats));
+    const myStats = localStorage.getItem(`referrer_${code}_stats`);
+    if (myStats) {
+      setReferralStats(JSON.parse(myStats));
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode && refCode !== code) {
+      const alreadyReferred = localStorage.getItem('referredBy');
+      if (!alreadyReferred) {
+        localStorage.setItem('referredBy', refCode);
+        analytics.trackReferral(refCode);
+        
+        const referrerStats = localStorage.getItem(`referrer_${refCode}_stats`);
+        if (referrerStats) {
+          const stats = JSON.parse(referrerStats);
+          stats.referrals += 1;
+          stats.creditsEarned += 100;
+          if (stats.referrals >= 10) stats.rank = "Silver";
+          if (stats.referrals >= 50) stats.rank = "Gold";
+          if (stats.referrals >= 100) stats.rank = "Platinum";
+          localStorage.setItem(`referrer_${refCode}_stats`, JSON.stringify(stats));
+        } else {
+          localStorage.setItem(`referrer_${refCode}_stats`, JSON.stringify({
+            referrals: 1,
+            creditsEarned: 100,
+            rank: "Bronze"
+          }));
+        }
+      }
     }
   }, []);
 

@@ -8,7 +8,7 @@ declare global {
 export const analytics = {
   pageView: (url: string) => {
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('config', 'G-XXXXXXXXXX', {
+      window.gtag('event', 'page_view', {
         page_path: url,
       });
     }
