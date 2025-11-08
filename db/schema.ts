@@ -9,3 +9,6 @@ export * from "./schema/relations/user-business";
 export * from "./schema/relations/business-valuation";
 export * from "./schema/relations/valuation-market";
 export * from "./schema/relations/valuation-reports";
+
+// Indian Startup Valuation Platform Schema
+export * from "./schema/indian-startup";
