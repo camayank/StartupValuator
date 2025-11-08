@@ -4,15 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle2, 
+import {
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
   BarChart3,
   Download,
-  RefreshCw 
+  RefreshCw,
+  PieChart as PieChartIcon,
+  LineChart as LineChartIcon,
+  Sparkles,
+  Target,
+  Award
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 interface ValuationResult {
   valuation: number;
@@ -47,22 +54,30 @@ interface ValuationResultsProps {
   onStartOver: () => void;
 }
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
 export function ValuationResults({ result, onStartOver }: ValuationResultsProps) {
   // Use the currency from the result, default to INR for India-focused platform
   const currency = result.currency || 'INR';
-  
+
   const formatCurrency = (value: number) => {
     // Determine locale based on currency
-    const locale = currency === 'INR' ? 'en-IN' : 
+    const locale = currency === 'INR' ? 'en-IN' :
                    currency === 'EUR' ? 'de-DE' :
                    currency === 'GBP' ? 'en-GB' : 'en-US';
-    
+
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  const formatCompact = (value: number) => {
+    if (value >= 10000000) return `${(value / 10000000).toFixed(1)}Cr`;
+    if (value >= 100000) return `${(value / 100000).toFixed(1)}L`;
+    return formatCurrency(value);
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -77,11 +92,46 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
     return 'Low Confidence';
   };
 
+  // Prepare chart data
+  const methodologyData = Object.entries(result.methodologies).map(([name, value]) => ({
+    name: name.replace(' Method', '').replace(' Valuation', ''),
+    value: value,
+    percentage: ((value / result.valuation) * 100).toFixed(1)
+  }));
+
+  const rangeData = [
+    {
+      name: 'Conservative',
+      value: result.aiInsights?.valuationAnalysis?.valuationRange?.conservative || result.range?.low || result.valuation * 0.7,
+      fill: '#f59e0b'
+    },
+    {
+      name: 'Base Case',
+      value: result.valuation,
+      fill: '#3b82f6'
+    },
+    {
+      name: 'Aggressive',
+      value: result.aiInsights?.valuationAnalysis?.valuationRange?.aggressive || result.range?.high || result.valuation * 1.3,
+      fill: '#10b981'
+    }
+  ];
+
   return (
-    <div className="space-y-8">
-      {/* AI Failure Warning Banner - Prominent if AI didn't enrich */}
+    <motion.div
+      className="space-y-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* AI Failure Warning Banner */}
       {result.transparency && !result.transparency.aiEnrichmentUsed && (
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
+        <motion.div
+          className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -96,426 +146,326 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Premium Header */}
-      <div className="text-center space-y-2 mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          Your Professional Valuation Report
+      <motion.div
+        className="text-center space-y-4 mb-8"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4">
+          <Sparkles className="h-4 w-4 text-primary mr-2" />
+          <span className="text-sm font-medium text-primary">
+            AI-Powered Professional Analysis
+          </span>
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
+          Your Valuation Report
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Analyzed using methodologies from Aswath Damodaran (NYU), Sam Altman (OpenAI), and Elon Musk's first principles approach
+          Analyzed using methodologies from <span className="font-semibold text-primary">Aswath Damodaran (NYU)</span>, <span className="font-semibold text-primary">Sam Altman (OpenAI)</span>, and <span className="font-semibold text-primary">Elon Musk's</span> first principles approach
         </p>
-      </div>
+      </motion.div>
 
-      {/* Main Valuation Result */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-xl">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl mb-4">
-            <DollarSign className="h-8 w-8 text-primary" />
-            Estimated Valuation
-          </CardTitle>
-          <div className="text-5xl md:text-6xl font-bold text-primary mb-4">
-            {formatCurrency(result.valuation)}
-          </div>
-          <Badge 
-            variant="outline" 
-            className={`text-sm px-3 py-1 ${getConfidenceColor(result.confidence)}`}
-          >
-            {getConfidenceLabel(result.confidence)} ({Math.round(result.confidence * 100)}%)
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          {result.aiInsights?.valuationAnalysis && (
-            <div className="mb-6 p-4 bg-muted/50 rounded-lg space-y-2">
-              <p className="text-sm font-semibold text-center mb-3">Valuation Range Analysis</p>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Conservative</p>
-                  <p className="text-base font-semibold text-orange-600">
-                    {formatCurrency(result.aiInsights.valuationAnalysis.valuationRange?.conservative || result.range?.low || result.valuation * 0.7)}
+      {/* Main Valuation Result with Animation */}
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+      >
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/10 shadow-2xl">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="flex items-center justify-center gap-2 text-2xl mb-4">
+              <DollarSign className="h-8 w-8 text-primary" />
+              Estimated Valuation
+            </CardTitle>
+            <motion.div
+              className="text-6xl md:text-7xl font-bold text-primary mb-6"
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.5, type: "spring", stiffness: 150 }}
+            >
+              {formatCurrency(result.valuation)}
+            </motion.div>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <Badge
+                variant="outline"
+                className={`text-sm px-4 py-2 ${getConfidenceColor(result.confidence)}`}
+              >
+                <Target className="h-4 w-4 mr-2" />
+                {getConfidenceLabel(result.confidence)} ({Math.round(result.confidence * 100)}%)
+              </Badge>
+              <Badge variant="outline" className="text-sm px-4 py-2 bg-blue-50 text-blue-700 border-blue-200">
+                <Award className="h-4 w-4 mr-2" />
+                Professional Grade
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Valuation Range Visualization */}
+            <div className="p-6 bg-gradient-to-r from-muted/30 to-muted/50 rounded-xl border border-primary/10">
+              <p className="text-sm font-semibold text-center mb-4">📊 Valuation Range Analysis</p>
+              <div className="grid grid-cols-3 gap-6 text-center mb-6">
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <p className="text-xs text-muted-foreground mb-2">Conservative</p>
+                  <p className="text-xl font-bold text-orange-600">
+                    {formatCompact(result.aiInsights?.valuationAnalysis?.valuationRange?.conservative || result.range?.low || result.valuation * 0.7)}
                   </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Base Case</p>
-                  <p className="text-base font-semibold text-primary">
-                    {formatCurrency(result.aiInsights.valuationAnalysis.valuationRange?.base || result.valuation)}
+                  <p className="text-xs text-orange-500 mt-1">70% of base</p>
+                </motion.div>
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <p className="text-xs text-muted-foreground mb-2">Base Case</p>
+                  <p className="text-xl font-bold text-primary">
+                    {formatCompact(result.valuation)}
                   </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Aggressive</p>
-                  <p className="text-base font-semibold text-green-600">
-                    {formatCurrency(result.aiInsights.valuationAnalysis.valuationRange?.aggressive || result.range?.high || result.valuation * 1.3)}
+                  <p className="text-xs text-primary mt-1">Recommended</p>
+                </motion.div>
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <p className="text-xs text-muted-foreground mb-2">Aggressive</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {formatCompact(result.aiInsights?.valuationAnalysis?.valuationRange?.aggressive || result.range?.high || result.valuation * 1.3)}
                   </p>
-                </div>
+                  <p className="text-xs text-green-500 mt-1">130% of base</p>
+                </motion.div>
+              </div>
+              {/* Bar Chart for Range Visualization */}
+              <ResponsiveContainer width="100%" height={120}>
+                <BarChart data={rangeData}>
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis hide />
+                  <Tooltip formatter={(value) => formatCompact(Number(value))} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {rangeData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Confidence Progress */}
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Confidence Score</span>
+                <span className="font-bold text-primary">{Math.round(result.confidence * 100)}%</span>
+              </div>
+              <Progress value={result.confidence * 100} className="h-3" />
+              <p className="text-xs text-muted-foreground">
+                Based on data quality, industry benchmarks, and AI analysis depth
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Methodology Breakdown with Pie Chart */}
+      <motion.div
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Card className="border border-primary/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieChartIcon className="h-5 w-5 text-primary" />
+              Valuation Methodologies Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Pie Chart */}
+              <div className="flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={methodologyData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {methodologyData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* List View */}
+              <div className="space-y-4">
+                {Object.entries(result.methodologies).map(([method, value], index) => (
+                  <motion.div
+                    key={method}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted"
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <span className="font-medium text-sm">{method}</span>
+                    </div>
+                    <span className="text-lg font-bold text-primary">{formatCompact(value)}</span>
+                  </motion.div>
+                ))}
               </div>
             </div>
-          )}
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Confidence Score</span>
-                <span>{Math.round(result.confidence * 100)}%</span>
-              </div>
-              <Progress value={result.confidence * 100} className="h-2" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Methodology Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Valuation Methodologies
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Object.entries(result.methodologies).map(([method, value]) => (
-              <div key={method} className="flex items-center justify-between">
-                <span className="font-medium">{method}</span>
-                <span className="text-lg font-semibold">{formatCurrency(value)}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Analysis Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            AI Analysis Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground leading-relaxed">
-            {result.analysis?.summary || result.aiInsights?.marketInsights?.positioning || "Your startup valuation has been calculated using industry benchmarks and AI-powered analysis."}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Recommendations & Risks */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Recommendations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-700">
-              <CheckCircle2 className="h-5 w-5" />
-              Recommendations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {(result.analysis?.recommendations || result.aiInsights?.recommendations?.nextMilestones || result.factors || ['Continue building and validating your business model']).map((rec: string, index: number) => (
-                <li key={index} className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{rec}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Risk Factors */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-700">
-              <AlertTriangle className="h-5 w-5" />
-              Risk Factors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {(result.analysis?.risks || result.aiInsights?.marketInsights?.keyRisks || ['General market risks apply']).map((risk: string, index: number) => (
-                <li key={index} className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{risk}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Startup Quality Scores (Musk + Altman perspective) */}
-      {result.aiInsights?.startupQuality && (
-        <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-background">
+      <motion.div
+        initial={{ x: 20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card className="border border-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-purple-600" />
-              Startup Quality Assessment
+              <TrendingUp className="h-5 w-5 text-primary" />
+              AI Analysis Summary
             </CardTitle>
-            <p className="text-sm text-muted-foreground">Expert analysis combining founder quality, technology moat, and scalability potential</p>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="text-center p-4 rounded-lg bg-background border">
-                <p className="text-sm text-muted-foreground mb-2">Founder Quality</p>
-                <p className="text-3xl font-bold text-purple-600">{result.aiInsights.startupQuality.founderQualityScore || 'N/A'}/10</p>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-background border">
-                <p className="text-sm text-muted-foreground mb-2">Technology Moat</p>
-                <p className="text-3xl font-bold text-blue-600">{result.aiInsights.startupQuality.technologyMoatScore || 'N/A'}/10</p>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-background border">
-                <p className="text-sm text-muted-foreground mb-2">Scalability</p>
-                <p className="text-3xl font-bold text-green-600">{result.aiInsights.startupQuality.scalabilityScore || 'N/A'}/10</p>
-              </div>
-            </div>
-            <div className="mt-4 p-3 bg-muted/50 rounded">
-              <p className="text-sm"><span className="font-semibold">Product-Market Fit:</span> {result.aiInsights.startupQuality.productMarketFitStage || 'Assessing'}</p>
-            </div>
+            <p className="text-muted-foreground leading-relaxed text-lg">
+              {result.analysis?.summary || result.aiInsights?.marketInsights?.positioning || "Your startup valuation has been calculated using industry benchmarks and AI-powered analysis tailored to your business stage and market position."}
+            </p>
           </CardContent>
         </Card>
-      )}
+      </motion.div>
 
-      {/* 5-Year Growth Trajectory (Damodaran DCF approach) */}
-      {result.aiInsights?.growthProjections && (
-        <Card className="border-green-200 bg-gradient-to-br from-green-50/50 to-background">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              5-Year Growth Trajectory
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">Revenue projections based on industry benchmarks and growth patterns</p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-5 gap-2 mb-4">
-              {[1, 2, 3, 4, 5].map(year => {
-                const revenue = result.aiInsights.growthProjections[`year${year}Revenue`];
-                return (
-                  <div key={year} className="text-center p-3 rounded-lg bg-background border">
-                    <p className="text-xs text-muted-foreground mb-1">Year {year}</p>
-                    <p className="text-sm font-semibold">{revenue ? formatCurrency(revenue) : 'N/A'}</p>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="p-3 bg-muted/50 rounded">
-              <p className="text-sm"><span className="font-semibold">Growth Pattern:</span> {result.aiInsights.growthProjections.growthType || 'Linear'}</p>
-              {result.aiInsights.growthProjections.keyGrowthDrivers && (
-                <p className="text-sm mt-1"><span className="font-semibold">Key Drivers:</span> {result.aiInsights.growthProjections.keyGrowthDrivers.join(', ')}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Strategic Insights & Comparable Companies */}
-      {result.aiInsights?.strategicInsights && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              Strategic Insights & Next Steps
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="font-semibold text-sm mb-2">Key Strengths:</p>
-              <ul className="text-sm space-y-1">
-                {result.aiInsights.strategicInsights.keyStrengths?.map((strength: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>{strength}</span>
-                  </li>
+      {/* Recommendations */}
+      {result.analysis?.recommendations && result.analysis.recommendations.length > 0 && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Card className="border border-green-200 bg-green-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-700">
+                <CheckCircle2 className="h-5 w-5" />
+                Recommendations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {result.analysis.recommendations.map((rec, i) => (
+                  <motion.li
+                    key={i}
+                    className="flex items-start gap-3"
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                  >
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{rec}</span>
+                  </motion.li>
                 ))}
               </ul>
-            </div>
-            {result.aiInsights.strategicInsights.fundingStrategy && (
-              <div className="p-3 bg-primary/5 rounded-lg">
-                <p className="font-semibold text-sm mb-1">Funding Strategy:</p>
-                <p className="text-sm text-muted-foreground">{result.aiInsights.strategicInsights.fundingStrategy}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
 
-      {/* Comparable Companies (Damodaran comparative valuation) */}
-      {result.aiInsights?.comparableCompanies?.similarCompanies && (
-        <Card className="border-blue-200 bg-gradient-to-br from-blue-50/50 to-background">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-              Comparable Companies
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 mb-4">
-              {result.aiInsights.comparableCompanies.similarCompanies.map((company: string, idx: number) => (
-                <li key={idx} className="text-sm p-2 bg-background rounded border">
-                  {company}
-                </li>
-              ))}
-            </ul>
-            {result.aiInsights.comparableCompanies.typicalValuations && (
-              <div className="p-3 bg-muted/50 rounded">
-                <p className="text-sm text-muted-foreground">{result.aiInsights.comparableCompanies.typicalValuations}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Transparency & Disclaimers */}
-      {(result.transparency || result.metadata?.disclaimers) && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
-              Important Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Data Quality Indicator */}
-            {result.transparency && (
-              <div className="p-3 bg-background/80 rounded-lg border">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Data Quality:</span>
-                  <Badge variant={result.transparency.aiEnrichmentUsed ? "default" : "secondary"}>
-                    {result.transparency.dataQuality}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {result.transparency.aiEnrichmentUsed ? (
-                    <>✨ AI enrichment used to analyze your startup with 200+ data points</>
-                  ) : (
-                    <>📊 Based on industry benchmarks - connect with API key for enhanced AI analysis</>
-                  )}
-                </p>
-              </div>
-            )}
-            
-            {/* Methodology Used */}
-            {result.transparency?.methodsUsed && (
-              <div className="p-3 bg-background/80 rounded-lg border">
-                <p className="text-sm font-medium mb-2">Valuation Methods Applied:</p>
-                <ul className="text-xs text-muted-foreground space-y-1">
-                  {result.transparency.methodsUsed.map((method, idx) => (
-                    <li key={idx} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-green-600" />
-                      {method}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {/* Pre-revenue indicator */}
-            {result.metadata?.isPreRevenue && (
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-900">
-                  <strong>Pre-Revenue Startup:</strong> Valuation based on team quality, technology maturity, and market opportunity rather than financial metrics.
-                </p>
-              </div>
-            )}
-            
-            {/* Legal Disclaimers */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-amber-900">Disclaimers:</p>
-              <ul className="text-xs text-amber-800 space-y-1.5">
-                {(result.transparency?.disclaimers || result.metadata?.disclaimers || []).map((disclaimer, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="mt-0.5">•</span>
-                    <span>{disclaimer}</span>
-                  </li>
+      {/* Risks */}
+      {result.analysis?.risks && result.analysis.risks.length > 0 && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <Card className="border border-orange-200 bg-orange-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-700">
+                <AlertTriangle className="h-5 w-5" />
+                Risk Factors
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {result.analysis.risks.map((risk, i) => (
+                  <motion.li
+                    key={i}
+                    className="flex items-start gap-3"
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.8 + i * 0.1 }}
+                  >
+                    <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm">{risk}</span>
+                  </motion.li>
                 ))}
               </ul>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
-
-      <Separator />
 
       {/* Actions */}
-      <Card className="bg-gradient-to-br from-primary/5 to-background border-primary/20">
-        <CardContent className="p-6">
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold mb-2">Share Your Results</h3>
-            <p className="text-sm text-muted-foreground">
-              Download your professional valuation report or share with investors
-            </p>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button 
-              variant="outline" 
-              size="lg"
-              onClick={onStartOver}
-              className="flex items-center gap-2 hover:bg-primary/5"
-            >
-              <RefreshCw className="h-4 w-4" />
-              New Valuation
-            </Button>
-            
-            <Button 
-              size="lg"
-              className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              onClick={() => {
-                // Generate and download comprehensive report
-                const reportData = {
-                  valuation: result.valuation,
-                  currency: result.currency,
-                  confidence: result.confidence,
-                  methodologies: result.methodologies,
-                  analysis: result.analysis,
-                  aiInsights: result.aiInsights,
-                  transparency: result.transparency,
-                  generatedAt: new Date().toLocaleString(),
-                  platform: "ValuationPro - Professional Startup Valuation Platform"
-                };
-                
-                const blob = new Blob([JSON.stringify(reportData, null, 2)], {
-                  type: 'application/json'
-                });
-                
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `valuation-report-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-            >
-              <Download className="h-4 w-4" />
-              Download Full Report
-            </Button>
-            
-            <Button 
-              size="lg"
-              variant="secondary"
-              className="flex items-center gap-2"
-              onClick={() => {
-                const shareText = `Just got my startup valued at ${formatCurrency(result.valuation)} using ValuationPro! 🚀 Get your free AI-powered valuation at`;
-                const shareUrl = window.location.origin;
-                
-                if (navigator.share) {
-                  navigator.share({
-                    title: 'My Startup Valuation',
-                    text: shareText,
-                    url: shareUrl
-                  });
-                } else {
-                  navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                  alert('Link copied to clipboard!');
-                }
-              }}
-            >
-              <TrendingUp className="h-4 w-4" />
-              Share Results
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <motion.div
+        className="flex flex-col sm:flex-row gap-4 justify-center pt-6"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.9 }}
+      >
+        <Button
+          size="lg"
+          onClick={onStartOver}
+          className="gap-2"
+        >
+          <RefreshCw className="h-5 w-5" />
+          Start New Valuation
+        </Button>
+        <Button
+          size="lg"
+          variant="outline"
+          className="gap-2"
+          onClick={() => window.print()}
+        >
+          <Download className="h-5 w-5" />
+          Download Report
+        </Button>
+      </motion.div>
+
+      {/* Disclaimers */}
+      {result.transparency?.disclaimers && result.transparency.disclaimers.length > 0 && (
+        <motion.div
+          className="text-xs text-muted-foreground space-y-2 border-t pt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
+          <p className="font-semibold">Disclaimers:</p>
+          {result.transparency.disclaimers.map((disclaimer, i) => (
+            <p key={i}>• {disclaimer}</p>
+          ))}
+        </motion.div>
+      )}
+    </motion.div>
   );
 }
