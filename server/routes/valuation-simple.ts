@@ -228,6 +228,13 @@ ANALYSIS FRAMEWORK (combining all three perspectives):
    - Identify breakthrough potential vs incremental improvement
    - Consider real-world impact and mission clarity
 
+CRITICAL CURRENCY INSTRUCTION:
+All monetary values in your response MUST be in ${simpleData.currency} (${simpleData.currency === 'INR' ? 'Indian Rupees ₹' : simpleData.currency === 'USD' ? 'US Dollars $' : simpleData.currency === 'EUR' ? 'Euros €' : 'British Pounds £'}).
+- For ${simpleData.currency === 'INR' ? 'an Indian startup with ₹1 Cr revenue' : simpleData.currency === 'USD' ? 'a US startup with $1M revenue' : 'a startup in your currency'}, TAM/SAM/SOM should be in ${simpleData.currency === 'INR' ? 'Crores (₹), not Millions ($)' : 'the same currency'}
+- CAC/LTV should reflect ${simpleData.currency === 'INR' ? 'Indian market pricing (₹1000s, not $100s)' : 'realistic pricing for the market'}
+- Use realistic ${simpleData.currency === 'INR' ? 'Indian' : 'market'} values, not ${simpleData.currency === 'INR' ? 'US/Silicon Valley' : 'other market'} benchmarks
+- ALL numeric monetary values (tam, sam, som, cac, ltv, burnRate, revenues, etc.) = ${simpleData.currency} amounts
+
 OUTPUT REQUIRED (JSON only, no markdown):
 {
   "valuationAnalysis": {
@@ -258,7 +265,7 @@ OUTPUT REQUIRED (JSON only, no markdown):
     "marketGrowthRate": number (%),
     "marketShareYear5": number (%),
     "competitiveDynamics": "string (fragmented/consolidated/emerging)",
-    "barriers ToEntry": ["string"],
+    "barriersToEntry": ["string"],
     "networkEffectScore": number (1-10)
   },
   "startupQuality": {
