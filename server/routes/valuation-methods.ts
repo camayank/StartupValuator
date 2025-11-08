@@ -4,6 +4,7 @@
 
 import { Router, type Request, Response } from 'express';
 import { calculateDCFValuation, validateDCFInput } from '../services/valuation-methods/dcf-valuation';
+import { calculateBerkusValuation, validateBerkusInput } from '../services/valuation-methods/berkus-method';
 import type { ValuationInput } from '../services/types/valuation-types';
 
 const router = Router();
@@ -45,13 +46,37 @@ router.post('/dcf', async (req: Request, res: Response) => {
 
 /**
  * POST /api/valuation/berkus
- * Calculate valuation using Berkus method (placeholder for next implementation)
+ * Calculate valuation using Berkus method for pre-revenue startups
  */
 router.post('/berkus', async (req: Request, res: Response) => {
-  return res.status(501).json({
-    error: 'Berkus method not yet implemented',
-    message: 'This endpoint will be available in the next phase',
-  });
+  try {
+    const input: ValuationInput = req.body;
+
+    // Validate input
+    const validation = validateBerkusInput(input);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Invalid input for Berkus valuation',
+        details: validation.errors,
+      });
+    }
+
+    // Calculate Berkus valuation
+    const result = await calculateBerkusValuation(input);
+
+    return res.json({
+      success: true,
+      method: 'Berkus',
+      result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Berkus valuation error:', error);
+    return res.status(500).json({
+      error: 'Failed to calculate Berkus valuation',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 /**
