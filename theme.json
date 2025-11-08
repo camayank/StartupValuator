@@ -1,14 +1,14 @@
 {
   "variant": "vibrant",
-  "primary": "hsl(270 95% 75%)",
+  "primary": "hsl(262 83% 58%)",
   "appearance": "light",
   "radius": 0.75,
   "colors": {
     "brand": {
-      "primary": "hsl(270 95% 75%)",
-      "secondary": "hsl(280 85% 65%)",
-      "accent": "hsl(290 90% 70%)",
-      "muted": "hsl(270 50% 95%)"
+      "primary": "hsl(262 83% 58%)",
+      "secondary": "hsl(263 70% 50%)",
+      "accent": "hsl(142 76% 36%)",
+      "muted": "hsl(262 50% 95%)"
     },
     "confidence": {
       "low": "hsl(340 82% 65%)",
@@ -27,9 +27,9 @@
       "negative": "hsl(340 82% 65%)"
     },
     "financial": {
-      "revenue": "hsl(142 76% 45%)",
+      "revenue": "hsl(142 76% 36%)",
       "expenses": "hsl(340 82% 65%)",
-      "growth": "hsl(270 95% 75%)",
+      "growth": "hsl(262 83% 58%)",
       "market": "hsl(200 90% 65%)"
     }
   },

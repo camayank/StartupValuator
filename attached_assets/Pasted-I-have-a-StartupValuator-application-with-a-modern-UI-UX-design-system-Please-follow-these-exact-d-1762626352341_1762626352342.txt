@@ -1,0 +1,73 @@
+I have a StartupValuator application with a modern UI/UX design system. 
+Please follow these exact design patterns for any changes:
+
+🎨 DESIGN SYSTEM:
+- Primary Color: Vibrant Purple (hsl(262 83% 58%))
+- Accent Color: Vibrant Green (hsl(142 76% 36%))
+- Border Radius: 0.75rem (rounded corners)
+- Dark Mode: Fully supported with adjusted purple (hsl(263 70% 50%))
+
+✨ VISUAL STYLE:
+- Use gradient backgrounds: from-primary/20 to-purple-500/20
+- Use backdrop blur on navigation: backdrop-blur-xl
+- Add text gradients on headings: bg-gradient-to-r from-primary via-purple-600 to-primary bg-clip-text text-transparent
+- Use shadow-2xl for elevated cards
+- Add decorative gradient orbs: absolute positioned divs with blur-3xl
+
+🎬 ANIMATIONS (Framer Motion):
+- Staggered fade-ins with delays: 0.1s, 0.2s, 0.3s, 0.4s
+- Scale animations: initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+- Slide animations: initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+- Hover effects: hover:-translate-y-1 transition-all duration-300
+
+📐 COMPONENT PATTERNS:
+- Forms: Numbered steps (1, 2, 3, 4) in rounded circles with primary/10 background
+- Buttons: Use lucide-react icons with mr-2 spacing
+- Cards: border-2 border-primary/20 with gradient backgrounds
+- Navigation: Sticky top-0 z-50 with backdrop blur
+- Large text for emphasis: text-7xl for valuation amounts, text-4xl for headings
+
+🧩 ACTIVE COMPONENTS (Keep These):
+- SimpleValuationForm.tsx - Numbered steps, animations, decorative backgrounds
+- ValuationResults.tsx - Large text display, "Valuation Complete" badge
+- ReferralSystem.tsx - Social sharing with gradient buttons
+- Navigation.tsx - Sticky nav with dark mode toggle
+- Footer.tsx - Professional multi-section footer
+
+📱 PAGES STRUCTURE:
+- LandingPage: Hero + testimonials + features + CTA sections
+- Valuation Calculator: Multi-step wizard in container
+- Referral System: Referral codes + rewards tracking
+
+🎯 DESIGN PRINCIPLES:
+1. Modern & Professional: Clean lines, ample whitespace
+2. Vibrant & Energetic: Purple/green color scheme
+3. Interactive: Hover effects, smooth transitions
+4. Trust-building: Social proof, testimonials, badges
+5. Mobile-first: Responsive with hidden sm:inline patterns
+
+⚠️ DO NOT:
+- Use old gray/blue color scheme
+- Create static, non-animated components
+- Use plain cards without gradients or borders
+- Skip mobile responsiveness
+- Remove existing animations or decorative elements
+
+✅ ALWAYS:
+- Import framer-motion for animations
+- Use lucide-react for icons
+- Apply gradient text to important headings
+- Add hover states with group and group-hover
+- Use the vibrant purple primary color
+- Include decorative gradient backgrounds on hero sections
+- Maintain sticky navigation with backdrop blur
+
+FILE STRUCTURE:
+- UI Components: client/src/components/ui/
+- Pages: client/src/pages/
+- Active Components: client/src/components/
+- Styles: client/src/index.css (DO NOT modify color variables)
+
+When making changes, ensure they match the modern, vibrant, animated style 
+already implemented. Reference SimpleValuationForm.tsx and ValuationResults.tsx 
+as examples of the desired visual style.
