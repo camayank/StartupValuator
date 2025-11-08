@@ -185,7 +185,44 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
       }, {});
 
       if (Object.keys(validationErrors).length > 0) {
+        // Show specific field errors
+        const errorList = Object.entries(form.formState.errors)
+          .map(([field, error]) => `• ${field}: ${error?.message}`)
+          .join('\n');
+
+        toast({
+          title: "Please complete the following fields:",
+          description: errorList,
+          variant: "destructive",
+          duration: 5000
+        });
+
+        // Scroll to first error
+        const firstErrorField = document.querySelector('[aria-invalid="true"]');
+        firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
         throw new Error('VALIDATION_FAILED');
+      }
+
+      // Sanity checks for data quality
+      if (values.fundingStage && values.annualRevenue >= 0 && values.employeeCount >= 0) {
+        const sanityWarnings: string[] = [];
+
+        // Check if values seem unrealistic for the stage
+        if (values.fundingStage === 'pre_seed' && values.annualRevenue > 10000000) {
+          sanityWarnings.push(`Revenue of ${formatINRShort(values.annualRevenue)} is very high for Pre-seed (typical max: ₹1Cr)`);
+        }
+        if (values.fundingStage === 'seed' && values.annualRevenue > 50000000) {
+          sanityWarnings.push(`Revenue of ${formatINRShort(values.annualRevenue)} is very high for Seed (typical max: ₹5Cr)`);
+        }
+
+        if (sanityWarnings.length > 0) {
+          toast({
+            title: "⚠️ Data Quality Check",
+            description: sanityWarnings.join('\n'),
+            duration: 8000
+          });
+        }
       }
 
       await onComplete({
@@ -204,18 +241,20 @@ export function BusinessInfoStep({ sessionData, onComplete, onError }: BusinessI
 
     } catch (error) {
       console.error('Form submission error:', error);
-      onError('SUBMIT_FAILED', {
-        error,
-        formData: values,
-        validationErrors: form.formState.errors,
-        aiSuggestions
-      });
+      if (error.message !== 'VALIDATION_FAILED') {
+        onError('SUBMIT_FAILED', {
+          error,
+          formData: values,
+          validationErrors: form.formState.errors,
+          aiSuggestions
+        });
 
-      toast({
-        title: "Error",
-        description: "Failed to save business information. Please try again.",
-        variant: "destructive",
-      });
+        toast({
+          title: "Error",
+          description: "Failed to save business information. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsValidating(false);
     }

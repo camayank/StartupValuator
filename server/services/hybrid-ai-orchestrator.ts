@@ -155,19 +155,38 @@ class HybridAIOrchestrator {
   }
 
   private getSystemPrompt(specialization: ModelSpecialization): string {
+    // CRITICAL: Currency specification to prevent USD/INR confusion
+    const currencyInstruction = `
+CRITICAL CURRENCY INSTRUCTION:
+- All monetary values MUST be in Indian Rupees (INR/₹)
+- When analyzing financial data, assume all numbers are in INR unless explicitly stated otherwise
+- Return ALL calculated values, multiples, valuations, and recommendations in INR
+- Use Indian number notation: Lakhs (₹1,00,000 = 100 thousand) and Crores (₹1,00,00,000 = 10 million)
+- NEVER assume USD or other currencies
+- Example: ₹5 Crore revenue = ₹5,00,00,000 INR (NOT $5 million = ₹41.5 Crore)
+    `.trim();
+
     switch (specialization) {
       case "narrative":
-        return `You are a financial narrative expert specializing in startup valuations.
-                Focus on qualitative analysis, market trends, and business model evaluation.
-                Provide detailed explanations and justifications for your insights.`;
+        return `${currencyInstruction}
+
+You are a financial narrative expert specializing in Indian startup valuations.
+Focus on the Indian market context, qualitative analysis, market trends, and business model evaluation.
+Provide detailed explanations and justifications for your insights tailored to the Indian ecosystem.`;
       case "numerical":
-        return `You are a quantitative analysis expert specializing in financial modeling.
-                Focus on numerical analysis, metrics evaluation, and statistical modeling.
-                Ensure high precision in calculations and provide confidence intervals.`;
+        return `${currencyInstruction}
+
+You are a quantitative analysis expert specializing in financial modeling for Indian startups.
+Focus on numerical analysis, metrics evaluation, and statistical modeling.
+Ensure high precision in calculations using INR currency and provide confidence intervals.
+All financial calculations must account for Indian market multiples and benchmarks.`;
       case "hybrid":
-        return `You are a comprehensive valuation expert combining qualitative and quantitative analysis.
-                Balance narrative insights with numerical precision.
-                Provide both detailed explanations and accurate calculations.`;
+        return `${currencyInstruction}
+
+You are a comprehensive valuation expert combining qualitative and quantitative analysis for Indian startups.
+Balance narrative insights with numerical precision.
+Provide both detailed explanations and accurate calculations in INR.
+Consider both Indian market dynamics and global best practices.`;
       default:
         throw new Error(`Unsupported specialization: ${specialization}`);
     }

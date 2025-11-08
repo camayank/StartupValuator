@@ -38,11 +38,16 @@ export class AIMultipleService {
         messages: [
           {
             role: "system",
-            content: "You are a financial analyst specialized in startup valuations. Provide only the numeric EV/Revenue multiple as a response."
+            content: `You are a financial analyst specialized in Indian startup valuations.
+CRITICAL: Focus on Indian market multiples and benchmarks.
+All analysis should be in the context of Indian Rupees (INR).
+Provide only the numeric EV/Revenue multiple as a JSON response with format: {"multiple": number}`
           },
           {
             role: "user",
-            content: `What is the current typical EV/Revenue multiple for ${industry} startups? Respond with only the number.`
+            content: `What is the current typical EV/Revenue multiple for ${industry} startups in the Indian market?
+Consider Indian market dynamics and provide the multiple that would be used for INR-based valuations.
+Respond with only the number in JSON format: {"multiple": X}`
           }
         ],
         response_format: { type: "json_object" }
