@@ -4,6 +4,7 @@ import { db } from "@db";
 import valuationRoutes from "./routes/valuation";
 import valuationCalculateRoutes from "./routes/valuation-calculate";
 import valuationSimpleRoutes from "./routes/valuation-simple";
+import valuationMethodsRoutes from "./routes/valuation-methods";
 import analysisRoutes from "./routes/analysis";
 import monitoringRoutes from "./routes/monitoring";
 import aiRoutes from "./routes/ai-routes";
@@ -31,6 +32,7 @@ export function registerRoutes(app: Express): Server {
   app.use("/api/valuation", valuationSimpleRoutes);
   app.use("/api/valuation", valuationCalculateRoutes);
   app.use("/api/valuation", valuationRoutes);
+  app.use("/api/valuation", valuationMethodsRoutes);
   app.use("/api/valuation/draft", draftRoutes);
   app.use("/api/analysis", analysisRoutes);
   app.use("/api/monitoring", monitoringRoutes);
