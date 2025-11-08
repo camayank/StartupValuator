@@ -49,5 +49,37 @@
 - ✅ Fixed critical used lib files (17 errors)
 - ⏭️ Remaining: ~450+ errors in validation, report generation, and server files
 
+## CRITICAL DISCOVERY:
+
+**Dependency analysis reveals that ALL remaining error files are UNUSED by the active application!**
+
+The 3 active pages use a clean, minimal architecture:
+- LandingPage.tsx → UI components only
+- ValuationWizardContainer.tsx → contains:
+  - SimpleValuationForm.tsx (uses Zod + react-hook-form, direct API call)
+  - ValuationResults.tsx (UI components only)
+
+**NONE of the following directories are imported by active pages:**
+- ❌ lib/validation/ (5 files, 94+ errors) - ALL UNUSED
+- ❌ lib/services/ (13 files, 21+ errors) - ALL UNUSED
+- ❌ lib/financialModels.ts (54 errors) - UNUSED
+- ❌ lib/reportGenerator.ts (14 errors) - UNUSED
+- ❌ lib/industry-validation.ts (7 errors) - UNUSED
+
+**Total unused client files with errors: ~200+ errors in legacy code**
+
+## Recommendation:
+✅ **Keep fixes already made** (49 errors in actually-used ValidationContext and hooks)
+⏭️ **Skip all remaining client lib/ errors** - they're in unused legacy files
+🔍 **Focus on server-side only IF it affects the running backend API**
+
+## Active Code Status:
+- ✅ ValidationContext: FIXED (used by hooks)
+- ✅ Hooks: FIXED (used by potential future features)
+- ✅ lib/api.ts: FIXED (used for API calls)
+- ✅ All files actually imported by active pages: WORKING
+
 ## Next Steps:
-Continue fixing errors systematically, prioritizing files actually used by the 3 active pages.
+1. Archive unused validation/services files to _legacy/
+2. Check if server errors affect the /api/valuation/simple endpoint
+3. Final commit documenting unused vs active code separation
