@@ -2,7 +2,9 @@ import OpenAI from "openai";
 import { industryBenchmarkService } from './industry-benchmark-service';
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 export class AIMultipleService {
   private static instance: AIMultipleService;
@@ -32,7 +34,12 @@ export class AIMultipleService {
         return cached.multiple;
       }
 
-      // Use OpenAI to get the multiple
+      // Use OpenAI to get the multiple (if API key is available)
+      if (!openai) {
+        console.warn('OpenAI API key not set, using default multiple');
+        return 8.0; // Default fallback multiple
+      }
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
