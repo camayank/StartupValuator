@@ -39,7 +39,7 @@ export async function calculateBerkusValuation(
   const prototypeValue = inputs.prototypeExists ? MAX_VALUE_PER_FACTOR : 0;
   totalValue += prototypeValue;
   breakdown.prototypeValue = prototypeValue;
-  breakdown.hasPrototype = inputs.prototypeExists;
+  breakdown.hasPrototype = inputs.prototypeExists ? 1 : 0;
 
   // 3. Quality management team (0-10 rating)
   const teamValue = (inputs.qualityManagementTeam / 10) * MAX_VALUE_PER_FACTOR;
