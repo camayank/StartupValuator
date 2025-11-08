@@ -25,12 +25,42 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Sparkles, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+// Stage-based revenue limits (in INR) for realistic validation
+const STAGE_REVENUE_LIMITS_INR: Record<string, number> = {
+  "Pre-seed / Idea Stage": 5000000,        // ₹50 Lakh max
+  "Seed Stage": 50000000,                   // ₹5 Cr max
+  "Series A": 500000000,                    // ₹50 Cr max
+  "Series B": 2000000000,                   // ₹200 Cr max
+  "Series C+": Number.POSITIVE_INFINITY,    // No limit
+  "Revenue-generating (No funding yet)": 100000000  // ₹10 Cr max
+};
+
+// Currency multipliers for validation (convert to INR)
+const CURRENCY_MULTIPLIERS: Record<string, number> = {
+  INR: 1,
+  USD: 88.5,
+  EUR: 102.5,
+  GBP: 116.3
+};
+
 const simpleValuationSchema = z.object({
   businessName: z.string().optional(),
   industry: z.string().min(1, "Please select an industry"),
   stage: z.string().min(1, "Please select a business stage"),
   revenue: z.number().min(0, "Revenue must be positive"),
   currency: z.string().default("INR"),
+}).refine((data) => {
+  // Convert revenue to INR for validation
+  const revenueINR = data.revenue * (CURRENCY_MULTIPLIERS[data.currency] || 1);
+  const limit = STAGE_REVENUE_LIMITS_INR[data.stage];
+  
+  if (limit && revenueINR > limit) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Revenue too high for this stage. Please verify your inputs or select a later stage.",
+  path: ["revenue"],
 });
 
 type SimpleValuationData = z.infer<typeof simpleValuationSchema>;

@@ -21,12 +21,13 @@ const INDIA_BASE_VALUATIONS_INR: Record<string, number> = {
   "Revenue-generating (No funding yet)": 30000000 // ₹3 Cr
 };
 
-// Currency conversion rates (approximate, should be fetched from API in production)
+// Currency conversion rates - Updated Nov 2025
+// TODO: Replace with live API fetch for production (e.g., exchangerate-api.com)
 const CURRENCY_TO_INR: Record<string, number> = {
   INR: 1,
-  USD: 83,
-  EUR: 90,
-  GBP: 105
+  USD: 88.5,   // Updated from 83 (6.6% correction)
+  EUR: 102.5,  // Updated from 90 (14% correction)
+  GBP: 116.3   // Updated from 105 (11% correction)
 };
 
 // Scorecard factors with proper weights (industry standard)

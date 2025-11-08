@@ -191,7 +191,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {(result.analysis?.recommendations || result.aiInsights?.recommendations?.nextMilestones || result.factors || ['Continue building and validating your business model']).map((rec, index) => (
+              {(result.analysis?.recommendations || result.aiInsights?.recommendations?.nextMilestones || result.factors || ['Continue building and validating your business model']).map((rec: string, index: number) => (
                 <li key={index} className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">{rec}</span>
@@ -211,7 +211,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {(result.analysis?.risks || result.aiInsights?.marketInsights?.keyRisks || ['General market risks apply']).map((risk, index) => (
+              {(result.analysis?.risks || result.aiInsights?.marketInsights?.keyRisks || ['General market risks apply']).map((risk: string, index: number) => (
                 <li key={index} className="flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">{risk}</span>
@@ -299,7 +299,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
             <div>
               <p className="font-semibold text-sm mb-2">Key Strengths:</p>
               <ul className="text-sm space-y-1">
-                {result.aiInsights.strategicInsights.keyStrengths?.map((strength, idx) => (
+                {result.aiInsights.strategicInsights.keyStrengths?.map((strength: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <span>{strength}</span>
@@ -328,7 +328,7 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 mb-4">
-              {result.aiInsights.comparableCompanies.similarCompanies.map((company, idx) => (
+              {result.aiInsights.comparableCompanies.similarCompanies.map((company: string, idx: number) => (
                 <li key={idx} className="text-sm p-2 bg-background rounded border">
                   {company}
                 </li>

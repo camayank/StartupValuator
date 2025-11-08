@@ -10,12 +10,42 @@ const anthropic = new Anthropic({
 
 const router = Router();
 
+// Stage-based revenue limits (in INR) - SERVER-SIDE VALIDATION
+const STAGE_REVENUE_LIMITS_INR: Record<string, number> = {
+  "Pre-seed / Idea Stage": 5000000,        // ₹50 Lakh max
+  "Seed Stage": 50000000,                   // ₹5 Cr max
+  "Series A": 500000000,                    // ₹50 Cr max
+  "Series B": 2000000000,                   // ₹200 Cr max
+  "Series C+": Number.POSITIVE_INFINITY,    // No limit
+  "Revenue-generating (No funding yet)": 100000000  // ₹10 Cr max
+};
+
+// Currency multipliers for server-side validation
+const CURRENCY_MULTIPLIERS_VALIDATION: Record<string, number> = {
+  INR: 1,
+  USD: 88.5,
+  EUR: 102.5,
+  GBP: 116.3
+};
+
 const simpleInputSchema = z.object({
   businessName: z.string().optional(),
   industry: z.string(),
   stage: z.string(),
-  revenue: z.number(),
+  revenue: z.number().min(0, "Revenue must be positive"),
   currency: z.string(),
+}).refine((data) => {
+  // Convert revenue to INR for validation
+  const revenueINR = data.revenue * (CURRENCY_MULTIPLIERS_VALIDATION[data.currency] || 1);
+  const limit = STAGE_REVENUE_LIMITS_INR[data.stage];
+  
+  if (limit && revenueINR > limit) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Revenue too high for this stage. Please verify your inputs or select a later stage.",
+  path: ["revenue"],
 });
 
 type SimpleInput = z.infer<typeof simpleInputSchema>;
@@ -228,6 +258,13 @@ ANALYSIS FRAMEWORK (combining all three perspectives):
    - Identify breakthrough potential vs incremental improvement
    - Consider real-world impact and mission clarity
 
+CRITICAL CURRENCY INSTRUCTION:
+⚠️ ALL monetary values MUST be in Indian Rupees (INR/₹), NOT USD or other currencies!
+- For TAM/SAM/SOM: Use realistic Indian market values in Crores (₹ Cr) - NOT US $ Millions
+- For CAC/LTV: Use Indian pricing (₹1,000-₹10,000 range, NOT $100-$1000)
+- For revenue projections: Scale appropriately for India (₹ Lakhs/Crores)
+- Example: Indian SaaS startup TAM should be ₹5,000 Cr (₹50 Billion), NOT $500M
+
 OUTPUT REQUIRED (JSON only, no markdown):
 {
   "valuationAnalysis": {
@@ -237,28 +274,28 @@ OUTPUT REQUIRED (JSON only, no markdown):
     "revenueMultiple": number (industry typical multiple),
     "confidenceLevel": number (0-1),
     "valuationRange": {
-      "conservative": number,
-      "base": number,
-      "aggressive": number
+      "conservative": number (in INR),
+      "base": number (in INR),
+      "aggressive": number (in INR)
     }
   },
   "financialMetrics": {
-    "cac": number,
-    "ltv": number,
+    "cac": number (in INR - Indian pricing ₹1000-10000),
+    "ltv": number (in INR),
     "ltvCacRatio": number,
     "grossMargin": number (%),
-    "burnRate": number (monthly),
+    "burnRate": number (monthly in INR),
     "runway": number (months),
     "breakEvenTimeline": number (months)
   },
   "marketAnalysis": {
-    "tam": number,
-    "sam": number,
-    "som": number,
+    "tam": number (in INR - Indian market size),
+    "sam": number (in INR),
+    "som": number (in INR),
     "marketGrowthRate": number (%),
     "marketShareYear5": number (%),
     "competitiveDynamics": "string (fragmented/consolidated/emerging)",
-    "barriers ToEntry": ["string"],
+    "barriersToEntry": ["string"],
     "networkEffectScore": number (1-10)
   },
   "startupQuality": {
@@ -270,11 +307,11 @@ OUTPUT REQUIRED (JSON only, no markdown):
     "scalabilityScore": number (1-10)
   },
   "growthProjections": {
-    "year1Revenue": number,
-    "year2Revenue": number,
-    "year3Revenue": number,
-    "year4Revenue": number,
-    "year5Revenue": number,
+    "year1Revenue": number (in INR),
+    "year2Revenue": number (in INR),
+    "year3Revenue": number (in INR),
+    "year4Revenue": number (in INR),
+    "year5Revenue": number (in INR),
     "growthType": "exponential" | "linear" | "s-curve",
     "keyGrowthDrivers": ["string"]
   },
@@ -310,7 +347,10 @@ OUTPUT REQUIRED (JSON only, no markdown):
       }]
     });
 
-    const content = response.content[0].text;
+    // Extract text from response (handle both TextBlock and ToolUseBlock types)
+    const firstBlock = response.content[0];
+    const content = firstBlock.type === 'text' ? firstBlock.text : '';
+    
     // Remove markdown code blocks if present
     const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     return JSON.parse(jsonStr);
@@ -320,12 +360,13 @@ OUTPUT REQUIRED (JSON only, no markdown):
   }
 }
 
-// Currency conversion helper (matches the one in valuation-v2.ts)
+// Currency conversion helper - Updated Nov 2025
+// TODO: Replace with live API fetch for production (e.g., exchangerate-api.com)
 const CURRENCY_TO_INR: Record<string, number> = {
   INR: 1,
-  USD: 83,
-  EUR: 90,
-  GBP: 105
+  USD: 88.5,   // Updated from 83 (6.6% correction)
+  EUR: 102.5,  // Updated from 90 (14% correction)
+  GBP: 116.3   // Updated from 105 (11% correction)
 };
 
 function convertToINR(value: number, fromCurrency: string): number {
@@ -359,9 +400,29 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
   const sam = aiInsights?.marketAnalysis?.sam || tam * 0.1;
   const som = aiInsights?.marketAnalysis?.som || sam * 0.05;
 
-  // Determine product stage and maturity
+  // Determine product stage and maturity - map to correct type
   const productStage = simpleData.stage.includes("Pre-seed") ? "concept" : 
-                      simpleData.stage.includes("Seed") ? "prototype" : "production";
+                      simpleData.stage.includes("Seed") ? "prototype" : 
+                      simpleData.stage.includes("Series A") ? "mvp" :
+                      simpleData.stage.includes("Series B") ? "market_ready" : "scaling";
+  
+  // Map industry to sector type - extract first word and cast
+  const sectorMapping: Record<string, any> = {
+    "SaaS": "SaaS",
+    "E-commerce": "E-commerce",
+    "Fintech": "Fintech",
+    "Healthcare": "Healthcare",
+    "Edtech": "Enterprise",
+    "Logistics": "Enterprise",
+    "Food": "Consumer",
+    "Gaming": "Consumer",
+    "AgriTech": "Enterprise",
+    "CleanTech": "Enterprise",
+    "Manufacturing": "Enterprise",
+    "Other": "Enterprise"
+  };
+  const sectorKey = simpleData.industry.split(" ")[0];
+  const sector = sectorMapping[sectorKey] || "Enterprise";
   
   // Use AI-determined risk levels if available
   const overallRisk = aiInsights?.riskAssessment?.overallRiskLevel || stageData.riskLevel;
@@ -369,10 +430,10 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
   return {
     businessInfo: {
       name: simpleData.businessName || "My Startup",
-      sector: simpleData.industry.split(" ")[0],
+      sector: sector,
       industry: simpleData.industry,
       location: "India",
-      productStage: productStage,
+      productStage: productStage as any,
       businessModel: "subscription"
     },
     financialData: {
@@ -414,7 +475,7 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
       terminalGrowthRate: aiInsights?.valuationAnalysis?.terminalGrowthRate || 3
     },
     aiInsights: aiInsights
-  };
+  } as ValuationFormData;
 }
 
 router.post("/simple", async (req, res) => {
