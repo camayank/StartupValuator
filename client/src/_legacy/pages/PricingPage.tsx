@@ -6,9 +6,28 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Zap } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { useToast } from "@/hooks/use-toast";
-import type { SelectSubscriptionPlan } from "@db/schema";
 
-const pricingPlans: SelectSubscriptionPlan[] = [
+type SubscriptionPlan = {
+  id: number;
+  name: string;
+  tier: "free" | "basic" | "premium" | "enterprise";
+  price: number;
+  billingPeriod: string;
+  features: {
+    valuationReports: number;
+    aiAnalysis: boolean;
+    customBranding: boolean;
+    apiAccess: boolean;
+    prioritySupport: boolean;
+    teamMembers: number;
+    advancedAnalytics: boolean;
+  };
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+const pricingPlans: SubscriptionPlan[] = [
   {
     id: 1,
     name: "Free",
@@ -101,7 +120,7 @@ export function PricingPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const handleUpgrade = async (plan: SelectSubscriptionPlan) => {
+  const handleUpgrade = async (plan: SubscriptionPlan) => {
     try {
       const response = await fetch("/api/subscription/upgrade", {
         method: "POST",
