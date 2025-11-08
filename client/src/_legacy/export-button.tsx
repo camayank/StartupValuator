@@ -7,7 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Share2, Loader2, FileText, Table, FileSpreadsheet, motion } from "lucide-react";
+import { Download, Share2, Loader2, FileText, Table, FileSpreadsheet } from "lucide-react";
+import { motion } from "framer-motion";
 import type { ValuationReport } from "@/lib/reportGenerator";
 import { cn } from "@/lib/utils";
 

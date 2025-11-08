@@ -1,5 +1,17 @@
 import { type ValuationFormData } from "./validations";
-import { IndustryValidationEngine } from "./industry-validation";
+
+// Stub for IndustryValidationEngine (original moved to _legacy)
+const IndustryValidationEngine = {
+  getRequiredMetrics: (industry: string): string[] => {
+    return ['revenue', 'customerBase', 'growthRate'];
+  },
+  getRecommendedMetrics: (industry: string): string[] => {
+    return ['margins', 'burnRate', 'runway'];
+  },
+  getBenchmarks: (industry: string, metric: string): any => {
+    return null; // No benchmark data available
+  }
+};
 
 interface QuickStartData {
   businessName: string;

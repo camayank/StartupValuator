@@ -8,7 +8,7 @@ class BusinessRulesEngine {
       id: 'team_size_validation',
       condition: (data: ValuationFormData): boolean => {
         const { stage, teamSize } = data.businessInfo;
-        const stageRequirements = {
+        const stageRequirements: Record<string, number> = {
           'revenue_early': 2,
           'revenue_growing': 5,
           'revenue_scaling': 10
@@ -131,7 +131,7 @@ class BusinessRulesEngine {
 
     (Object.keys(this.rules) as Array<keyof typeof BusinessRulesEngine.rules>)
       .forEach((field) => {
-        const validation = this.validateField(field, formData[field], formData);
+        const validation = this.validateField(field, (formData as any)[field], formData);
         if (validation.severity !== 'info') {
           validations.set(field, validation);
         }

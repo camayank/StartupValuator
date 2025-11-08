@@ -38,13 +38,16 @@ export function useFieldValidation(context: any, options: ValidationOptions = {}
       const fieldError = await validateField(fieldName, value, {});
 
       // Cross-field validation
-      const crossErrors = await validateCrossField(fieldName, value, context);
+      const crossFieldError = await validateCrossField(fieldName, value, context);
 
-      // Combine errors
-      const errors = [
-        ...(fieldError ? [fieldError] : []),
-        ...(crossErrors ? Object.values(crossErrors) : [])
-      ];
+      // Combine errors - extract messages from validation results
+      const errors: string[] = [];
+      if (fieldError && !fieldError.valid && fieldError.message) {
+        errors.push(fieldError.message);
+      }
+      if (crossFieldError && !crossFieldError.valid && crossFieldError.message) {
+        errors.push(crossFieldError.message);
+      }
 
       // Update validation state
       setValidationState(prev => ({

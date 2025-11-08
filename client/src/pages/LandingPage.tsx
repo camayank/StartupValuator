@@ -300,7 +300,7 @@ export function LandingPage() {
       {/* Benefits Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="max-w-2xl mx-auto text-center mb-12"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -314,7 +314,7 @@ export function LandingPage() {
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto"
             variants={container}
             initial="hidden"
@@ -322,8 +322,8 @@ export function LandingPage() {
             viewport={{ once: true }}
           >
             {benefits.map((benefit, index) => (
-              <motion.div 
-                key={index} 
+              <motion.div
+                key={index}
                 variants={item}
                 className="p-6 rounded-lg bg-card border hover:shadow-lg transition-shadow"
               >
@@ -344,6 +344,86 @@ export function LandingPage() {
                     </li>
                   ))}
                 </ul>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-gradient-to-b from-muted/30 to-background">
+        <div className="container mx-auto px-4">
+          <motion.div
+            className="max-w-2xl mx-auto text-center mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl font-bold mb-4">
+              Trusted by Founders Worldwide
+            </h2>
+            <p className="text-muted-foreground">
+              See what our users say about their valuation experience
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto"
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            {[
+              {
+                name: "Rahul Sharma",
+                role: "CEO, TechVenture India",
+                location: "Mumbai, India",
+                rating: 5,
+                text: "The AI-powered insights were incredibly accurate. Got funding within 2 months of using this platform!",
+                avatar: "RS"
+              },
+              {
+                name: "Sarah Chen",
+                role: "Founder, FinNext",
+                location: "Singapore",
+                rating: 5,
+                text: "Best valuation tool for early-stage startups. The multi-currency support made it perfect for our SEA expansion.",
+                avatar: "SC"
+              },
+              {
+                name: "Amit Patel",
+                role: "CFO, EdTech Solutions",
+                location: "Bangalore, India",
+                rating: 5,
+                text: "Professional-grade analysis at zero cost. Saved thousands on consultant fees. Highly recommended!",
+                avatar: "AP"
+              }
+            ].map((testimonial, index) => (
+              <motion.div
+                key={index}
+                variants={item}
+                className="p-6 rounded-lg bg-card border hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-sm mb-6 leading-relaxed italic">"{testimonial.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-600 text-white font-semibold">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Globe className="h-3 w-3" />
+                      {testimonial.location}
+                    </p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </motion.div>

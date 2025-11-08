@@ -3,6 +3,7 @@ import { Switch, Route, Link } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "@/components/ui/navigation";
+import { Footer } from "@/components/ui/footer";
 import { ValidationProvider } from "@/contexts/ValidationContext";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
@@ -23,10 +24,10 @@ function App() {
   return (
     <ValidationProvider>
       <ErrorBoundary>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background flex flex-col">
           <Navigation />
-          
-          <main className="relative">
+
+          <main className="relative flex-1">
             <Suspense fallback={<LoadingScreen />}>
               <Switch>
                 <Route path="/" component={LandingPage} />
@@ -61,6 +62,7 @@ function App() {
             </Suspense>
           </main>
 
+          <Footer />
           <Toaster />
         </div>
       </ErrorBoundary>
