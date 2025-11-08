@@ -11,7 +11,7 @@ export const CollaborationEventType = {
 } as const;
 
 interface CollaborationEvent {
-  type: keyof typeof CollaborationEventType;
+  type: typeof CollaborationEventType[keyof typeof CollaborationEventType];
   sessionId: string;
   userId: string;
   payload: Record<string, any>;
@@ -129,7 +129,7 @@ export function useCollaboration({
     toast({
       title: "Version Conflict",
       description: "Changes detected from another user. Resolving conflicts...",
-      variant: "warning"
+      variant: "default"
     });
 
     // Apply suggested resolution

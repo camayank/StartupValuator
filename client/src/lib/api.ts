@@ -198,27 +198,27 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
 const validateNumericData = (data: ValuationFormData): string[] => {
   const errors: string[] = [];
 
-  if (!data.businessName?.trim()) {
+  if (!data.businessInfo?.name?.trim()) {
     errors.push("Business name is required");
   }
 
-  if (data.revenue !== undefined && (isNaN(Number(data.revenue)) || Number(data.revenue) < 0)) {
+  if ((data as any).revenue !== undefined && (isNaN(Number((data as any).revenue)) || Number((data as any).revenue) < 0)) {
     errors.push("Revenue must be a valid non-negative number");
   }
 
-  if (data.growthRate !== undefined && (isNaN(Number(data.growthRate)) || Number(data.growthRate) < -100)) {
+  if ((data as any).growthRate !== undefined && (isNaN(Number((data as any).growthRate)) || Number((data as any).growthRate) < -100)) {
     errors.push("Growth rate must be a valid number greater than -100%");
   }
 
-  if (data.margins !== undefined && (isNaN(Number(data.margins)) || Number(data.margins) < -100)) {
+  if ((data as any).margins !== undefined && (isNaN(Number((data as any).margins)) || Number((data as any).margins) < -100)) {
     errors.push("Margins must be a valid number greater than -100%");
   }
 
-  if (!data.sector) {
+  if (!data.businessInfo?.sector) {
     errors.push("Sector is required");
   }
 
-  if (!data.stage) {
+  if (!data.businessInfo?.productStage) {
     errors.push("Business stage is required");
   }
 
