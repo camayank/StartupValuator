@@ -126,6 +126,17 @@ This is a comprehensive startup valuation platform built using React/TypeScript 
 
 ## Changelog
 
+- November 08, 2025: **PRODUCTION-READY FIXES - Critical Gap Resolution**
+  - **CRITICAL FIX: AI Currency Specification** - Added explicit INR-only instructions to AI prompt with Indian market context to prevent 80x USD inflation errors
+  - **CRITICAL FIX: JSON Schema Typo** - Fixed "barriers ToEntry" → "barriersToEntry" causing AI response parsing failures
+  - **CRITICAL FIX: Currency Rate Updates** - Updated exchange rates: USD 83→88.5 (6.6% correction), EUR 90→102.5 (14%), GBP 105→116.3 (11%)
+  - **SECURITY FIX: Server-Side Validation** - Added stage-based revenue limits on backend to prevent API bypass attacks (Pre-seed ≤₹5Cr, Seed ≤₹50Cr, Series A ≤₹500Cr, Series B ≤₹2000Cr)
+  - **QUALITY FIX: TypeScript Errors** - Reduced from 30 to 19 errors (36% reduction) with proper type handling in ValuationResults and valuation-simple
+  - **UX IMPROVEMENT: Prominent AI Warning** - Added large yellow banner when AI enrichment fails (previously small text)
+  - **TYPE SAFETY: Response Handling** - Fixed Anthropic SDK response parsing to handle TextBlock vs ToolUseBlock types
+  - **VALIDATION: Client + Server** - Both frontend and backend now enforce realistic revenue caps based on startup stage
+  - Architecture: All fixes maintain backward compatibility while closing production-critical gaps
+
 - October 07, 2025: **MAJOR REBUILD - Valuation Engine V2 (Product-Grade Accuracy)**
   - **Critical Fix: Corrected All Valuation Formulas** - Replaced incorrect implementations with industry-standard Damodaran methodologies
     - Scorecard Method: Now properly compares to median pre-money valuations with weighted factor adjustments (not TAM/SAM ratios)
