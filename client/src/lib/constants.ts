@@ -34,6 +34,43 @@ export const sectors = {
   mobility: "Mobility & Transportation"
 } as const;
 
+// Comprehensive Indian startup sectors for dropdowns
+export const INDIAN_SECTORS = [
+  { value: 'saas', label: 'SaaS (Software as a Service)', icon: '💻' },
+  { value: 'fintech', label: 'Fintech', icon: '💰' },
+  { value: 'edtech', label: 'Edtech (Education Technology)', icon: '📚' },
+  { value: 'healthtech', label: 'Healthtech', icon: '🏥' },
+  { value: 'ecommerce', label: 'E-commerce', icon: '🛒' },
+  { value: 'd2c', label: 'D2C (Direct to Consumer)', icon: '🏪' },
+  { value: 'agritech', label: 'AgriTech (Agriculture)', icon: '🌾' },
+  { value: 'logistics', label: 'Logistics & Supply Chain', icon: '🚚' },
+  { value: 'mobility', label: 'Mobility & Transportation', icon: '🚗' },
+  { value: 'proptech', label: 'PropTech (Real Estate)', icon: '🏢' },
+  { value: 'hrtech', label: 'HRTech (Human Resources)', icon: '👥' },
+  { value: 'legaltech', label: 'LegalTech', icon: '⚖️' },
+  { value: 'insurtech', label: 'InsurTech (Insurance)', icon: '🛡️' },
+  { value: 'gaming', label: 'Gaming & Esports', icon: '🎮' },
+  { value: 'media', label: 'Media & Entertainment', icon: '🎬' },
+  { value: 'foodtech', label: 'FoodTech & Delivery', icon: '🍔' },
+  { value: 'travel', label: 'Travel & Hospitality', icon: '✈️' },
+  { value: 'manufacturing', label: 'Manufacturing', icon: '🏭' },
+  { value: 'cleantech', label: 'CleanTech & Sustainability', icon: '🌱' },
+  { value: 'deeptech', label: 'DeepTech & AI', icon: '🤖' },
+  { value: 'enterprise', label: 'Enterprise Software', icon: '🏢' },
+  { value: 'consumertech', label: 'Consumer Technology', icon: '📱' },
+  { value: 'other', label: 'Other', icon: '📦' },
+] as const;
+
+// Funding stages
+export const FUNDING_STAGES = [
+  { value: 'pre_seed', label: 'Pre-seed', description: 'Idea/MVP stage' },
+  { value: 'seed', label: 'Seed', description: 'Initial traction' },
+  { value: 'series_a', label: 'Series A', description: 'Product-market fit' },
+  { value: 'series_b', label: 'Series B', description: 'Scaling' },
+  { value: 'series_c', label: 'Series C', description: 'Expansion' },
+  { value: 'series_d_plus', label: 'Series D+', description: 'Late stage' },
+] as const;
+
 // Currency definitions
 export const currencies = {
   USD: { symbol: "$", name: "US Dollar" },
