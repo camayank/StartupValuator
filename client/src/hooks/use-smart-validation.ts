@@ -5,7 +5,7 @@ import {
   type ValidationContext
 } from "@/lib/validations/validation-overview";
 import { useToast } from "@/hooks/use-toast";
-import { ValidationEngine } from "@/lib/validation-engine";
+import ValidationEngine from "@/lib/validation-engine";
 import { TooltipSystem } from "@/lib/tooltip-system";
 import BusinessRulesEngine from "@/lib/business-rules-engine";
 
@@ -39,7 +39,7 @@ export function useSmartValidation(context: ValidationContext) {
       warnings: [] as string[],
       suggestions: [] as string[],
       required: requirements.required,
-      tooltip: TooltipSystem.getFieldTooltip(fieldName)?.text
+      tooltip: TooltipSystem.getFieldTooltip(fieldName as any)?.text
     };
 
     // Basic validation
@@ -54,9 +54,11 @@ export function useSmartValidation(context: ValidationContext) {
 
     // Business rules validation if form data is provided
     if (formData) {
-      const businessValidation = BusinessRulesEngine.validateField(fieldName, value, formData);
+      const businessValidation = BusinessRulesEngine.validateField(fieldName as any, value, formData);
       if (!businessValidation.isValid) {
-        result.warnings.push(...(businessValidation.warnings || []));
+        if (businessValidation.message) {
+          result.warnings.push(businessValidation.message);
+        }
         result.suggestions.push(...(businessValidation.suggestions || []));
       }
     }

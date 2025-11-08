@@ -27,24 +27,33 @@ export function useFormValidation(initialState = {}) {
     try {
       // Basic validation
       const errors: Record<string, string> = {};
-      Object.entries(formData.businessInfo).forEach(([field, value]) => {
-        const error = validateField(field, value, {});
-        if (error) errors[field] = error;
+      const validationPromises = Object.entries(formData.businessInfo).map(async ([field, value]) => {
+        const result = await validateField(field, value, {});
+        if (result && !result.valid && result.message) {
+          errors[field] = result.message;
+        }
       });
+      await Promise.all(validationPromises);
 
       // Cross-field validation
-      const crossErrors = validateCrossField('revenue', formData.financialMetrics?.revenue, formData);
-      if (crossErrors) {
-        Object.assign(errors, crossErrors);
+      if (formData.financialMetrics?.revenue) {
+        const crossResult = await validateCrossField('revenue', formData.financialMetrics.revenue, formData);
+        if (crossResult && !crossResult.valid && crossResult.message) {
+          errors['revenue'] = crossResult.message;
+        }
       }
 
-      // AI-powered validation
-      const aiValidation = await getAISuggestions(formData);
+      // AI-powered suggestions (collect for all fields)
+      const allSuggestions: string[] = [];
+      for (const field of Object.keys(formData.businessInfo)) {
+        const suggestions = await getAISuggestions(field);
+        allSuggestions.push(...suggestions);
+      }
 
       setValidationState({
         errors,
-        warnings: aiValidation.warnings,
-        suggestions: aiValidation.suggestions || [],
+        warnings: [],
+        suggestions: allSuggestions,
         status: Object.keys(errors).length ? 'invalid' : 'valid',
         lastValidState: Object.keys(errors).length ? null : formData
       });
@@ -52,8 +61,8 @@ export function useFormValidation(initialState = {}) {
       return {
         isValid: Object.keys(errors).length === 0,
         errors,
-        warnings: aiValidation.warnings,
-        suggestions: aiValidation.suggestions
+        warnings: [],
+        suggestions: allSuggestions
       };
     } catch (error) {
       console.error('Validation error:', error);

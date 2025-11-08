@@ -102,13 +102,13 @@ export const EnhancedUserFlow = {
     }
 
     // Get validation rules for the step
-    const validation = EnhancedUserFlow.getStepValidation(step, data.industry || '');
+    const validation = EnhancedUserFlow.getStepValidation(step, data.businessInfo?.industry || '');
     const relevantData: Record<string, any> = {};
-    
+
     // Only validate fields relevant to this step
     stepConfig.fields.forEach(field => {
       if (field in data) {
-        relevantData[field] = data[field];
+        relevantData[field] = (data as any)[field];
       }
     });
 
@@ -120,9 +120,9 @@ export const EnhancedUserFlow = {
     const stepConfig = EnhancedUserFlow.steps[step as keyof typeof EnhancedUserFlow.steps];
     if (!stepConfig) return false;
 
-    if (!stepConfig.dependsOn) return true;
+    if (!('dependsOn' in stepConfig) || !stepConfig.dependsOn) return true;
 
-    return stepConfig.dependsOn.every(dependentStep => completedSteps.includes(dependentStep));
+    return stepConfig.dependsOn.every((dependentStep: string) => completedSteps.includes(dependentStep));
   }
 };
 

@@ -195,48 +195,6 @@ export async function calculateValuation(data: ValuationFormData): Promise<Valua
   }
 }
 
-const validateNumericData = (data: ValuationFormData): string[] => {
-  const errors: string[] = [];
-
-  if (!data.businessInfo?.name?.trim()) {
-    errors.push("Business name is required");
-  }
-
-  if ((data as any).revenue !== undefined && (isNaN(Number((data as any).revenue)) || Number((data as any).revenue) < 0)) {
-    errors.push("Revenue must be a valid non-negative number");
-  }
-
-  if ((data as any).growthRate !== undefined && (isNaN(Number((data as any).growthRate)) || Number((data as any).growthRate) < -100)) {
-    errors.push("Growth rate must be a valid number greater than -100%");
-  }
-
-  if ((data as any).margins !== undefined && (isNaN(Number((data as any).margins)) || Number((data as any).margins) < -100)) {
-    errors.push("Margins must be a valid number greater than -100%");
-  }
-
-  if (!data.businessInfo?.sector) {
-    errors.push("Sector is required");
-  }
-
-  if (!data.businessInfo?.productStage) {
-    errors.push("Business stage is required");
-  }
-
-  return errors;
-};
-
-const sanitizeNumericData = (data: ValuationFormData): ValuationFormData => {
-  return {
-    ...data,
-    revenue: data.revenue !== undefined ? Number(data.revenue) : 0,
-    growthRate: data.growthRate !== undefined ? Number(data.growthRate) : 0,
-    margins: data.margins !== undefined ? Number(data.margins) : 0,
-    teamSize: data.teamSize !== undefined ? Number(data.teamSize) : 0,
-    teamExperience: data.teamExperience !== undefined ? Number(data.teamExperience) : 0,
-  };
-};
-
-
 export async function generateReport(valuationId: number): Promise<Blob> {
   try {
     console.log('Generating report for valuation:', valuationId);
