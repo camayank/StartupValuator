@@ -575,11 +575,51 @@ export const marketDataSchema = z.object({
   path: ["marketData"]
 });
 
+// Risk levels enum
+export const riskLevels = z.enum(["low", "medium", "high"]);
+
+// Product details schema
+export const productDetailsSchema = z.object({
+  maturity: z.string(),
+  features: z.array(z.string()).optional(),
+  techStack: z.array(z.string()).optional(),
+  deployment: z.string().optional(),
+}).optional();
+
+// Team data schema
+export const teamDataSchema = z.object({
+  size: z.number(),
+  roles: z.array(z.string()).optional(),
+  advisors: z.array(z.string()).optional(),
+}).optional();
+
+// Risk factors schema
+export const riskFactorsSchema = z.object({
+  overall: riskLevels,
+  market: riskLevels,
+  execution: riskLevels,
+  financial: riskLevels,
+}).optional();
+
+// Valuation inputs schema
+export const valuationInputsSchema = z.object({
+  method: z.string(),
+  expectedROI: z.number(),
+  timeHorizon: z.number(),
+  discountRate: z.number(),
+  terminalGrowthRate: z.number(),
+}).optional();
+
 // Main Valuation Form Schema from edited snippet
 export const valuationFormSchema = z.object({
   businessInfo: businessInfoSchema2,
   financialData: financialDataSchema,
-  marketData: marketDataSchema
+  marketData: marketDataSchema,
+  productDetails: productDetailsSchema,
+  teamData: teamDataSchema,
+  riskFactors: riskFactorsSchema,
+  valuationInputs: valuationInputsSchema,
+  aiInsights: z.any().optional(), // AI insights can be any shape
 });
 
 export type ValuationFormData = z.infer<typeof valuationFormSchema>;

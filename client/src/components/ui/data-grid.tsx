@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { cva } from "class-variance-authority";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface FinancialFormat {
   currency?: {
@@ -147,8 +147,11 @@ export function DataGrid({
                         )}
                       >
                         {hasError && errorHandling?.outOfBoundValues === 'flag' ? (
-                          <Tooltip content="Value out of expected range">
-                            <span>{formattedValue}</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span>{formattedValue}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Value out of expected range</TooltipContent>
                           </Tooltip>
                         ) : (
                           formattedValue
