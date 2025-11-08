@@ -1,6 +1,13 @@
 import { type ValuationFormData } from "./validations";
 import ValidationEngine from "./validation-engine";
-import { IndustryValidationEngine } from "./industry-validation";
+
+// Stub for IndustryValidationEngine (original moved to _legacy)
+const IndustryValidationEngine = {
+  getRequiredMetrics: (industry: string): string[] => {
+    // Return default required metrics for all industries
+    return ['revenue'];
+  }
+};
 
 interface FlowStep {
   title: string;

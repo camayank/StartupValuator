@@ -33,12 +33,17 @@ None of the files in this `_legacy` directory are imported by these active pages
 
 ### Other
 - `export-button.tsx` - Export functionality UI component, not used
+- `runTests.ts` (Session 2) - Test file for valuation report generation, not used
 
 ## Total TypeScript Errors in Legacy Code
 
 **~200 errors** - All contained within this legacy directory
 
 These errors do not affect the running application.
+
+## Files Added in Session 2 (2025-11-08)
+
+- `runTests.ts` - Imports from ReportGenerator which was moved to _legacy, not used in active app
 
 ## What to do with these files
 

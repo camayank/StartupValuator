@@ -1,6 +1,12 @@
 import type { ValuationFormData } from "./validations";
 import { sectors, businessStages } from "./validations";
-import { IndustryValidationEngine } from "./industry-validation";
+
+// Stub for IndustryValidationEngine (original moved to _legacy)
+const IndustryValidationEngine = {
+  getRequiredMetrics: (industry: string): string[] => {
+    return ['revenue', 'customerBase', 'growthRate'];
+  }
+};
 
 interface ContextualHelp {
   description: string;
@@ -101,49 +107,56 @@ const SmartHelpSystem = {
     }
   },
 
-  private: {
-    generateRecommendations: (data: ValuationFormData): string[] => {
-      const recommendations: string[] = [];
-      const requiredMetrics = IndustryValidationEngine.getRequiredMetrics(data.sector);
+  generateRecommendations: (data: ValuationFormData): string[] => {
+    const recommendations: string[] = [];
+    const sector = data.businessInfo?.sector || '';
+    const requiredMetrics = IndustryValidationEngine.getRequiredMetrics(sector);
 
-      if (requiredMetrics.length > 0) {
-        recommendations.push(`Consider tracking these key metrics: ${requiredMetrics.join(', ')}`);
-      }
-
-      return recommendations;
-    },
-
-    getIndustryBenchmarks: (industry: string, field: string): Record<string, any> => {
-      // Industry-specific benchmark data would go here
-      const benchmarks: Record<string, Record<string, any>> = {
-        saas: {
-          revenue: {
-            seed: '0-500K',
-            early: '500K-2M',
-            growth: '2M+'
-          },
-          churnRate: {
-            good: '<5%',
-            average: '5-10%',
-            poor: '>10%'
-          }
-        },
-        ecommerce: {
-          gmv: {
-            seed: '0-1M',
-            early: '1M-5M',
-            growth: '5M+'
-          },
-          returnRate: {
-            good: '<10%',
-            average: '10-20%',
-            poor: '>20%'
-          }
-        }
-      };
-
-      return benchmarks[industry]?.[field] || {};
+    if (requiredMetrics.length > 0) {
+      recommendations.push(`Consider tracking these key metrics: ${requiredMetrics.join(', ')}`);
     }
+
+    return recommendations;
+  },
+
+  generateFinancialRecommendations: (data: ValuationFormData): string[] => {
+    return [
+      'Ensure all figures are from the last 12 months',
+      'Include supporting documentation',
+      'Be conservative with projections'
+    ];
+  },
+
+  getIndustryBenchmarks: (industry: string, field: string): Record<string, any> => {
+    // Industry-specific benchmark data would go here
+    const benchmarks: Record<string, Record<string, any>> = {
+      saas: {
+        revenue: {
+          seed: '0-500K',
+          early: '500K-2M',
+          growth: '2M+'
+        },
+        churnRate: {
+          good: '<5%',
+          average: '5-10%',
+          poor: '>10%'
+        }
+      },
+      ecommerce: {
+        gmv: {
+          seed: '0-1M',
+          early: '1M-5M',
+          growth: '5M+'
+        },
+        returnRate: {
+          good: '<10%',
+          average: '10-20%',
+          poor: '>20%'
+        }
+      }
+    };
+
+    return benchmarks[industry]?.[field] || {};
   }
 };
 

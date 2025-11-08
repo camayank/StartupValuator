@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useValidation } from '@/contexts/ValidationContext';
-import { type ValuationFormInput, type ValidationResult } from '@/lib/validation/aiValidation';
+import { type ValuationFormData } from '@/lib/types/shared';
 
 interface ValidationState {
   errors: Record<string, string>;
-  warnings: ValidationResult['warnings'];
+  warnings: string[];
   suggestions: string[];
   status: 'idle' | 'validating' | 'valid' | 'invalid';
   lastValidState: any | null;
@@ -21,7 +21,7 @@ export function useFormValidation(initialState = {}) {
 
   const { validateField, validateCrossField, getAISuggestions } = useValidation();
 
-  const validateForm = useCallback(async (formData: ValuationFormInput) => {
+  const validateForm = useCallback(async (formData: ValuationFormData) => {
     setValidationState(prev => ({ ...prev, status: 'validating' }));
 
     try {
@@ -36,8 +36,8 @@ export function useFormValidation(initialState = {}) {
       await Promise.all(validationPromises);
 
       // Cross-field validation
-      if (formData.financialMetrics?.revenue) {
-        const crossResult = await validateCrossField('revenue', formData.financialMetrics.revenue, formData);
+      if (formData.financialData?.revenue) {
+        const crossResult = await validateCrossField('revenue', formData.financialData.revenue, formData);
         if (crossResult && !crossResult.valid && crossResult.message) {
           errors['revenue'] = crossResult.message;
         }
