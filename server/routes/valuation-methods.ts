@@ -5,6 +5,7 @@
 import { Router, type Request, Response } from 'express';
 import { calculateDCFValuation, validateDCFInput } from '../services/valuation-methods/dcf-valuation';
 import { calculateBerkusValuation, validateBerkusInput } from '../services/valuation-methods/berkus-method';
+import { calculateScorecardValuation, validateScorecardInput } from '../services/valuation-methods/scorecard-method';
 import type { ValuationInput } from '../services/types/valuation-types';
 
 const router = Router();
@@ -81,13 +82,37 @@ router.post('/berkus', async (req: Request, res: Response) => {
 
 /**
  * POST /api/valuation/scorecard
- * Calculate valuation using Scorecard method (placeholder for next implementation)
+ * Calculate valuation using Scorecard method
  */
 router.post('/scorecard', async (req: Request, res: Response) => {
-  return res.status(501).json({
-    error: 'Scorecard method not yet implemented',
-    message: 'This endpoint will be available in the next phase',
-  });
+  try {
+    const input: ValuationInput = req.body;
+
+    // Validate input
+    const validation = validateScorecardInput(input);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Invalid input for Scorecard valuation',
+        details: validation.errors,
+      });
+    }
+
+    // Calculate Scorecard valuation
+    const result = await calculateScorecardValuation(input);
+
+    return res.json({
+      success: true,
+      method: 'Scorecard',
+      result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Scorecard valuation error:', error);
+    return res.status(500).json({
+      error: 'Failed to calculate Scorecard valuation',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 /**
