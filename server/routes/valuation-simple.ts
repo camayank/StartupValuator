@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { ValuationCalculatorV2 } from "../services/valuation-v2";
+import { EnhancedValuationCalculator } from "../services/valuation-enhanced";
 import type { ValuationFormData } from "../../client/src/lib/validations";
 
 const anthropic = new Anthropic({
@@ -427,7 +428,7 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
 router.post("/simple", async (req, res) => {
   try {
     const simpleData = simpleInputSchema.parse(req.body);
-    
+
     // Enrich with AI insights (non-blocking - use fallback if fails)
     let aiInsights = null;
     let aiUsed = false;
@@ -437,26 +438,61 @@ router.post("/simple", async (req, res) => {
     } catch (error) {
       console.warn("AI enrichment failed, using benchmarks:", error);
     }
-    
+
     // Build complete valuation data with intelligent defaults
     const fullData = buildFullValuationData(simpleData, aiInsights);
-    
-    // Calculate valuation using corrected calculator
-    const calculator = new ValuationCalculatorV2();
-    const valuationResult = calculator.calculateValuation(fullData, simpleData.currency);
-    
+
+    // Calculate valuation using ENHANCED calculator with multiple methods
+    const enhancedCalculator = new EnhancedValuationCalculator();
+    const valuationResult = enhancedCalculator.calculateValuation(fullData, simpleData.currency);
+
+    // Calculate investment readiness score
+    const readinessScore = enhancedCalculator.calculateReadiness(fullData);
+
+    // Get methods used
+    const methodsUsed = [];
+    if (valuationResult.methodologies.dcf) methodsUsed.push("DCF (Discounted Cash Flow)");
+    if (valuationResult.methodologies.berkus) methodsUsed.push("Berkus Method");
+    if (valuationResult.methodologies.scorecard) methodsUsed.push("Scorecard Method");
+    if (valuationResult.methodologies.riskSummation) methodsUsed.push("Risk Factor Summation");
+
     // Return comprehensive result with transparency
     res.json({
-      ...valuationResult,
+      // Main valuation results
+      valuation: valuationResult.valuation,
+      valuationRange: valuationResult.valuationRange,
+      confidence: valuationResult.confidence,
+
+      // Investment readiness
+      investmentReadiness: {
+        overallScore: readinessScore.overallScore,
+        scoreBreakdown: readinessScore.scoreBreakdown,
+        investorReadiness: readinessScore.investorReadiness,
+        redFlags: readinessScore.redFlags,
+        topRecommendations: readinessScore.recommendations.slice(0, 3),
+        estimatedTimeToReady: readinessScore.estimatedTimeToReady
+      },
+
+      // Methodology details
+      methodologies: valuationResult.methodologies,
+
+      // Insights and warnings
+      insights: valuationResult.insights,
+      warnings: valuationResult.warnings,
+
+      // Input data and AI insights
       inputData: fullData,
       aiInsights: aiInsights,
       currency: simpleData.currency,
       simplifiedInput: simpleData,
+
+      // Transparency information
       transparency: {
         aiEnrichmentUsed: aiUsed,
-        methodsUsed: ["Scorecard Method", "Risk Factor Summation", "Venture Capital Method"],
+        methodsUsed,
         dataQuality: aiUsed ? "AI-enhanced" : "Benchmark-based",
-        disclaimers: valuationResult.metadata?.disclaimers || []
+        methodWeights: valuationResult.metadata.methodWeights,
+        disclaimers: valuationResult.metadata.disclaimers
       }
     });
   } catch (error) {
