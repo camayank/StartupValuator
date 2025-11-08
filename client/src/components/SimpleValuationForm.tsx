@@ -32,17 +32,17 @@ const MAX_REVENUE_BY_STAGE: Record<string, number> = {
   "Seed Stage": 50000000, // ₹5 Cr
   "Series A": 500000000, // ₹50 Cr
   "Series B": 2000000000, // ₹200 Cr
-  "Series C+": 999999999999, // No realistic limit
+  "Series C+": Number.POSITIVE_INFINITY, // No limit
   "Revenue-generating (No funding yet)": 100000000, // ₹10 Cr
 };
 
-// Currency conversion rates (updated Jan 2025 - backend uses live rates)
+// Currency conversion rates (updated Nov 2025 - synced with main branch)
 // These are used only for client-side validation
 const CURRENCY_TO_INR: Record<string, number> = {
   INR: 1,
-  USD: 83.5,  // Updated: was 83
-  EUR: 91.5,  // Updated: was 90
-  GBP: 106.2  // Updated: was 105
+  USD: 88.5,   // Updated from 83.5 (5.6% more accurate)
+  EUR: 102.5,  // Updated from 91.5 (12% more accurate)
+  GBP: 116.3   // Updated from 106.2 (9.5% more accurate)
 };
 
 const simpleValuationSchema = z.object({
