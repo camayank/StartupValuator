@@ -1,0 +1,350 @@
+Active Pages: 3
+Landing Page (/)
+Valuation Calculator (/valuation/calculator)
+Referral System (/referral)
+📄 DETAILED PAGE BREAKDOWN
+1. LANDING PAGE (/)
+File: client/src/pages/LandingPage.tsx
+
+Sections:
+
+┌─────────────────────────────────────┐
+│  🏠 HERO SECTION                    │
+│  - Gradient background              │
+│  - Animated CTA buttons             │
+│  - Primary: "Calculate Valuation"   │
+│  - Secondary: "Learn More"          │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📊 SOCIAL PROOF STATISTICS         │
+│  - 10,000+ Startups Valued          │
+│  - ₹4,000 Crore+ Valuations         │
+│  - 95% Accuracy Rate                │
+│  - All Countries Supported          │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  ✨ FEATURE GRID (4 items)          │
+│  1. AI-Powered Analysis             │
+│  2. Multi-Currency Support          │
+│  3. Bank-Grade Security             │
+│  4. Regional Intelligence           │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  ⭐ TESTIMONIALS SECTION            │
+│  - 3 Featured Testimonials          │
+│  - Star ratings (5-star)            │
+│  - User avatars with gradients      │
+│  - Locations (Mumbai, Bangalore, Delhi) │
+│  - Hover animations                 │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  👥 BENEFITS SECTIONS               │
+│  For Startups:                      │
+│  - Instant valuations               │
+│  - Investor-ready reports           │
+│                                     │
+│  For Investors:                     │
+│  - Data-driven insights             │
+│  - Comparable analysis              │
+│                                     │
+│  For CA & Advisors:                 │
+│  - Professional tools               │
+│  - Client reporting                 │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🎁 REFERRAL BANNER                 │
+│  - Gradient background              │
+│  - Social sharing buttons           │
+│  - "Refer & Earn" CTA               │
+└─────────────────────────────────────┘
+Key Features:
+
+💜 Vibrant purple gradient backgrounds
+✨ Framer Motion animations (staggered fade-ins)
+📱 Fully responsive (mobile-first)
+🎨 Glass-morphism effects (backdrop-blur)
+2. VALUATION CALCULATOR (/valuation/calculator)
+Component: client/src/components/ValuationWizardContainer.tsx
+Main Form: client/src/components/SimpleValuationForm.tsx
+Results: client/src/components/ValuationResults.tsx
+
+User Flow:
+
+START: User clicks "Calculate Valuation"
+  ↓
+┌─────────────────────────────────────┐
+│  STEP 1: Industry Selection         │
+│  - Dropdown with industries         │
+│  - Number badge: ①                  │
+│  - Required field (*)               │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│  STEP 2: Annual Revenue             │
+│  - Number input with ₹ symbol       │
+│  - Number badge: ②                  │
+│  - Required field (*)               │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│  STEP 3: Growth Rate                │
+│  - Percentage input with % symbol   │
+│  - Number badge: ③                  │
+│  - Optional field                   │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│  STEP 4: Team Size                  │
+│  - Number input                     │
+│  - Number badge: ④                  │
+│  - Optional field                   │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│  🔘 CALCULATE BUTTON                │
+│  - Gradient background              │
+│  - Loading spinner when processing  │
+│  - Disabled when invalid            │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│  📊 VALUATION RESULTS               │
+│                                     │
+│  ✅ "Valuation Complete" Badge      │
+│                                     │
+│  💰 MAIN VALUATION                  │
+│  - Text-7xl size (HUGE)             │
+│  - Gradient purple text             │
+│  - Formatted currency (₹X Cr)       │
+│                                     │
+│  📈 BREAKDOWN SECTIONS:             │
+│  - Method Used                      │
+│  - Confidence Score (with progress) │
+│  - Key Factors                      │
+│  - Industry Multiples               │
+│                                     │
+│  💡 RECOMMENDATIONS                 │
+│  - Bulleted list with checkmarks    │
+│  - AI-generated suggestions         │
+│                                     │
+│  ⚠️ RISK FACTORS                    │
+│  - Bulleted list with warning icons │
+│  - Market risks identified          │
+│                                     │
+│  🧠 AI INSIGHTS (if available)      │
+│  - Strategic insights               │
+│  - Key strengths                    │
+│  - Comparable companies             │
+│                                     │
+│  🔄 "Start New Valuation" Button    │
+└─────────────────────────────────────┘
+END
+Form Design Features:
+
+Numbered steps in purple circles: ① ② ③ ④
+Decorative gradient orbs (blur-3xl)
+Staggered animations (0.1s, 0.2s, 0.3s, 0.4s delays)
+Real-time validation with error messages
+Loading states with spinner animations
+Results Design Features:
+
+Text-7xl for valuation amount (massive display)
+Color-coded confidence score
+Gradient card backgrounds
+Expandable sections
+Professional export options
+3. REFERRAL SYSTEM (/referral)
+File: client/src/components/ReferralSystem.tsx
+
+Layout:
+
+┌─────────────────────────────────────┐
+│  🎁 HEADER                          │
+│  - "Refer & Earn Rewards"           │
+│  - Gradient text effect             │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📋 YOUR REFERRAL CODE              │
+│  - Unique code display              │
+│  - Copy button                      │
+│  - Success toast on copy            │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📤 SHARE OPTIONS                   │
+│  - Email share button               │
+│  - WhatsApp share button            │
+│  - Twitter share button             │
+│  - LinkedIn share button            │
+│  - Facebook share button            │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  📊 REWARDS TRACKING                │
+│  - Total referrals count            │
+│  - Rewards earned                   │
+│  - Progress indicators              │
+└─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│  🎯 HOW IT WORKS                    │
+│  Step 1: Share your code            │
+│  Step 2: Friend signs up            │
+│  Step 3: Earn rewards               │
+└─────────────────────────────────────┘
+Interactive Features:
+
+One-click copy referral code
+Direct social media sharing
+Animated reward cards
+Real-time tracking
+🧭 NAVIGATION STRUCTURE
+Desktop Navigation (Large Screens):
+
+┌────────────────────────────────────────────────┐
+│  [Logo] [Home] [Valuation Tool] [Refer & Earn] [🌙]  │
+└────────────────────────────────────────────────┘
+Mobile Navigation (Small Screens):
+
+┌────────────────────────────────┐
+│  [Logo]            [🌙] [☰]   │
+└────────────────────────────────┘
+    ↓ Click hamburger
+┌────────────────────────────────┐
+│  ✕ Close                       │
+│  🏠 Home                        │
+│  🧮 Valuation Tool             │
+│  🎁 Refer & Earn               │
+└────────────────────────────────┘
+Navigation Features:
+
+Sticky positioning (stays at top)
+Backdrop blur effect
+Dark mode toggle (🌙 icon)
+Active page highlighting (purple background)
+Smooth transitions
+🦶 FOOTER STRUCTURE
+┌─────────────────────────────────────┐
+│  📱 PRODUCT         🏢 COMPANY      │
+│  - Valuation        - About         │
+│  - Pricing          - Blog          │
+│  - Features         - Careers       │
+│  - API              - Contact       │
+│                                     │
+│  ⚖️ LEGAL           📚 RESOURCES    │
+│  - Privacy          - Docs          │
+│  - Terms            - Help          │
+│  - Security         - Support       │
+│  - Compliance       - FAQ           │
+│                                     │
+│  🌐 SOCIAL MEDIA                    │
+│  [Twitter] [LinkedIn] [Facebook]    │
+│                                     │
+│  🔒 TRUST BADGES                    │
+│  [ISO Certified] [SSL Secure]       │
+│  [GDPR Compliant]                   │
+│                                     │
+│  © 2024 StartupValuator             │
+└─────────────────────────────────────┘
+🎯 COMPLETE USER JOURNEY
+Journey 1: New Visitor → Valuation
+1. Land on Homepage (/)
+   ↓
+2. See hero section with "Calculate Valuation" CTA
+   ↓
+3. Scroll down to view:
+   - Social proof statistics
+   - Feature highlights
+   - Testimonials
+   ↓
+4. Click "Calculate Valuation" button
+   ↓
+5. Redirected to /valuation/calculator
+   ↓
+6. Fill out 4-step form:
+   ① Industry
+   ② Revenue
+   ③ Growth Rate (optional)
+   ④ Team Size (optional)
+   ↓
+7. Click "Calculate Valuation"
+   ↓
+8. View results with:
+   - Large valuation amount (₹X Cr)
+   - Confidence score
+   - Recommendations
+   - Risk factors
+   - AI insights
+   ↓
+9. Options:
+   - Export report (PDF/Excel)
+   - Share on social media
+   - Start new valuation
+   - Refer friends
+Journey 2: Visitor → Referral
+1. Land on Homepage (/)
+   ↓
+2. Click "Refer & Earn" in navigation
+   OR
+   Click referral banner on homepage
+   ↓
+3. Redirected to /referral
+   ↓
+4. See unique referral code
+   ↓
+5. Copy code or share via:
+   - Email
+   - WhatsApp
+   - Twitter
+   - LinkedIn
+   - Facebook
+   ↓
+6. Track rewards and referrals
+🎨 DESIGN SYSTEM SUMMARY
+Color Palette:
+Primary: hsl(262 83% 58%)  /* Vibrant Purple */
+Accent: hsl(142 76% 36%)   /* Green */
+Success: hsl(142 76% 36%)  /* Green */
+Warning: hsl(38 92% 50%)   /* Yellow */
+Info: hsl(199 89% 48%)     /* Blue */
+Typography Scale:
+Hero: text-4xl md:text-5xl
+Headings: text-3xl md:text-4xl
+Subheadings: text-2xl
+Body: text-base
+Small: text-sm
+Valuation Display: text-7xl (HUGE!)
+Spacing System:
+Container: max-w-6xl mx-auto
+Section Padding: py-20
+Card Padding: p-6
+Gap Between Items: gap-6
+Animation Timings:
+Stagger Delay 1: 0.1s
+Stagger Delay 2: 0.2s
+Stagger Delay 3: 0.3s
+Stagger Delay 4: 0.4s
+Hover Transition: 0.3s
+📁 FILE STRUCTURE
+client/src/
+├── App.tsx (Main app with routes)
+├── index.css (Design system variables)
+├── pages/
+│   └── LandingPage.tsx (Homepage)
+├── components/
+│   ├── SimpleValuationForm.tsx (Form)
+│   ├── ValuationResults.tsx (Results)
+│   ├── ValuationWizardContainer.tsx (Container)
+│   ├── ReferralSystem.tsx (Referrals)
+│   └── ui/
+│       ├── navigation.tsx (Nav bar)
+│       ├── footer.tsx (Footer)
+│       ├── button.tsx (Button component)
+│       ├── card.tsx (Card component)
+│       └── ... (100+ UI components)
