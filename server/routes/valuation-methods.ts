@@ -6,6 +6,7 @@ import { Router, type Request, Response } from 'express';
 import { calculateDCFValuation, validateDCFInput } from '../services/valuation-methods/dcf-valuation';
 import { calculateBerkusValuation, validateBerkusInput } from '../services/valuation-methods/berkus-method';
 import { calculateScorecardValuation, validateScorecardInput } from '../services/valuation-methods/scorecard-method';
+import { calculateVCValuation, validateVCInput } from '../services/valuation-methods/vc-method';
 import type { ValuationInput } from '../services/types/valuation-types';
 
 const router = Router();
@@ -117,13 +118,37 @@ router.post('/scorecard', async (req: Request, res: Response) => {
 
 /**
  * POST /api/valuation/vc-method
- * Calculate valuation using VC method (placeholder for next implementation)
+ * Calculate valuation using Venture Capital method
  */
 router.post('/vc-method', async (req: Request, res: Response) => {
-  return res.status(501).json({
-    error: 'VC method not yet implemented',
-    message: 'This endpoint will be available in the next phase',
-  });
+  try {
+    const input: ValuationInput = req.body;
+
+    // Validate input
+    const validation = validateVCInput(input);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Invalid input for VC method valuation',
+        details: validation.errors,
+      });
+    }
+
+    // Calculate VC method valuation
+    const result = await calculateVCValuation(input);
+
+    return res.json({
+      success: true,
+      method: 'VC Method',
+      result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('VC method valuation error:', error);
+    return res.status(500).json({
+      error: 'Failed to calculate VC method valuation',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
 
 /**
