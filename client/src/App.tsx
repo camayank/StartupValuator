@@ -14,7 +14,7 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { PricingPage } from "./pages/PricingPage";
 import { Profile } from "./pages/Profile";
 import { Documentation } from "./pages/Documentation";
-import { AuthPage } from "./pages/AuthPage";
+import AuthPage from "./pages/AuthPage";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 
 function App() {
