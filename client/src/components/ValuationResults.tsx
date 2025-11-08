@@ -79,6 +79,26 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
 
   return (
     <div className="space-y-8">
+      {/* AI Failure Warning Banner - Prominent if AI didn't enrich */}
+      {result.transparency && !result.transparency.aiEnrichmentUsed && (
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                ⚠️ AI Analysis Unavailable
+              </h3>
+              <p className="text-sm text-yellow-800 mb-3">
+                We're using industry benchmarks only. Your valuation may be less accurate without AI-powered market analysis and financial projections.
+              </p>
+              <p className="text-xs text-yellow-700">
+                <strong>Recommendation:</strong> Connect your Anthropic API key for 200+ data point analysis and enhanced accuracy.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Premium Header */}
       <div className="text-center space-y-2 mb-8">
         <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
