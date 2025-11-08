@@ -1,36 +1,36 @@
 {
-  "variant": "professional",
-  "primary": "hsl(215 25% 27%)",
+  "variant": "vibrant",
+  "primary": "hsl(270 95% 75%)",
   "appearance": "light",
-  "radius": 0.5,
+  "radius": 0.75,
   "colors": {
     "brand": {
-      "primary": "hsl(215 25% 27%)",
-      "secondary": "hsl(215 20% 65%)",
-      "accent": "hsl(142 76% 36%)",
-      "muted": "hsl(215 15% 92%)"
+      "primary": "hsl(270 95% 75%)",
+      "secondary": "hsl(280 85% 65%)",
+      "accent": "hsl(290 90% 70%)",
+      "muted": "hsl(270 50% 95%)"
     },
     "confidence": {
-      "low": "hsl(0 84% 60%)",
-      "medium": "hsl(38 92% 50%)",
-      "high": "hsl(142 76% 36%)"
+      "low": "hsl(340 82% 65%)",
+      "medium": "hsl(45 93% 58%)",
+      "high": "hsl(142 76% 45%)"
     },
     "risk": {
-      "low": "hsl(142 76% 36%)",
-      "medium": "hsl(38 92% 50%)",
-      "high": "hsl(0 84% 60%)",
-      "critical": "hsl(0 62% 30%)"
+      "low": "hsl(142 76% 45%)",
+      "medium": "hsl(45 93% 58%)",
+      "high": "hsl(340 82% 65%)",
+      "critical": "hsl(0 72% 50%)"
     },
     "valuation": {
-      "positive": "hsl(142 76% 36%)",
-      "neutral": "hsl(215 20% 65%)",
-      "negative": "hsl(0 84% 60%)"
+      "positive": "hsl(142 76% 45%)",
+      "neutral": "hsl(270 50% 70%)",
+      "negative": "hsl(340 82% 65%)"
     },
     "financial": {
-      "revenue": "hsl(142 76% 36%)",
-      "expenses": "hsl(0 84% 60%)",
-      "growth": "hsl(260 84% 60%)",
-      "market": "hsl(200 84% 60%)"
+      "revenue": "hsl(142 76% 45%)",
+      "expenses": "hsl(340 82% 65%)",
+      "growth": "hsl(270 95% 75%)",
+      "market": "hsl(200 90% 65%)"
     }
   },
   "typography": {
