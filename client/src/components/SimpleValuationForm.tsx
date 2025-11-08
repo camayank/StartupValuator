@@ -228,6 +228,9 @@ export function SimpleValuationForm({ onResult }: { onResult: (data: any) => voi
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription className="text-xs text-muted-foreground mt-1">
+                      Our AI uses industry-specific benchmarks from India and global markets
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -254,6 +257,9 @@ export function SimpleValuationForm({ onResult }: { onResult: (data: any) => voi
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription className="text-xs text-muted-foreground mt-1">
+                      We apply stage-appropriate valuation methods (Scorecard, VC Method, Market Multiples)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -280,6 +286,9 @@ export function SimpleValuationForm({ onResult }: { onResult: (data: any) => voi
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription className="text-xs text-muted-foreground mt-1">
+                      All calculations use live exchange rates - results shown in your selected currency
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -292,6 +301,9 @@ export function SimpleValuationForm({ onResult }: { onResult: (data: any) => voi
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-base font-semibold">4. What's your annual revenue? *</FormLabel>
+                    <FormDescription className="text-xs text-muted-foreground mb-2">
+                      Enter 0 for pre-revenue startups. We'll value based on market potential and team strength.
+                    </FormDescription>
                     <FormControl>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">
@@ -306,9 +318,6 @@ export function SimpleValuationForm({ onResult }: { onResult: (data: any) => voi
                         />
                       </div>
                     </FormControl>
-                    <FormDescription className="text-xs">
-                      Enter 0 if pre-revenue. We'll estimate your potential valuation!
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

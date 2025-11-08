@@ -435,46 +435,87 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
       <Separator />
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button 
-          variant="outline" 
-          onClick={onStartOver}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          New Valuation
-        </Button>
-        
-        <Button 
-          className="flex items-center gap-2"
-          onClick={() => {
-            // Generate and download report
-            const reportData = {
-              valuation: result.valuation,
-              confidence: result.confidence,
-              methodologies: result.methodologies,
-              analysis: result.analysis,
-              timestamp: new Date().toISOString()
-            };
+      <Card className="bg-gradient-to-br from-primary/5 to-background border-primary/20">
+        <CardContent className="p-6">
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-semibold mb-2">Share Your Results</h3>
+            <p className="text-sm text-muted-foreground">
+              Download your professional valuation report or share with investors
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={onStartOver}
+              className="flex items-center gap-2 hover:bg-primary/5"
+            >
+              <RefreshCw className="h-4 w-4" />
+              New Valuation
+            </Button>
             
-            const blob = new Blob([JSON.stringify(reportData, null, 2)], {
-              type: 'application/json'
-            });
+            <Button 
+              size="lg"
+              className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              onClick={() => {
+                // Generate and download comprehensive report
+                const reportData = {
+                  valuation: result.valuation,
+                  currency: result.currency,
+                  confidence: result.confidence,
+                  methodologies: result.methodologies,
+                  analysis: result.analysis,
+                  aiInsights: result.aiInsights,
+                  transparency: result.transparency,
+                  generatedAt: new Date().toLocaleString(),
+                  platform: "ValuationPro - Professional Startup Valuation Platform"
+                };
+                
+                const blob = new Blob([JSON.stringify(reportData, null, 2)], {
+                  type: 'application/json'
+                });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `valuation-report-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <Download className="h-4 w-4" />
+              Download Full Report
+            </Button>
             
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'valuation-report.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }}
-        >
-          <Download className="h-4 w-4" />
-          Download Report
-        </Button>
-      </div>
+            <Button 
+              size="lg"
+              variant="secondary"
+              className="flex items-center gap-2"
+              onClick={() => {
+                const shareText = `Just got my startup valued at ${formatCurrency(result.valuation)} using ValuationPro! 🚀 Get your free AI-powered valuation at`;
+                const shareUrl = window.location.origin;
+                
+                if (navigator.share) {
+                  navigator.share({
+                    title: 'My Startup Valuation',
+                    text: shareText,
+                    url: shareUrl
+                  });
+                } else {
+                  navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                  alert('Link copied to clipboard!');
+                }
+              }}
+            >
+              <TrendingUp className="h-4 w-4" />
+              Share Results
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
