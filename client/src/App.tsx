@@ -9,6 +9,12 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { ValuationWizardContainer } from "@/components/ValuationWizardContainer";
 import { ReferralSystem } from "@/components/ReferralSystem";
 import { LandingPage } from "./pages/LandingPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { PricingPage } from "./pages/PricingPage";
+import { Profile } from "./pages/Profile";
+import { Documentation } from "./pages/Documentation";
+import { AuthPage } from "./pages/AuthPage";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 
 function App() {
@@ -29,6 +35,12 @@ function App() {
                     <ValuationWizardContainer />
                   </div>
                 </Route>
+                <Route path="/dashboard" component={DashboardPage} />
+                <Route path="/analytics" component={AnalyticsPage} />
+                <Route path="/pricing" component={PricingPage} />
+                <Route path="/profile" component={Profile} />
+                <Route path="/documentation" component={Documentation} />
+                <Route path="/auth" component={AuthPage} />
                 <Route path="/referral" component={ReferralSystem} />
                 <Route>
                   <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
