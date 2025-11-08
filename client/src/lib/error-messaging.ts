@@ -68,27 +68,22 @@ export const ErrorMessaging = {
   },
 
   display: {
-    showError: (error: ErrorMessage): void => {
-      const { toast } = useToast();
-      
+    showError: (error: ErrorMessage, toast: ReturnType<typeof useToast>['toast']): void => {
       toast({
         variant: "destructive",
         title: error.message,
-        description: error.suggestions ? 
-          <ul className="mt-2 list-disc pl-4">
-            {error.suggestions.map((suggestion, i) => (
-              <li key={i} className="text-sm">{suggestion}</li>
-            ))}
-          </ul>
-          : null
+        description: error.suggestions ?
+          error.suggestions.map((suggestion, i) => `• ${suggestion}`).join('\n')
+          : undefined
       });
     },
 
-    showFieldErrors: (errors: Map<string, string[]>): void => {
+    showFieldErrors: (errors: Map<string, string[]>, toast: ReturnType<typeof useToast>['toast']): void => {
       const fields = Array.from(errors.keys());
       if (fields.length > 0) {
         ErrorMessaging.display.showError(
-          ErrorMessaging.validation.incompleteFields(fields)
+          ErrorMessaging.validation.incompleteFields(fields),
+          toast
         );
       }
     }
