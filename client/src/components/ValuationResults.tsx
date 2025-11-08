@@ -78,14 +78,18 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-6xl mx-auto">
       {/* Premium Header */}
-      <div className="text-center space-y-2 mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+      <div className="text-center space-y-3 mb-12">
+        <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-purple-600/10 border border-primary/20 mb-4">
+          <CheckCircle2 className="h-4 w-4 text-primary mr-2" />
+          <span className="text-sm font-medium text-primary">Valuation Complete</span>
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-purple-600 to-primary bg-clip-text text-transparent">
           Your Professional Valuation Report
         </h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Analyzed using methodologies from Aswath Damodaran (NYU), Sam Altman (OpenAI), and Elon Musk's first principles approach
+        <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          Analyzed using methodologies from <span className="font-semibold text-primary">Aswath Damodaran</span> (NYU), <span className="font-semibold text-purple-600">Sam Altman</span> (OpenAI), and <span className="font-semibold text-accent">Elon Musk</span>'s first principles approach
         </p>
       </div>
 
@@ -124,18 +128,26 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
       )}
 
       {/* Main Valuation Result */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-xl">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl mb-4">
-            <DollarSign className="h-8 w-8 text-primary" />
-            Estimated Valuation
+      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-purple-500/5 to-background shadow-2xl relative overflow-hidden">
+        {/* Decorative Background */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-3xl" />
+
+        <CardHeader className="text-center relative z-10 pb-8">
+          <CardTitle className="flex items-center justify-center gap-3 text-2xl mb-6">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10">
+              <DollarSign className="h-8 w-8 text-primary" />
+            </div>
+            <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              Estimated Valuation
+            </span>
           </CardTitle>
-          <div className="text-5xl md:text-6xl font-bold text-primary mb-4">
+          <div className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-primary via-purple-600 to-primary bg-clip-text text-transparent mb-6">
             {formatCurrency(result.valuation)}
           </div>
-          <Badge 
-            variant="outline" 
-            className={`text-sm px-3 py-1 ${getConfidenceColor(result.confidence)}`}
+          <Badge
+            variant="outline"
+            className={`text-sm px-4 py-2 font-medium ${getConfidenceColor(result.confidence)}`}
           >
             {getConfidenceLabel(result.confidence)} ({Math.round(result.confidence * 100)}%)
           </Badge>
