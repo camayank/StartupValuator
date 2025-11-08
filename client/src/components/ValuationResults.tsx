@@ -89,6 +89,40 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
         </p>
       </div>
 
+      {/* Prominent AI Failure Warning - CRITICAL */}
+      {result.transparency && !result.transparency.aiEnrichmentUsed && (
+        <Card className="border-yellow-500 bg-yellow-50 shadow-lg">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="h-8 w-8 text-yellow-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-yellow-900 mb-2">
+                  ⚠️ AI Analysis Unavailable - Using Industry Averages
+                </h3>
+                <p className="text-yellow-800 mb-3">
+                  This valuation is based on industry benchmarks and statistical averages rather than AI-powered deep analysis.
+                  Results may be less accurate and tailored to your specific startup.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="bg-white text-yellow-700 border-yellow-300">
+                    Lower Accuracy
+                  </Badge>
+                  <Badge variant="outline" className="bg-white text-yellow-700 border-yellow-300">
+                    Generic Benchmarks
+                  </Badge>
+                  <Badge variant="outline" className="bg-white text-yellow-700 border-yellow-300">
+                    Limited Insights
+                  </Badge>
+                </div>
+                <p className="text-sm text-yellow-700 mt-3">
+                  💡 <strong>Tip:</strong> Contact support to enable AI-powered analysis for more accurate, personalized valuations with 200+ data points.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Valuation Result */}
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background shadow-xl">
         <CardHeader className="text-center">
@@ -364,9 +398,11 @@ export function ValuationResults({ result, onStartOver }: ValuationResultsProps)
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {result.transparency.aiEnrichmentUsed ? (
-                    <>✨ AI enrichment used to analyze your startup with 200+ data points</>
+                    <>✨ AI enrichment used to analyze your startup with 200+ data points. This provides the most accurate and personalized valuation.</>
                   ) : (
-                    <>📊 Based on industry benchmarks - connect with API key for enhanced AI analysis</>
+                    <span className="text-yellow-700 font-medium">
+                      ⚠️ Benchmark-based valuation only. AI analysis failed - using statistical averages instead. See warning above.
+                    </span>
                   )}
                 </p>
               </div>

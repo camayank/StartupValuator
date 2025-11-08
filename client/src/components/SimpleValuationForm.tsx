@@ -36,12 +36,13 @@ const MAX_REVENUE_BY_STAGE: Record<string, number> = {
   "Revenue-generating (No funding yet)": 100000000, // ₹10 Cr
 };
 
-// Currency conversion rates (should match backend)
+// Currency conversion rates (updated Jan 2025 - backend uses live rates)
+// These are used only for client-side validation
 const CURRENCY_TO_INR: Record<string, number> = {
   INR: 1,
-  USD: 83,
-  EUR: 90,
-  GBP: 105
+  USD: 83.5,  // Updated: was 83
+  EUR: 91.5,  // Updated: was 90
+  GBP: 106.2  // Updated: was 105
 };
 
 const simpleValuationSchema = z.object({

@@ -3,6 +3,7 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { ValuationCalculatorV2 } from "../services/valuation-v2";
 import { EnhancedValuationCalculator } from "../services/valuation-enhanced";
+import { getExchangeRates } from "../services/currency-exchange.service";
 import type { ValuationFormData } from "../../client/src/lib/validations";
 
 const anthropic = new Anthropic({
@@ -328,25 +329,19 @@ OUTPUT REQUIRED (JSON only, no markdown):
   }
 }
 
-// Currency conversion helper (matches the one in valuation-v2.ts)
-const CURRENCY_TO_INR: Record<string, number> = {
-  INR: 1,
-  USD: 83,
-  EUR: 90,
-  GBP: 105
-};
-
-function convertToINR(value: number, fromCurrency: string): number {
-  return value * (CURRENCY_TO_INR[fromCurrency] || 1);
+// Currency conversion helper - now uses live rates
+async function convertToINR(value: number, fromCurrency: string): Promise<number> {
+  const rates = await getExchangeRates();
+  return value * (rates[fromCurrency] || 1);
 }
 
-function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): ValuationFormData {
+async function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Promise<ValuationFormData> {
   const benchmark = industryBenchmarks[simpleData.industry] || industryBenchmarks["Other"];
   const stageData = stageMultipliers[simpleData.stage] || stageMultipliers["Seed Stage"];
-  
+
   // CRITICAL: Convert user revenue to INR since all benchmarks are in INR
   // This ensures consistent calculations regardless of currency selected
-  const revenueINR = convertToINR(simpleData.revenue || 0, simpleData.currency);
+  const revenueINR = await convertToINR(simpleData.revenue || 0, simpleData.currency);
   
   // Calculate intelligent defaults using AI insights first, then benchmarks
   const adjustedGrowthRate = Math.round(
@@ -440,7 +435,10 @@ router.post("/simple", async (req, res) => {
     }
 
     // Build complete valuation data with intelligent defaults
-    const fullData = buildFullValuationData(simpleData, aiInsights);
+    const fullData = await buildFullValuationData(simpleData, aiInsights);
+
+    // Get current exchange rates for transparency
+    const exchangeRates = await getExchangeRates();
 
     // Calculate valuation using ENHANCED calculator with multiple methods
     const enhancedCalculator = new EnhancedValuationCalculator();
@@ -492,7 +490,9 @@ router.post("/simple", async (req, res) => {
         methodsUsed,
         dataQuality: aiUsed ? "AI-enhanced" : "Benchmark-based",
         methodWeights: valuationResult.metadata.methodWeights,
-        disclaimers: valuationResult.metadata.disclaimers
+        disclaimers: valuationResult.metadata.disclaimers,
+        exchangeRates: exchangeRates,
+        exchangeRateNote: "Live exchange rates updated hourly"
       }
     });
   } catch (error) {
