@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BrandHeader } from "@/components/ui/brand-header";
 import { SocialShare } from "@/components/ui/social-share";
+import { QuickCalculator } from "@/components/QuickCalculator";
 import { Link } from "wouter";
 import {
   BarChart3,
@@ -238,10 +239,13 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Quick Calculator */}
+      <QuickCalculator />
+
       {/* Referral Banner */}
       <section className="py-4 bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 border-y">
         <div className="container mx-auto px-4">
-          <motion.div 
+          <motion.div
             className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left"
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
