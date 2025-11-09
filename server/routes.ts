@@ -10,6 +10,7 @@ import analysisRoutes from "./routes/analysis";
 import monitoringRoutes from "./routes/monitoring";
 import aiRoutes from "./routes/ai-routes";
 import draftRoutes from "./routes/draft";
+import quickCalculatorRoutes from "./routes/quick-calculator";
 import { setupAuth } from "./auth";
 import { userProfiles, valuationRecords } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -30,6 +31,7 @@ type WebSocketMessage = {
 
 export function registerRoutes(app: Express): Server {
   // Register all routes
+  app.use("/api/quick-calculator", quickCalculatorRoutes);
   app.use("/api/valuation", valuationSimpleRoutes);
   app.use("/api/valuation", valuationCalculateRoutes);
   app.use("/api/valuation", valuationRoutes);

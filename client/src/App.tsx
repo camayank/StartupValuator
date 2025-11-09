@@ -15,6 +15,7 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { PricingPage } from "./pages/PricingPage";
 import { Profile } from "./pages/Profile";
 import { Documentation } from "./pages/Documentation";
+import { CalculatorResultPage } from "./pages/CalculatorResultPage";
 import AuthPage from "./pages/AuthPage";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 
@@ -31,6 +32,7 @@ function App() {
             <Suspense fallback={<LoadingScreen />}>
               <Switch>
                 <Route path="/" component={LandingPage} />
+                <Route path="/calculator-result" component={CalculatorResultPage} />
                 <Route path="/valuation/calculator">
                   <div className="container py-8">
                     <ValuationWizardContainer />
