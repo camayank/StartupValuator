@@ -115,8 +115,10 @@ function calculateWACC(
   stage: string,
   hasDebt: boolean = false
 ): number {
-  const sectorParams = INDIAN_SECTOR_PARAMS[sector.toLowerCase()] || INDIAN_SECTOR_PARAMS.default;
-  const stageAdjustment = STAGE_ADJUSTMENTS[stage.toLowerCase()] || STAGE_ADJUSTMENTS.default;
+  const sectorKey = sector.toLowerCase() as keyof typeof INDIAN_SECTOR_PARAMS;
+  const stageKey = stage.toLowerCase() as keyof typeof STAGE_ADJUSTMENTS;
+  const sectorParams = INDIAN_SECTOR_PARAMS[sectorKey] || INDIAN_SECTOR_PARAMS.default;
+  const stageAdjustment = STAGE_ADJUSTMENTS[stageKey] || STAGE_ADJUSTMENTS.default;
 
   // Base discount rate
   let wacc = sectorParams.discountRate;
@@ -160,8 +162,10 @@ export async function calculateDCFValuation(input: ValuationInput): Promise<DCFA
   } = input;
 
   // Get sector-specific parameters
-  const sectorParams = INDIAN_SECTOR_PARAMS[sector.toLowerCase()] || INDIAN_SECTOR_PARAMS.default;
-  const stageAdjustment = STAGE_ADJUSTMENTS[stage.toLowerCase()] || STAGE_ADJUSTMENTS.default;
+  const sectorKey = sector.toLowerCase() as keyof typeof INDIAN_SECTOR_PARAMS;
+  const stageKey = stage.toLowerCase() as keyof typeof STAGE_ADJUSTMENTS;
+  const sectorParams = INDIAN_SECTOR_PARAMS[sectorKey] || INDIAN_SECTOR_PARAMS.default;
+  const stageAdjustment = STAGE_ADJUSTMENTS[stageKey] || STAGE_ADJUSTMENTS.default;
 
   // Calculate WACC
   const wacc = calculateWACC(sector, stage);

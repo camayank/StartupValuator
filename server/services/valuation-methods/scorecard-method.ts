@@ -384,12 +384,15 @@ export async function calculateScorecardValuation(input: ValuationInput): Promis
   const location = input.location?.toLowerCase() || 'default';
 
   // Get baseline valuation
-  let baselineValuation = INDIAN_BASELINE_VALUATIONS[stage]?.[sector] ||
-    INDIAN_BASELINE_VALUATIONS.default[sector] ||
+  const stageKey = stage as keyof typeof INDIAN_BASELINE_VALUATIONS;
+  const sectorKey = sector as keyof typeof INDIAN_BASELINE_VALUATIONS.default;
+  let baselineValuation = INDIAN_BASELINE_VALUATIONS[stageKey]?.[sectorKey] ||
+    INDIAN_BASELINE_VALUATIONS.default[sectorKey] ||
     INDIAN_BASELINE_VALUATIONS.default.default;
 
   // Apply location adjustment to baseline
-  const locationAdjustment = LOCATION_ADJUSTMENTS[location] || LOCATION_ADJUSTMENTS.default;
+  const locationKey = location as keyof typeof LOCATION_ADJUSTMENTS;
+  const locationAdjustment = LOCATION_ADJUSTMENTS[locationKey] || LOCATION_ADJUSTMENTS.default;
   baselineValuation = baselineValuation * locationAdjustment;
 
   // Calculate scores for each factor

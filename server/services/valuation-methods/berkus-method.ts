@@ -270,7 +270,8 @@ export async function calculateBerkusValuation(input: ValuationInput): Promise<B
   const location = input.location?.toLowerCase() || 'default';
 
   // Get max values for this stage
-  let maxValues = BERKUS_MAX_VALUES_INDIA[stage] || BERKUS_MAX_VALUES_INDIA.default;
+  const stageKey = stage as keyof typeof BERKUS_MAX_VALUES_INDIA;
+  let maxValues = BERKUS_MAX_VALUES_INDIA[stageKey] || BERKUS_MAX_VALUES_INDIA.default;
 
   // Calculate score for each factor
   const soundIdeaValue = scoreSoundIdea(input, maxValues.soundIdea);
@@ -284,11 +285,13 @@ export async function calculateBerkusValuation(input: ValuationInput): Promise<B
     strategicRelationshipsValue + productRolloutValue;
 
   // Apply sector multiplier
-  const sectorMultiplier = SECTOR_MULTIPLIERS[sector] || SECTOR_MULTIPLIERS.default;
+  const sectorKey = sector as keyof typeof SECTOR_MULTIPLIERS;
+  const sectorMultiplier = SECTOR_MULTIPLIERS[sectorKey] || SECTOR_MULTIPLIERS.default;
   totalValue = totalValue * sectorMultiplier;
 
   // Apply location multiplier
-  const locationMultiplier = LOCATION_MULTIPLIERS[location] || LOCATION_MULTIPLIERS.default;
+  const locationKey = location as keyof typeof LOCATION_MULTIPLIERS;
+  const locationMultiplier = LOCATION_MULTIPLIERS[locationKey] || LOCATION_MULTIPLIERS.default;
   totalValue = totalValue * locationMultiplier;
 
   // Ensure we don't exceed max total

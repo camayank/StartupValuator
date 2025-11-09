@@ -182,15 +182,19 @@ export async function calculateVCValuation(input: ValuationInput): Promise<VCAna
   const stage = input.stage?.toLowerCase() || 'default';
 
   // Get exit multiple for this sector and stage
-  const exitMultiple = INDIAN_EXIT_MULTIPLES[sector]?.[stage] ||
-    INDIAN_EXIT_MULTIPLES[sector]?.default ||
+  const sectorKey = sector as keyof typeof INDIAN_EXIT_MULTIPLES;
+  const stageKey = stage as keyof typeof INDIAN_EXIT_MULTIPLES.default;
+  const exitMultiple = INDIAN_EXIT_MULTIPLES[sectorKey]?.[stageKey] ||
+    INDIAN_EXIT_MULTIPLES[sectorKey]?.default ||
     INDIAN_EXIT_MULTIPLES.default.default;
 
   // Get years to exit
-  const yearsToExit = YEARS_TO_EXIT[stage] || YEARS_TO_EXIT.default;
+  const yearsToExitKey = stage as keyof typeof YEARS_TO_EXIT;
+  const yearsToExit = YEARS_TO_EXIT[yearsToExitKey] || YEARS_TO_EXIT.default;
 
   // Get target ROI multiple
-  const targetROI = TARGET_ROI_MULTIPLES[stage] || TARGET_ROI_MULTIPLES.default;
+  const targetROIKey = stage as keyof typeof TARGET_ROI_MULTIPLES;
+  const targetROI = TARGET_ROI_MULTIPLES[targetROIKey] || TARGET_ROI_MULTIPLES.default;
 
   // Calculate expected exit value
   const expectedExit = calculateExitValue(input, exitMultiple, yearsToExit);
@@ -214,7 +218,8 @@ export async function calculateVCValuation(input: ValuationInput): Promise<VCAna
     default: 100000000,      // ₹10Cr
   };
 
-  const investmentAmount = typicalInvestmentSizes[stage] || typicalInvestmentSizes.default;
+  const investmentKey = stage as keyof typeof typicalInvestmentSizes;
+  const investmentAmount = typicalInvestmentSizes[investmentKey] || typicalInvestmentSizes.default;
 
   // Pre-money = Post-money - Investment
   const preMoneyValuation = postMoneyValuation - investmentAmount;
