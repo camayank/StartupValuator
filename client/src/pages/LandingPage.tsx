@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { BrandHeader } from "@/components/ui/brand-header";
 import { SocialShare } from "@/components/ui/social-share";
 import { QuickCalculator } from "@/components/QuickCalculator";
+import { FAQSection } from "@/components/landing/FAQSection";
+import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { Link } from "wouter";
 import {
   BarChart3,
@@ -149,25 +151,27 @@ export function LandingPage() {
               </span>
             </motion.div>
 
-            <motion.h1 
+            <motion.h1
               className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
+              <span className="text-foreground">Get Your</span>
+              <br />
               <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">
-                Professional
+                Startup Valued
               </span>
               <br />
-              <span className="text-foreground">Startup Valuations</span>
+              <span className="text-foreground">in 2 Minutes</span>
             </motion.h1>
-            <motion.p 
-              className="text-xl md:text-2xl text-muted-foreground mb-8"
+            <motion.p
+              className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              Get accurate, data-driven valuations in minutes. Supporting INR, USD, EUR & 40+ currencies for startups across India and the world.
+              India's #1 AI-powered valuation platform. Get investor-ready valuations in <span className="text-primary font-semibold">INR</span>, understand your worth, and access <span className="text-primary font-semibold">100+ government schemes</span>.
             </motion.p>
             <motion.div 
               className="flex flex-col sm:flex-row gap-4 justify-center items-center"
@@ -434,9 +438,15 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Comparison Table */}
+      <ComparisonTable />
+
+      {/* FAQ Section */}
+      <FAQSection />
+
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
-        <motion.div 
+        <motion.div
           className="container mx-auto px-4 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

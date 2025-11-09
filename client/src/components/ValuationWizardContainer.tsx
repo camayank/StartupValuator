@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SimpleValuationForm } from './SimpleValuationForm';
+import { EnhancedValuationWizard } from './valuation/EnhancedValuationWizard';
 import { ValuationResults } from './ValuationResults';
 
 export function ValuationWizardContainer() {
@@ -16,12 +16,12 @@ export function ValuationWizardContainer() {
   return (
     <div className="py-8">
       {valuationResult ? (
-        <ValuationResults 
-          result={valuationResult} 
-          onStartOver={handleStartOver} 
+        <ValuationResults
+          result={valuationResult}
+          onStartOver={handleStartOver}
         />
       ) : (
-        <SimpleValuationForm onResult={handleResult} />
+        <EnhancedValuationWizard onResult={handleResult} />
       )}
     </div>
   );
