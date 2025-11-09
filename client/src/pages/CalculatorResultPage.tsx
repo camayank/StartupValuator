@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,13 +46,13 @@ interface ValuationResult {
 }
 
 export function CalculatorResultPage() {
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
   const [result, setResult] = useState<ValuationResult | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('quickCalculatorResult');
     if (!stored) {
-      navigate('/');
+      setLocation('/');
       return;
     }
 
@@ -60,9 +60,9 @@ export function CalculatorResultPage() {
       setResult(JSON.parse(stored));
     } catch (error) {
       console.error('Failed to parse result:', error);
-      navigate('/');
+      setLocation('/');
     }
-  }, [navigate]);
+  }, [setLocation]);
 
   if (!result) {
     return (
@@ -93,7 +93,7 @@ export function CalculatorResultPage() {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => navigate('/')}
+              onClick={() => setLocation('/')}
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -286,7 +286,7 @@ export function CalculatorResultPage() {
               variant="outline"
               onClick={() => {
                 sessionStorage.removeItem('quickCalculatorResult');
-                navigate('/');
+                setLocation('/');
               }}
             >
               Calculate Again

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,7 +37,7 @@ const quickCalculatorSchema = z.object({
 type QuickCalculatorFormData = z.infer<typeof quickCalculatorSchema>;
 
 export function QuickCalculator() {
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
   const [isCalculating, setIsCalculating] = useState(false);
   const { toast } = useToast();
 
@@ -84,7 +84,7 @@ export function QuickCalculator() {
       sessionStorage.setItem('quickCalculatorResult', JSON.stringify(result.data));
 
       // Navigate to result page
-      navigate('/calculator-result');
+      setLocation('/calculator-result');
     } catch (error) {
       console.error('Calculator error:', error);
       toast({
