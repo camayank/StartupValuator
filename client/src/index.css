@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Modern vibrant color palette */
+    /* Modern vibrant color palette - WCAG 2.1 AA compliant */
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
@@ -18,7 +18,7 @@
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 20% 40%;  /* Improved from 47% to 40% for better contrast */
     --accent: 142 76% 36%;  /* Vibrant green accent */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
@@ -88,22 +88,39 @@
 
 @layer components {
   .bg-grid-pattern {
-    background-image: 
+    background-image:
       linear-gradient(to right, rgb(215 220 225 / 0.1) 1px, transparent 1px),
       linear-gradient(to bottom, rgb(215 220 225 / 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
   }
-  
+
   .animate-blob {
     animation: blob 7s infinite;
+    will-change: transform;
   }
-  
+
   .animation-delay-2000 {
     animation-delay: 2s;
   }
-  
+
   .animation-delay-4000 {
     animation-delay: 4s;
+  }
+
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    .animate-blob {
+      animation: none;
+    }
   }
 }
 
@@ -182,17 +199,29 @@
   @apply font-mono text-sm tabular-nums;
 }
 
-/* Confidence Indicators */
+/* Confidence Indicators - WCAG AA compliant */
 .confidence-high {
-  @apply text-green-600 bg-green-50 border-green-200;
+  @apply text-green-700 bg-green-50 border-green-300;
 }
 
 .confidence-medium {
-  @apply text-yellow-600 bg-yellow-50 border-yellow-200;
+  @apply text-yellow-700 bg-yellow-50 border-yellow-300;
 }
 
 .confidence-low {
-  @apply text-red-600 bg-red-50 border-red-200;
+  @apply text-red-700 bg-red-50 border-red-300;
+}
+
+.dark .confidence-high {
+  @apply text-green-400 bg-green-950 border-green-800;
+}
+
+.dark .confidence-medium {
+  @apply text-yellow-400 bg-yellow-950 border-yellow-800;
+}
+
+.dark .confidence-low {
+  @apply text-red-400 bg-red-950 border-red-800;
 }
 
 /* Valuation Cards */
@@ -231,15 +260,15 @@
   @apply text-3xl font-bold font-mono tabular-nums;
 }
 
-/* Status Indicators */
+/* Status Indicators - WCAG AA compliant */
 .status-active {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
 }
 
 .status-pending {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
 }
 
 .status-inactive {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200;
 }
