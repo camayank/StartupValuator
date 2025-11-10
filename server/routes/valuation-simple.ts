@@ -3,6 +3,7 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { ValuationCalculatorV2 } from "../services/valuation-v2";
 import type { ValuationFormData } from "../../client/src/lib/validations";
+import { validateBusinessInputs, validateCriticalErrors } from "../utils/sanity-checks";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -228,6 +229,16 @@ ANALYSIS FRAMEWORK (combining all three perspectives):
    - Identify breakthrough potential vs incremental improvement
    - Consider real-world impact and mission clarity
 
+CRITICAL CURRENCY INSTRUCTION:
+⚠️ All monetary values MUST be in Indian Rupees (INR/₹), NOT USD or other currencies.
+- The startup is operating in India with INR-denominated revenue
+- TAM/SAM/SOM should reflect Indian market size in Crores/Lakhs (₹)
+- CAC/LTV should reflect Indian market pricing (typically ₹1000s, NOT $100s)
+- Valuation ranges must be in INR matching the input currency
+- Use realistic Indian market multiples and benchmarks, not US/Silicon Valley standards
+- Example: ₹1 Crore revenue → TAM might be ₹500 Crores (NOT $50M which = ₹4,150 Crores)
+- Example: SaaS CAC in India is typically ₹5,000-₹15,000 (NOT $100-$200 which = ₹8,300-₹16,600)
+
 OUTPUT REQUIRED (JSON only, no markdown):
 {
   "valuationAnalysis": {
@@ -258,7 +269,7 @@ OUTPUT REQUIRED (JSON only, no markdown):
     "marketGrowthRate": number (%),
     "marketShareYear5": number (%),
     "competitiveDynamics": "string (fragmented/consolidated/emerging)",
-    "barriers ToEntry": ["string"],
+    "barriersToEntry": ["string"],
     "networkEffectScore": number (1-10)
   },
   "startupQuality": {
@@ -321,11 +332,13 @@ OUTPUT REQUIRED (JSON only, no markdown):
 }
 
 // Currency conversion helper (matches the one in valuation-v2.ts)
+// TODO: Replace with live exchange rate API for production (e.g., exchangerate-api.com)
+// Current rates are approximate as of Nov 2024 and should be updated regularly
 const CURRENCY_TO_INR: Record<string, number> = {
   INR: 1,
-  USD: 83,
-  EUR: 90,
-  GBP: 105
+  USD: 83.3,  // Updated rate
+  EUR: 90.5,  // Updated rate
+  GBP: 105.0  // Updated rate
 };
 
 function convertToINR(value: number, fromCurrency: string): number {
@@ -420,7 +433,37 @@ function buildFullValuationData(simpleData: SimpleInput, aiInsights: any): Valua
 router.post("/simple", async (req, res) => {
   try {
     const simpleData = simpleInputSchema.parse(req.body);
-    
+
+    // CRITICAL: Validate inputs for data quality and sanity
+    const criticalErrors = validateCriticalErrors({
+      stage: simpleData.stage,
+      revenue: simpleData.revenue,
+      employees: 0, // Simple mode doesn't collect this, but we validate revenue
+      currency: simpleData.currency
+    });
+
+    if (criticalErrors.length > 0) {
+      return res.status(400).json({
+        error: "Invalid input data",
+        details: criticalErrors,
+        message: "Please check your inputs and try again"
+      });
+    }
+
+    // Perform comprehensive sanity checks (warnings, not blocking)
+    const sanityCheck = validateBusinessInputs({
+      stage: simpleData.stage,
+      revenue: simpleData.revenue,
+      employees: 0, // Will be estimated by AI/benchmarks
+      currency: simpleData.currency,
+      industry: simpleData.industry
+    });
+
+    // Log warnings for monitoring but don't block
+    if (sanityCheck.warnings.length > 0) {
+      console.warn("Input validation warnings:", sanityCheck.warnings);
+    }
+
     // Enrich with AI insights (non-blocking - use fallback if fails)
     let aiInsights = null;
     let aiUsed = false;
@@ -445,11 +488,18 @@ router.post("/simple", async (req, res) => {
       aiInsights: aiInsights,
       currency: simpleData.currency,
       simplifiedInput: simpleData,
+      validation: {
+        confidence: sanityCheck.confidence,
+        warnings: sanityCheck.warnings,
+        dataQuality: sanityCheck.confidence === 'high' ? 'Excellent' :
+                     sanityCheck.confidence === 'medium' ? 'Good' : 'Fair'
+      },
       transparency: {
         aiEnrichmentUsed: aiUsed,
         methodsUsed: ["Scorecard Method", "Risk Factor Summation", "Venture Capital Method"],
         dataQuality: aiUsed ? "AI-enhanced" : "Benchmark-based",
-        disclaimers: valuationResult.metadata?.disclaimers || []
+        disclaimers: valuationResult.metadata?.disclaimers || [],
+        inputValidation: `${sanityCheck.warnings.length} warnings detected`
       }
     });
   } catch (error) {
